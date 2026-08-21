@@ -16,6 +16,7 @@
 - Bind the production server to `0.0.0.0:3210`; permit only loopback and private LAN client addresses.
 - Do not add login, accounts, database, history, PDF upload, cloud deployment, model selector, or automatic-on-input transformation.
 - Support `.txt` selection entirely in the browser; file selection populates the source textarea but never calls the server until the transform button is clicked.
+- Use Saramin only as a reference for search-first hierarchy, white space, rounded surfaces, blue primary actions, and compact status chips; do not copy its logo, wording, cards, icons, proprietary colors, or recruitment layout.
 - Accept at most three jobs total and execute exactly one Codex transformation at a time.
 - Do not impose a product character limit; stream request bodies to disk and chunk long text with the vendored engine.
 - Persist no source text, transformed text, or Codex session. Delete job workspaces on success, failure, cancellation, disconnect, and shutdown.
@@ -65,6 +66,8 @@ runtime/jobs/.gitkeep                only allowed job workspace root
 tests/unit/**                        deterministic module tests
 tests/integration/**                 API/queue/engine boundary tests
 tests/e2e/**                         browser workflow tests
+tests/e2e/portal-visual.spec.ts      desktop/mobile state visual regression
+tests/e2e/portal-visual.spec.ts-snapshots/** reviewed Playwright baselines
 tests/fixtures/**                    synthetic Korean test input only
 tests/helpers/**                     fake runners and temporary test roots
 README.md                            setup, LAN use, privacy, troubleshooting
@@ -97,7 +100,7 @@ Run from the project root:
 ```powershell
 & 'C:\Program Files\nodejs\npm.cmd' init -y
 & 'C:\Program Files\nodejs\npm.cmd' install express
-& 'C:\Program Files\nodejs\npm.cmd' install --save-dev typescript tsx vitest supertest @types/node @types/express @types/supertest @playwright/test
+& 'C:\Program Files\nodejs\npm.cmd' install --save-dev typescript tsx vitest supertest @types/node @types/express @types/supertest @playwright/test @axe-core/playwright
 ```
 
 Install `cross-env` as a dev dependency because the live flag must work from Windows cmd, then set metadata and scripts with `npm pkg set` so the dependency entries created above remain intact:
@@ -997,12 +1000,14 @@ git commit -m "feat: expose private streaming transformation API"
 - Create: `public/app.js`
 - Test: `tests/unit/text-file.test.js`
 - Test: `tests/e2e/portal.spec.ts`
+- Test: `tests/e2e/portal-visual.spec.ts`
+- Create: `tests/e2e/portal-visual.spec.ts-snapshots/**`
 - Create: `playwright.config.ts`
 
 **Interfaces:**
 - Consumes: `GET /api/health` and `POST /api/transform` NDJSON contract.
 - Produces: `decodeTextBytes(bytes): { text: string; encoding: string }` and `readTextFile(file): Promise<{ text: string; encoding: string; fileName: string }>`.
-- Produces: DOM IDs forming the E2E contract: `source-text`, `result-text`, `text-file-input`, `text-file-button`, `source-file-name`, `transform-button`, `cancel-button`, `copy-button`, `reset-button`, `status`, `progress`, `source-count`.
+- Produces: DOM IDs forming the E2E contract: `portal-header`, `hero-title`, `workflow-steps`, `editor-shell`, `source-text`, `result-text`, `text-file-input`, `text-file-button`, `source-file-name`, `transform-button`, `cancel-button`, `copy-button`, `reset-button`, `status`, `status-chip`, `progress`, `source-count`.
 
 - [ ] **Step 1: Write failing TXT validation and encoding tests**
 
@@ -1058,7 +1063,48 @@ test("typing never transforms; clicking transforms exactly once", async ({ page 
 
 Add an E2E test that selects an in-memory `sample.txt`, verifies the left textarea, filename, encoding, and character count, waits 300 ms with zero transform requests, and then observes exactly one request after clicking **변환**. Add tests for invalid extension preserving existing text, empty-button disabled state, queued position, chunk progress, cancel abort, Korean error copy, result copy, reset, no history after reload, and viewport widths 1440/390.
 
-- [ ] **Step 3: Run unit and E2E tests and confirm missing file/page failures**
+Add this accessibility gate to the same suite:
+
+```ts
+import AxeBuilder from "@axe-core/playwright";
+
+test("idle and result states have no WCAG A/AA violations", async ({ page }) => {
+  await page.goto("/");
+  const idle = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(idle.violations).toEqual([]);
+  for (const selector of ["#text-file-button", "#transform-button", "#reset-button"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  }
+});
+```
+
+- [ ] **Step 3: Write visual regression tests for every meaningful state**
+
+```ts
+// tests/e2e/portal-visual.spec.ts
+import { test, expect } from "@playwright/test";
+
+test.describe("portal visual hierarchy", () => {
+  test.use({ viewport:{ width:1440, height:1000 }, colorScheme:"light", reducedMotion:"reduce" });
+  test.beforeEach(async ({ page }) => {
+    await page.route("**/api/health", route => route.fulfill({ json:{ status:"ready", activeJobs:0, queuedJobs:0 } }));
+  });
+  test("idle desktop", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveScreenshot("portal-idle-desktop.png", { fullPage:true, animations:"disabled", maxDiffPixelRatio:0.01 });
+  });
+  test("ready desktop with TXT chip", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("#text-file-input").setInputFiles({ name:"sample.txt", mimeType:"text/plain", buffer:Buffer.from("문장을 자연스럽게 다듬어 주세요.", "utf8") });
+    await expect(page).toHaveScreenshot("portal-txt-ready-desktop.png", { fullPage:true, animations:"disabled", maxDiffPixelRatio:0.01 });
+  });
+});
+```
+
+Add deterministic mocked snapshots for queued, processing at chunk 2/4, success with result text, and validation error. Add a separate mobile describe block at 390×844 for idle, processing, and success, including the sticky transform/cancel area. Fix dates, elapsed time, queue position, and text fixtures so snapshots never depend on the clock or real Codex.
+
+- [ ] **Step 4: Run unit, functional E2E, and visual tests to confirm red state**
 
 ```powershell
 & 'C:\Program Files\nodejs\npm.cmd' run test:unit -- tests/unit/text-file.test.js
@@ -1068,11 +1114,13 @@ Add an E2E test that selects an in-memory `sample.txt`, verifies the left textar
 
 Expected: FAIL because `public/text-file.js`, `public/index.html`, or required selectors do not exist.
 
-- [ ] **Step 4: Create semantic markup**
+- [ ] **Step 5: Create semantic markup and the approved information hierarchy**
 
-Use one `<main>`, two labelled `<section>` elements, two `<textarea>` elements, and real `<button>` controls. Add a visually styled **TXT 불러오기** button connected to a hidden `<input id="text-file-input" type="file" accept=".txt,text/plain">`; keep the native input in the accessibility tree. Output textarea is `readonly`. Add an `aria-live="polite"` status region and accessible progress element. Copy must read “복사”, success “복사됨”. Include the exact notices “같은 와이파이 전용 · 로그인 없음” and “분량에 따라 처리 시간이 오래 걸릴 수 있습니다.” Load `app.js` as `type="module"` so it can import `text-file.js`.
+Create a 72px header with independent text wordmark **한국어 문장 다듬기** and a `같은 와이파이 전용` status chip. Add a short hero headed **“AI 문체는 덜고, 내 문장은 살립니다.”**, then a three-part `01 원문 입력 / 02 변환 / 03 결과 확인` step row. Put the two editor sections inside one `editor-shell` with a restrained empty state in the result pane.
 
-- [ ] **Step 5: Implement TXT validation and decoding**
+Use one `<main>`, two labelled `<section>` elements, two `<textarea>` elements, and real `<button>` controls. Add a visually styled **TXT 불러오기** button connected to a hidden `<input id="text-file-input" type="file" accept=".txt,text/plain">`; keep the native input in the accessibility tree. Output textarea is `readonly`. Add an `aria-live="polite"` status strip, text status chip, and accessible progress element. Copy must read “복사”, success “복사됨”. Include the exact notices “같은 와이파이 전용 · 로그인 없음” and “분량에 따라 처리 시간이 오래 걸릴 수 있습니다.” Load `app.js` as `type="module"` so it can import `text-file.js`.
+
+- [ ] **Step 6: Implement TXT validation and decoding**
 
 ```js
 // public/text-file.js
@@ -1111,25 +1159,53 @@ export async function readTextFile(file) {
 
 Do not normalize line endings or trim file content. A zero-byte `.txt` is valid to load but leaves the transform button disabled through the existing empty-input rule.
 
-- [ ] **Step 6: Implement responsive styling**
+- [ ] **Step 7: Implement the Saramin-referenced but independent visual system**
 
-Use a restrained Korean document-editor visual: neutral paper background, dark readable text, blue primary action, visible focus rings, minimum 44px button height, and system Korean fonts (`Pretendard`, `Noto Sans KR`, `Malgun Gothic`, sans-serif fallback). At `max-width: 800px`, change the editor grid from two columns to one. Do not add animation beyond a reduced-motion-safe progress pulse.
+Define these exact CSS tokens and use variables rather than repeating literals:
 
-- [ ] **Step 7: Implement local TXT selection and streamed client logic**
+```css
+:root {
+  --canvas:#f5f7fb; --surface:#ffffff; --ink:#1f2633; --muted:#667085;
+  --line:#e5e9f2; --primary:#3564e8; --primary-hover:#264fca;
+  --primary-soft:#eef3ff; --success:#0a8f67; --warning:#c76b00; --danger:#d33a45;
+  --radius-xl:24px; --radius-lg:16px; --radius-md:12px;
+  --shadow-editor:0 18px 50px rgba(31,38,51,.10);
+  --motion-fast:160ms;
+}
+```
+
+Use a 1200px max content width, canvas background, white editor shell, dark high-contrast headings, a solid blue 180×52 primary button, 1px neutral borders, rounded panels, and shallow shadows. Use only system Korean font fallbacks (`Pretendard`, `Noto Sans KR`, `Malgun Gothic`, sans-serif); do not introduce an internet font request. Represent queue, TXT file, success, warning, and error with compact chips containing both text and color.
+
+At `max-width:800px`, switch editor panels to one column, reduce header to 60px and hero title to 28px, retain three equal step chips without horizontal scrolling, and place transform/cancel controls in a safe-area-aware sticky bottom bar. Every interactive control must be at least 44px high with a visible `:focus-visible` ring. Limit hover/focus transitions to 160ms. In `prefers-reduced-motion:reduce`, remove pulse, translation, and smooth scrolling.
+
+Do not add photos, recruitment cards, banners, dense navigation, Saramin branding, or blue-purple promotional gradients. The similarity must remain at the level of hierarchy and polish, not identity.
+
+- [ ] **Step 8: Implement local TXT selection and streamed client states**
 
 Import `readTextFile`. On file change, decode locally, replace `sourceText.value`, show `fileName · encoding`, and call the same local counter/button-state function used by manual input. Do not call `fetch`. If selection fails, preserve the textarea and display the mapped client error. Clear the native input value afterward so selecting the same file again fires `change`.
 
 Only `transformButton.addEventListener("click", startTransform)` may call `/api/transform`. Manual `input` and file `change` only update local state. Use `fetch` with raw source text, `Content-Type: text/plain; charset=utf-8`, and an `AbortController`. Decode response chunks with `TextDecoder`, buffer incomplete lines, parse each completed NDJSON line, and switch exhaustively on `event.type`.
 
-On `result-start`, clear the output. Append only `result-delta.text`. On error, preserve the original input and any prior completed output, restore button state, and show the public Korean message. Never store text in `localStorage`, `sessionStorage`, IndexedDB, URL parameters, or cookies.
+Map idle, ready, queued, processing, success, warning, and error to explicit `data-state` attributes on `editor-shell` and `status`. On `result-start`, clear the output. Append only `result-delta.text`. On success, show elapsed time and chunk count. On error, preserve the original input and any prior completed output, restore button state, and show the public Korean message. Never store text in `localStorage`, `sessionStorage`, IndexedDB, URL parameters, or cookies.
 
-- [ ] **Step 8: Run browser acceptance tests and commit**
+- [ ] **Step 9: Review and record visual baselines**
+
+Run functional tests first, then generate snapshots only after the DOM and state behavior pass:
+
+```powershell
+& 'C:\Program Files\nodejs\npm.cmd' run test:e2e -- --update-snapshots
+& 'C:\Program Files\nodejs\npm.cmd' run test:e2e
+```
+
+Open every generated desktop/mobile PNG and confirm: input and transform are the dominant actions; panels align; Korean text does not clip; chips do not wrap unexpectedly; sticky controls do not cover results; all states use text in addition to color; no Saramin logo, proprietary wording, recruitment card, or copied composition appears. Commit only reviewed snapshots.
+
+- [ ] **Step 10: Run browser acceptance tests and commit**
 
 ```powershell
 & 'C:\Program Files\nodejs\npm.cmd' run test:unit -- tests/unit/text-file.test.js
 & 'C:\Program Files\nodejs\npm.cmd' run test:e2e
-git add public playwright.config.ts tests/unit/text-file.test.js tests/e2e/portal.spec.ts
-git commit -m "feat: add button-driven portal with local TXT import"
+git add public playwright.config.ts tests/unit/text-file.test.js tests/e2e/portal.spec.ts tests/e2e/portal-visual.spec.ts tests/e2e/portal-visual.spec.ts-snapshots
+git commit -m "feat: add polished button-driven portal UX"
 ```
 
 ---
@@ -1363,6 +1439,7 @@ Use this order and exact operational facts:
 13. Codex usage is charged/counts against the host's logged-in account;
 14. troubleshooting for text decoding, engine unavailable, firewall, wrong Wi-Fi profile, queue full, timeout, and changing LAN IP;
 15. stop by closing the server console or pressing Ctrl+C.
+16. visual style uses the approved independent tokens and references Saramin only at the level of hierarchy, spacing, surfaces, and action emphasis.
 
 - [ ] **Step 4: Write the operator runbook**
 
@@ -1377,6 +1454,8 @@ Use this order and exact operational facts:
 | 15,000+ characters | Multiple sequential chunks and ordered output |
 | Select UTF-8/BOM-marked UTF-16/CP949 TXT | Source pane fills locally; zero transform calls before button click |
 | Select non-TXT or undecodable file | Existing source text remains and a Korean error appears |
+| Desktop and mobile state snapshots | Idle, TXT-ready, queued, processing, success, and error match reviewed baselines |
+| Brand independence | No Saramin logo, proprietary copy, recruitment cards, or copied composition |
 | Cancel active request | Codex process tree and workspace disappear |
 | Close server | Port 3210 closes and runtime/jobs is empty |
 
@@ -1423,6 +1502,7 @@ git commit -m "docs: complete LAN portal operations and acceptance"
 - Three requests are accepted, one executes, two display queue positions, and a fourth is rejected before upload.
 - Typing or pasting never triggers transformation; the button triggers exactly one request.
 - Selecting a UTF-8, BOM-marked UTF-16LE/BE, or CP949-family `.txt` fills the source pane locally and never triggers transformation before the button click.
+- Desktop and mobile visual snapshots prove a polished search-first hierarchy, responsive editor layout, readable state chips, and independent branding.
 - Long text is streamed to disk, split with the vendored engine, transformed in order, deterministically verified, losslessly reassembled, and streamed back.
 - The Codex command is ephemeral, read-only, rule-isolated, schema-constrained, shell-free, cancellable, and subject to a 10-minute per-chunk timeout.
 - Source and transformed text never enter logs, storage APIs, a database, or persistent Codex sessions.
