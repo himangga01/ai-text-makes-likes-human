@@ -4,6 +4,7 @@ playwright-report/
 test-results/
 runtime/jobs/*
 !runtime/jobs/.gitkeep
+runtime/test-tmp/
 .env
 *.log
 __pycache__/
