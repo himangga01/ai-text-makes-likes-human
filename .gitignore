@@ -6,3 +6,5 @@ runtime/jobs/*
 !runtime/jobs/.gitkeep
 .env
 *.log
+__pycache__/
+*.py[cod]
