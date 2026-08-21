@@ -1,0 +1,58 @@
+import { describe, expect, it } from "vitest";
+import { loadConfig } from "../../src/config.js";
+import { runPreflight } from "../../src/process/preflight.js";
+import { exited, FakeCommandRunner } from "../helpers/fake-command-runner.js";
+
+const config = loadConfig({}, process.cwd());
+const engineVersion =
+  "version=2.3.2\ncommit=c4d03d4859acda143f0b04b4bbdb56c5e6a94db1\n";
+
+describe("runPreflight", () => {
+  it("reports ready for supported Python, Codex, login, and engine versions", async () => {
+    const runner = new FakeCommandRunner([
+      exited("Python 3.14.7"),
+      exited("codex-cli 0.149.0"),
+      exited("Logged in using ChatGPT")
+    ]);
+
+    const report = await runPreflight(config, runner, engineVersion);
+
+    expect(report).toMatchObject({
+      ready: true,
+      pythonVersion: "3.14.7",
+      codexVersion: "0.149.0",
+      humanizeVersion: "2.3.2"
+    });
+  });
+
+  it("returns one safe public failure when Codex is not logged in", async () => {
+    const runner = new FakeCommandRunner([
+      exited("Python 3.14.7"),
+      exited("codex-cli 0.149.0"),
+      exited("", 1, "secret-path C:/Users/name/.codex/auth.json")
+    ]);
+
+    const report = await runPreflight(config, runner, engineVersion);
+
+    expect(report).toMatchObject({
+      ready: false,
+      errorCode: "ENGINE_UNAVAILABLE",
+      message: "서버의 Codex 로그인이 필요합니다."
+    });
+    expect(JSON.stringify(report)).not.toContain("secret-path");
+    expect(JSON.stringify(report)).not.toContain("auth.json");
+  });
+
+  it("rejects Codex versions older than 0.149.0", async () => {
+    const runner = new FakeCommandRunner([
+      exited("Python 3.14.7"),
+      exited("codex-cli 0.148.0"),
+      exited("Logged in using ChatGPT")
+    ]);
+
+    const report = await runPreflight(config, runner, engineVersion);
+
+    expect(report.ready).toBe(false);
+    expect(report.message).toContain("0.149.0 이상");
+  });
+});
