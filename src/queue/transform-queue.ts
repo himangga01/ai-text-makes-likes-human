@@ -120,8 +120,8 @@ export class TransformQueue {
       record.reject = reject;
     });
     this.waiting.push(record);
-    this.updatePositions();
     this.pump();
+    this.updatePositions();
     return record.promise;
   }
 
