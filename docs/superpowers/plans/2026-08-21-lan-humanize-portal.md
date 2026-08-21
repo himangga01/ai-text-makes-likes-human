@@ -15,6 +15,7 @@
 - Create every project, vendor, test, documentation, and runtime file under `C:\project\2026\ai-text-makes-likes-human`.
 - Bind the production server to `0.0.0.0:3210`; permit only loopback and private LAN client addresses.
 - Do not add login, accounts, database, history, PDF upload, cloud deployment, model selector, or automatic-on-input transformation.
+- Support `.txt` selection entirely in the browser; file selection populates the source textarea but never calls the server until the transform button is clicked.
 - Accept at most three jobs total and execute exactly one Codex transformation at a time.
 - Do not impose a product character limit; stream request bodies to disk and chunk long text with the vendored engine.
 - Persist no source text, transformed text, or Codex session. Delete job workspaces on success, failure, cancellation, disconnect, and shutdown.
@@ -52,6 +53,7 @@ src/engine/output-schema.json        constrained Codex final response
 src/engine/errors.ts                 stable public error codes
 public/index.html                    two-pane portal markup
 public/styles.css                    desktop/mobile presentation
+public/text-file.js                  TXT validation and UTF-8/UTF-16/CP949-family decoding
 public/app.js                        button-only request and NDJSON rendering
 scripts/sync-engine.ps1              explicit vendoring maintenance command
 scripts/allow-lan-firewall.ps1       Private-profile TCP 3210 rule
@@ -991,15 +993,45 @@ git commit -m "feat: expose private streaming transformation API"
 **Files:**
 - Create: `public/index.html`
 - Create: `public/styles.css`
+- Create: `public/text-file.js`
 - Create: `public/app.js`
+- Test: `tests/unit/text-file.test.js`
 - Test: `tests/e2e/portal.spec.ts`
 - Create: `playwright.config.ts`
 
 **Interfaces:**
 - Consumes: `GET /api/health` and `POST /api/transform` NDJSON contract.
-- Produces: no exported library; DOM IDs form the E2E contract: `source-text`, `result-text`, `transform-button`, `cancel-button`, `copy-button`, `reset-button`, `status`, `progress`, `source-count`.
+- Produces: `decodeTextBytes(bytes): { text: string; encoding: string }` and `readTextFile(file): Promise<{ text: string; encoding: string; fileName: string }>`.
+- Produces: DOM IDs forming the E2E contract: `source-text`, `result-text`, `text-file-input`, `text-file-button`, `source-file-name`, `transform-button`, `cancel-button`, `copy-button`, `reset-button`, `status`, `progress`, `source-count`.
 
-- [ ] **Step 1: Write the button-only E2E test first**
+- [ ] **Step 1: Write failing TXT validation and encoding tests**
+
+```ts
+// tests/unit/text-file.test.js
+import { describe, expect, it } from "vitest";
+import { decodeTextBytes, readTextFile } from "../../public/text-file.js";
+
+describe("TXT decoding", () => {
+  it("removes a UTF-8 BOM", () => {
+    const body = new TextEncoder().encode("안녕");
+    const bytes = Uint8Array.from([0xef, 0xbb, 0xbf, ...body]);
+    expect(decodeTextBytes(bytes)).toEqual({ text:"안녕", encoding:"UTF-8" });
+  });
+  it("decodes UTF-16 little and big endian BOM files", () => {
+    expect(decodeTextBytes(Uint8Array.of(0xff,0xfe,0x00,0xac))).toEqual({ text:"가", encoding:"UTF-16LE" });
+    expect(decodeTextBytes(Uint8Array.of(0xfe,0xff,0xac,0x00))).toEqual({ text:"가", encoding:"UTF-16BE" });
+  });
+  it("falls back to the browser euc-kr decoder for CP949-family Korean", () => {
+    expect(decodeTextBytes(Uint8Array.of(0xb0,0xa1,0xb1,0xdb))).toEqual({ text:"가글", encoding:"CP949/EUC-KR" });
+  });
+  it("rejects a non-txt file before reading it", async () => {
+    const file = new File(["내용"], "memo.md", { type:"text/markdown" });
+    await expect(readTextFile(file)).rejects.toMatchObject({ code:"INVALID_TEXT_FILE" });
+  });
+});
+```
+
+- [ ] **Step 2: Write the button-only E2E test**
 
 ```ts
 import { test, expect } from "@playwright/test";
@@ -1024,37 +1056,80 @@ test("typing never transforms; clicking transforms exactly once", async ({ page 
 });
 ```
 
-Add tests for empty-button disabled state, queued position, chunk progress, cancel abort, Korean error copy, result copy, reset, no history after reload, and viewport widths 1440/390.
+Add an E2E test that selects an in-memory `sample.txt`, verifies the left textarea, filename, encoding, and character count, waits 300 ms with zero transform requests, and then observes exactly one request after clicking **변환**. Add tests for invalid extension preserving existing text, empty-button disabled state, queued position, chunk progress, cancel abort, Korean error copy, result copy, reset, no history after reload, and viewport widths 1440/390.
 
-- [ ] **Step 2: Run E2E and confirm the missing page failure**
+- [ ] **Step 3: Run unit and E2E tests and confirm missing file/page failures**
 
 ```powershell
+& 'C:\Program Files\nodejs\npm.cmd' run test:unit -- tests/unit/text-file.test.js
 & 'C:\Program Files\nodejs\npm.cmd' exec playwright install chromium
 & 'C:\Program Files\nodejs\npm.cmd' run test:e2e
 ```
 
-Expected: FAIL because `public/index.html` is missing or selectors do not exist.
+Expected: FAIL because `public/text-file.js`, `public/index.html`, or required selectors do not exist.
 
-- [ ] **Step 3: Create semantic markup**
+- [ ] **Step 4: Create semantic markup**
 
-Use one `<main>`, two labelled `<section>` elements, two `<textarea>` elements, and real `<button>` controls. Output textarea is `readonly`. Add an `aria-live="polite"` status region and accessible progress element. Copy must read “복사”, success “복사됨”. Include the exact notice “같은 와이파이 전용 · 로그인 없음” and “분량에 따라 처리 시간이 오래 걸릴 수 있습니다.”
+Use one `<main>`, two labelled `<section>` elements, two `<textarea>` elements, and real `<button>` controls. Add a visually styled **TXT 불러오기** button connected to a hidden `<input id="text-file-input" type="file" accept=".txt,text/plain">`; keep the native input in the accessibility tree. Output textarea is `readonly`. Add an `aria-live="polite"` status region and accessible progress element. Copy must read “복사”, success “복사됨”. Include the exact notices “같은 와이파이 전용 · 로그인 없음” and “분량에 따라 처리 시간이 오래 걸릴 수 있습니다.” Load `app.js` as `type="module"` so it can import `text-file.js`.
 
-- [ ] **Step 4: Implement responsive styling**
+- [ ] **Step 5: Implement TXT validation and decoding**
+
+```js
+// public/text-file.js
+export class TextFileError extends Error {
+  constructor(code, message) { super(message); this.code = code; }
+}
+export function decodeTextBytes(bytes) {
+  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (view[0] === 0xef && view[1] === 0xbb && view[2] === 0xbf) {
+    return { text:new TextDecoder("utf-8", { fatal:true }).decode(view.subarray(3)), encoding:"UTF-8" };
+  }
+  if (view[0] === 0xff && view[1] === 0xfe) {
+    return { text:new TextDecoder("utf-16le", { fatal:true }).decode(view.subarray(2)), encoding:"UTF-16LE" };
+  }
+  if (view[0] === 0xfe && view[1] === 0xff) {
+    return { text:new TextDecoder("utf-16be", { fatal:true }).decode(view.subarray(2)), encoding:"UTF-16BE" };
+  }
+  try {
+    return { text:new TextDecoder("utf-8", { fatal:true }).decode(view), encoding:"UTF-8" };
+  } catch {
+    try {
+      return { text:new TextDecoder("euc-kr", { fatal:true }).decode(view), encoding:"CP949/EUC-KR" };
+    } catch {
+      throw new TextFileError("TEXT_FILE_DECODE_FAILED", "텍스트 파일을 읽지 못했습니다. 다른 인코딩으로 저장해 다시 시도해 주세요.");
+    }
+  }
+}
+export async function readTextFile(file) {
+  if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".txt")) {
+    throw new TextFileError("INVALID_TEXT_FILE", "TXT 파일만 불러올 수 있습니다.");
+  }
+  const decoded = decodeTextBytes(await file.arrayBuffer());
+  return { ...decoded, fileName:file.name };
+}
+```
+
+Do not normalize line endings or trim file content. A zero-byte `.txt` is valid to load but leaves the transform button disabled through the existing empty-input rule.
+
+- [ ] **Step 6: Implement responsive styling**
 
 Use a restrained Korean document-editor visual: neutral paper background, dark readable text, blue primary action, visible focus rings, minimum 44px button height, and system Korean fonts (`Pretendard`, `Noto Sans KR`, `Malgun Gothic`, sans-serif fallback). At `max-width: 800px`, change the editor grid from two columns to one. Do not add animation beyond a reduced-motion-safe progress pulse.
 
-- [ ] **Step 5: Implement streamed client logic**
+- [ ] **Step 7: Implement local TXT selection and streamed client logic**
 
-Only `transformButton.addEventListener("click", startTransform)` may call `/api/transform`. `input` only updates code-point count and button state. Use `fetch` with raw source text, `Content-Type: text/plain; charset=utf-8`, and an `AbortController`. Decode response chunks with `TextDecoder`, buffer incomplete lines, parse each completed NDJSON line, and switch exhaustively on `event.type`.
+Import `readTextFile`. On file change, decode locally, replace `sourceText.value`, show `fileName · encoding`, and call the same local counter/button-state function used by manual input. Do not call `fetch`. If selection fails, preserve the textarea and display the mapped client error. Clear the native input value afterward so selecting the same file again fires `change`.
+
+Only `transformButton.addEventListener("click", startTransform)` may call `/api/transform`. Manual `input` and file `change` only update local state. Use `fetch` with raw source text, `Content-Type: text/plain; charset=utf-8`, and an `AbortController`. Decode response chunks with `TextDecoder`, buffer incomplete lines, parse each completed NDJSON line, and switch exhaustively on `event.type`.
 
 On `result-start`, clear the output. Append only `result-delta.text`. On error, preserve the original input and any prior completed output, restore button state, and show the public Korean message. Never store text in `localStorage`, `sessionStorage`, IndexedDB, URL parameters, or cookies.
 
-- [ ] **Step 6: Run browser acceptance tests and commit**
+- [ ] **Step 8: Run browser acceptance tests and commit**
 
 ```powershell
+& 'C:\Program Files\nodejs\npm.cmd' run test:unit -- tests/unit/text-file.test.js
 & 'C:\Program Files\nodejs\npm.cmd' run test:e2e
-git add public playwright.config.ts tests/e2e/portal.spec.ts
-git commit -m "feat: add button-driven two-pane LAN portal"
+git add public playwright.config.ts tests/unit/text-file.test.js tests/e2e/portal.spec.ts
+git commit -m "feat: add button-driven portal with local TXT import"
 ```
 
 ---
@@ -1279,12 +1354,15 @@ Use this order and exact operational facts:
 4. other PCs use the printed `http://192.168.x.x:3210` URL;
 5. firewall allow script must be run as Administrator once on a Private network;
 6. paste original, press 변환, wait, copy result;
-7. up to three requests accepted, one transformed at a time;
-8. no fixed text cap, but long documents take longer;
-9. no login/history/database and temporary content deletion policy;
-10. Codex usage is charged/counts against the host's logged-in account;
-11. troubleshooting for engine unavailable, firewall, wrong Wi-Fi profile, queue full, timeout, and changing LAN IP;
-12. stop by closing the server console or pressing Ctrl+C.
+7. alternatively choose **TXT 불러오기**, verify filename/encoding/content, then press 변환;
+8. supported TXT encodings are UTF-8, BOM-marked UTF-16LE/BE, and CP949/EUC-KR family;
+9. file selection stays local and does not contact the server until 변환 is pressed;
+10. up to three requests accepted, one transformed at a time;
+11. no fixed text cap, but long documents take longer;
+12. no login/history/database and temporary content deletion policy;
+13. Codex usage is charged/counts against the host's logged-in account;
+14. troubleshooting for text decoding, engine unavailable, firewall, wrong Wi-Fi profile, queue full, timeout, and changing LAN IP;
+15. stop by closing the server console or pressing Ctrl+C.
 
 - [ ] **Step 4: Write the operator runbook**
 
@@ -1297,6 +1375,8 @@ Use this order and exact operational facts:
 | Three simultaneous transforms | 1 active, 2 queue positions |
 | Fourth transform | Friendly queue-full response |
 | 15,000+ characters | Multiple sequential chunks and ordered output |
+| Select UTF-8/BOM-marked UTF-16/CP949 TXT | Source pane fills locally; zero transform calls before button click |
+| Select non-TXT or undecodable file | Existing source text remains and a Korean error appears |
 | Cancel active request | Codex process tree and workspace disappear |
 | Close server | Port 3210 closes and runtime/jobs is empty |
 
@@ -1342,6 +1422,7 @@ git commit -m "docs: complete LAN portal operations and acceptance"
 - The host listens on `0.0.0.0:3210`, prints usable LAN URLs, and rejects non-private client addresses.
 - Three requests are accepted, one executes, two display queue positions, and a fourth is rejected before upload.
 - Typing or pasting never triggers transformation; the button triggers exactly one request.
+- Selecting a UTF-8, BOM-marked UTF-16LE/BE, or CP949-family `.txt` fills the source pane locally and never triggers transformation before the button click.
 - Long text is streamed to disk, split with the vendored engine, transformed in order, deterministically verified, losslessly reassembled, and streamed back.
 - The Codex command is ephemeral, read-only, rule-isolated, schema-constrained, shell-free, cancellable, and subject to a 10-minute per-chunk timeout.
 - Source and transformed text never enter logs, storage APIs, a database, or persistent Codex sessions.
