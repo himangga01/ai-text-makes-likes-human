@@ -30,6 +30,7 @@ async function closeServer(server: Server): Promise<void> {
 async function main(): Promise<void> {
   const config = loadConfig(process.env, projectRoot);
   const serverLock = await acquireServerLock(path.dirname(config.runtimeRoot));
+  process.once("exit", () => serverLock.releaseSync());
   let runtime: Awaited<ReturnType<typeof createProductionRuntime>>;
   let server: Server;
   try {

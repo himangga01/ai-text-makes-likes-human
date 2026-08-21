@@ -36,4 +36,17 @@ describe("acquireServerLock", () => {
       await removeTestRoot(root);
     }
   });
+
+  it("supports synchronous cleanup during the process exit event", async () => {
+    const root = await makeTestRoot();
+    const runtimeRoot = path.join(root, "runtime");
+    try {
+      const lock = await acquireServerLock(runtimeRoot);
+      lock.releaseSync();
+      lock.releaseSync();
+      await expect(access(path.join(runtimeRoot, "server.lock"))).rejects.toThrow();
+    } finally {
+      await removeTestRoot(root);
+    }
+  });
 });

@@ -1,3 +1,4 @@
+import { closeSync, rmSync } from "node:fs";
 import { mkdir, open, readFile, rm, type FileHandle } from "node:fs/promises";
 import path from "node:path";
 
@@ -13,10 +14,12 @@ function processIsAlive(pid: number): boolean {
 
 export interface ServerLock {
   release(): Promise<void>;
+  releaseSync(): void;
 }
 
 class FileServerLock implements ServerLock {
   private releasePromise: Promise<void> | undefined;
+  private released = false;
 
   constructor(
     private readonly handle: FileHandle,
@@ -24,11 +27,27 @@ class FileServerLock implements ServerLock {
   ) {}
 
   release(): Promise<void> {
+    if (this.released) {
+      return Promise.resolve();
+    }
+    this.released = true;
     this.releasePromise ??= (async () => {
       await this.handle.close();
       await rm(this.lockPath, { force: true });
     })();
     return this.releasePromise;
+  }
+
+  releaseSync(): void {
+    if (!this.released) {
+      this.released = true;
+      try {
+        closeSync(this.handle.fd);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EBADF") throw error;
+      }
+    }
+    rmSync(this.lockPath, { force: true });
   }
 }
 
