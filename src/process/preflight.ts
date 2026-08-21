@@ -92,7 +92,7 @@ export async function runPreflight(
     if (
       login.exitCode !== 0 ||
       login.termination !== "exit" ||
-      !login.stdout.includes("Logged in")
+      !`${login.stdout}\n${login.stderr}`.includes("Logged in")
     ) {
       return unavailable("서버의 Codex 로그인이 필요합니다.");
     }

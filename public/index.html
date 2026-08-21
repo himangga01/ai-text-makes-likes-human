@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f7fb">
+    <meta name="description" content="같은 와이파이에서 사용하는 한국어 문장 윤문 포털">
+    <title>한국어 문장 다듬기</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header id="portal-header" class="portal-header">
+      <div class="header-inner">
+        <a class="wordmark" href="/" aria-label="한국어 문장 다듬기 홈">
+          <span class="wordmark-mark" aria-hidden="true">가</span>
+          <span>한국어 문장 다듬기</span>
+        </a>
+        <span class="network-chip">
+          <span class="network-dot" aria-hidden="true"></span>
+          같은 와이파이 전용
+        </span>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow">KOREAN WRITING ASSISTANT</p>
+        <h1 id="hero-title">AI 문체는 덜고,<br><strong>내 문장은 살립니다.</strong></h1>
+        <p class="hero-copy">원문을 붙여넣거나 TXT 파일을 불러온 뒤, 변환 버튼을 눌러보세요.</p>
+      </section>
+
+      <ol id="workflow-steps" class="workflow-steps" aria-label="이용 순서">
+        <li class="is-current"><span>01</span> 원문 입력</li>
+        <li><span>02</span> 변환</li>
+        <li><span>03</span> 결과 확인</li>
+      </ol>
+
+      <section id="editor-shell" class="editor-shell" data-state="idle" aria-label="문장 변환 편집기">
+        <div class="editor-grid">
+          <section class="editor-panel source-panel" aria-labelledby="source-heading">
+            <div class="panel-header">
+              <div>
+                <span class="panel-kicker">ORIGINAL</span>
+                <h2 id="source-heading">원본 문구 입력</h2>
+              </div>
+              <span id="source-count" class="count-chip">0자</span>
+            </div>
+
+            <div class="panel-toolbar">
+              <input id="text-file-input" class="visually-hidden-file" type="file" accept=".txt,text/plain" aria-label="TXT 파일 선택">
+              <button id="text-file-button" class="button button-secondary" type="button">
+                <span aria-hidden="true">＋</span> TXT 불러오기
+              </button>
+              <button id="reset-button" class="button button-ghost" type="button">초기화</button>
+            </div>
+
+            <div id="source-file-name" class="file-chip" hidden></div>
+            <label class="visually-hidden" for="source-text">다듬을 원본 문구</label>
+            <textarea id="source-text" placeholder="다듬고 싶은 한국어 문장을 여기에 붙여넣으세요." spellcheck="true"></textarea>
+          </section>
+
+          <section class="editor-panel result-panel" aria-labelledby="result-heading">
+            <div class="panel-header">
+              <div>
+                <span class="panel-kicker">RESULT</span>
+                <h2 id="result-heading">수정된 문구 출력</h2>
+              </div>
+              <button id="copy-button" class="button button-ghost" type="button" disabled>복사</button>
+            </div>
+
+            <div class="result-wrap">
+              <label class="visually-hidden" for="result-text">변환된 문구</label>
+              <textarea id="result-text" readonly aria-describedby="result-empty"></textarea>
+              <div id="result-empty" class="empty-state" aria-hidden="true">
+                <span class="empty-icon">文</span>
+                <strong>변환된 문장이 여기에 표시됩니다</strong>
+                <span>내용을 바꾸지 않고 문체만 자연스럽게 다듬습니다.</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="action-zone">
+          <button id="transform-button" class="button button-primary" type="button" disabled>
+            문장 변환하기 <span aria-hidden="true">→</span>
+          </button>
+          <button id="cancel-button" class="button button-danger" type="button" hidden>변환 취소</button>
+        </div>
+
+        <div id="status" class="status-strip" aria-live="polite" aria-atomic="true">
+          <span id="status-chip" class="status-chip status-idle">준비</span>
+          <span id="status-message">원문을 입력하면 변환 버튼이 활성화됩니다.</span>
+          <progress id="progress" max="100" value="0" aria-label="변환 진행률" hidden></progress>
+        </div>
+      </section>
+
+      <p class="privacy-note">
+        <span aria-hidden="true">●</span>
+        로그인과 이력 저장이 없습니다. 선택한 TXT 파일은 변환 버튼을 누르기 전까지 브라우저 밖으로 전송되지 않습니다.
+      </p>
+    </main>
+
+    <footer class="portal-footer">
+      <span>Humanize KR engine</span>
+      <span>분량에 따라 처리 시간이 오래 걸릴 수 있습니다.</span>
+    </footer>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

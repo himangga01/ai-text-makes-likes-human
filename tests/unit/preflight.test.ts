@@ -43,6 +43,18 @@ describe("runPreflight", () => {
     expect(JSON.stringify(report)).not.toContain("auth.json");
   });
 
+  it("accepts the Windows Codex login message emitted on stderr", async () => {
+    const runner = new FakeCommandRunner([
+      exited("Python 3.14.7"),
+      exited("codex-cli 0.149.0"),
+      exited("", 0, "Logged in using ChatGPT")
+    ]);
+
+    const report = await runPreflight(config, runner, engineVersion);
+
+    expect(report.ready).toBe(true);
+  });
+
   it("rejects Codex versions older than 0.149.0", async () => {
     const runner = new FakeCommandRunner([
       exited("Python 3.14.7"),
