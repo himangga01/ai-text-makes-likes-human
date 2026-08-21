@@ -6,6 +6,7 @@ import { createApp, createProductionRuntime } from "./app.js";
 import { loadConfig } from "./config.js";
 import { listLanUrls } from "./network/lan-addresses.js";
 import { SpawnCommandRunner } from "./process/command-runner.js";
+import { acquireServerLock } from "./runtime/server-lock.js";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -28,14 +29,26 @@ async function closeServer(server: Server): Promise<void> {
 
 async function main(): Promise<void> {
   const config = loadConfig(process.env, projectRoot);
-  await clearStaleJobs(config.runtimeRoot);
-  const runtime = await createProductionRuntime(config, new SpawnCommandRunner());
-  const app = createApp({ config, ...runtime });
-  const server = app.listen(config.port, config.host, () => {
-    console.log(`로컬: http://localhost:${config.port}`);
-    for (const url of listLanUrls(config.port)) console.log(`와이파이: ${url}`);
-    if (!runtime.preflight.ready) console.log(runtime.preflight.message);
-  });
+  const serverLock = await acquireServerLock(path.dirname(config.runtimeRoot));
+  let runtime: Awaited<ReturnType<typeof createProductionRuntime>>;
+  let server: Server;
+  try {
+    await clearStaleJobs(config.runtimeRoot);
+    runtime = await createProductionRuntime(config, new SpawnCommandRunner());
+    const app = createApp({ config, ...runtime });
+    server = app.listen(config.port, config.host);
+    await new Promise<void>((resolve, reject) => {
+      server.once("listening", resolve);
+      server.once("error", reject);
+    });
+  } catch (error) {
+    await serverLock.release();
+    throw error;
+  }
+
+  console.log(`로컬: http://localhost:${config.port}`);
+  for (const url of listLanUrls(config.port)) console.log(`와이파이: ${url}`);
+  if (!runtime.preflight.ready) console.log(runtime.preflight.message);
 
   let shuttingDown = false;
   const shutdown = async (): Promise<void> => {
@@ -47,6 +60,7 @@ async function main(): Promise<void> {
       await closeServer(server);
       await runtime.queue.shutdown();
       await clearStaleJobs(config.runtimeRoot);
+      await serverLock.release();
       clearTimeout(forceExit);
       process.exit(0);
     } catch (error) {

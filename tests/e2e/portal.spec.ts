@@ -89,6 +89,34 @@ test("invalid file keeps the existing source", async ({ page }) => {
   );
 });
 
+test("copy works on an HTTP LAN page without the Clipboard API", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined
+    });
+  });
+  await page.route("**/api/transform", route =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/x-ndjson; charset=utf-8",
+      body:
+        '{"type":"accepted","jobId":"j3","position":0}\n' +
+        '{"type":"result-start"}\n' +
+        '{"type":"result-delta","text":"복사할 결과"}\n' +
+        '{"type":"done","sourceChars":2,"outputChars":6,"chunks":1,"elapsedMs":20}\n'
+    })
+  );
+  await page.goto("/");
+  await page.locator("#source-text").fill("원문");
+  await page.locator("#transform-button").click();
+  await expect(page.locator("#result-text")).toHaveValue("복사할 결과");
+
+  await page.locator("#copy-button").click();
+
+  await expect(page.locator("#copy-button")).toHaveText("복사됨");
+});
+
 test("idle portal has no WCAG A or AA violations and touch targets are large", async ({ page }) => {
   await page.goto("/");
   const scan = await new AxeBuilder({ page })

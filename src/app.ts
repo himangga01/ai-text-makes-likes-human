@@ -124,6 +124,10 @@ async function streamResult(
     highWaterMark: 32 * 1024
   });
   for await (const chunk of stream) {
+    if (writer.isClosed) {
+      stream.destroy();
+      break;
+    }
     await writer.writeAsync({ type: "result-delta", text: String(chunk) });
   }
 }

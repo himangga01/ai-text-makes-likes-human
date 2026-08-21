@@ -5,6 +5,7 @@ test-results/
 runtime/jobs/*
 !runtime/jobs/.gitkeep
 runtime/test-tmp/
+runtime/server.lock
 .env
 *.log
 __pycache__/

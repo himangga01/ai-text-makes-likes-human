@@ -210,13 +210,34 @@ elements.reset.addEventListener("click", () => {
   refreshControls();
   elements.source.focus();
 });
+
+async function copyResultText() {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(elements.result.value);
+    return;
+  }
+
+  elements.result.focus();
+  elements.result.select();
+  const copied = document.execCommand("copy");
+  elements.result.setSelectionRange(
+    elements.result.value.length,
+    elements.result.value.length
+  );
+  if (!copied) throw new Error("copy command failed");
+}
+
 elements.copy.addEventListener("click", async () => {
-  await navigator.clipboard.writeText(elements.result.value);
-  const old = elements.copy.textContent;
-  elements.copy.textContent = "복사됨";
-  setTimeout(() => {
-    elements.copy.textContent = old;
-  }, 1200);
+  try {
+    await copyResultText();
+    const old = elements.copy.textContent;
+    elements.copy.textContent = "복사됨";
+    setTimeout(() => {
+      elements.copy.textContent = old;
+    }, 1200);
+  } catch {
+    setStatus("error", "복사 오류", "결과를 선택해 직접 복사해 주세요.");
+  }
 });
 
 async function checkHealth() {
