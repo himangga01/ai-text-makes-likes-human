@@ -1,0 +1,290 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { EngineError } from "./errors.js";
+import type {
+  CommandResult,
+  CommandRunner
+} from "../process/command-runner.js";
+
+export interface ChunkEntry {
+  index: number;
+  start: number;
+  end: number;
+  charCount: number;
+  startsWithHeading: boolean;
+  heading: string | null;
+  passthrough: boolean;
+  inputFile: string | null;
+  rewrittenFile: string | null;
+}
+
+export interface ChunkManifest {
+  version: 1;
+  sourceFile: string;
+  sourceChars: number;
+  sourceSha256: string;
+  chunkCount: number;
+  bodyChunkCount: number;
+  passthroughChunkCount: number;
+  chunks: ChunkEntry[];
+  warnings: string[];
+}
+
+export interface GateResult {
+  status: "ok" | "warn" | "abort" | "error";
+  exitCode: 0 | 1 | 2 | 3;
+  stdout: string;
+}
+
+export interface PythonEngineOptions {
+  pythonCommand: string;
+  vendorRoot: string;
+  runner: CommandRunner;
+  timeoutMs?: number;
+}
+
+function invalid(message: string, cause?: unknown): EngineError {
+  return new EngineError("ENGINE_OUTPUT_INVALID", false, message, { cause });
+}
+
+function record(value: unknown, label: string): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw invalid(`${label} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function integer(value: unknown, label: string): number {
+  if (!Number.isInteger(value) || Number(value) < 0) {
+    throw invalid(`${label} must be a nonnegative integer`);
+  }
+  return Number(value);
+}
+
+function text(value: unknown, label: string): string {
+  if (typeof value !== "string") throw invalid(`${label} must be a string`);
+  return value;
+}
+
+function boolean(value: unknown, label: string): boolean {
+  if (typeof value !== "boolean") throw invalid(`${label} must be a boolean`);
+  return value;
+}
+
+function safeLeaf(value: unknown, label: string): string {
+  const leaf = text(value, label);
+  if (
+    leaf.length === 0 ||
+    path.isAbsolute(leaf) ||
+    leaf.includes("/") ||
+    leaf.includes("\\") ||
+    leaf === "." ||
+    leaf === ".."
+  ) {
+    throw invalid(`${label} must be a safe filename`);
+  }
+  return leaf;
+}
+
+function nullableLeaf(value: unknown, label: string): string | null {
+  return value === null ? null : safeLeaf(value, label);
+}
+
+function parseManifest(value: unknown): ChunkManifest {
+  const root = record(value, "manifest");
+  const version = integer(root.version, "version");
+  if (version !== 1) throw invalid("Unsupported manifest version");
+  if (!Array.isArray(root.chunks)) throw invalid("chunks must be an array");
+
+  const chunks = root.chunks.map((raw, offset): ChunkEntry => {
+    const chunk = record(raw, `chunks[${offset}]`);
+    const passthrough = boolean(chunk.passthrough, `chunks[${offset}].passthrough`);
+    const inputFile = nullableLeaf(chunk.input_file, `chunks[${offset}].input_file`);
+    const rewrittenFile = nullableLeaf(
+      chunk.rewritten_file,
+      `chunks[${offset}].rewritten_file`
+    );
+    if (passthrough && (inputFile !== null || rewrittenFile !== null)) {
+      throw invalid("Passthrough chunks cannot have rewrite filenames");
+    }
+    if (!passthrough && (inputFile === null || rewrittenFile === null)) {
+      throw invalid("Body chunks require input and rewritten filenames");
+    }
+
+    const headingValue = chunk.heading;
+    if (headingValue !== null && typeof headingValue !== "string") {
+      throw invalid(`chunks[${offset}].heading must be string or null`);
+    }
+    return {
+      index: integer(chunk.index, `chunks[${offset}].index`),
+      start: integer(chunk.start, `chunks[${offset}].start`),
+      end: integer(chunk.end, `chunks[${offset}].end`),
+      charCount: integer(chunk.char_count, `chunks[${offset}].char_count`),
+      startsWithHeading: boolean(
+        chunk.starts_with_heading,
+        `chunks[${offset}].starts_with_heading`
+      ),
+      heading: headingValue as string | null,
+      passthrough,
+      inputFile,
+      rewrittenFile
+    };
+  });
+
+  const chunkCount = integer(root.chunk_count, "chunk_count");
+  if (chunks.length !== chunkCount) throw invalid("chunk_count mismatch");
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk = chunks[index]!;
+    const previous = chunks[index - 1];
+    if (chunk.index !== index + 1 || chunk.end < chunk.start) {
+      throw invalid("Invalid chunk ordering");
+    }
+    if (previous && previous.end !== chunk.start) {
+      throw invalid("Chunk spans are not contiguous");
+    }
+  }
+
+  const warningsRaw = root.warnings;
+  if (!Array.isArray(warningsRaw) || warningsRaw.some(item => typeof item !== "string")) {
+    throw invalid("warnings must be a string array");
+  }
+
+  return {
+    version: 1,
+    sourceFile: safeLeaf(root.source_file, "source_file"),
+    sourceChars: integer(root.source_chars, "source_chars"),
+    sourceSha256: text(root.source_sha256, "source_sha256"),
+    chunkCount,
+    bodyChunkCount: integer(root.body_chunk_count, "body_chunk_count"),
+    passthroughChunkCount: integer(
+      root.passthrough_chunk_count,
+      "passthrough_chunk_count"
+    ),
+    chunks,
+    warnings: warningsRaw as string[]
+  };
+}
+
+export class PythonEngine {
+  private readonly pythonCommand: string;
+  private readonly vendorRoot: string;
+  private readonly runner: CommandRunner;
+  private readonly timeoutMs: number;
+
+  constructor(options: PythonEngineOptions) {
+    this.pythonCommand = options.pythonCommand;
+    this.vendorRoot = path.resolve(options.vendorRoot);
+    this.runner = options.runner;
+    this.timeoutMs = options.timeoutMs ?? 120_000;
+  }
+
+  private script(name: string): string {
+    return path.join(this.vendorRoot, "scripts", name);
+  }
+
+  private async run(
+    args: string[],
+    cwd: string,
+    signal: AbortSignal
+  ): Promise<CommandResult> {
+    const result = await this.runner.run({
+      command: this.pythonCommand,
+      args,
+      cwd,
+      timeoutMs: this.timeoutMs,
+      signal,
+      env: {
+        ...process.env,
+        PYTHONDONTWRITEBYTECODE: "1",
+        PYTHONUTF8: "1"
+      }
+    });
+    if (result.termination === "timeout") {
+      throw new EngineError("ENGINE_TIMEOUT", true, "Python engine timed out");
+    }
+    if (result.termination === "aborted") {
+      throw new EngineError("CLIENT_ABORTED", true, "Python engine was cancelled");
+    }
+    return result;
+  }
+
+  async prepare(runDir: string, signal: AbortSignal): Promise<ChunkManifest> {
+    const result = await this.run(
+      [
+        this.script("prepare_monolith_input.py"),
+        "--chunk",
+        "--run-dir",
+        path.resolve(runDir),
+        "--genre",
+        "essay"
+      ],
+      runDir,
+      signal
+    );
+    if (result.exitCode !== 0) {
+      throw invalid("Python prepare step failed");
+    }
+
+    try {
+      const raw = await readFile(path.join(runDir, "chunk_manifest.json"), "utf8");
+      return parseManifest(JSON.parse(raw));
+    } catch (error) {
+      if (error instanceof EngineError) throw error;
+      throw invalid("Unable to read chunk manifest", error);
+    }
+  }
+
+  async verify(
+    beforePath: string,
+    afterPath: string,
+    signal: AbortSignal
+  ): Promise<GateResult> {
+    const result = await this.run(
+      [
+        this.script("verify_gates.py"),
+        "--before",
+        path.resolve(beforePath),
+        "--after",
+        path.resolve(afterPath),
+        "--genre",
+        "essay",
+        "--json"
+      ],
+      path.dirname(beforePath),
+      signal
+    );
+    if (![0, 1, 2, 3].includes(result.exitCode)) {
+      throw invalid("Unexpected gate exit code");
+    }
+    const exitCode = result.exitCode as 0 | 1 | 2 | 3;
+    const statuses = ["ok", "warn", "abort", "error"] as const;
+    return { status: statuses[exitCode], exitCode, stdout: result.stdout };
+  }
+
+  async reassemble(runDir: string, signal: AbortSignal): Promise<string> {
+    const result = await this.run(
+      [
+        this.script("reassemble_chunks.py"),
+        "--run-dir",
+        path.resolve(runDir),
+        "--output",
+        "03_reassembled.md",
+        "--report",
+        "03_reassembly_report.json",
+        "--strict"
+      ],
+      runDir,
+      signal
+    );
+    if (result.exitCode !== 0) {
+      throw invalid("Python reassembly failed validation");
+    }
+    const outputPath = path.join(runDir, "03_reassembled.md");
+    try {
+      await readFile(outputPath);
+    } catch (error) {
+      throw invalid("Reassembled output is missing", error);
+    }
+    return outputPath;
+  }
+}

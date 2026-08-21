@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
 
     out = "".join(pieces)
     output_path = run_dir / args.output
-    output_path.write_text(out, encoding="utf-8")
+    output_path.write_text(out, encoding="utf-8", newline="")
 
     report = {
         "source_chars": len(text),

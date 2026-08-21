@@ -144,7 +144,7 @@ def _load_input(input_path: Path, run_dir: Path, enabled: bool) -> str:
     except Exception:  # noqa: BLE001 — graceful degrade.
         return text
     if report.changed:
-        input_path.write_text(cleaned, encoding="utf-8")
+        input_path.write_text(cleaned, encoding="utf-8", newline="")
         (run_dir / "00_sanitize.json").write_text(
             json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
             encoding="utf-8",
