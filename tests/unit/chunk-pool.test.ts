@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runChunkPool } from "../../src/engine/chunk-pool.js";
+import { EngineError } from "../../src/engine/errors.js";
 import { deferred } from "../helpers/deferred.js";
 
 describe("runChunkPool", () => {
@@ -203,27 +204,74 @@ describe("runChunkPool", () => {
     });
   });
 
-  it("maps an abort-aware worker rejection caused by parent cancellation", async () => {
+  it.each([
+    [
+      "DOMException AbortError",
+      () => new DOMException("The operation was aborted", "AbortError")
+    ],
+    [
+      "Error named AbortError",
+      () => Object.assign(new Error("aborted"), { name: "AbortError" })
+    ],
+    [
+      "CLIENT_ABORTED EngineError",
+      () => new EngineError("CLIENT_ABORTED", true, "worker cancelled")
+    ]
+  ])(
+    "maps parent-triggered %s to the pool's public client-aborted error",
+    async (_label, makeCancellation) => {
+      const parent = new AbortController();
+      const started = deferred<void>();
+      const cancellation = makeCancellation();
+      const poolPromise = runChunkPool(
+        [1],
+        1,
+        parent.signal,
+        async (_item, signal) => {
+          started.resolve();
+          await new Promise<void>((_resolve, reject) => {
+            const rejectCancellation = (): void => reject(cancellation);
+            if (signal.aborted) rejectCancellation();
+            else {
+              signal.addEventListener("abort", rejectCancellation, {
+                once: true
+              });
+            }
+          });
+          return "unreachable";
+        }
+      );
+
+      await started.promise;
+      parent.abort();
+      const rejection = await poolPromise.then(
+        () => {
+          throw new Error("expected chunk pool rejection");
+        },
+        error => error as unknown
+      );
+
+      expect(rejection).not.toBe(cancellation);
+      expect(rejection).toMatchObject({ publicCode: "CLIENT_ABORTED" });
+    }
+  );
+
+  it("preserves an ordinary worker error rejected before parent abort in the same turn", async () => {
     const parent = new AbortController();
     const started = deferred<void>();
-    const poolPromise = runChunkPool([1], 1, parent.signal, async (_item, signal) => {
+    const workerFailure = deferred<never>();
+    const failure = new Error("worker rejected first");
+    const poolPromise = runChunkPool([1], 1, parent.signal, async () => {
       started.resolve();
-      await new Promise<void>((_resolve, reject) => {
-        const rejectAbort = (): void => {
-          reject(new DOMException("The operation was aborted", "AbortError"));
-        };
-        if (signal.aborted) rejectAbort();
-        else signal.addEventListener("abort", rejectAbort, { once: true });
-      });
+      await workerFailure.promise;
       return "unreachable";
     });
 
     await started.promise;
+    workerFailure.reject(failure);
     parent.abort();
 
-    await expect(poolPromise).rejects.toMatchObject({
-      publicCode: "CLIENT_ABORTED"
-    });
+    await expect(poolPromise).rejects.toBe(failure);
   });
 
   it("preserves a worker error that precedes parent cancellation during cleanup", async () => {

@@ -4,6 +4,13 @@ function clientAbortedError(): EngineError {
   return new EngineError("CLIENT_ABORTED", true, "Chunk pool cancelled");
 }
 
+function isCancellationFailure(error: unknown): boolean {
+  if (error instanceof EngineError) {
+    return error.publicCode === "CLIENT_ABORTED";
+  }
+  return error instanceof Error && error.name === "AbortError";
+}
+
 export async function runChunkPool<T, R>(
   items: readonly T[],
   concurrency: number,
@@ -27,7 +34,9 @@ export async function runChunkPool<T, R>(
       try {
         results[index] = await worker(items[index]!, signal);
       } catch (error) {
-        if (!parentSignal.aborted && !hasFirstError) {
+        const parentCancellation =
+          parentSignal.aborted && isCancellationFailure(error);
+        if (!parentCancellation && !hasFirstError) {
           hasFirstError = true;
           firstError = error;
           failure.abort();
