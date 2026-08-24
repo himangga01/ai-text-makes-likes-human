@@ -145,4 +145,21 @@ npm.cmd run test:e2e
 npm.cmd run test:live
 ```
 
+### 선택적 성능 벤치마크
+
+성능 벤치마크는 짧은 문서의 기존·자동 라우팅과 긴 문서의 직렬·2개 병렬 처리를 각각 3회 측정해 총 12회의 변환을 실행합니다. 서버 PC에 로그인된 Codex 사용량과 쿼터를 소비하므로 활성 포털 작업이 없는 유지보수 시간에만 실행하세요. 벤치마크는 원문·결과문이나 해당 파일 경로를 출력하지 않고, 소스·결과 아티팩트를 남기지 않으며 메타데이터 측정값만 콘솔에 보고합니다.
+
+```powershell
+$env:CODEX_CHUNK_CONCURRENCY='1'
+npm.cmd run test:performance
+Remove-Item Env:CODEX_CHUNK_CONCURRENCY
+```
+
+긴 문서 병렬 처리에 문제가 있으면 포털 시작 전에 보수적인 직렬 값으로 롤백할 수 있습니다.
+
+```powershell
+$env:CODEX_CHUNK_CONCURRENCY='1'
+npm.cmd start
+```
+
 운영 점검과 복구 절차는 [docs/operations.md](docs/operations.md)를 참고하세요.

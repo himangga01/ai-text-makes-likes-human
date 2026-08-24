@@ -125,3 +125,20 @@ git status --short
 ```
 
 모든 명령이 성공하고 `runtime/jobs`에 `.gitkeep`만 있을 때 운영 준비가 완료됩니다.
+
+## 선택적 성능 벤치마크와 롤백
+
+`test:performance`는 짧은 문서의 기존·자동 라우팅과 긴 문서의 직렬·2개 병렬 처리를 각각 3회 측정합니다. 총 12회의 변환이 서버 PC에 로그인된 Codex 쿼터를 소비하므로 `/api/health`의 `activeJobs`가 `0`인지 확인한 뒤 포털 서버를 완전히 종료하고 실행합니다. 벤치마크는 원문·결과문이나 파일 경로를 출력하지 않고, 소스·결과 아티팩트를 남기지 않으며 메타데이터만 보고합니다.
+
+```powershell
+$env:CODEX_CHUNK_CONCURRENCY='1'
+npm.cmd run test:performance
+Remove-Item Env:CODEX_CHUNK_CONCURRENCY
+```
+
+성능 또는 안정성 기준을 통과하지 못하면 임계값을 낮추지 않습니다. 운영 런타임은 시작 전에 다음처럼 동시성을 1로 고정해 즉시 직렬 처리로 롤백합니다.
+
+```powershell
+$env:CODEX_CHUNK_CONCURRENCY='1'
+npm.cmd start
+```

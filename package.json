@@ -15,7 +15,8 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
-    "test:live": "cross-env RUN_CODEX_LIVE=1 vitest run tests/integration/codex-live.test.ts"
+    "test:live": "cross-env RUN_CODEX_LIVE=1 vitest run tests/integration/codex-live.test.ts",
+    "test:performance": "cross-env RUN_CODEX_LIVE=1 vitest run tests/integration/performance-live.test.ts"
   },
   "repository": {
     "type": "git",
