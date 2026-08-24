@@ -310,7 +310,8 @@ export class HumanizeEngine {
           source,
           workspace: request.workspace,
           signal,
-          onWarning: warning => this.emitWarning(request, warnings, warning),
+          onWarning: warning =>
+            request.onEvent({ type: "warning", ...warning }),
           onWorkUnit: () => {
             completedUnits += 1;
             if (completedUnits === 1) {
@@ -326,6 +327,7 @@ export class HumanizeEngine {
         });
       }
     );
+    warnings.push(...chunkResults.flatMap(result => result.warnings));
 
     this.ensureActive(request.signal);
     request.onEvent({

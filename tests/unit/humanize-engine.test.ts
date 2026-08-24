@@ -164,8 +164,12 @@ class DeferredCodex implements CodexAdapter {
     return this.call(source).started.promise;
   }
 
-  resolve(source: string, rewrittenText: string): void {
-    this.call(source).result.resolve({ rewrittenText, warnings: [] });
+  resolve(
+    source: string,
+    rewrittenText: string,
+    warnings: string[] = []
+  ): void {
+    this.call(source).result.resolve({ rewrittenText, warnings });
   }
 
   async transform(inputPath: string) {
@@ -311,6 +315,63 @@ describe("HumanizeEngine", () => {
       expect(await readFile(result.finalPath, "utf8")).toBe("111222333444");
       expect(result.diagnostics.maxObservedCodexConcurrency).toBe(2);
       expect(result.diagnostics.codexCalls).toBe(4);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("emits concurrent warnings immediately but returns them in manifest order", async () => {
+    const test = await setup("AAABBB");
+    const chunkTwoWarningObserved = deferred<void>();
+    const warningEvents: Array<{ code: string; message: string }> = [];
+    let resultSettled = false;
+    try {
+      const codex = new DeferredCodex(["AAA", "BBB"]);
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest(
+            [body(1, 0, 3), body(2, 3, 6)],
+            6,
+            "chunked"
+          ),
+          [ok(), ok(), ok()]
+        ),
+        codex,
+        chunkConcurrency: 2
+      });
+
+      const resultPromise = engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: event => {
+          if (event.type !== "warning") return;
+          warningEvents.push({ code: event.code, message: event.message });
+          if (event.message === "chunk two warning") {
+            chunkTwoWarningObserved.resolve();
+          }
+        }
+      }).finally(() => {
+        resultSettled = true;
+      });
+
+      await Promise.all([codex.started("AAA"), codex.started("BBB")]);
+      codex.resolve("BBB", "222", ["chunk two warning"]);
+      await chunkTwoWarningObserved.promise;
+      expect(resultSettled).toBe(false);
+      expect(codex.active).toBe(1);
+
+      codex.resolve("AAA", "111", ["chunk one warning"]);
+      const result = await resultPromise;
+      expect(warningEvents).toEqual([
+        { code: "CODEX_WARNING", message: "chunk two warning" },
+        { code: "CODEX_WARNING", message: "chunk one warning" }
+      ]);
+      expect(result.warnings).toEqual([
+        { code: "CODEX_WARNING", message: "chunk one warning" },
+        { code: "CODEX_WARNING", message: "chunk two warning" }
+      ]);
     } finally {
       await test.workspace.cleanup();
       await removeTestRoot(test.outer);
