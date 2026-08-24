@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import type { EventSink } from "../contracts.js";
+import { runChunkPool } from "./chunk-pool.js";
 import type { CodexResult } from "./codex-runner.js";
 import type {
   ChunkTiming,
@@ -288,40 +289,43 @@ export class HumanizeEngine {
     const sourcePath = request.workspace.path(manifest.sourceFile);
     const source = await readFile(sourcePath, "utf8");
     const bodyChunks = manifest.chunks.filter(chunk => !chunk.passthrough);
-    const chunkResults: ChunkTaskResult[] = [];
+    const concurrency =
+      manifest.processingMode === "single" ? 1 : this.chunkConcurrency;
+    const chunkResults = await runChunkPool(
+      bodyChunks.map((chunk, bodyIndex) => ({ chunk, bodyIndex })),
+      concurrency,
+      request.signal,
+      async ({ chunk, bodyIndex }, signal) => {
+        this.ensureActive(signal);
+        request.onEvent({
+          type: "progress",
+          phase: "transform",
+          current: bodyIndex + 1,
+          total: bodyChunks.length,
+          message: `${bodyIndex + 1}/${bodyChunks.length} 구간을 다듬는 중입니다.`
+        });
 
-    for (let bodyIndex = 0; bodyIndex < bodyChunks.length; bodyIndex += 1) {
-      this.ensureActive(request.signal);
-      const chunk = bodyChunks[bodyIndex]!;
-      request.onEvent({
-        type: "progress",
-        phase: "transform",
-        current: bodyIndex + 1,
-        total: bodyChunks.length,
-        message: `${bodyIndex + 1}/${bodyChunks.length} 구간을 다듬는 중입니다.`
-      });
-
-      let completedUnits = 0;
-      const chunkResult = await this.processChunk(chunk, {
-        source,
-        workspace: request.workspace,
-        signal: request.signal,
-        onWarning: warning => this.emitWarning(request, warnings, warning),
-        onWorkUnit: () => {
-          completedUnits += 1;
-          if (completedUnits === 1) {
-            request.onEvent({
-              type: "progress",
-              phase: "verify",
-              current: bodyIndex + 1,
-              total: bodyChunks.length,
-              message: `${bodyIndex + 1}/${bodyChunks.length} 구간을 검증하는 중입니다.`
-            });
+        let completedUnits = 0;
+        return this.processChunk(chunk, {
+          source,
+          workspace: request.workspace,
+          signal,
+          onWarning: warning => this.emitWarning(request, warnings, warning),
+          onWorkUnit: () => {
+            completedUnits += 1;
+            if (completedUnits === 1) {
+              request.onEvent({
+                type: "progress",
+                phase: "verify",
+                current: bodyIndex + 1,
+                total: bodyChunks.length,
+                message: `${bodyIndex + 1}/${bodyChunks.length} 구간을 검증하는 중입니다.`
+              });
+            }
           }
-        }
-      });
-      chunkResults.push(chunkResult);
-    }
+        });
+      }
+    );
 
     this.ensureActive(request.signal);
     request.onEvent({
@@ -376,7 +380,10 @@ export class HumanizeEngine {
         ...chunkResults.flatMap(result => result.gateCodes),
         ...fullGate.gateCodes
       ],
-      maxObservedCodexConcurrency: this.maxObservedCodexConcurrency(),
+      maxObservedCodexConcurrency: Math.min(
+        this.maxObservedCodexConcurrency(),
+        concurrency
+      ),
       prepareMs,
       codexMs: chunkResults.reduce(
         (total, result) => total + result.timings.codexMs,

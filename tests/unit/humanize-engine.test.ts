@@ -12,6 +12,8 @@ import type {
   ChunkManifest,
   GateResult
 } from "../../src/engine/python-engine.js";
+import { EngineError } from "../../src/engine/errors.js";
+import { deferred, type Deferred } from "../helpers/deferred.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
 
 const ok = (): GateResult => ({
@@ -35,7 +37,11 @@ const gateError = (): GateResult => ({
   gateCodes: ["GATE_ERROR"]
 });
 
-function manifest(chunks: ChunkManifest["chunks"], sourceChars: number): ChunkManifest {
+function manifest(
+  chunks: ChunkManifest["chunks"],
+  sourceChars: number,
+  processingMode: ChunkManifest["processingMode"] = "single"
+): ChunkManifest {
   return {
     version: 1,
     sourceFile: "01_input.txt",
@@ -46,7 +52,7 @@ function manifest(chunks: ChunkManifest["chunks"], sourceChars: number): ChunkMa
     passthroughChunkCount: chunks.filter(chunk => chunk.passthrough).length,
     routeHint: "standard",
     routeReason: "single document route",
-    processingMode: "single",
+    processingMode,
     warnings: [],
     chunks
   };
@@ -81,6 +87,7 @@ function passthrough(index: number, start: number, end: number) {
 }
 
 class FakePython implements PythonAdapter {
+  reassembleCalls = 0;
   private verifyResults: GateResult[];
   constructor(
     private readonly chunkManifest: ChunkManifest,
@@ -97,6 +104,7 @@ class FakePython implements PythonAdapter {
     return result;
   }
   async reassemble(runDir: string): Promise<string> {
+    this.reassembleCalls += 1;
     const source = await readFile(path.join(runDir, "01_input.txt"), "utf8");
     const pieces: string[] = [];
     for (const chunk of this.chunkManifest.chunks) {
@@ -129,6 +137,55 @@ class FakeCodex implements CodexAdapter {
     if (rewrittenText === undefined) throw new Error("No Codex output configured");
     this.afterTransform?.(this.attempts.length);
     return { rewrittenText, warnings: [] };
+  }
+}
+
+interface DeferredCodexCall {
+  started: Deferred<void>;
+  result: Deferred<{ rewrittenText: string; warnings: string[] }>;
+}
+
+class DeferredCodex implements CodexAdapter {
+  active = 0;
+  maxActive = 0;
+  readonly startedSources: string[] = [];
+  private readonly calls = new Map<string, DeferredCodexCall>();
+
+  constructor(sources: string[]) {
+    for (const source of sources) {
+      this.calls.set(source, {
+        started: deferred<void>(),
+        result: deferred<{ rewrittenText: string; warnings: string[] }>()
+      });
+    }
+  }
+
+  started(source: string): Promise<void> {
+    return this.call(source).started.promise;
+  }
+
+  resolve(source: string, rewrittenText: string): void {
+    this.call(source).result.resolve({ rewrittenText, warnings: [] });
+  }
+
+  async transform(inputPath: string) {
+    const source = await readFile(inputPath, "utf8");
+    const call = this.call(source);
+    this.startedSources.push(source);
+    this.active += 1;
+    this.maxActive = Math.max(this.maxActive, this.active);
+    call.started.resolve();
+    try {
+      return await call.result.promise;
+    } finally {
+      this.active -= 1;
+    }
+  }
+
+  private call(source: string): DeferredCodexCall {
+    const call = this.calls.get(source);
+    if (!call) throw new Error(`No deferred Codex call for ${source}`);
+    return call;
   }
 }
 
@@ -207,6 +264,206 @@ describe("HumanizeEngine", () => {
       });
 
       expect(await readFile(result.finalPath, "utf8")).toBe("111---222");
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("processes chunked bodies two at a time and reassembles in manifest order", async () => {
+    const test = await setup("AAABBBCCCDDD");
+    try {
+      const chunks = [
+        body(1, 0, 3),
+        body(2, 3, 6),
+        body(3, 6, 9),
+        body(4, 9, 12)
+      ];
+      const codex = new DeferredCodex(["AAA", "BBB", "CCC", "DDD"]);
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest(chunks, 12, "chunked"),
+          [ok(), ok(), ok(), ok(), ok()]
+        ),
+        codex,
+        chunkConcurrency: 2,
+        maxObservedCodexConcurrency: () => codex.maxActive
+      });
+
+      const resultPromise = engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: () => undefined
+      });
+
+      await Promise.all([codex.started("AAA"), codex.started("BBB")]);
+      expect(codex.active).toBe(2);
+      codex.resolve("BBB", "222");
+      await codex.started("CCC");
+      codex.resolve("CCC", "333");
+      await codex.started("DDD");
+      codex.resolve("DDD", "444");
+      codex.resolve("AAA", "111");
+
+      const result = await resultPromise;
+      expect(codex.maxActive).toBe(2);
+      expect(await readFile(result.finalPath, "utf8")).toBe("111222333444");
+      expect(result.diagnostics.maxObservedCodexConcurrency).toBe(2);
+      expect(result.diagnostics.codexCalls).toBe(4);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("keeps single manifests sequential when chunk concurrency is two", async () => {
+    const test = await setup("AAABBBCCCDDD");
+    try {
+      const chunks = [
+        body(1, 0, 3),
+        body(2, 3, 6),
+        body(3, 6, 9),
+        body(4, 9, 12)
+      ];
+      const codex = new DeferredCodex(["AAA", "BBB", "CCC", "DDD"]);
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest(chunks, 12, "single"),
+          [ok(), ok(), ok(), ok(), ok()]
+        ),
+        codex,
+        chunkConcurrency: 2,
+        maxObservedCodexConcurrency: () => 2
+      });
+
+      const resultPromise = engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: () => undefined
+      });
+
+      await codex.started("AAA");
+      codex.resolve("AAA", "111");
+      await codex.started("BBB");
+      codex.resolve("BBB", "222");
+      await codex.started("CCC");
+      codex.resolve("CCC", "333");
+      await codex.started("DDD");
+      codex.resolve("DDD", "444");
+
+      const result = await resultPromise;
+      expect(codex.maxActive).toBe(1);
+      expect(await readFile(result.finalPath, "utf8")).toBe("111222333444");
+      expect(result.diagnostics.maxObservedCodexConcurrency).toBe(1);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("waits for an aborted sibling before rejecting a chunk failure", async () => {
+    const test = await setup("AAABBBCCCDDD");
+    const firstStarted = deferred<void>();
+    const secondStarted = deferred<void>();
+    const secondMayFail = deferred<void>();
+    const firstObservedAbort = deferred<void>();
+    const firstMaySettle = deferred<void>();
+    const allActiveSettled = deferred<void>();
+    const failure = new EngineError(
+      "ENGINE_OUTPUT_INVALID",
+      false,
+      "chunk two failed"
+    );
+    const startedSources: string[] = [];
+    let active = 0;
+    const codex: CodexAdapter = {
+      async transform(inputPath, _outputPath, _attempt, signal) {
+        const source = await readFile(inputPath, "utf8");
+        startedSources.push(source);
+        active += 1;
+        try {
+          if (source === "AAA") {
+            firstStarted.resolve();
+            await new Promise<void>(resolve => {
+              const observeAbort = (): void => {
+                firstObservedAbort.resolve();
+                resolve();
+              };
+              if (signal.aborted) observeAbort();
+              else signal.addEventListener("abort", observeAbort, { once: true });
+            });
+            await firstMaySettle.promise;
+            throw new EngineError("CLIENT_ABORTED", true, "sibling cancelled");
+          }
+          if (source === "BBB") {
+            secondStarted.resolve();
+            await secondMayFail.promise;
+            throw failure;
+          }
+          throw new Error(`Unexpected Codex start for ${source}`);
+        } finally {
+          active -= 1;
+          if (active === 0) allActiveSettled.resolve();
+        }
+      }
+    };
+    const python = new FakePython(
+      manifest(
+        [
+          body(1, 0, 3),
+          body(2, 3, 6),
+          body(3, 6, 9),
+          body(4, 9, 12)
+        ],
+        12,
+        "chunked"
+      ),
+      []
+    );
+
+    try {
+      const engine = new HumanizeEngine({
+        python,
+        codex,
+        chunkConcurrency: 2
+      });
+      let transformSettled = false;
+      let activeWhenRejected = -1;
+      const outcomePromise = engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: () => undefined
+      }).then(
+        value => {
+          transformSettled = true;
+          return { status: "fulfilled" as const, value };
+        },
+        error => {
+          transformSettled = true;
+          activeWhenRejected = active;
+          return { status: "rejected" as const, error };
+        }
+      );
+
+      await Promise.all([firstStarted.promise, secondStarted.promise]);
+      secondMayFail.resolve();
+      await firstObservedAbort.promise;
+      expect(transformSettled).toBe(false);
+      expect(active).toBe(1);
+
+      firstMaySettle.resolve();
+      await allActiveSettled.promise;
+      const outcome = await outcomePromise;
+      expect(outcome.status).toBe("rejected");
+      if (outcome.status === "rejected") {
+        expect(outcome.error).toBe(failure);
+      }
+      expect(activeWhenRejected).toBe(0);
+      expect([...startedSources].sort()).toEqual(["AAA", "BBB"]);
+      expect(python.reassembleCalls).toBe(0);
     } finally {
       await test.workspace.cleanup();
       await removeTestRoot(test.outer);

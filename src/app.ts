@@ -6,6 +6,7 @@ import express, { type Express } from "express";
 import type { AppConfig } from "./config.js";
 import type { TransformEvent } from "./contracts.js";
 import { CodexRunner } from "./engine/codex-runner.js";
+import { CodexSemaphore } from "./engine/codex-semaphore.js";
 import { EngineError } from "./engine/errors.js";
 import {
   HumanizeEngine,
@@ -93,6 +94,7 @@ export async function createProductionRuntime(
     runner,
     autoRoute: config.autoRoute
   });
+  const codexSemaphore = new CodexSemaphore(2);
   const codex = new CodexRunner({
     codexCommand: config.codexCommand,
     schemaPath: path.join(config.projectRoot, "src", "engine", "output-schema.json"),
@@ -104,13 +106,15 @@ export async function createProductionRuntime(
       "quick-rules.md"
     ),
     timeoutMs: config.chunkTimeoutMs,
-    runner
+    runner,
+    permitPool: codexSemaphore
   });
   return {
     engine: new HumanizeEngine({
       python,
       codex,
-      chunkConcurrency: config.chunkConcurrency
+      chunkConcurrency: config.chunkConcurrency,
+      maxObservedCodexConcurrency: () => codexSemaphore.maxObserved
     }),
     queue: new TransformQueue({
       maxActive: config.maxActiveJobs,

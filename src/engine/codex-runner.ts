@@ -14,12 +14,18 @@ export interface CodexResult {
   warnings: string[];
 }
 
+export interface CodexPermitPool {
+  readonly maxObserved: number;
+  run<T>(signal: AbortSignal, task: () => Promise<T>): Promise<T>;
+}
+
 export interface CodexRunnerOptions {
   codexCommand: string;
   schemaPath: string;
   quickRulesPath: string;
   timeoutMs: number;
   runner: CommandRunner;
+  permitPool: CodexPermitPool;
 }
 
 function invalid(message: string, cause?: unknown): EngineError {
@@ -98,31 +104,33 @@ export class CodexRunner {
     const prompt = buildHumanizePrompt({ source, quickRules, attempt, nonce });
 
     await rm(resultPath, { force: true });
-    const command = await this.options.runner.run({
-      command: this.options.codexCommand,
-      args: [
-        "exec",
-        "--ephemeral",
-        "--ignore-user-config",
-        "--ignore-rules",
-        "--model",
-        HUMANIZE_MODEL,
-        "--config",
-        `model_reasoning_effort="${HUMANIZE_REASONING_EFFORT}"`,
-        "--sandbox",
-        "read-only",
-        "--output-schema",
-        this.options.schemaPath,
-        "--output-last-message",
-        resultPath,
-        "-"
-      ],
-      cwd: path.dirname(sourcePath),
-      stdin: prompt,
-      timeoutMs: this.options.timeoutMs,
-      signal,
-      env: { ...process.env, NO_COLOR: "1" }
-    });
+    const command = await this.options.permitPool.run(signal, () =>
+      this.options.runner.run({
+        command: this.options.codexCommand,
+        args: [
+          "exec",
+          "--ephemeral",
+          "--ignore-user-config",
+          "--ignore-rules",
+          "--model",
+          HUMANIZE_MODEL,
+          "--config",
+          `model_reasoning_effort="${HUMANIZE_REASONING_EFFORT}"`,
+          "--sandbox",
+          "read-only",
+          "--output-schema",
+          this.options.schemaPath,
+          "--output-last-message",
+          resultPath,
+          "-"
+        ],
+        cwd: path.dirname(sourcePath),
+        stdin: prompt,
+        timeoutMs: this.options.timeoutMs,
+        signal,
+        env: { ...process.env, NO_COLOR: "1" }
+      })
+    );
 
     if (command.termination === "timeout") {
       throw new EngineError("ENGINE_TIMEOUT", true, "Codex timed out");

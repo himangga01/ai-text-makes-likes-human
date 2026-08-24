@@ -22,11 +22,13 @@ class OutputRunner implements CommandRunner {
       stdout: "",
       stderr: "",
       termination: "exit"
-    }
+    },
+    private readonly onRun?: () => void
   ) {}
 
   async run(request: CommandRequest): Promise<CommandResult> {
     this.request = request;
+    this.onRun?.();
     const outputFlag = request.args.indexOf("--output-last-message");
     if (outputFlag >= 0 && this.result.termination === "exit") {
       await writeFile(request.args[outputFlag + 1]!, this.output, "utf8");
@@ -35,12 +37,35 @@ class OutputRunner implements CommandRunner {
   }
 }
 
-async function fixture(runner: CommandRunner): Promise<{
+class TrackingPermitPool {
+  readonly maxObserved = 1;
+  active = 0;
+  runs = 0;
+  readonly events: string[] = [];
+
+  async run<T>(_signal: AbortSignal, task: () => Promise<T>): Promise<T> {
+    this.runs += 1;
+    this.active += 1;
+    this.events.push("permit-enter");
+    try {
+      return await task();
+    } finally {
+      this.active -= 1;
+      this.events.push("permit-leave");
+    }
+  }
+}
+
+async function fixture(
+  runner: CommandRunner,
+  permitPool = new TrackingPermitPool()
+): Promise<{
   root: string;
   inputPath: string;
   outputPath: string;
   schemaPath: string;
   quickRulesPath: string;
+  permitPool: TrackingPermitPool;
   codex: CodexRunner;
 }> {
   const root = await makeTestRoot();
@@ -51,19 +76,22 @@ async function fixture(runner: CommandRunner): Promise<{
   await writeFile(inputPath, "원문은 1,200명을 언급한다.", "utf8");
   await writeFile(schemaPath, "{}", "utf8");
   await writeFile(quickRulesPath, "RULE-A", "utf8");
+  const options = {
+    codexCommand: "codex",
+    schemaPath,
+    quickRulesPath,
+    timeoutMs: 600_000,
+    runner,
+    permitPool
+  };
   return {
     root,
     inputPath,
     outputPath,
     schemaPath,
     quickRulesPath,
-    codex: new CodexRunner({
-      codexCommand: "codex",
-      schemaPath,
-      quickRulesPath,
-      timeoutMs: 600_000,
-      runner
-    })
+    permitPool,
+    codex: new CodexRunner(options)
   };
 }
 
@@ -110,6 +138,78 @@ describe("CodexRunner", () => {
       expect(runner.request?.stdin).toContain("BEGIN_SOURCE_");
       expect(runner.request?.cwd).toBe(test.root);
       expect(await readFile(test.outputPath, "utf8")).toContain("rewrittenText");
+    } finally {
+      await removeTestRoot(test.root);
+    }
+  });
+
+  it("runs first and retry subprocess attempts inside one permit each", async () => {
+    const permitPool = new TrackingPermitPool();
+    const runner = new OutputRunner(
+      JSON.stringify({ rewrittenText: "rewritten", warnings: [] }),
+      undefined,
+      () => {
+        expect(permitPool.active).toBe(1);
+        permitPool.events.push("command-run");
+      }
+    );
+    const test = await fixture(runner, permitPool);
+    try {
+      await test.codex.transform(
+        test.inputPath,
+        test.outputPath,
+        1,
+        new AbortController().signal
+      );
+      await test.codex.transform(
+        test.inputPath,
+        test.outputPath,
+        2,
+        new AbortController().signal
+      );
+
+      expect(permitPool.runs).toBe(2);
+      expect(permitPool.active).toBe(0);
+      expect(permitPool.events).toEqual([
+        "permit-enter",
+        "command-run",
+        "permit-leave",
+        "permit-enter",
+        "command-run",
+        "permit-leave"
+      ]);
+    } finally {
+      await removeTestRoot(test.root);
+    }
+  });
+
+  it("releases the permit when the command runner rejects", async () => {
+    const permitPool = new TrackingPermitPool();
+    const failure = new Error("command failed");
+    const runner: CommandRunner = {
+      async run() {
+        expect(permitPool.active).toBe(1);
+        permitPool.events.push("command-run");
+        throw failure;
+      }
+    };
+    const test = await fixture(runner, permitPool);
+    try {
+      await expect(
+        test.codex.transform(
+          test.inputPath,
+          test.outputPath,
+          1,
+          new AbortController().signal
+        )
+      ).rejects.toBe(failure);
+      expect(permitPool.runs).toBe(1);
+      expect(permitPool.active).toBe(0);
+      expect(permitPool.events).toEqual([
+        "permit-enter",
+        "command-run",
+        "permit-leave"
+      ]);
     } finally {
       await removeTestRoot(test.root);
     }
