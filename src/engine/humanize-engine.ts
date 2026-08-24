@@ -71,7 +71,7 @@ interface ChunkTaskContext {
   source: string;
   workspace: JobWorkspace;
   signal: AbortSignal;
-  onWorkUnit(): void;
+  onWorkUnit(phase: "transform" | "verify"): void;
   onWarning(warning: HumanizeWarning): void;
 }
 
@@ -180,9 +180,9 @@ export class HumanizeEngine {
     codexMs += this.now() - firstCodexStartedAt;
     codexCalls += 1;
     this.ensureActive(context.signal);
+    context.onWorkUnit("transform");
     this.collectCodexWarnings(context, warnings, first.warnings);
     await writeFile(rewrittenPath, first.rewrittenText, "utf8");
-    context.onWorkUnit();
 
     const firstGateStartedAt = this.now();
     let gate = await this.python.verify(
@@ -241,7 +241,7 @@ export class HumanizeEngine {
       }
     }
 
-    context.onWorkUnit();
+    context.onWorkUnit("verify");
     return {
       chunkIndex: chunk.index,
       warnings,
@@ -291,38 +291,33 @@ export class HumanizeEngine {
     const bodyChunks = manifest.chunks.filter(chunk => !chunk.passthrough);
     const concurrency =
       manifest.processingMode === "single" ? 1 : this.chunkConcurrency;
+    let completedUnits = 0;
+    const totalUnits = bodyChunks.length * 2;
     const chunkResults = await runChunkPool(
       bodyChunks.map((chunk, bodyIndex) => ({ chunk, bodyIndex })),
       concurrency,
       request.signal,
       async ({ chunk, bodyIndex }, signal) => {
         this.ensureActive(signal);
-        request.onEvent({
-          type: "progress",
-          phase: "transform",
-          current: bodyIndex + 1,
-          total: bodyChunks.length,
-          message: `${bodyIndex + 1}/${bodyChunks.length} 구간을 다듬는 중입니다.`
-        });
-
-        let completedUnits = 0;
         return this.processChunk(chunk, {
           source,
           workspace: request.workspace,
           signal,
           onWarning: warning =>
             request.onEvent({ type: "warning", ...warning }),
-          onWorkUnit: () => {
+          onWorkUnit: phase => {
             completedUnits += 1;
-            if (completedUnits === 1) {
-              request.onEvent({
-                type: "progress",
-                phase: "verify",
-                current: bodyIndex + 1,
-                total: bodyChunks.length,
-                message: `${bodyIndex + 1}/${bodyChunks.length} 구간을 검증하는 중입니다.`
-              });
-            }
+            request.onEvent({
+              type: "progress",
+              phase,
+              current: bodyIndex + 1,
+              total: bodyChunks.length,
+              completedUnits,
+              totalUnits,
+              message: phase === "transform"
+                ? `${bodyIndex + 1}/${bodyChunks.length} 구간을 다듬는 중입니다.`
+                : `${bodyIndex + 1}/${bodyChunks.length} 구간을 검증하는 중입니다.`
+            });
           }
         });
       }

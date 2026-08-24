@@ -252,10 +252,10 @@ test("progress stays monotonic across all transform phases", async ({ page }) =>
         '{"type":"queued","position":2}\n' +
         '{"type":"progress","phase":"sanitize","current":0,"total":1,"message":"준비 중"}\n' +
         '{"type":"progress","phase":"chunk","current":1,"total":1,"message":"구간 준비"}\n' +
-        '{"type":"progress","phase":"transform","current":1,"total":2,"message":"1/2 변환"}\n' +
-        '{"type":"progress","phase":"verify","current":1,"total":2,"message":"1/2 검증"}\n' +
-        '{"type":"progress","phase":"transform","current":2,"total":2,"message":"2/2 변환"}\n' +
-        '{"type":"progress","phase":"verify","current":2,"total":2,"message":"2/2 검증"}\n' +
+        '{"type":"progress","phase":"transform","current":2,"total":2,"completedUnits":1,"totalUnits":4,"message":"2/2 변환"}\n' +
+        '{"type":"progress","phase":"transform","current":1,"total":2,"completedUnits":2,"totalUnits":4,"message":"1/2 변환"}\n' +
+        '{"type":"progress","phase":"verify","current":2,"total":2,"completedUnits":3,"totalUnits":4,"message":"2/2 검증"}\n' +
+        '{"type":"progress","phase":"verify","current":1,"total":2,"completedUnits":4,"totalUnits":4,"message":"1/2 검증"}\n' +
         '{"type":"progress","phase":"assemble","current":1,"total":1,"message":"조립"}\n' +
         '{"type":"result-start"}\n' +
         '{"type":"result-delta","text":"결과"}\n' +
@@ -283,7 +283,7 @@ test("progress stays monotonic across all transform phases", async ({ page }) =>
   const values = records.filter(
     (value): value is number => typeof value === "number"
   );
-  expect(values).toEqual(expect.arrayContaining([5, 15, 28.75, 42.5, 56.25, 90, 95, 100]));
+  expect(values).toEqual(expect.arrayContaining([5, 15, 33.75, 52.5, 71.25, 90, 95, 100]));
   for (let index = 1; index < values.length; index += 1) {
     expect(values[index]).toBeGreaterThanOrEqual(values[index - 1]!);
   }

@@ -16,16 +16,20 @@ export type PublicErrorCode =
   | "CLIENT_ABORTED"
   | "INTERNAL_ERROR";
 
+export type TransformProgressEvent = {
+  type: "progress";
+  phase: TransformPhase;
+  current: number;
+  total: number;
+  completedUnits?: number;
+  totalUnits?: number;
+  message: string;
+};
+
 export type TransformEvent =
   | { type: "accepted"; jobId: string; position: number }
   | { type: "queued"; position: number }
-  | {
-      type: "progress";
-      phase: TransformPhase;
-      current: number;
-      total: number;
-      message: string;
-    }
+  | TransformProgressEvent
   | { type: "result-start" }
   | { type: "result-delta"; text: string }
   | { type: "warning"; code: string; message: string }

@@ -321,6 +321,63 @@ describe("HumanizeEngine", () => {
     }
   });
 
+  it("emits monotonic aggregate work units for out-of-order completion without counting retries", async () => {
+    const test = await setup("AAABBBCCCDDD");
+    try {
+      const chunks = [
+        body(1, 0, 3),
+        body(2, 3, 6),
+        body(3, 6, 9),
+        body(4, 9, 12)
+      ];
+      const codex = new DeferredCodex(["AAA", "BBB", "CCC", "DDD"]);
+      const events: TransformEvent[] = [];
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest(chunks, 12, "chunked"),
+          [warn(), ok(), ok(), ok(), ok(), ok()]
+        ),
+        codex,
+        chunkConcurrency: 2
+      });
+
+      const resultPromise = engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: event => events.push(event)
+      });
+
+      await Promise.all([codex.started("AAA"), codex.started("BBB")]);
+      codex.resolve("BBB", "222");
+      await codex.started("CCC");
+      codex.resolve("CCC", "333");
+      await codex.started("DDD");
+      codex.resolve("DDD", "444");
+      codex.resolve("AAA", "111");
+      const result = await resultPromise;
+
+      const aggregateEvents = events.filter(
+        (event): event is Extract<TransformEvent, { type: "progress" }> =>
+          event.type === "progress" &&
+          (event.phase === "transform" || event.phase === "verify")
+      );
+      expect(aggregateEvents.map(event => event.totalUnits)).toEqual(
+        Array(8).fill(8)
+      );
+      expect(aggregateEvents.map(event => event.completedUnits)).toEqual(
+        [1, 2, 3, 4, 5, 6, 7, 8]
+      );
+      expect(events.filter(
+        event => event.type === "warning" && event.code === "CHUNK_RETRY"
+      )).toHaveLength(1);
+      expect(result.diagnostics.codexCalls).toBe(5);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
   it("emits concurrent warnings immediately but returns them in manifest order", async () => {
     const test = await setup("AAABBB");
     const chunkTwoWarningObserved = deferred<void>();
@@ -616,7 +673,6 @@ describe("HumanizeEngine", () => {
         "progress:chunk",
         "progress:transform",
         "warning:CODEX_WARNING",
-        "progress:verify",
         "warning:CHUNK_RETRY"
       ]);
     } finally {
@@ -675,7 +731,6 @@ describe("HumanizeEngine", () => {
         "progress:chunk",
         "progress:transform",
         "warning:CODEX_WARNING",
-        "progress:verify",
         "warning:CHUNK_RETRY"
       ]);
     } finally {

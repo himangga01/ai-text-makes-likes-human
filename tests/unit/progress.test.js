@@ -23,6 +23,25 @@ describe("progressForEvent", () => {
     expect(progress.every((value, index) => index === 0 || value > progress[index - 1])).toBe(true);
   });
 
+  it("prefers aggregate work units over out-of-order chunk phases", () => {
+    expect(progressForEvent({
+      type: "progress",
+      phase: "transform",
+      current: 4,
+      total: 4,
+      completedUnits: 1,
+      totalUnits: 4
+    })).toBe(33.75);
+    expect(progressForEvent({
+      type: "progress",
+      phase: "verify",
+      current: 1,
+      total: 4,
+      completedUnits: 4,
+      totalUnits: 4
+    })).toBe(90);
+  });
+
   it("returns null for queued work so the progress control is indeterminate", () => {
     expect(progressForEvent({ type: "queued", position: 3 })).toBeNull();
   });
@@ -50,5 +69,23 @@ describe("progressForEvent", () => {
     expect(progressForEvent({ type: "warning" })).toBeUndefined();
     expect(progressForEvent({ type: "error" })).toBeUndefined();
     expect(progressForEvent({ type: "new-event" })).toBeUndefined();
+  });
+
+  it("falls back to phase progress for malformed aggregate sequences", () => {
+    const malformed = [
+      { completedUnits: 0, totalUnits: 0 },
+      { completedUnits: 1, totalUnits: 0 },
+      { completedUnits: 3, totalUnits: 2 },
+      { completedUnits: 2, totalUnits: -1 },
+      { completedUnits: 4, totalUnits: Number.NaN }
+    ];
+
+    expect(malformed.map(fields => progressForEvent({
+      type: "progress",
+      phase: "transform",
+      current: 2,
+      total: 4,
+      ...fields
+    }))).toEqual([28.75, 28.75, 28.75, 28.75, 28.75]);
   });
 });

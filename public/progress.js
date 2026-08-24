@@ -20,6 +20,17 @@ export function progressForEvent(event) {
     case "queued":
       return null;
     case "progress": {
+      const completedUnits = Number(event.completedUnits);
+      const totalUnits = Number(event.totalUnits);
+      if (
+        Number.isFinite(completedUnits) &&
+        Number.isFinite(totalUnits) &&
+        totalUnits > 0 &&
+        completedUnits >= 0 &&
+        completedUnits <= totalUnits
+      ) {
+        return clampProgress(15 + 75 * (completedUnits / totalUnits));
+      }
       switch (event.phase) {
         case "sanitize":
           return 5;
