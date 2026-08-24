@@ -64,7 +64,24 @@ describe("POST /api/transform", () => {
             sourceChars: Array.from(source).length,
             outputChars: 25,
             chunks: 1,
-            warnings: []
+            warnings: [],
+            diagnostics: {
+              model: "gpt-5.6-sol",
+              reasoningEffort: "high",
+              processingMode: "single",
+              routeHint: "standard",
+              sourceChars: 20,
+              bodyChunks: 1,
+              codexCalls: 1,
+              retries: 0,
+              gateCodes: ["GATE_OK", "GATE_OK"],
+              maxObservedCodexConcurrency: 1,
+              prepareMs: 5,
+              codexMs: 10,
+              gateMs: 4,
+              assembleMs: 2,
+              totalMs: 25
+            }
           };
         }
       },
@@ -92,7 +109,52 @@ describe("POST /api/transform", () => {
       expect(events.find(event => event.type === "result-delta")?.text).toBe(
         "자연스러운 결과는 1,200명을 언급한다."
       );
+      for (const event of events) {
+        expect(event).not.toHaveProperty("diagnostics");
+        expect(event).not.toHaveProperty("model");
+        expect(event).not.toHaveProperty("reasoningEffort");
+        expect(event).not.toHaveProperty("processingMode");
+        expect(event).not.toHaveProperty("routeHint");
+        expect(event).not.toHaveProperty("routeReason");
+        expect(event).not.toHaveProperty("source");
+        expect(event).not.toHaveProperty("prompt");
+      }
+      expect(JSON.stringify(events)).not.toContain("gpt-5.6-sol");
+      expect(JSON.stringify(events)).not.toContain("test route");
       expect(await readdir(test.config.runtimeRoot)).toEqual([]);
+      expect(logs).toHaveLength(1);
+      expect(logs[0]).toMatchObject({
+        event: "transform_complete",
+        sourceChars: Array.from(source).length,
+        outputChars: 25,
+        chunks: 1,
+        diagnostics: {
+          model: "gpt-5.6-sol",
+          reasoningEffort: "high",
+          processingMode: "single",
+          routeHint: "standard",
+          sourceChars: 20,
+          bodyChunks: 1,
+          codexCalls: 1,
+          retries: 0,
+          gateCodes: ["GATE_OK", "GATE_OK"],
+          maxObservedCodexConcurrency: 1,
+          prepareMs: 5,
+          codexMs: 10,
+          gateMs: 4,
+          assembleMs: 2,
+          totalMs: 25
+        }
+      });
+      expect(Object.keys(logs[0] as Record<string, unknown>).sort()).toEqual([
+        "chunks",
+        "diagnostics",
+        "elapsedMs",
+        "event",
+        "jobId",
+        "outputChars",
+        "sourceChars"
+      ]);
       expect(JSON.stringify(logs)).not.toContain(source);
       expect(JSON.stringify(logs)).not.toContain("자연스러운 결과");
     } finally {

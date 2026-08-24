@@ -146,10 +146,14 @@ describe("HumanizeEngine", () => {
   it("transforms one body chunk and returns the verified result", async () => {
     const test = await setup("AAA");
     try {
+      const ticks = [0, 5, 15, 18, 20, 27, 30, 35, 40];
+      const now = () => ticks.shift() ?? 40;
       const codex = new FakeCodex(["BBB"]);
       const engine = new HumanizeEngine({
         python: new FakePython(manifest([body(1, 0, 3)], 3), [ok(), ok()]),
-        codex
+        codex,
+        chunkConcurrency: 1,
+        now
       });
 
       const result = await engine.transform({
@@ -162,6 +166,23 @@ describe("HumanizeEngine", () => {
       expect(await readFile(result.finalPath, "utf8")).toBe("BBB");
       expect(result.chunks).toBe(1);
       expect(codex.attempts).toEqual([{ source: "AAA", attempt: 1 }]);
+      expect(result.diagnostics).toMatchObject({
+        model: "gpt-5.6-sol",
+        reasoningEffort: "high",
+        processingMode: "single",
+        routeHint: "standard",
+        sourceChars: 3,
+        bodyChunks: 1,
+        codexCalls: 1,
+        retries: 0,
+        gateCodes: ["GATE_OK", "GATE_OK"],
+        maxObservedCodexConcurrency: 1,
+        prepareMs: 5,
+        codexMs: 3,
+        gateMs: 12,
+        assembleMs: 5,
+        totalMs: 40
+      });
     } finally {
       await test.workspace.cleanup();
       await removeTestRoot(test.outer);
@@ -174,7 +195,8 @@ describe("HumanizeEngine", () => {
       const chunks = [body(1, 0, 3), passthrough(2, 3, 6), body(3, 6, 9)];
       const engine = new HumanizeEngine({
         python: new FakePython(manifest(chunks, 9), [ok(), ok(), ok()]),
-        codex: new FakeCodex(["111", "222"])
+        codex: new FakeCodex(["111", "222"]),
+        chunkConcurrency: 1
       });
 
       const result = await engine.transform({
@@ -201,7 +223,8 @@ describe("HumanizeEngine", () => {
           manifest([body(1, 0, 3)], 3),
           [warn(), ok(), ok()]
         ),
-        codex
+        codex,
+        chunkConcurrency: 1
       });
 
       const result = await engine.transform({
@@ -213,6 +236,11 @@ describe("HumanizeEngine", () => {
 
       expect(await readFile(result.finalPath, "utf8")).toBe("GOOD");
       expect(codex.attempts.map(item => item.attempt)).toEqual([1, 2]);
+      expect(result.diagnostics).toMatchObject({
+        codexCalls: 2,
+        retries: 1,
+        gateCodes: ["GATE_WARN", "GATE_OK", "GATE_OK"]
+      });
       expect(events).toContainEqual(
         expect.objectContaining({ type: "warning", code: "CHUNK_RETRY" })
       );
@@ -230,7 +258,8 @@ describe("HumanizeEngine", () => {
           manifest([body(1, 0, 3)], 3),
           [abort(), abort(), ok()]
         ),
-        codex: new FakeCodex(["TOTALLY NEW", "STILL NEW"])
+        codex: new FakeCodex(["TOTALLY NEW", "STILL NEW"]),
+        chunkConcurrency: 1
       });
 
       const result = await engine.transform({
@@ -255,7 +284,8 @@ describe("HumanizeEngine", () => {
     try {
       const brokenChunk = new HumanizeEngine({
         python: new FakePython(manifest([body(1, 0, 3)], 3), [gateError()]),
-        codex: new FakeCodex(["BBB"])
+        codex: new FakeCodex(["BBB"]),
+        chunkConcurrency: 1
       });
       await expect(
         brokenChunk.transform({
@@ -274,7 +304,8 @@ describe("HumanizeEngine", () => {
     try {
       const brokenDocument = new HumanizeEngine({
         python: new FakePython(manifest([body(1, 0, 3)], 3), [ok(), abort()]),
-        codex: new FakeCodex(["BBB"])
+        codex: new FakeCodex(["BBB"]),
+        chunkConcurrency: 1
       });
       await expect(
         brokenDocument.transform({
@@ -302,7 +333,8 @@ describe("HumanizeEngine", () => {
           manifest([body(1, 0, 3), body(2, 3, 6)], 6),
           [ok(), ok(), ok()]
         ),
-        codex
+        codex,
+        chunkConcurrency: 1
       });
 
       await expect(

@@ -29,7 +29,8 @@ describe("HumanizeEngine integration", () => {
           vendorRoot: path.resolve("vendor/humanize-engine"),
           runner: new SpawnCommandRunner()
         }),
-        codex: new IdentityCodex()
+        codex: new IdentityCodex(),
+        chunkConcurrency: 1
       });
 
       const result = await engine.transform({

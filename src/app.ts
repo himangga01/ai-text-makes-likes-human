@@ -107,7 +107,11 @@ export async function createProductionRuntime(
     runner
   });
   return {
-    engine: new HumanizeEngine({ python, codex }),
+    engine: new HumanizeEngine({
+      python,
+      codex,
+      chunkConcurrency: config.chunkConcurrency
+    }),
     queue: new TransformQueue({
       maxActive: config.maxActiveJobs,
       maxAccepted: config.maxAcceptedJobs
@@ -265,7 +269,8 @@ export function createApp(dependencies: AppDependencies): Express {
             sourceChars: result.sourceChars,
             outputChars: result.outputChars,
             chunks: result.chunks,
-            elapsedMs: Date.now() - startedAt
+            elapsedMs: Date.now() - startedAt,
+            diagnostics: result.diagnostics
           });
         },
         position => writer.write({ type: "queued", position })
