@@ -212,12 +212,29 @@ test("Markdown stays local and the completed result downloads as Markdown", asyn
   await expect(page.locator("#download-button")).toBeHidden();
 });
 
-test("progress stays monotonic across all transform phases", async ({ page }) => {
+test("progress and status stay monotonic across all transform phases", async ({ page }) => {
   await page.addInitScript(() => {
     const values: Array<number | "indeterminate"> = [];
+    const statusMessages: string[] = [];
     Object.defineProperty(window, "__progressValues", {
       configurable: true,
       value: values
+    });
+    Object.defineProperty(window, "__statusMessages", {
+      configurable: true,
+      value: statusMessages
+    });
+    window.addEventListener("DOMContentLoaded", () => {
+      const statusMessage = document.querySelector("#status-message");
+      if (!statusMessage) return;
+      new MutationObserver(records => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            const message = node.textContent?.trim();
+            if (message) statusMessages.push(message);
+          }
+        }
+      }).observe(statusMessage, { childList: true });
     });
     const descriptor = Object.getOwnPropertyDescriptor(
       HTMLProgressElement.prototype,
@@ -287,6 +304,23 @@ test("progress stays monotonic across all transform phases", async ({ page }) =>
   for (let index = 1; index < values.length; index += 1) {
     expect(values[index]).toBeGreaterThanOrEqual(values[index - 1]!);
   }
+  const statusMessages = await page.evaluate(
+    () =>
+      (
+        window as Window & {
+          __statusMessages: string[];
+        }
+      ).__statusMessages
+  );
+  const workStatusMessages = statusMessages.filter(message =>
+    /^(?:전체 작업 [1-4]\/4 진행 중입니다\.|[12]\/2 (?:변환|검증))$/.test(message)
+  );
+  expect(workStatusMessages).toEqual([
+    "전체 작업 1/4 진행 중입니다.",
+    "전체 작업 2/4 진행 중입니다.",
+    "전체 작업 3/4 진행 중입니다.",
+    "전체 작업 4/4 진행 중입니다."
+  ]);
   await expect(page.locator("#progress")).toHaveAttribute("value", "100");
 });
 

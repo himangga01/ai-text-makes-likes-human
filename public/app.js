@@ -119,7 +119,11 @@ function handleEvent(event) {
       setStatus("processing", `대기 ${event.position}`, `앞에 ${event.position}건의 작업이 있습니다.`);
       break;
     case "progress": {
-      setStatus("processing", "변환 중", event.message);
+      const message =
+        Number.isInteger(event.completedUnits) && Number.isInteger(event.totalUnits)
+          ? `전체 작업 ${event.completedUnits}/${event.totalUnits} 진행 중입니다.`
+          : event.message;
+      setStatus("processing", "변환 중", message);
       break;
     }
     case "result-start":
