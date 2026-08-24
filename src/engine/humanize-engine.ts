@@ -241,6 +241,7 @@ export class HumanizeEngine {
       }
     }
 
+    this.ensureActive(context.signal);
     context.onWorkUnit("verify");
     return {
       chunkIndex: chunk.index,

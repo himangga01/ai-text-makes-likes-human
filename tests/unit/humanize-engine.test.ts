@@ -739,6 +739,63 @@ describe("HumanizeEngine", () => {
     }
   });
 
+  it("does not complete the verify work unit when cancellation arrives with the retry gate result", async () => {
+    const test = await setup("AAA");
+    const controller = new AbortController();
+    const events: TransformEvent[] = [];
+    let verifyCalls = 0;
+    const python: PythonAdapter = {
+      async prepare() {
+        return manifest([body(1, 0, 3)], 3);
+      },
+      async verify() {
+        verifyCalls += 1;
+        if (verifyCalls === 1) return warn();
+        controller.abort();
+        return ok();
+      },
+      async reassemble() {
+        throw new Error("Cancelled work must not be reassembled");
+      }
+    };
+
+    try {
+      const engine = new HumanizeEngine({
+        python,
+        codex: new FakeCodex(["BAD", "GOOD"]),
+        chunkConcurrency: 1
+      });
+
+      await expect(
+        engine.transform({
+          jobId: "job-1",
+          workspace: test.workspace,
+          signal: controller.signal,
+          onEvent: event => events.push(event)
+        })
+      ).rejects.toMatchObject({ publicCode: "CLIENT_ABORTED" });
+
+      expect(verifyCalls).toBe(2);
+      expect(events).toContainEqual(
+        expect.objectContaining({ type: "warning", code: "CHUNK_RETRY" })
+      );
+      expect(events.filter(
+        (event): event is Extract<TransformEvent, { type: "progress" }> =>
+          event.type === "progress" &&
+          (event.phase === "transform" || event.phase === "verify")
+      )).toEqual([
+        expect.objectContaining({
+          phase: "transform",
+          completedUnits: 1,
+          totalUnits: 2
+        })
+      ]);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
   it("rolls a chunk back to source after two abort verdicts", async () => {
     const test = await setup("AAA");
     try {
