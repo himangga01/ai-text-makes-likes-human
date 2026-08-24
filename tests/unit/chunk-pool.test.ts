@@ -119,6 +119,64 @@ describe("runChunkPool", () => {
     expect(startedItems).toEqual([1, 2]);
   });
 
+  it("rejects with undefined when that is the worker's first failure", async () => {
+    const outcome = await runChunkPool(
+      [1],
+      1,
+      new AbortController().signal,
+      async () => {
+        throw undefined;
+      }
+    ).then(
+      value => ({ status: "fulfilled" as const, value }),
+      error => ({ status: "rejected" as const, error: error as unknown })
+    );
+
+    expect(outcome.status).toBe("rejected");
+    if (outcome.status === "rejected") {
+      expect(outcome.error).toBeUndefined();
+    }
+  });
+
+  it("preserves a null first failure when an aborted sibling rejects later", async () => {
+    const firstStarted = deferred<void>();
+    const secondStarted = deferred<void>();
+    const firstMayFail = deferred<void>();
+    const laterFailure = new Error("aborted sibling failed later");
+
+    const outcomePromise = runChunkPool(
+      [1, 2],
+      2,
+      new AbortController().signal,
+      async (item, signal) => {
+        if (item === 1) {
+          firstStarted.resolve();
+          await firstMayFail.promise;
+          throw null;
+        }
+        secondStarted.resolve();
+        await new Promise<void>((_resolve, reject) => {
+          const rejectLater = (): void => reject(laterFailure);
+          if (signal.aborted) rejectLater();
+          else signal.addEventListener("abort", rejectLater, { once: true });
+        });
+        return "unreachable";
+      }
+    ).then(
+      value => ({ status: "fulfilled" as const, value }),
+      error => ({ status: "rejected" as const, error: error as unknown })
+    );
+
+    await Promise.all([firstStarted.promise, secondStarted.promise]);
+    firstMayFail.resolve();
+    const outcome = await outcomePromise;
+
+    expect(outcome.status).toBe("rejected");
+    if (outcome.status === "rejected") {
+      expect(outcome.error).toBeNull();
+    }
+  });
+
   it("maps parent cancellation to the public client-aborted error", async () => {
     const parent = new AbortController();
     const started = deferred<void>();
@@ -143,6 +201,71 @@ describe("runChunkPool", () => {
     await expect(poolPromise).rejects.toMatchObject({
       publicCode: "CLIENT_ABORTED"
     });
+  });
+
+  it("maps an abort-aware worker rejection caused by parent cancellation", async () => {
+    const parent = new AbortController();
+    const started = deferred<void>();
+    const poolPromise = runChunkPool([1], 1, parent.signal, async (_item, signal) => {
+      started.resolve();
+      await new Promise<void>((_resolve, reject) => {
+        const rejectAbort = (): void => {
+          reject(new DOMException("The operation was aborted", "AbortError"));
+        };
+        if (signal.aborted) rejectAbort();
+        else signal.addEventListener("abort", rejectAbort, { once: true });
+      });
+      return "unreachable";
+    });
+
+    await started.promise;
+    parent.abort();
+
+    await expect(poolPromise).rejects.toMatchObject({
+      publicCode: "CLIENT_ABORTED"
+    });
+  });
+
+  it("preserves a worker error that precedes parent cancellation during cleanup", async () => {
+    const parent = new AbortController();
+    const firstStarted = deferred<void>();
+    const secondStarted = deferred<void>();
+    const firstMayFail = deferred<void>();
+    const siblingObservedAbort = deferred<void>();
+    const siblingMaySettle = deferred<void>();
+    const failure = new Error("worker failed before parent cancellation");
+
+    const poolPromise = runChunkPool(
+      [1, 2],
+      2,
+      parent.signal,
+      async (item, signal) => {
+        if (item === 1) {
+          firstStarted.resolve();
+          await firstMayFail.promise;
+          throw failure;
+        }
+        secondStarted.resolve();
+        await new Promise<void>(resolve => {
+          const observe = (): void => {
+            siblingObservedAbort.resolve();
+            resolve();
+          };
+          if (signal.aborted) observe();
+          else signal.addEventListener("abort", observe, { once: true });
+        });
+        await siblingMaySettle.promise;
+        throw new DOMException("The operation was aborted", "AbortError");
+      }
+    );
+
+    await Promise.all([firstStarted.promise, secondStarted.promise]);
+    firstMayFail.resolve();
+    await siblingObservedAbort.promise;
+    parent.abort();
+    siblingMaySettle.resolve();
+
+    await expect(poolPromise).rejects.toBe(failure);
   });
 
   it.each([0, -1, 1.5, Number.NaN])(
