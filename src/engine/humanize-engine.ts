@@ -71,6 +71,7 @@ interface ChunkTaskContext {
   workspace: JobWorkspace;
   signal: AbortSignal;
   onWorkUnit(): void;
+  onWarning(warning: HumanizeWarning): void;
 }
 
 export interface ChunkTaskResult {
@@ -127,12 +128,22 @@ export class HumanizeEngine {
     request.onEvent({ type: "warning", ...warning });
   }
 
+  private recordChunkWarning(
+    context: ChunkTaskContext,
+    warnings: HumanizeWarning[],
+    warning: HumanizeWarning
+  ): void {
+    warnings.push(warning);
+    context.onWarning(warning);
+  }
+
   private collectCodexWarnings(
+    context: ChunkTaskContext,
     warnings: HumanizeWarning[],
     messages: string[]
   ): void {
     for (const message of messages) {
-      warnings.push({
+      this.recordChunkWarning(context, warnings, {
         code: "CODEX_WARNING",
         message
       });
@@ -168,7 +179,7 @@ export class HumanizeEngine {
     codexMs += this.now() - firstCodexStartedAt;
     codexCalls += 1;
     this.ensureActive(context.signal);
-    this.collectCodexWarnings(warnings, first.warnings);
+    this.collectCodexWarnings(context, warnings, first.warnings);
     await writeFile(rewrittenPath, first.rewrittenText, "utf8");
     context.onWorkUnit();
 
@@ -186,7 +197,7 @@ export class HumanizeEngine {
 
     if (gate.status === "warn" || gate.status === "abort") {
       retries += 1;
-      warnings.push({
+      this.recordChunkWarning(context, warnings, {
         code: "CHUNK_RETRY",
         message: `${chunk.index}번 구간을 더 보수적으로 다시 다듬습니다.`
       });
@@ -201,7 +212,7 @@ export class HumanizeEngine {
       codexMs += this.now() - secondCodexStartedAt;
       codexCalls += 1;
       this.ensureActive(context.signal);
-      this.collectCodexWarnings(warnings, second.warnings);
+      this.collectCodexWarnings(context, warnings, second.warnings);
       await writeFile(rewrittenPath, second.rewrittenText, "utf8");
 
       const secondGateStartedAt = this.now();
@@ -217,12 +228,12 @@ export class HumanizeEngine {
       }
       if (gate.status === "abort") {
         await writeFile(rewrittenPath, sourceText, "utf8");
-        warnings.push({
+        this.recordChunkWarning(context, warnings, {
           code: "CHUNK_ROLLED_BACK",
           message: `${chunk.index}번 구간은 의미 보존을 위해 원문을 유지했습니다.`
         });
       } else if (gate.status === "warn") {
-        warnings.push({
+        this.recordChunkWarning(context, warnings, {
           code: "CHUNK_WARNING_ACCEPTED",
           message: `${chunk.index}번 구간에 검토 권고가 있습니다.`
         });
@@ -295,6 +306,7 @@ export class HumanizeEngine {
         source,
         workspace: request.workspace,
         signal: request.signal,
+        onWarning: warning => this.emitWarning(request, warnings, warning),
         onWorkUnit: () => {
           completedUnits += 1;
           if (completedUnits === 1) {
@@ -309,9 +321,6 @@ export class HumanizeEngine {
         }
       });
       chunkResults.push(chunkResult);
-      for (const warning of chunkResult.warnings) {
-        this.emitWarning(request, warnings, warning);
-      }
     }
 
     this.ensureActive(request.signal);

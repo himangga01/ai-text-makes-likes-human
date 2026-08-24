@@ -250,6 +250,63 @@ describe("HumanizeEngine", () => {
     }
   });
 
+  it("emits warnings at their original points when retry attempt two fails", async () => {
+    const test = await setup("AAA");
+    const attempts: Array<1 | 2> = [];
+    const events: TransformEvent[] = [];
+    const codex: CodexAdapter = {
+      async transform(_inputPath, _outputPath, attempt) {
+        attempts.push(attempt);
+        if (attempt === 1) {
+          return {
+            rewrittenText: "BAD",
+            warnings: ["first attempt warning"]
+          };
+        }
+        throw new Error("retry attempt failed");
+      }
+    };
+
+    try {
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest([body(1, 0, 3)], 3),
+          [warn()]
+        ),
+        codex,
+        chunkConcurrency: 1
+      });
+
+      await expect(
+        engine.transform({
+          jobId: "job-1",
+          workspace: test.workspace,
+          signal: new AbortController().signal,
+          onEvent: event => events.push(event)
+        })
+      ).rejects.toThrow("retry attempt failed");
+
+      expect(attempts).toEqual([1, 2]);
+      expect(
+        events.map(event => {
+          if (event.type === "progress") return `progress:${event.phase}`;
+          if (event.type === "warning") return `warning:${event.code}`;
+          return event.type;
+        })
+      ).toEqual([
+        "progress:sanitize",
+        "progress:chunk",
+        "progress:transform",
+        "warning:CODEX_WARNING",
+        "progress:verify",
+        "warning:CHUNK_RETRY"
+      ]);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
   it("rolls a chunk back to source after two abort verdicts", async () => {
     const test = await setup("AAA");
     try {
