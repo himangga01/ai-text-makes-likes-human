@@ -4,6 +4,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $expectedCommit = 'c4d03d4859acda143f0b04b4bbdb56c5e6a94db1'
+$repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$patchPath = Join-Path $PSScriptRoot 'patches\humanize-engine-portal.patch'
 $destination = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\vendor\humanize-engine'))
 $skillPath = Join-Path $Source 'skills\humanize-korean\SKILL.md'
 
@@ -61,24 +63,16 @@ foreach ($name in $references) {
 
 Copy-Item -Force -LiteralPath (Join-Path $Source 'LICENSE') -Destination (Join-Path $destination 'LICENSE')
 
-# Portal patch: Python's default Windows text mode translates LF to CRLF.
-# These two user-content writes must preserve the source line endings exactly.
-$preparePath = Join-Path $scriptDestination 'prepare_monolith_input.py'
-$prepareText = Get-Content -Raw -Encoding UTF8 -LiteralPath $preparePath
-$prepareText = $prepareText.Replace(
-  'input_path.write_text(cleaned, encoding="utf-8")',
-  'input_path.write_text(cleaned, encoding="utf-8", newline="")'
-)
-$reassemblePath = Join-Path $scriptDestination 'reassemble_chunks.py'
-$reassembleText = Get-Content -Raw -Encoding UTF8 -LiteralPath $reassemblePath
-$reassembleText = $reassembleText.Replace(
-  'output_path.write_text(out, encoding="utf-8")',
-  'output_path.write_text(out, encoding="utf-8", newline="")'
-)
+& git -C $repoRoot apply --check --whitespace=nowarn -- $patchPath
+if ($LASTEXITCODE -ne 0) {
+  throw 'Portal humanize patch no longer applies to the pinned upstream files.'
+}
+& git -C $repoRoot apply --whitespace=nowarn -- $patchPath
+if ($LASTEXITCODE -ne 0) {
+  throw 'Failed to apply portal humanize patch.'
+}
 
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
-[IO.File]::WriteAllText($preparePath, $prepareText, $utf8NoBom)
-[IO.File]::WriteAllText($reassemblePath, $reassembleText, $utf8NoBom)
 [IO.File]::WriteAllText(
   (Join-Path $destination 'ENGINE_VERSION'),
   "version=2.3.2`ncommit=$commit`n",
@@ -86,7 +80,7 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 )
 [IO.File]::WriteAllText(
   (Join-Path $destination 'UPSTREAM.md'),
-  "# Vendored Humanize Engine`n`nSource: https://github.com/epoko77-ai/im-not-ai`nVersion: 2.3.2`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: user-content writes pass newline=`"`" so Windows preserves LF/CRLF exactly.`n",
+  "# Vendored Humanize Engine`n`nSource: https://github.com/epoko77-ai/im-not-ai`nVersion: 2.3.2`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n",
   $utf8NoBom
 )
 

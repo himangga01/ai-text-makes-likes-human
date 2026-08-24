@@ -6,4 +6,7 @@ Commit: c4d03d4859acda143f0b04b4bbdb56c5e6a94db1
 
 The runtime is copied so the portal has no sibling-repository dependency.
 
-Portal patch: user-content writes pass newline="" so Windows preserves LF/CRLF exactly.
+Portal patch: scripts/patches/humanize-engine-portal.patch
+
+- Preserves user-content LF/CRLF exactly with newline="".
+- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.

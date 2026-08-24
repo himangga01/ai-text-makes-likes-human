@@ -1,0 +1,104 @@
+diff --git a/vendor/humanize-engine/scripts/prepare_monolith_input.py b/vendor/humanize-engine/scripts/prepare_monolith_input.py
+index 606fce0..313260f 100644
+--- a/vendor/humanize-engine/scripts/prepare_monolith_input.py
++++ b/vendor/humanize-engine/scripts/prepare_monolith_input.py
+@@ -144,7 +144,7 @@ def _load_input(input_path: Path, run_dir: Path, enabled: bool) -> str:
+     except Exception:  # noqa: BLE001 — graceful degrade.
+         return text
+     if report.changed:
+-        input_path.write_text(cleaned, encoding="utf-8")
++        input_path.write_text(cleaned, encoding="utf-8", newline="")
+         (run_dir / "00_sanitize.json").write_text(
+             json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
+             encoding="utf-8",
+@@ -643,6 +643,34 @@ def compute_chunk_spans(
+     return spans, warnings
+ 
+ 
++def compute_portal_spans(
++    text: str,
++    route: dict | None,
++) -> tuple[list[dict], list[str], str]:
++    hint = route.get("route_hint") if route else None
++    if len(text) <= CHUNK_RECOMMEND_MIN_CHARS and hint in {"light", "standard"}:
++        footnote_start = find_footnote_block_start(text)
++        body_end = footnote_start if footnote_start is not None else len(text)
++        spans: list[dict] = []
++        if body_end > 0:
++            spans.append({"start": 0, "end": body_end, "passthrough": False})
++        if footnote_start is not None:
++            spans.append(
++                {
++                    "start": footnote_start,
++                    "end": len(text),
++                    "passthrough": True,
++                }
++            )
++        joined = "".join(text[item["start"] : item["end"]] for item in spans)
++        if joined != text:
++            raise ChunkingError("portal single-route lossless self-check failed")
++        return spans, [], "single"
++
++    spans, warnings = compute_chunk_spans(text)
++    return spans, warnings, "chunked"
++
++
+ def _render_chunk_header(index: int, total: int, starts_with_heading: bool) -> str:
+     lines = [
+         f"[청크 컨텍스트] 이 텍스트는 한 문서를 나눈 청크 {index}/{total}이다.",
+@@ -669,8 +697,6 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+     if not text.strip():
+         raise SystemExit("01_input.txt is empty; nothing to chunk")
+ 
+-    spans, warnings = compute_chunk_spans(text)
+-
+     # 전문(全文) 기준 route_hint — 청킹 경로가 애초에 적절했는지 manifest 에
+     # 남긴다. 판정 실패는 청킹을 막지 않는다 (graceful degrade).
+     route: dict | None = None
+@@ -682,7 +708,12 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+             route = compute_route_hint(full_metrics)
+         except Exception:  # noqa: BLE001 — 권고 산출 실패는 치명 아님.
+             route = None
+-    if len(text) <= CHUNK_RECOMMEND_MIN_CHARS:
++    if args.portal_auto_route:
++        spans, warnings, processing_mode = compute_portal_spans(text, route)
++    else:
++        spans, warnings = compute_chunk_spans(text)
++        processing_mode = "chunked"
++    if len(text) <= CHUNK_RECOMMEND_MIN_CHARS and processing_mode != "single":
+         warnings.append(
+             f"입력 {len(text):,}자 ≤ 청킹 권장 최소 {CHUNK_RECOMMEND_MIN_CHARS:,}자 "
+             f"— 단일 콜 실증 범위라 --chunk 비권장 (권고, route_hint 참조)"
+@@ -769,6 +800,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+         "max_chunk_chars": MAX_CHUNK_CHARS,
+         "route_hint": route["route_hint"] if route else None,
+         "route_reason": route["route_reason"] if route else None,
++        "processing_mode": processing_mode,
+         "chunk_count": total,
+         "body_chunk_count": sum(1 for e in entries if not e["passthrough"]),
+         "passthrough_chunk_count": sum(1 for e in entries if e["passthrough"]),
+@@ -825,6 +857,11 @@ def main(argv: list[str] | None = None) -> int:
+         help="장문 청킹 모드: 01_input.txt 를 손실 없이 분할해 청크별 "
+         "input_with_metrics 파일과 chunk_manifest.json 을 만든다.",
+     )
++    p.add_argument(
++        "--portal-auto-route",
++        action="store_true",
++        help="포털 전용: route_hint light/standard 15,000자 이하를 single manifest로 생성",
++    )
+     p.add_argument(
+         "--no-sanitize",
+         action="store_true",
+diff --git a/vendor/humanize-engine/scripts/reassemble_chunks.py b/vendor/humanize-engine/scripts/reassemble_chunks.py
+index 6e32cc7..1d87af1 100644
+--- a/vendor/humanize-engine/scripts/reassemble_chunks.py
++++ b/vendor/humanize-engine/scripts/reassemble_chunks.py
+@@ -137,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
+ 
+     out = "".join(pieces)
+     output_path = run_dir / args.output
+-    output_path.write_text(out, encoding="utf-8")
++    output_path.write_text(out, encoding="utf-8", newline="")
+ 
+     report = {
+         "source_chars": len(text),
