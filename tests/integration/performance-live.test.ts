@@ -5,7 +5,9 @@ import {
   HUMANIZE_REASONING_EFFORT
 } from "../../src/engine/model-policy.js";
 import {
+  isLiveEngineFailure,
   runLiveEngineFixture,
+  type LiveEngineFailure,
   type LiveEngineOptions,
   type LiveEngineResult
 } from "../helpers/live-engine.js";
@@ -17,19 +19,57 @@ const LIVE_TIMEOUT_MS = 4 * 60 * 60 * 1000;
 function shortFixture(): string {
   return Array.from(
     { length: 8 },
-    (_, index) =>
-      `## 성능 검증 ${index + 1}\n\n` +
-      (`2026년 OpenAI 기조연설 ${index + 1}을 설명하는 자연스러운 한국어 문단입니다. ` +
-        `"직접 인용 ${index + 1}"은 그대로 둡니다. `).repeat(5) +
-      "\n\n"
+    (_, index) => {
+      const section = index + 1;
+      const paragraphs = Array.from(
+        { length: 4 },
+        (_, offset) =>
+          `2026년 OpenAI 기조연설 ${section}의 준비 기록 ${offset + 1}은 ` +
+          `발표 자료와 회의 메모를 대조해 핵심 내용을 확인한 한국어 문단입니다. ` +
+          `담당자는 고유 확인 번호 ${section}-${offset + 1}을 남기고 사실과 의견을 구분했습니다.`
+      ).join("\n\n");
+      return (
+        `## 성능 검증 ${section}\n\n` +
+        `${paragraphs}\n\n` +
+        `담당자는 "직접 인용 ${section}"을 원문 그대로 보존했습니다.\n\n`
+      );
+    }
   ).join("");
 }
 
 function longFixture(): string {
-  const block = shortFixture();
-  let result = block;
-  while (Array.from(result).length <= 16_000) result += block;
-  return result;
+  const themes = [
+    "연구 기록",
+    "고객 피드백",
+    "보안 점검",
+    "품질 검증",
+    "데이터 정리",
+    "배포 계획"
+  ] as const;
+  const evidence = ["회의록", "실험표", "검토표", "변경 이력"] as const;
+  const actions = ["확인", "분류", "대조", "보완"] as const;
+
+  return Array.from({ length: 24 }, (_, index) => {
+    const section = index + 1;
+    const serial = String(section).padStart(2, "0");
+    const theme = themes[index % themes.length]!;
+    const paragraphs = Array.from({ length: 4 }, (_, offset) => {
+      const step = offset + 1;
+      const item = evidence[(index + offset) % evidence.length]!;
+      const action = actions[(index * 2 + offset) % actions.length]!;
+      return (
+        `${serial}번째 ${theme} 검토의 ${step}단계에서는 ${item}을 기준으로 자료를 대조했습니다. ` +
+        `담당자는 ${action} 항목을 별도로 표시하고 2026년 OpenAI 관련 고유 식별자 ` +
+        `${serial}-${step}의 사실관계를 기록했습니다. 이 기록은 다음 단계에서 누락 여부를 ` +
+        `확인하는 근거로 사용되며 다른 섹션의 자료와 섞이지 않습니다.`
+      );
+    }).join("\n\n");
+    return (
+      `## ${serial}. ${theme} 성능 검증\n\n` +
+      `${paragraphs}\n\n` +
+      `검토 책임자는 "장문 검증 인용 ${serial}"을 원문 그대로 유지했습니다.\n\n`
+    );
+  }).join("");
 }
 
 function median(values: number[]): number {
@@ -71,6 +111,31 @@ interface MeasuredRun {
   quality: QualityResults;
 }
 
+type FixtureId =
+  | "short-baseline"
+  | "short-optimized"
+  | "long-serial"
+  | "long-parallel";
+
+function failConfiguration(
+  fixtureId: FixtureId,
+  error: unknown,
+  write: (line: string) => void = line => console.log(line)
+): never {
+  const failure: LiveEngineFailure = isLiveEngineFailure(error)
+    ? error
+    : {
+        publicCode: "INTERNAL_ERROR",
+        gateCodes: [],
+        elapsedMs: 0,
+        cleanup: false
+      };
+  const metadata = { fixtureId, ...failure };
+  write(JSON.stringify(metadata));
+  expect(failure.cleanup).toBe(true);
+  expect.fail(`Live configuration failed: ${JSON.stringify(metadata)}`);
+}
+
 function qualityResults(
   source: string,
   result: LiveEngineResult
@@ -92,13 +157,18 @@ function qualityResults(
 }
 
 async function runConfiguration(
+  fixtureId: FixtureId,
   source: string,
   options: LiveEngineOptions
 ): Promise<MeasuredRun[]> {
   const runs: MeasuredRun[] = [];
-  for (let index = 0; index < RUNS_PER_CONFIGURATION; index += 1) {
-    const result = await runLiveEngineFixture(source, options);
-    runs.push({ result, quality: qualityResults(source, result) });
+  try {
+    for (let index = 0; index < RUNS_PER_CONFIGURATION; index += 1) {
+      const result = await runLiveEngineFixture(source, options);
+      runs.push({ result, quality: qualityResults(source, result) });
+    }
+  } catch (error) {
+    failConfiguration(fixtureId, error);
   }
   return runs;
 }
@@ -130,11 +200,7 @@ function assertQuality(runs: MeasuredRun[]): void {
 }
 
 function report(
-  fixtureId:
-    | "short-baseline"
-    | "short-optimized"
-    | "long-serial"
-    | "long-parallel",
+  fixtureId: FixtureId,
   source: string,
   runs: MeasuredRun[]
 ): void {
@@ -182,11 +248,11 @@ live("Codex live performance gate", () => {
     "routes a short fixture through one Codex unit within forty percent of baseline p50",
     async () => {
       const source = shortFixture();
-      const baseline = await runConfiguration(source, {
+      const baseline = await runConfiguration("short-baseline", source, {
         autoRoute: false,
         chunkConcurrency: 1
       });
-      const optimized = await runConfiguration(source, {
+      const optimized = await runConfiguration("short-optimized", source, {
         autoRoute: true,
         chunkConcurrency: 1
       });
@@ -219,11 +285,11 @@ live("Codex live performance gate", () => {
     "processes a long fixture at concurrency two within seventy percent of serial p50",
     async () => {
       const source = longFixture();
-      const serial = await runConfiguration(source, {
+      const serial = await runConfiguration("long-serial", source, {
         autoRoute: true,
         chunkConcurrency: 1
       });
-      const parallel = await runConfiguration(source, {
+      const parallel = await runConfiguration("long-parallel", source, {
         autoRoute: true,
         chunkConcurrency: 2
       });
@@ -252,4 +318,52 @@ live("Codex live performance gate", () => {
     },
     LIVE_TIMEOUT_MS
   );
+});
+
+describe("performance fixture contracts", () => {
+  it("keeps the short fixture between three and five thousand code points with eight headings", () => {
+    const source = shortFixture();
+    const chars = Array.from(source).length;
+
+    expect(chars).toBeGreaterThanOrEqual(3_000);
+    expect(chars).toBeLessThanOrEqual(5_000);
+    expect(markdownHeadings(source)).toHaveLength(8);
+  });
+
+  it("builds a long fixture in range with twenty-four unique headings", () => {
+    const source = longFixture();
+    const chars = Array.from(source).length;
+    const headings = markdownHeadings(source);
+
+    expect(chars).toBeGreaterThanOrEqual(16_000);
+    expect(chars).toBeLessThanOrEqual(20_000);
+    expect(headings).toHaveLength(24);
+    expect(new Set(headings).size).toBe(headings.length);
+  });
+
+  it("emits only allowlisted failure metadata before failing", () => {
+    const reports: string[] = [];
+    const failure: LiveEngineFailure = {
+      publicCode: "VALIDATION_FAILED",
+      gateCodes: ["GATE_OK", "GATE_ABORT"],
+      elapsedMs: 123,
+      cleanup: true
+    };
+
+    expect(() =>
+      failConfiguration(
+        "long-serial",
+        failure,
+        (line: string) => reports.push(line)
+      )
+    ).toThrow();
+    expect(reports).toHaveLength(1);
+    expect(JSON.parse(reports[0]!)).toEqual({
+      fixtureId: "long-serial",
+      publicCode: "VALIDATION_FAILED",
+      gateCodes: ["GATE_OK", "GATE_ABORT"],
+      elapsedMs: 123,
+      cleanup: true
+    });
+  });
 });
