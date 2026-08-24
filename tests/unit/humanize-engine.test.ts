@@ -14,10 +14,26 @@ import type {
 } from "../../src/engine/python-engine.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
 
-const ok = (): GateResult => ({ status: "ok", exitCode: 0, stdout: "" });
-const warn = (): GateResult => ({ status: "warn", exitCode: 1, stdout: "" });
-const abort = (): GateResult => ({ status: "abort", exitCode: 2, stdout: "" });
-const gateError = (): GateResult => ({ status: "error", exitCode: 3, stdout: "" });
+const ok = (): GateResult => ({
+  status: "ok",
+  exitCode: 0,
+  gateCodes: ["GATE_OK"]
+});
+const warn = (): GateResult => ({
+  status: "warn",
+  exitCode: 1,
+  gateCodes: ["GATE_WARN"]
+});
+const abort = (): GateResult => ({
+  status: "abort",
+  exitCode: 2,
+  gateCodes: ["GATE_ABORT"]
+});
+const gateError = (): GateResult => ({
+  status: "error",
+  exitCode: 3,
+  gateCodes: ["GATE_ERROR"]
+});
 
 function manifest(chunks: ChunkManifest["chunks"], sourceChars: number): ChunkManifest {
   return {
@@ -28,6 +44,9 @@ function manifest(chunks: ChunkManifest["chunks"], sourceChars: number): ChunkMa
     chunkCount: chunks.length,
     bodyChunkCount: chunks.filter(chunk => !chunk.passthrough).length,
     passthroughChunkCount: chunks.filter(chunk => chunk.passthrough).length,
+    routeHint: "standard",
+    routeReason: "single document route",
+    processingMode: "single",
     warnings: [],
     chunks
   };

@@ -2,6 +2,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { EngineError } from "./errors.js";
 import type {
+  GateCode,
+  ProcessingMode,
+  RouteHint
+} from "./diagnostics.js";
+import type {
   CommandResult,
   CommandRunner
 } from "../process/command-runner.js";
@@ -26,6 +31,9 @@ export interface ChunkManifest {
   chunkCount: number;
   bodyChunkCount: number;
   passthroughChunkCount: number;
+  routeHint: RouteHint | null;
+  routeReason: string | null;
+  processingMode: ProcessingMode;
   chunks: ChunkEntry[];
   warnings: string[];
 }
@@ -33,7 +41,7 @@ export interface ChunkManifest {
 export interface GateResult {
   status: "ok" | "warn" | "abort" | "error";
   exitCode: 0 | 1 | 2 | 3;
-  stdout: string;
+  gateCodes: GateCode[];
 }
 
 export interface PythonEngineOptions {
@@ -41,6 +49,7 @@ export interface PythonEngineOptions {
   vendorRoot: string;
   runner: CommandRunner;
   timeoutMs?: number;
+  autoRoute?: boolean;
 }
 
 function invalid(message: string, cause?: unknown): EngineError {
@@ -89,6 +98,43 @@ function safeLeaf(value: unknown, label: string): string {
 function nullableLeaf(value: unknown, label: string): string | null {
   return value === null ? null : safeLeaf(value, label);
 }
+
+function routeHint(value: unknown): RouteHint | null {
+  if (value === null) return null;
+  if (value === "light" || value === "standard" || value === "heavy") {
+    return value;
+  }
+  throw invalid("route_hint must be light, standard, heavy, or null");
+}
+
+function processingMode(value: unknown): ProcessingMode {
+  if (value === "single" || value === "chunked") return value;
+  throw invalid("processing_mode must be single or chunked");
+}
+
+function nullableText(value: unknown, label: string): string | null {
+  return value === null ? null : text(value, label);
+}
+
+function parseGateReport(stdout: string): Record<string, unknown> {
+  const starts = [...stdout.matchAll(/^\{/gmu)].map(match => match.index!);
+  for (const start of starts.reverse()) {
+    try {
+      const value: unknown = JSON.parse(stdout.slice(start).trim());
+      return record(value, "gate report");
+    } catch {
+      // Continue to an earlier line-starting object.
+    }
+  }
+  throw invalid("Unable to parse gate JSON report");
+}
+
+const GATE_CODES = [
+  "GATE_OK",
+  "GATE_WARN",
+  "GATE_ABORT",
+  "GATE_ERROR"
+] as const;
 
 function parseManifest(value: unknown): ChunkManifest {
   const root = record(value, "manifest");
@@ -160,6 +206,9 @@ function parseManifest(value: unknown): ChunkManifest {
       root.passthrough_chunk_count,
       "passthrough_chunk_count"
     ),
+    routeHint: routeHint(root.route_hint),
+    routeReason: nullableText(root.route_reason, "route_reason"),
+    processingMode: processingMode(root.processing_mode),
     chunks,
     warnings: warningsRaw as string[]
   };
@@ -170,12 +219,14 @@ export class PythonEngine {
   private readonly vendorRoot: string;
   private readonly runner: CommandRunner;
   private readonly timeoutMs: number;
+  private readonly autoRoute: boolean;
 
   constructor(options: PythonEngineOptions) {
     this.pythonCommand = options.pythonCommand;
     this.vendorRoot = path.resolve(options.vendorRoot);
     this.runner = options.runner;
     this.timeoutMs = options.timeoutMs ?? 120_000;
+    this.autoRoute = options.autoRoute ?? true;
   }
 
   private script(name: string): string {
@@ -209,15 +260,17 @@ export class PythonEngine {
   }
 
   async prepare(runDir: string, signal: AbortSignal): Promise<ChunkManifest> {
+    const args = [
+      this.script("prepare_monolith_input.py"),
+      "--chunk",
+      ...(this.autoRoute ? ["--portal-auto-route"] : []),
+      "--run-dir",
+      path.resolve(runDir),
+      "--genre",
+      "essay"
+    ];
     const result = await this.run(
-      [
-        this.script("prepare_monolith_input.py"),
-        "--chunk",
-        "--run-dir",
-        path.resolve(runDir),
-        "--genre",
-        "essay"
-      ],
+      args,
       runDir,
       signal
     );
@@ -258,7 +311,16 @@ export class PythonEngine {
     }
     const exitCode = result.exitCode as 0 | 1 | 2 | 3;
     const statuses = ["ok", "warn", "abort", "error"] as const;
-    return { status: statuses[exitCode], exitCode, stdout: result.stdout };
+    const report = parseGateReport(result.stdout);
+    const gate = record(report.gate, "gate report.gate");
+    if (integer(gate.exit_code, "gate report.gate.exit_code") !== exitCode) {
+      throw invalid("Gate report exit code mismatch");
+    }
+    return {
+      status: statuses[exitCode],
+      exitCode,
+      gateCodes: [GATE_CODES[exitCode]]
+    };
   }
 
   async reassemble(runDir: string, signal: AbortSignal): Promise<string> {

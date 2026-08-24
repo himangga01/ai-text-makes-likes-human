@@ -90,7 +90,8 @@ export async function createProductionRuntime(
   const python = new PythonEngine({
     pythonCommand: config.pythonCommand,
     vendorRoot: config.vendorRoot,
-    runner
+    runner,
+    autoRoute: config.autoRoute
   });
   const codex = new CodexRunner({
     codexCommand: config.codexCommand,
