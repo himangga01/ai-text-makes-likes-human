@@ -26,7 +26,7 @@
       <section class="hero" aria-labelledby="hero-title">
         <p class="eyebrow">KOREAN WRITING ASSISTANT</p>
         <h1 id="hero-title">AI 문체는 덜고,<br><strong>내 문장은 살립니다.</strong></h1>
-        <p class="hero-copy">원문을 붙여넣거나 TXT 파일을 불러온 뒤, 변환 버튼을 눌러보세요.</p>
+        <p class="hero-copy">원문을 붙여넣거나 TXT·MD 파일을 불러온 뒤, 변환 버튼을 눌러보세요.</p>
       </section>
 
       <ol id="workflow-steps" class="workflow-steps" aria-label="이용 순서">
@@ -47,9 +47,9 @@
             </div>
 
             <div class="panel-toolbar">
-              <input id="text-file-input" class="visually-hidden-file" type="file" accept=".txt,text/plain" aria-label="TXT 파일 선택">
+              <input id="text-file-input" class="visually-hidden-file" type="file" accept=".txt,.md,text/plain,text/markdown" aria-label="TXT 또는 MD 파일 선택">
               <button id="text-file-button" class="button button-secondary" type="button">
-                <span aria-hidden="true">＋</span> TXT 불러오기
+                <span aria-hidden="true">＋</span> TXT·MD 불러오기
               </button>
               <button id="reset-button" class="button button-ghost" type="button">초기화</button>
             </div>
@@ -65,7 +65,10 @@
                 <span class="panel-kicker">RESULT</span>
                 <h2 id="result-heading">수정된 문구 출력</h2>
               </div>
-              <button id="copy-button" class="button button-ghost" type="button" disabled>복사</button>
+              <div class="panel-actions">
+                <button id="download-button" class="button button-secondary" type="button" hidden disabled>MD 다운로드</button>
+                <button id="copy-button" class="button button-ghost" type="button" disabled>복사</button>
+              </div>
             </div>
 
             <div class="result-wrap">
@@ -87,16 +90,23 @@
           <button id="cancel-button" class="button button-danger" type="button" hidden>변환 취소</button>
         </div>
 
+        <div id="progress-panel" class="progress-panel" hidden>
+          <div class="progress-meta">
+            <span id="progress-label">전체 진행률</span>
+            <strong id="progress-value">0%</strong>
+          </div>
+          <progress id="progress" max="100" value="0" aria-labelledby="progress-label progress-value"></progress>
+        </div>
+
         <div id="status" class="status-strip" aria-live="polite" aria-atomic="true">
           <span id="status-chip" class="status-chip status-idle">준비</span>
           <span id="status-message">원문을 입력하면 변환 버튼이 활성화됩니다.</span>
-          <progress id="progress" max="100" value="0" aria-label="변환 진행률" hidden></progress>
         </div>
       </section>
 
       <p class="privacy-note">
         <span aria-hidden="true">●</span>
-        로그인과 이력 저장이 없습니다. 선택한 TXT 파일은 변환 버튼을 누르기 전까지 브라우저 밖으로 전송되지 않습니다.
+        로그인과 이력 저장이 없습니다. 선택한 TXT·MD 파일은 변환 버튼을 누르기 전까지 브라우저 밖으로 전송되지 않습니다.
       </p>
     </main>
 

@@ -7,6 +7,7 @@
 - 방화벽 범위: Windows Private 프로필, TCP 3210
 - 동시 접수: 3건
 - 동시 Codex 실행: 1건
+- 변환 모델: `gpt-5.6-sol`, reasoning effort `high` 고정
 - 본문 저장: 없음
 - 허용 로그: job ID, 글자 수, 청크 수, 처리 시간, 결과 코드
 
@@ -104,8 +105,9 @@ Windows 줄바꿈 보존용 portal patch가 `prepare_monolith_input.py`와 `reas
 | 세 PC 동시 변환 | 1건 실행, 2건 대기 순서 표시 |
 | 네 번째 변환 | 친절한 queue-full 메시지 |
 | 15,000자 초과 | 여러 청크가 순서대로 처리됨 |
-| UTF-8/BOM UTF-16/CP949 TXT | 왼쪽 입력만 채워지고 버튼 전 요청 0건 |
-| TXT 아닌 파일 | 기존 입력 유지와 한글 오류 표시 |
+| UTF-8/BOM UTF-16/CP949 TXT·MD | 왼쪽 입력만 채워지고 버튼 전 요청 0건 |
+| MD 변환 완료 | 원본 파일명 기반 `-humanized.md` 다운로드와 내용 일치 |
+| TXT·MD 아닌 파일 | 기존 입력 유지와 한글 오류 표시 |
 | 실행 중 취소 | Codex 프로세스와 job 폴더 제거 |
 | 브라우저 강제 종료 | 활성 작업 취소와 job 폴더 제거 |
 | 서버 종료 | 3210 포트 종료와 jobs 폴더 비움 |

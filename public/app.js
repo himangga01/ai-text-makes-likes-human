@@ -1,4 +1,9 @@
-import { readTextFile, TextFileError } from "./text-file.js";
+import {
+  getMarkdownDownloadName,
+  readTextFile,
+  TextFileError
+} from "./text-file.js";
+import { progressForEvent } from "./progress.js";
 
 const elements = {
   shell: document.querySelector("#editor-shell"),
@@ -11,11 +16,14 @@ const elements = {
   transform: document.querySelector("#transform-button"),
   cancel: document.querySelector("#cancel-button"),
   copy: document.querySelector("#copy-button"),
+  download: document.querySelector("#download-button"),
   reset: document.querySelector("#reset-button"),
   status: document.querySelector("#status"),
   statusChip: document.querySelector("#status-chip"),
   statusMessage: document.querySelector("#status-message"),
+  progressPanel: document.querySelector("#progress-panel"),
   progress: document.querySelector("#progress"),
+  progressValue: document.querySelector("#progress-value"),
   empty: document.querySelector("#result-empty"),
   steps: [...document.querySelectorAll("#workflow-steps li")]
 };
@@ -23,6 +31,11 @@ const elements = {
 let engineReady = false;
 let running = false;
 let controller;
+let sourceFile;
+let activeDownloadName;
+let resultDownloadName;
+let lastProgress = 0;
+let runCompleted = false;
 
 function countCharacters(text) {
   return Array.from(text).length;
@@ -42,20 +55,51 @@ function setStatus(kind, label, message) {
   elements.statusMessage.textContent = message;
 }
 
+function clearResultDownload() {
+  resultDownloadName = undefined;
+  elements.download.hidden = true;
+  elements.download.disabled = true;
+}
+
+function resetProgress() {
+  lastProgress = 0;
+  elements.progress.value = 0;
+  elements.progressValue.textContent = "0%";
+  elements.progressPanel.hidden = true;
+}
+
+function applyProgress(event) {
+  const next = progressForEvent(event);
+  if (next === undefined) return;
+  elements.progressPanel.hidden = false;
+  if (next === null) {
+    elements.progress.removeAttribute("value");
+    elements.progressValue.textContent = "대기 중";
+    return;
+  }
+
+  lastProgress = Math.max(lastProgress, next);
+  elements.progress.value = lastProgress;
+  elements.progressValue.textContent = `${Math.round(lastProgress)}%`;
+}
+
 function refreshControls() {
   const hasSource = elements.source.value.trim().length > 0;
+  const canDownload = Boolean(resultDownloadName && elements.result.value);
   elements.sourceCount.textContent = `${countCharacters(elements.source.value).toLocaleString("ko-KR")}자`;
   elements.transform.disabled = !engineReady || !hasSource || running;
   elements.fileButton.disabled = running;
   elements.reset.disabled = running || (!hasSource && !elements.result.value);
   elements.copy.disabled = elements.result.value.length === 0;
+  elements.download.hidden = !canDownload;
+  elements.download.disabled = !canDownload || running;
 }
 
 function setRunning(value) {
   running = value;
   elements.transform.hidden = value;
   elements.cancel.hidden = !value;
-  elements.progress.hidden = !value;
+  if (value) elements.progressPanel.hidden = false;
   refreshControls();
 }
 
@@ -65,6 +109,7 @@ function showResultState() {
 }
 
 function handleEvent(event) {
+  applyProgress(event);
   switch (event.type) {
     case "accepted":
       setStatus("processing", "접수", "변환 작업을 준비하고 있습니다.");
@@ -72,12 +117,9 @@ function handleEvent(event) {
       break;
     case "queued":
       setStatus("processing", `대기 ${event.position}`, `앞에 ${event.position}건의 작업이 있습니다.`);
-      elements.progress.removeAttribute("value");
       break;
     case "progress": {
       setStatus("processing", "변환 중", event.message);
-      const total = Math.max(1, Number(event.total) || 1);
-      elements.progress.value = Math.min(100, Math.max(2, (Number(event.current) / total) * 100));
       break;
     }
     case "result-start":
@@ -93,13 +135,15 @@ function handleEvent(event) {
       setStatus("warning", "검토 권장", event.message);
       break;
     case "done":
-      elements.progress.value = 100;
+      runCompleted = true;
+      resultDownloadName = activeDownloadName;
       setStatus(
         "success",
         "완료",
         `${event.chunks}개 구간 · ${(event.elapsedMs / 1000).toFixed(1)}초 만에 완료했습니다.`
       );
       setStep(2);
+      refreshControls();
       break;
     case "error":
       throw Object.assign(new Error(event.message), { code: event.code });
@@ -132,10 +176,17 @@ async function consumeNdjson(response) {
 async function startTransform() {
   if (running || elements.source.value.trim().length === 0) return;
   controller = new AbortController();
+  activeDownloadName =
+    sourceFile?.format === "markdown"
+      ? getMarkdownDownloadName(sourceFile.fileName)
+      : undefined;
+  runCompleted = false;
+  clearResultDownload();
+  resetProgress();
   setRunning(true);
   setStatus("processing", "접수 중", "서버에 원문을 안전하게 전달하고 있습니다.");
   setStep(1);
-  elements.progress.value = 2;
+  applyProgress({ type: "accepted" });
   try {
     const response = await fetch("/api/transform", {
       method: "POST",
@@ -150,15 +201,22 @@ async function startTransform() {
     } else {
       setStatus("error", "오류", error?.message || "처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
     }
+    elements.progressPanel.hidden = true;
   } finally {
     controller = undefined;
+    activeDownloadName = undefined;
+    if (!runCompleted) clearResultDownload();
     setRunning(false);
     showResultState();
   }
 }
 
 elements.source.addEventListener("input", () => {
+  sourceFile = undefined;
   elements.fileName.hidden = true;
+  elements.fileName.textContent = "";
+  clearResultDownload();
+  if (!running) resetProgress();
   refreshControls();
   if (!running) {
     setStatus(
@@ -179,6 +237,12 @@ elements.fileInput.addEventListener("change", async () => {
   try {
     const loaded = await readTextFile(file);
     elements.source.value = loaded.text;
+    sourceFile = {
+      fileName: loaded.fileName,
+      format: loaded.format
+    };
+    clearResultDownload();
+    resetProgress();
     elements.fileName.textContent = `${loaded.fileName} · ${loaded.encoding}`;
     elements.fileName.hidden = false;
     setStatus("ready", "파일 준비", "파일 내용을 확인한 뒤 변환 버튼을 눌러주세요.");
@@ -201,9 +265,12 @@ elements.cancel.addEventListener("click", () => controller?.abort());
 elements.reset.addEventListener("click", () => {
   elements.source.value = "";
   elements.result.value = "";
+  sourceFile = undefined;
+  activeDownloadName = undefined;
+  clearResultDownload();
   elements.fileName.hidden = true;
   elements.fileName.textContent = "";
-  elements.progress.value = 0;
+  resetProgress();
   setStep(0);
   setStatus("idle", "준비", "원문을 입력하면 변환 버튼이 활성화됩니다.");
   showResultState();
@@ -238,6 +305,21 @@ elements.copy.addEventListener("click", async () => {
   } catch {
     setStatus("error", "복사 오류", "결과를 선택해 직접 복사해 주세요.");
   }
+});
+
+elements.download.addEventListener("click", () => {
+  if (!resultDownloadName || !elements.result.value) return;
+  const blob = new Blob([elements.result.value], {
+    type: "text/markdown;charset=utf-8"
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = resultDownloadName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 });
 
 async function checkHealth() {

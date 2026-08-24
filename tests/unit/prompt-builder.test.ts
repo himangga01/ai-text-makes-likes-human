@@ -34,6 +34,18 @@ describe("buildHumanizePrompt", () => {
     expect(prompt).toContain("확신 없는 수정은 하지 않는다");
   });
 
+  it("instructs article-style Markdown structure to remain intact", () => {
+    const prompt = buildHumanizePrompt({
+      source: "# 제목\n\n- 첫 번째 항목",
+      quickRules: "RULE",
+      attempt: 1,
+      nonce: "markdown"
+    });
+
+    expect(prompt).toContain("Markdown 문서 구조는 그대로 유지");
+    expect(prompt).toContain("제목의 #, 목록 기호·번호, 링크 URL과 강조 기호");
+  });
+
   it("rejects a nonce already present in the source", () => {
     expect(() =>
       buildHumanizePrompt({

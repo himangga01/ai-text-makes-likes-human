@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   decodeTextBytes,
+  getMarkdownDownloadName,
   readTextFile
 } from "../../public/text-file.js";
 
-describe("TXT decoding", () => {
+describe("text file decoding", () => {
   it("removes a UTF-8 BOM", () => {
     const body = new TextEncoder().encode("안녕");
     const bytes = Uint8Array.from([0xef, 0xbb, 0xbf, ...body]);
@@ -29,8 +30,39 @@ describe("TXT decoding", () => {
     });
   });
 
-  it("rejects a non-txt file before reading it", async () => {
-    const file = new File(["내용"], "memo.md", { type: "text/markdown" });
+  it("accepts Markdown files and reports their format", async () => {
+    const file = new File(["# 제목\n\n본문"], "memo.MD", {
+      type: "text/markdown"
+    });
+
+    await expect(readTextFile(file)).resolves.toEqual({
+      text: "# 제목\n\n본문",
+      encoding: "UTF-8",
+      fileName: "memo.MD",
+      format: "markdown"
+    });
+  });
+
+  it("reports TXT files as plain text", async () => {
+    const file = new File(["본문"], "memo.txt", { type: "text/plain" });
+
+    await expect(readTextFile(file)).resolves.toMatchObject({
+      fileName: "memo.txt",
+      format: "text"
+    });
+  });
+
+  it("derives a stable Markdown result filename", () => {
+    expect(getMarkdownDownloadName("notes.v2.MD")).toBe(
+      "notes.v2-humanized.md"
+    );
+    expect(getMarkdownDownloadName(".md")).toBe("humanized.md");
+  });
+
+  it("rejects unsupported files before reading them", async () => {
+    const file = new File(["내용"], "memo.docx", {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
     await expect(readTextFile(file)).rejects.toMatchObject({
       code: "INVALID_TEXT_FILE"
     });

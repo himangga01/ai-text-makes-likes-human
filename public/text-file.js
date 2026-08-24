@@ -46,13 +46,26 @@ export function decodeTextBytes(bytes) {
   }
 }
 
+function formatFromFileName(fileName) {
+  const normalized = String(fileName).toLowerCase();
+  if (normalized.endsWith(".md")) return "markdown";
+  if (normalized.endsWith(".txt")) return "text";
+  return null;
+}
+
+export function getMarkdownDownloadName(fileName) {
+  const baseName = String(fileName).replace(/\.md$/i, "").trim();
+  return baseName ? `${baseName}-humanized.md` : "humanized.md";
+}
+
 export async function readTextFile(file) {
-  if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".txt")) {
+  const format = file instanceof File ? formatFromFileName(file.name) : null;
+  if (!format) {
     throw new TextFileError(
       "INVALID_TEXT_FILE",
-      "TXT 파일만 불러올 수 있습니다."
+      "TXT 또는 MD 파일만 불러올 수 있습니다."
     );
   }
   const decoded = decodeTextBytes(await file.arrayBuffer());
-  return { ...decoded, fileName: file.name };
+  return { ...decoded, fileName: file.name, format };
 }

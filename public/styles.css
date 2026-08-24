@@ -224,6 +224,7 @@ button {
 
 .panel-header,
 .panel-toolbar,
+.panel-actions,
 .action-zone,
 .status-strip {
   display: flex;
@@ -252,6 +253,18 @@ button {
 .panel-toolbar {
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.panel-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#download-button {
+  color: var(--primary-hover);
+  border-color: #ccd8fb;
+  background: var(--primary-soft);
 }
 
 .button {
@@ -406,6 +419,29 @@ textarea:focus {
   background: #fff;
 }
 
+.progress-panel {
+  padding: 15px 24px 18px;
+  border-top: 1px solid var(--line);
+  background: #f8faff;
+}
+
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 9px;
+  color: #40506a;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.progress-meta strong {
+  color: var(--primary-hover);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
 .status-strip {
   min-height: 58px;
   gap: 12px;
@@ -443,9 +479,9 @@ textarea:focus {
 }
 
 progress {
-  width: min(240px, 32vw);
-  height: 6px;
-  margin-left: auto;
+  display: block;
+  width: 100%;
+  height: 9px;
   overflow: hidden;
   border: 0;
   border-radius: 999px;
@@ -459,6 +495,7 @@ progress::-webkit-progress-bar {
 progress::-webkit-progress-value {
   border-radius: 999px;
   background: var(--primary);
+  transition: width 220ms ease-out;
 }
 
 .privacy-note {
@@ -581,9 +618,8 @@ progress::-webkit-progress-value {
     padding: 14px 18px;
   }
 
-  progress {
-    width: 100%;
-    margin: 4px 0 0;
+  .progress-panel {
+    padding: 14px 18px 16px;
   }
 
   .privacy-note {
