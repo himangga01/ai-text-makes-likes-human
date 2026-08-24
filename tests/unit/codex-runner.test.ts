@@ -7,6 +7,10 @@ import type {
   CommandRunner
 } from "../../src/process/command-runner.js";
 import { CodexRunner } from "../../src/engine/codex-runner.js";
+import {
+  HUMANIZE_MODEL,
+  HUMANIZE_REASONING_EFFORT
+} from "../../src/engine/model-policy.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
 
 class OutputRunner implements CommandRunner {
@@ -64,6 +68,11 @@ async function fixture(runner: CommandRunner): Promise<{
 }
 
 describe("CodexRunner", () => {
+  it("uses the approved fixed model policy", () => {
+    expect(HUMANIZE_MODEL).toBe("gpt-5.6-sol");
+    expect(HUMANIZE_REASONING_EFFORT).toBe("high");
+  });
+
   it("invokes isolated ephemeral Codex and returns schema-checked JSON", async () => {
     const runner = new OutputRunner(
       JSON.stringify({ rewrittenText: "원문은 1,200명을 말한다.", warnings: [] })

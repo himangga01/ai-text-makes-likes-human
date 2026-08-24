@@ -12,6 +12,8 @@ export interface AppConfig {
   readonly vendorRoot: string;
   readonly codexCommand: string;
   readonly pythonCommand: string;
+  readonly autoRoute: boolean;
+  readonly chunkConcurrency: 1 | 2;
 }
 
 export function loadConfig(
@@ -21,6 +23,11 @@ export function loadConfig(
   const port = Number(env.PORT ?? 3210);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("PORT must be an integer from 1 to 65535");
+  }
+
+  const concurrency = Number(env.CODEX_CHUNK_CONCURRENCY ?? 1);
+  if (concurrency !== 1 && concurrency !== 2) {
+    throw new Error("CODEX_CHUNK_CONCURRENCY must be 1 or 2");
   }
 
   return Object.freeze({
@@ -34,6 +41,8 @@ export function loadConfig(
     runtimeRoot: path.join(projectRoot, "runtime", "jobs"),
     vendorRoot: path.join(projectRoot, "vendor", "humanize-engine"),
     codexCommand: env.CODEX_COMMAND ?? "codex",
-    pythonCommand: env.PYTHON_COMMAND ?? "python"
+    pythonCommand: env.PYTHON_COMMAND ?? "python",
+    autoRoute: env.HUMANIZE_AUTO_ROUTE !== "0",
+    chunkConcurrency: concurrency
   });
 }

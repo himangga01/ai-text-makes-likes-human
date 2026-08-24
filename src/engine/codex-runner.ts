@@ -3,6 +3,10 @@ import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { CommandRunner } from "../process/command-runner.js";
 import { EngineError } from "./errors.js";
+import {
+  HUMANIZE_MODEL,
+  HUMANIZE_REASONING_EFFORT
+} from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
 
 export interface CodexResult {
@@ -102,9 +106,9 @@ export class CodexRunner {
         "--ignore-user-config",
         "--ignore-rules",
         "--model",
-        "gpt-5.6-sol",
+        HUMANIZE_MODEL,
         "--config",
-        'model_reasoning_effort="high"',
+        `model_reasoning_effort="${HUMANIZE_REASONING_EFFORT}"`,
         "--sandbox",
         "read-only",
         "--output-schema",
