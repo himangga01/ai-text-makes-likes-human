@@ -137,6 +137,8 @@ export function observePythonGates(python: PythonAdapter): {
   return {
     python: {
       prepare: (runDir, signal) => python.prepare(runDir, signal),
+      restore: (beforePath, afterPath, signal) =>
+        python.restore(beforePath, afterPath, signal),
       reassemble: (runDir, signal) => python.reassemble(runDir, signal),
       async verify(beforePath, afterPath, signal) {
         const result = await python.verify(beforePath, afterPath, signal);

@@ -10,7 +10,8 @@ import {
 } from "../../src/engine/humanize-engine.js";
 import type {
   ChunkManifest,
-  GateResult
+  GateResult,
+  RestoreReport
 } from "../../src/engine/python-engine.js";
 import { EngineError } from "../../src/engine/errors.js";
 import { deferred, type Deferred } from "../helpers/deferred.js";
@@ -86,31 +87,50 @@ function passthrough(index: number, start: number, end: number) {
   };
 }
 
+const noRestore = (): RestoreReport => ({
+  restoredSentences: 0,
+  skippedSentences: 0,
+  removedCommas: 0
+});
+
 class FakePython implements PythonAdapter {
   reassembleCalls = 0;
+  readonly calls: Array<"restore" | "verify"> = [];
+  readonly restoreCalls: Array<{ before: string; after: string }> = [];
   private verifyResults: GateResult[];
+  private restoreReports: RestoreReport[];
   constructor(
     private readonly chunkManifest: ChunkManifest,
-    verifyResults: GateResult[]
+    verifyResults: GateResult[],
+    restoreReports: RestoreReport[] = []
   ) {
     this.verifyResults = [...verifyResults];
+    this.restoreReports = [...restoreReports];
   }
   async prepare(): Promise<ChunkManifest> {
     return this.chunkManifest;
   }
+  async restore(before: string, after: string): Promise<RestoreReport> {
+    this.calls.push("restore");
+    this.restoreCalls.push({ before, after });
+    return this.restoreReports.shift() ?? noRestore();
+  }
   async verify(): Promise<GateResult> {
+    this.calls.push("verify");
     const result = this.verifyResults.shift();
     if (!result) throw new Error("No gate result configured");
     return result;
   }
   async reassemble(runDir: string): Promise<string> {
     this.reassembleCalls += 1;
-    const source = await readFile(path.join(runDir, "01_input.txt"), "utf8");
+    const source = Array.from(
+      await readFile(path.join(runDir, "01_input.txt"), "utf8")
+    );
     const pieces: string[] = [];
     for (const chunk of this.chunkManifest.chunks) {
       pieces.push(
         chunk.passthrough
-          ? source.slice(chunk.start, chunk.end)
+          ? source.slice(chunk.start, chunk.end).join("")
           : await readFile(path.join(runDir, chunk.rewrittenFile!), "utf8")
       );
     }
@@ -207,7 +227,7 @@ describe("HumanizeEngine", () => {
   it("transforms one body chunk and returns the verified result", async () => {
     const test = await setup("AAA");
     try {
-      const ticks = [0, 5, 15, 18, 20, 27, 30, 35, 40];
+      const ticks = [0, 5, 15, 18, 18, 19, 20, 27, 30, 35, 40];
       const now = () => ticks.shift() ?? 40;
       const codex = new FakeCodex(["BBB"]);
       const engine = new HumanizeEngine({
@@ -236,13 +256,129 @@ describe("HumanizeEngine", () => {
         bodyChunks: 1,
         codexCalls: 1,
         retries: 0,
+        restoredSentences: 0,
+        removedCommas: 0,
         gateCodes: ["GATE_OK", "GATE_OK"],
         maxObservedCodexConcurrency: 1,
         prepareMs: 5,
         codexMs: 3,
+        restoreMs: 1,
         gateMs: 12,
         assembleMs: 5,
         totalMs: 40
+      });
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("slices chunks by code points so astral characters keep manifest offsets", async () => {
+    const test = await setup("😀AB--😀");
+    try {
+      const codex = new FakeCodex(["😀AB"]);
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest([body(1, 0, 3), passthrough(2, 3, 6)], 6),
+          [ok(), ok()]
+        ),
+        codex,
+        chunkConcurrency: 1
+      });
+
+      const result = await engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: () => undefined
+      });
+
+      expect(codex.attempts).toEqual([{ source: "😀AB", attempt: 1 }]);
+      expect(await readFile(result.finalPath, "utf8")).toBe("😀AB--😀");
+      expect(result.diagnostics.sourceChars).toBe(6);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("rejects a manifest whose offsets do not cover the source text", async () => {
+    const test = await setup("AAAA");
+    try {
+      const engine = new HumanizeEngine({
+        python: new FakePython(manifest([body(1, 0, 3)], 3), [ok(), ok()]),
+        codex: new FakeCodex(["BBB"]),
+        chunkConcurrency: 1
+      });
+
+      await expect(
+        engine.transform({
+          jobId: "job-1",
+          workspace: test.workspace,
+          signal: new AbortController().signal,
+          onEvent: () => undefined
+        })
+      ).rejects.toMatchObject({ publicCode: "ENGINE_OUTPUT_INVALID" });
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("restores modality in place before every chunk gate and reports it", async () => {
+    const test = await setup("AAA");
+    const events: TransformEvent[] = [];
+    try {
+      const python = new FakePython(
+        manifest([body(1, 0, 3)], 3),
+        [warn(), ok(), ok()],
+        [
+          { restoredSentences: 2, skippedSentences: 1, removedCommas: 1 },
+          { restoredSentences: 0, skippedSentences: 0, removedCommas: 3 }
+        ]
+      );
+      const engine = new HumanizeEngine({
+        python,
+        codex: new FakeCodex(["BBB", "CCC"]),
+        chunkConcurrency: 1
+      });
+
+      const result = await engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: event => events.push(event)
+      });
+
+      expect(python.calls).toEqual([
+        "restore",
+        "verify",
+        "restore",
+        "verify",
+        "verify"
+      ]);
+      expect(python.restoreCalls).toEqual([
+        {
+          before: test.workspace.path("chunk-1-source.txt"),
+          after: test.workspace.path("02_chunk_01_rewritten.txt")
+        },
+        {
+          before: test.workspace.path("chunk-1-source.txt"),
+          after: test.workspace.path("02_chunk_01_rewritten.txt")
+        }
+      ]);
+      expect(events.filter(event => event.type === "warning")).toEqual([
+        expect.objectContaining({
+          code: "MODALITY_RESTORED",
+          message: "1번 구간에서 서법 보존을 위해 2개 문장을 원문으로 되돌렸습니다."
+        }),
+        expect.objectContaining({ code: "CHUNK_RETRY" })
+      ]);
+      expect(result.diagnostics).toMatchObject({
+        codexCalls: 2,
+        retries: 1,
+        restoredSentences: 2,
+        removedCommas: 4
       });
     } finally {
       await test.workspace.cleanup();
@@ -747,6 +883,9 @@ describe("HumanizeEngine", () => {
     const python: PythonAdapter = {
       async prepare() {
         return manifest([body(1, 0, 3)], 3);
+      },
+      async restore() {
+        return noRestore();
       },
       async verify() {
         verifyCalls += 1;

@@ -190,6 +190,52 @@ _ROUTE_TELL_KEYS_V2 = (
     "double_particle_count",
 )
 
+# ── v2.6 신형 티 계수 (라우터 실명 방지) ─────────────────────────────
+# 실사고: 저자 추천사(1,124자)가 은유 관통 4회·감각 술어 2회·분열문을 안고도
+# risk low·tells 0으로 light("잘 쓴 글, 최소 수정")에 배정됐다. 위 카운트 키가
+# 전부 v1.6 시절 지표라 v2.6에서 채굴한 티를 하나도 못 세기 때문이다 —
+# 라우터가 못 보는 티는 어떤 경로에서도 고쳐지지 않는다(light는 최소 수정 지시).
+# taxonomy v2.6 채택분 중 정규식화 가능한 것을 직접 센다. 사전은 quick-rules와
+# 동일 어휘(단일 출처는 아니지만 갱신 시 함께 볼 것 — D-8~14·A-20·F-7).
+import re as _re
+
+_V26_ROUTE_PATTERNS = (
+    ("분열문(D-8)", _re.compile(r"(?:필요|중요)한\s*것은|(?:문제는|핵심은|관건은|답은)\s+[^.?!\n]{0,50}(?:점이다|것이다|데\s*있다)")),
+    ("이유다(D-10)", _re.compile(r"이유(?:다|이다|입니다)\.")),
+    ("시간지평(D-11)", _re.compile(r"(?:^|[.!?]\s+)(?:향후|앞으로는?|중?장기적으로는?)(?![가-힣])", _re.M)),
+    ("과제슬롯(D-12)", _re.compile(r"과제도\s*(?:남아\s*있다|남았다|뚜렷하다)|한계도\s*분명하다|아쉬운\s*점도\s*있다")),
+    ("은유가족(D-14)", _re.compile(r"잠식|흡수(?:하|되)|짓누르|삼키|갉아먹|청구서|성적표|대가를\s*치|과실[을이]|씨앗|뿌리내리|청사진|주춧돌|짊어지|신호탄|적신호")),
+    ("감각술어(D-14b)", _re.compile(r"(?:진단|경고|분석|통계|현실|숫자|전망|결론)[은는이가]\s*(?:서늘하|아프|차갑|뜨겁|묵직하|섬뜩하)")),
+    ("피동진행(A-20)", _re.compile(r"(?:되|지)고\s*있(?:다|으며|고|는)")),
+    ("범용동사(F-7)", _re.compile(r"(?:확대|강화|개선|확보|마련|구축)(?:해야|하[여어]야|가\s*필요)")),
+)
+
+# 관통 은유 — 은유성 동사 어근이 문서에서 3회 이상 반복(가족 사전 밖이어도).
+# ⚠️ 한국어 활용에서 어근이 축약된다 — "쥘"(쥐+ㄹ)은 "쥐"와 다른 음절이라 어근만 매칭하면
+# 놓친다(실사례: 쥐고·쥐여주는·쥘 3회 중 2회만 집계돼 역치 미달). 축약형을 함께 든다.
+_RUNNING_METAPHOR = _re.compile(r"(쥐|쥘|움켜쥐|끌어안|짊어지|떠받치|끌고\s*가|붙들)")
+_METAPHOR_ROOT_ALIAS = {"쥘": "쥐"}
+
+
+def count_v26_tells(text: str) -> tuple[int, dict]:
+    """v2.6 신형 티를 결정적으로 센다. (합계, 항목별) 반환."""
+    per: dict[str, int] = {}
+    total = 0
+    for name, rx in _V26_ROUTE_PATTERNS:
+        n = len(rx.findall(text))
+        if n:
+            per[name] = n
+            total += n
+    run = {}
+    for m in _RUNNING_METAPHOR.finditer(text):
+        root = _METAPHOR_ROOT_ALIAS.get(m.group(1), m.group(1))
+        run[root] = run.get(root, 0) + 1
+    for root, n in run.items():
+        if n >= 3:
+            per[f"관통은유({root})"] = n
+            total += n
+    return total, per
+
 
 def compute_route_hint(metrics_obj: dict) -> dict:
     """metrics_obj(compute_all 산출)로부터 route_hint 권고를 산출한다.
@@ -204,6 +250,8 @@ def compute_route_hint(metrics_obj: dict) -> dict:
         tells += int(m.get(key) or 0)
     for key in _ROUTE_TELL_KEYS_V2:
         tells += int(v2.get(key) or 0)
+    v26_total, v26_per = count_v26_tells(str(metrics_obj.get("_text") or ""))
+    tells += v26_total
     chars = int(metrics_obj.get("char_count") or 0)
     risk = metrics_obj.get("risk_band", "unknown")
 
@@ -234,6 +282,7 @@ def compute_route_hint(metrics_obj: dict) -> dict:
         "route_reason": reason,
         "route_signals": {
             "lexical_tell_count": tells,
+            "v26_tells": v26_per,
             "risk_band": risk,
             "char_count": chars,
         },
@@ -705,7 +754,10 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
             full_metrics = _metrics_mod.compute_all(
                 text, genre=args.genre, baseline_path=args.baseline
             )
+            # v2.6 신형 티 계수는 원문이 필요하다 — 단일 모드(main)와 같은 방식.
+            full_metrics["_text"] = text
             route = compute_route_hint(full_metrics)
+            full_metrics.pop("_text", None)
         except Exception:  # noqa: BLE001 — 권고 산출 실패는 치명 아님.
             route = None
     if args.portal_auto_route:
@@ -908,7 +960,10 @@ def main(argv: list[str] | None = None) -> int:
             metrics_obj = _metrics_mod.compute_all(
                 text, genre=args.genre, baseline_path=args.baseline
             )
+            # v2.6 신형 티 계수는 원문이 필요하다 — 직렬화 전에 빼는 내부 키로 전달.
+            metrics_obj["_text"] = text
             metrics_obj.update(compute_route_hint(metrics_obj))
+            metrics_obj.pop("_text", None)
             metrics_path.write_text(
                 json.dumps(metrics_obj, ensure_ascii=False, indent=2),
                 encoding="utf-8",

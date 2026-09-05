@@ -77,6 +77,9 @@ describe("live engine failure metadata", () => {
       async prepare() {
         throw new Error("unused");
       },
+      async restore() {
+        throw new Error("unused");
+      },
       async reassemble() {
         throw new Error("unused");
       },

@@ -30,6 +30,37 @@ function aborted(): EngineError {
   );
 }
 
+const CR = 0x0d;
+const LF = 0x0a;
+
+interface NewlineState {
+  pendingCr: boolean;
+}
+
+// The engine, the model, and the browser textarea all speak LF. CRLF or bare
+// CR input would desynchronise the Python chunk offsets (computed on LF text)
+// from the bytes on disk, so line endings are normalised while streaming.
+// CR and LF bytes never occur inside multi-byte UTF-8 sequences, so this is
+// safe to do before decoding and across arbitrary chunk boundaries.
+function normalizeNewlines(chunk: Buffer, state: NewlineState): Buffer {
+  const output = Buffer.allocUnsafe(chunk.byteLength);
+  let length = 0;
+  for (const byte of chunk) {
+    if (byte === CR) {
+      output[length++] = LF;
+      state.pendingCr = true;
+      continue;
+    }
+    if (byte === LF && state.pendingCr) {
+      state.pendingCr = false;
+      continue;
+    }
+    state.pendingCr = false;
+    output[length++] = byte;
+  }
+  return output.subarray(0, length);
+}
+
 async function removePartial(destination: string): Promise<void> {
   try {
     await unlink(destination);
@@ -64,11 +95,14 @@ export async function streamRequestBody(
     let chars = 0;
     let hasNonWhitespace = false;
     let nextDiskCheck = checkEveryBytes;
+    const newlines: NewlineState = { pendingCr: false };
 
     for await (const value of readable) {
       if (options.signal.aborted) throw aborted();
-      const chunk =
-        typeof value === "string" ? Buffer.from(value, "utf8") : Buffer.from(value);
+      const chunk = normalizeNewlines(
+        typeof value === "string" ? Buffer.from(value, "utf8") : Buffer.from(value),
+        newlines
+      );
 
       let offset = 0;
       while (offset < chunk.byteLength) {

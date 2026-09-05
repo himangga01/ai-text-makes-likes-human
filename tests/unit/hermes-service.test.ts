@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import { spawn, type ChildProcess } from "node:child_process";
+import { once } from "node:events";
 import {
   mkdtemp,
   mkdir,
@@ -106,7 +107,15 @@ class FakeServicePlatform implements ServicePlatform {
 
 afterEach(async () => {
   for (const child of children.splice(0)) {
-    if (child.pid !== undefined) child.kill("SIGKILL");
+    if (
+      child.pid !== undefined &&
+      child.exitCode === null &&
+      child.signalCode === null
+    ) {
+      const closed = once(child, "close");
+      child.kill("SIGKILL");
+      await closed;
+    }
   }
   await Promise.all(
     servers.splice(0).map(

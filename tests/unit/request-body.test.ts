@@ -30,6 +30,34 @@ describe("streamRequestBody", () => {
     }
   });
 
+  it("normalises CRLF and bare CR to LF even when split across chunks", async () => {
+    const root = await makeTestRoot();
+    const destination = path.join(root, "input.txt");
+    const chunks = [
+      Buffer.from("첫 줄\r", "utf8"),
+      Buffer.from("\n둘째 줄\r\n\r", "utf8"),
+      Buffer.from("셋째 줄\r", "utf8")
+    ];
+    try {
+      const result = await streamRequestBody(
+        Readable.from(chunks),
+        destination,
+        {
+          minFreeBytes: 1024,
+          signal: new AbortController().signal,
+          getFreeBytes: async () => 1024 ** 3
+        }
+      );
+
+      const expected = "첫 줄\n둘째 줄\n\n셋째 줄\n";
+      expect(await readFile(destination, "utf8")).toBe(expected);
+      expect(result.bytes).toBe(Buffer.byteLength(expected, "utf8"));
+      expect(result.chars).toBe(Array.from(expected).length);
+    } finally {
+      await removeTestRoot(root);
+    }
+  });
+
   it("rejects whitespace-only input and removes the partial file", async () => {
     const root = await makeTestRoot();
     const destination = path.join(root, "input.txt");

@@ -10,6 +10,8 @@ const required = [
   "scripts/verify_change_rate.py",
   "scripts/checks.py",
   "scripts/reassemble_chunks.py",
+  "scripts/restore_modality.py",
+  "scripts/strip_injected_commas.py",
   "scripts/console.py",
   "scripts/build_quick_rules.py",
   "scripts/build_diagnosis_rules.py",
@@ -32,7 +34,7 @@ describe("vendored humanize engine", () => {
     const version = await readFile(path.join(root, "ENGINE_VERSION"), "utf8");
 
     expect(version).toBe(
-      "version=2.3.2\ncommit=c4d03d4859acda143f0b04b4bbdb56c5e6a94db1\n"
+      "version=2.3.2\ncommit=31a66d165a9cc6c26c4c1246553f95d0468d27fb\n"
     );
   });
 });

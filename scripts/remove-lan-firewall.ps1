@@ -1,7 +1,7 @@
 param([switch]$WhatIf)
 
 $ErrorActionPreference = 'Stop'
-$name = 'AI Text Humanize Portal (Private TCP 3210)'
+$name = 'AI Text Humanize Portal (Private TCP 7882)'
 
 if ($WhatIf) {
   Write-Output "REMOVE|$name"

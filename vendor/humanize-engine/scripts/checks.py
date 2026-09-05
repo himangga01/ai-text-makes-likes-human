@@ -369,10 +369,46 @@ def extract_quotes(text: str, min_len: int = MIN_QUOTE_LEN) -> list[str]:
     return [q for q in quotes if len(q.strip()) >= min_len]
 
 
+# ── 인용 분류: 발화 인용 vs 필자의 수사적 자문 (2026-08-29 정책) ─────────
+# 큰따옴표라고 다 같은 인용이 아니다. 발화자·발화 동사가 붙은 인용("…"고 말했다,
+# 보고서에 따르면 "…")만 불변이고, 필자가 자문(自問)·강조를 따옴표로 감싼 수사
+# 장치는 필자 자신의 문장이므로 윤문 대상이다. 저자가 직접 교정한 정답지가 자문
+# 인용 안을 고쳤고, 이 구분 없이는 어떤 실행자도 그 수준에 도달할 수 없었다.
+# 판정 창은 문장 경계에서 자른다 — 넓게 잡으면 이웃 문장의 발화 동사가
+# 자문 인용을 오보호한다(웹 구현 실측).
+_SPEECH_MARK_RE = re.compile(
+    r"말했|말한다|밝혔|밝힌|강조했|강조한|언급|설명했|설명한다|전했|덧붙"
+    r"|지적했|지적한다|답했|묻자|물었|따르면|촉구|당부|호소|주장했|경고했"
+)
+
+
+# 인용 닫힘 직후의 "~고/~라고 + 용언"은 동사가 무엇이든 발화·전거 구문이다
+# ("…"고 말했다 / "…"라고 보고하였다 / "…"으로 정의한다). 어휘 사전은 새는 반면
+# (실측: "보고하였다" 누락으로 학술 인용이 무보호), 이 구조 신호는 포괄적이다.
+_ATTRIB_AFTER_RE = re.compile(r'^[""\"]?\s*(?:[이으]?라고|고|[으]?로)\s*[가-힣]{1,8}(?:하|했|한다|된다|였|입니다)')
+
+
+def _is_protected_quote(original: str, span: str) -> bool:
+    i = original.find(span)
+    if i < 0:
+        return True  # 못 찾으면 보수적으로 보호
+    before = original[max(0, i - 30):i]
+    cut = max(before.rfind(". "), before.rfind("다. "))
+    if cut >= 0:
+        before = before[cut + 1:]
+    after = original[i + len(span):i + len(span) + 24]
+    cut = after.find(". ")
+    if cut >= 0:
+        after = after[:cut + 1]
+    if _ATTRIB_AFTER_RE.search(after):
+        return True
+    return bool(_SPEECH_MARK_RE.search(before) or _SPEECH_MARK_RE.search(after))
+
+
 def check_quotes(original: str, output: str) -> list[Failure]:
     fails = []
     for q in extract_quotes(original):
-        if q not in output:
+        if q not in output and _is_protected_quote(original, q):
             fails.append(Failure(
                 "quote_altered",
                 f"직접 인용 「{q[:30]}…」이 윤문본에 원문 그대로 없습니다 (인용 불변 철칙)",

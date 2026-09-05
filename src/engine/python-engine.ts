@@ -44,6 +44,12 @@ export interface GateResult {
   gateCodes: GateCode[];
 }
 
+export interface RestoreReport {
+  restoredSentences: number;
+  skippedSentences: number;
+  removedCommas: number;
+}
+
 export interface PythonEngineOptions {
   pythonCommand: string;
   vendorRoot: string;
@@ -116,17 +122,24 @@ function nullableText(value: unknown, label: string): string | null {
   return value === null ? null : text(value, label);
 }
 
-function parseGateReport(stdout: string): Record<string, unknown> {
-  const starts = [...stdout.matchAll(/^\{/gmu)].map(match => match.index!);
+function parseJsonReport(
+  output: string,
+  label: string
+): Record<string, unknown> {
+  const starts = [...output.matchAll(/^\{/gmu)].map(match => match.index!);
   for (const start of starts.reverse()) {
     try {
-      const value: unknown = JSON.parse(stdout.slice(start).trim());
-      return record(value, "gate report");
+      const value: unknown = JSON.parse(output.slice(start).trim());
+      return record(value, `${label} report`);
     } catch {
       // Continue to an earlier line-starting object.
     }
   }
-  throw invalid("Unable to parse gate JSON report");
+  throw invalid(`Unable to parse ${label} JSON report`);
+}
+
+function parseGateReport(stdout: string): Record<string, unknown> {
+  return parseJsonReport(stdout, "gate");
 }
 
 const GATE_CODES = [
@@ -320,6 +333,60 @@ export class PythonEngine {
       status: statuses[exitCode],
       exitCode,
       gateCodes: [GATE_CODES[exitCode]]
+    };
+  }
+
+  async restore(
+    beforePath: string,
+    afterPath: string,
+    signal: AbortSignal
+  ): Promise<RestoreReport> {
+    const before = path.resolve(beforePath);
+    const after = path.resolve(afterPath);
+    const cwd = path.dirname(before);
+    const inPlace = [
+      "--before",
+      before,
+      "--after",
+      after,
+      "--out",
+      after,
+      "--json"
+    ];
+
+    const modality = await this.run(
+      [this.script("restore_modality.py"), ...inPlace],
+      cwd,
+      signal
+    );
+    if (modality.exitCode !== 0) {
+      throw invalid("Python modality restore failed");
+    }
+    const modalityReport = parseJsonReport(modality.stderr, "modality restore");
+
+    const commas = await this.run(
+      [this.script("strip_injected_commas.py"), ...inPlace],
+      cwd,
+      signal
+    );
+    if (commas.exitCode !== 0) {
+      throw invalid("Python comma strip failed");
+    }
+    const commaReport = parseJsonReport(commas.stderr, "comma strip");
+
+    return {
+      restoredSentences: integer(
+        modalityReport.restored,
+        "modality restore report.restored"
+      ),
+      skippedSentences: integer(
+        modalityReport.skipped,
+        "modality restore report.skipped"
+      ),
+      removedCommas: integer(
+        commaReport.commas_removed,
+        "comma strip report.commas_removed"
+      )
     };
   }
 

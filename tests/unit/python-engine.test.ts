@@ -159,6 +159,59 @@ describe("PythonEngine", () => {
     expect(result).not.toHaveProperty("stdout");
   });
 
+  it("restores modality and strips injected commas in place", async () => {
+    const runner = new FakeCommandRunner([
+      exited("", 0, '{\n "restored": 1,\n "skipped": 2,\n "details": {}\n}\n'),
+      exited("", 0, '{"commas_removed": 3, "sentences_touched": 1}\n')
+    ]);
+    const engine = new PythonEngine({
+      pythonCommand: "python",
+      vendorRoot,
+      runner
+    });
+
+    const report = await engine.restore(
+      "C:/job/before.txt",
+      "C:/job/after.txt",
+      new AbortController().signal
+    );
+
+    expect(report).toEqual({
+      restoredSentences: 1,
+      skippedSentences: 2,
+      removedCommas: 3
+    });
+    const after = path.resolve("C:/job/after.txt");
+    expect(runner.calls.map(call => call.args[0])).toEqual([
+      path.join(vendorRoot, "scripts", "restore_modality.py"),
+      path.join(vendorRoot, "scripts", "strip_injected_commas.py")
+    ]);
+    for (const call of runner.calls) {
+      expect(call.args).toEqual(
+        expect.arrayContaining(["--before", "--after", "--out", after, "--json"])
+      );
+      expect(call.args).not.toContain("--all");
+    }
+  });
+
+  it("rejects a failed modality restore before stripping commas", async () => {
+    const runner = new FakeCommandRunner([exited("", 1, "Traceback")]);
+    const engine = new PythonEngine({
+      pythonCommand: "python",
+      vendorRoot,
+      runner
+    });
+
+    await expect(
+      engine.restore(
+        "C:/job/before.txt",
+        "C:/job/after.txt",
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({ publicCode: "ENGINE_OUTPUT_INVALID" });
+    expect(runner.calls).toHaveLength(1);
+  });
+
   it("rejects malformed gate stdout", async () => {
     const engine = new PythonEngine({
       pythonCommand: "python",

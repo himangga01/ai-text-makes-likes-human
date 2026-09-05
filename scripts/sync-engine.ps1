@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$expectedCommit = 'c4d03d4859acda143f0b04b4bbdb56c5e6a94db1'
+$expectedCommit = '31a66d165a9cc6c26c4c1246553f95d0468d27fb'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $patchPath = Join-Path $PSScriptRoot 'patches\humanize-engine-portal.patch'
 $destination = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\vendor\humanize-engine'))
@@ -35,6 +35,8 @@ $scripts = @(
   'verify_change_rate.py',
   'checks.py',
   'reassemble_chunks.py',
+  'restore_modality.py',
+  'strip_injected_commas.py',
   'console.py',
   'build_quick_rules.py',
   'build_diagnosis_rules.py'
@@ -80,7 +82,7 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 )
 [IO.File]::WriteAllText(
   (Join-Path $destination 'UPSTREAM.md'),
-  "# Vendored Humanize Engine`n`nSource: https://github.com/epoko77-ai/im-not-ai`nVersion: 2.3.2`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n",
+  "# Vendored Humanize Engine`n`nSource: https://github.com/epoko77-ai/im-not-ai`nVersion: 2.3.2`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n- Feeds the source text to the v2.6 route tell counter in --chunk mode so short documents are not misrouted to light.`n- Keeps LF/CRLF intact in restore_modality.py and strip_injected_commas.py file I/O.`n",
   $utf8NoBom
 )
 

@@ -17,8 +17,10 @@ test.beforeEach(async ({ page }) => {
 
 test("typing never transforms; clicking transforms exactly once", async ({ page }) => {
   let transformCalls = 0;
-  await page.route("**/api/transform", route => {
+  let requestedEngine: string | null = null;
+  await page.route("**/api/transform*", route => {
     transformCalls += 1;
+    requestedEngine = new URL(route.request().url()).searchParams.get("engine");
     return route.fulfill({
       status: 200,
       contentType: "application/x-ndjson; charset=utf-8",
@@ -38,12 +40,44 @@ test("typing never transforms; clicking transforms exactly once", async ({ page 
   await page.locator("#transform-button").click();
   await expect(page.locator("#result-text")).toHaveValue("자연스러운 결과");
   expect(transformCalls).toBe(1);
+  expect(requestedEngine).toBe("codex");
   await expect(page.locator("#status-chip")).toContainText("완료");
+});
+
+test("Claude selection sends the selected engine without starting on selection", async ({ page }) => {
+  await page.route("**/api/health", route =>
+    route.fulfill({ json: { ...readyHealth, claudeAvailable: true } })
+  );
+  const engines: Array<string | null> = [];
+  await page.route("**/api/transform*", route => {
+    engines.push(new URL(route.request().url()).searchParams.get("engine"));
+    return route.fulfill({
+      status: 200,
+      contentType: "application/x-ndjson; charset=utf-8",
+      body: [
+        { type: "accepted", jobId: "claude", position: 0 },
+        { type: "result-start" },
+        { type: "result-delta", text: "Claude 결과" },
+        { type: "done", sourceChars: 2, outputChars: 9, chunks: 1, elapsedMs: 10 }
+      ].map(event => JSON.stringify(event)).join("\n") + "\n"
+    });
+  });
+
+  await page.goto("/");
+  await page.locator("#source-text").fill("원문");
+  await expect(page.locator('input[value="claude"]')).toBeEnabled();
+  await page.locator("#engine-option-claude").click();
+  await expect(page.locator('input[value="claude"]')).toBeChecked();
+  expect(engines).toEqual([]);
+  await page.locator("#transform-button").click();
+  await expect(page.locator("#status-chip")).toHaveText("완료");
+  expect(engines).toEqual(["claude"]);
+  await expect(page.locator("#result-text")).toHaveValue("Claude 결과");
 });
 
 test("TXT selection stays local until the transform button is clicked", async ({ page }) => {
   let transformCalls = 0;
-  await page.route("**/api/transform", route => {
+  await page.route("**/api/transform*", route => {
     transformCalls += 1;
     return route.fulfill({
       status: 200,
@@ -95,7 +129,7 @@ test("Markdown stays local and the completed result downloads as Markdown", asyn
   page
 }) => {
   let transformCalls = 0;
-  await page.route("**/api/transform", async route => {
+  await page.route("**/api/transform*", async route => {
     transformCalls += 1;
     if (transformCalls === 3) {
       return route.fulfill({
@@ -260,7 +294,7 @@ test("progress and status stay monotonic across all transform phases", async ({ 
       }
     });
   });
-  await page.route("**/api/transform", route =>
+  await page.route("**/api/transform*", route =>
     route.fulfill({
       status: 200,
       contentType: "application/x-ndjson; charset=utf-8",
@@ -331,7 +365,7 @@ test("copy works on an HTTP LAN page without the Clipboard API", async ({ page }
       value: undefined
     });
   });
-  await page.route("**/api/transform", route =>
+  await page.route("**/api/transform*", route =>
     route.fulfill({
       status: 200,
       contentType: "application/x-ndjson; charset=utf-8",

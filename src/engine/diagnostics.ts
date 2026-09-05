@@ -8,6 +8,7 @@ export type GateCode =
 
 export interface ChunkTiming {
   codexMs: number;
+  restoreMs: number;
   gateMs: number;
 }
 
@@ -20,10 +21,13 @@ export interface TransformDiagnostics {
   bodyChunks: number;
   codexCalls: number;
   retries: number;
+  restoredSentences: number;
+  removedCommas: number;
   gateCodes: GateCode[];
   maxObservedCodexConcurrency: number;
   prepareMs: number;
   codexMs: number;
+  restoreMs: number;
   gateMs: number;
   assembleMs: number;
   totalMs: number;

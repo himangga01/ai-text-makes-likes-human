@@ -44,6 +44,58 @@ describe("PythonEngine integration", () => {
     }
   });
 
+  it("restores a hedge the rewrite turned into an assertion", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const before =
+        "이 수치는 낮은 것으로 판단된다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n";
+      const after =
+        "이 수치는 낮은 수치다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n";
+      const beforePath = path.join(runDir, "before.txt");
+      const afterPath = path.join(runDir, "after.txt");
+      await writeFile(beforePath, before, "utf8");
+      await writeFile(afterPath, after, "utf8");
+
+      const report = await engine.restore(
+        beforePath,
+        afterPath,
+        new AbortController().signal
+      );
+
+      expect(report).toMatchObject({ restoredSentences: 1, removedCommas: 0 });
+      expect(await readFile(afterPath, "utf8")).toBe(before);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("keeps CRLF line endings through the restore step", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const text =
+        "첫 문단이다.\r\n\r\n둘째 문단은 그대로 둔다.\r\n";
+      const beforePath = path.join(runDir, "before.txt");
+      const afterPath = path.join(runDir, "after.txt");
+      await writeFile(beforePath, text, "utf8");
+      await writeFile(afterPath, text, "utf8");
+
+      const report = await engine.restore(
+        beforePath,
+        afterPath,
+        new AbortController().signal
+      );
+
+      expect(report).toEqual({
+        restoredSentences: 0,
+        skippedSentences: 0,
+        removedCommas: 0
+      });
+      expect(await readFile(afterPath, "utf8")).toBe(text);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
   it("creates multiple body chunks for a document over 15,000 characters", async () => {
     const runDir = await makeTestRoot();
     try {

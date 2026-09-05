@@ -36,26 +36,26 @@ describe("Windows operator scripts", () => {
     expect(output).toContain("Codex login");
   });
 
-  it("reports a start plan that uses npm.cmd and localhost 3210", () => {
+  it("reports a start plan that uses npm.cmd and localhost 7882", () => {
     const output = cmd("start-portal.cmd --dry-run");
     expect(output).toContain("npm.cmd start");
-    expect(output).toContain("http://localhost:3210");
+    expect(output).toContain("http://localhost:7882");
     expect(output).not.toContain("npm.ps1");
   });
 
-  it("limits the firewall creation plan to Private TCP 3210", () => {
+  it("limits the firewall creation plan to Private TCP 7882", () => {
     const output = powershell("allow-lan-firewall.ps1");
     expect(output).toContain("CREATE");
-    expect(output).toContain("AI Text Humanize Portal (Private TCP 3210)");
+    expect(output).toContain("AI Text Humanize Portal (Private TCP 7882)");
     expect(output).toContain("Private");
     expect(output).toContain("TCP");
-    expect(output).toContain("3210");
+    expect(output).toContain("7882");
   });
 
   it("removes only the exact portal firewall rule", () => {
     const output = powershell("remove-lan-firewall.ps1");
     expect(output).toBe(
-      "REMOVE|AI Text Humanize Portal (Private TCP 3210)\r\n"
+      "REMOVE|AI Text Humanize Portal (Private TCP 7882)\r\n"
     );
   });
 });

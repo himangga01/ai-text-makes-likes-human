@@ -15,12 +15,18 @@ import {
 } from "./model-policy.js";
 import type {
   ChunkManifest,
-  GateResult
+  GateResult,
+  RestoreReport
 } from "./python-engine.js";
 import type { JobWorkspace } from "./workspace.js";
 
 export interface PythonAdapter {
   prepare(runDir: string, signal: AbortSignal): Promise<ChunkManifest>;
+  restore(
+    beforePath: string,
+    afterPath: string,
+    signal: AbortSignal
+  ): Promise<RestoreReport>;
   verify(
     beforePath: string,
     afterPath: string,
@@ -70,7 +76,7 @@ export interface HumanizeEngineOptions {
 }
 
 interface ChunkTaskContext {
-  source: string;
+  sourcePoints: readonly string[];
   workspace: JobWorkspace;
   signal: AbortSignal;
   onWorkUnit(phase: "transform" | "verify"): void;
@@ -82,6 +88,8 @@ export interface ChunkTaskResult {
   warnings: HumanizeWarning[];
   codexCalls: number;
   retries: number;
+  restoredSentences: number;
+  removedCommas: number;
   gateCodes: GateCode[];
   timings: ChunkTiming;
 }
@@ -164,7 +172,10 @@ export class HumanizeEngine {
     this.ensureActive(context.signal);
     const warnings: HumanizeWarning[] = [];
     const gateCodes: GateCode[] = [];
-    const sourceText = context.source.slice(chunk.start, chunk.end);
+    // Manifest offsets are Python code-point indices, not UTF-16 units.
+    const sourceText = context.sourcePoints
+      .slice(chunk.start, chunk.end)
+      .join("");
     const chunkSourcePath = context.workspace.path(
       `chunk-${chunk.index}-source.txt`
     );
@@ -172,9 +183,33 @@ export class HumanizeEngine {
     let codexCalls = 0;
     let retries = 0;
     let codexMs = 0;
+    let restoreMs = 0;
     let gateMs = 0;
+    let restoredSentences = 0;
+    let removedCommas = 0;
 
     await writeFile(chunkSourcePath, sourceText, "utf8");
+
+    // Deterministic post-processing right before the gate: sentences whose
+    // deontic/hedge modality vanished go back to the source wording, and
+    // commas the rewrite injected after connective endings are removed.
+    const restore = async (): Promise<void> => {
+      const startedAt = this.now();
+      const report = await this.python.restore(
+        chunkSourcePath,
+        rewrittenPath,
+        context.signal
+      );
+      restoreMs += this.now() - startedAt;
+      restoredSentences += report.restoredSentences;
+      removedCommas += report.removedCommas;
+      if (report.restoredSentences > 0) {
+        this.recordChunkWarning(context, warnings, {
+          code: "MODALITY_RESTORED",
+          message: `${chunk.index}번 구간에서 서법 보존을 위해 ${report.restoredSentences}개 문장을 원문으로 되돌렸습니다.`
+        });
+      }
+    };
 
     const firstCodexStartedAt = this.now();
     const first = await this.codex.transform(
@@ -189,6 +224,7 @@ export class HumanizeEngine {
     context.onWorkUnit("transform");
     this.collectCodexWarnings(context, warnings, first.warnings);
     await writeFile(rewrittenPath, first.rewrittenText, "utf8");
+    await restore();
 
     const firstGateStartedAt = this.now();
     let gate = await this.python.verify(
@@ -221,6 +257,7 @@ export class HumanizeEngine {
       this.ensureActive(context.signal);
       this.collectCodexWarnings(context, warnings, second.warnings);
       await writeFile(rewrittenPath, second.rewrittenText, "utf8");
+      await restore();
 
       const secondGateStartedAt = this.now();
       gate = await this.python.verify(
@@ -254,8 +291,10 @@ export class HumanizeEngine {
       warnings,
       codexCalls,
       retries,
+      restoredSentences,
+      removedCommas,
       gateCodes,
-      timings: { codexMs, gateMs }
+      timings: { codexMs, restoreMs, gateMs }
     };
   }
 
@@ -295,6 +334,18 @@ export class HumanizeEngine {
 
     const sourcePath = request.workspace.path(manifest.sourceFile);
     const source = await readFile(sourcePath, "utf8");
+    const sourcePoints = Array.from(source);
+    const lastChunk = manifest.chunks.at(-1);
+    if (
+      manifest.sourceChars !== sourcePoints.length ||
+      (lastChunk ? lastChunk.end : 0) !== sourcePoints.length
+    ) {
+      throw new EngineError(
+        "ENGINE_OUTPUT_INVALID",
+        false,
+        "Chunk manifest does not cover the prepared source text"
+      );
+    }
     const bodyChunks = manifest.chunks.filter(chunk => !chunk.passthrough);
     const concurrency =
       manifest.processingMode === "single" ? 1 : this.chunkConcurrency;
@@ -307,7 +358,7 @@ export class HumanizeEngine {
       async ({ chunk, bodyIndex }, signal) => {
         this.ensureActive(signal);
         return this.processChunk(chunk, {
-          source,
+          sourcePoints,
           workspace: request.workspace,
           signal,
           onWarning: warning =>
@@ -364,7 +415,7 @@ export class HumanizeEngine {
     }
 
     const output = await readFile(finalPath, "utf8");
-    const sourceChars = codePointLength(source);
+    const sourceChars = sourcePoints.length;
     const diagnostics: TransformDiagnostics = {
       model: this.model,
       reasoningEffort: this.reasoningEffort,
@@ -380,6 +431,14 @@ export class HumanizeEngine {
         (total, result) => total + result.retries,
         0
       ),
+      restoredSentences: chunkResults.reduce(
+        (total, result) => total + result.restoredSentences,
+        0
+      ),
+      removedCommas: chunkResults.reduce(
+        (total, result) => total + result.removedCommas,
+        0
+      ),
       gateCodes: [
         ...chunkResults.flatMap(result => result.gateCodes),
         ...fullGate.gateCodes
@@ -391,6 +450,10 @@ export class HumanizeEngine {
       prepareMs,
       codexMs: chunkResults.reduce(
         (total, result) => total + result.timings.codexMs,
+        0
+      ),
+      restoreMs: chunkResults.reduce(
+        (total, result) => total + result.timings.restoreMs,
         0
       ),
       gateMs:

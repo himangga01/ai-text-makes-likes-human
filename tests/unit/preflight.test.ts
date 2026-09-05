@@ -5,7 +5,7 @@ import { exited, FakeCommandRunner } from "../helpers/fake-command-runner.js";
 
 const config = loadConfig({}, process.cwd());
 const engineVersion =
-  "version=2.3.2\ncommit=c4d03d4859acda143f0b04b4bbdb56c5e6a94db1\n";
+  "version=2.3.2\ncommit=31a66d165a9cc6c26c4c1246553f95d0468d27fb\n";
 
 describe("runPreflight", () => {
   it("reports ready for supported Python, Codex, login, and engine versions", async () => {

@@ -1,5 +1,5 @@
 diff --git a/vendor/humanize-engine/scripts/prepare_monolith_input.py b/vendor/humanize-engine/scripts/prepare_monolith_input.py
-index 606fce0..313260f 100644
+index b7ff6de..b067027 100644
 --- a/vendor/humanize-engine/scripts/prepare_monolith_input.py
 +++ b/vendor/humanize-engine/scripts/prepare_monolith_input.py
 @@ -144,7 +144,7 @@ def _load_input(input_path: Path, run_dir: Path, enabled: bool) -> str:
@@ -11,7 +11,7 @@ index 606fce0..313260f 100644
          (run_dir / "00_sanitize.json").write_text(
              json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
              encoding="utf-8",
-@@ -643,6 +643,34 @@ def compute_chunk_spans(
+@@ -692,6 +692,34 @@ def compute_chunk_spans(
      return spans, warnings
  
  
@@ -46,7 +46,7 @@ index 606fce0..313260f 100644
  def _render_chunk_header(index: int, total: int, starts_with_heading: bool) -> str:
      lines = [
          f"[청크 컨텍스트] 이 텍스트는 한 문서를 나눈 청크 {index}/{total}이다.",
-@@ -669,8 +697,6 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+@@ -718,8 +746,6 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
      if not text.strip():
          raise SystemExit("01_input.txt is empty; nothing to chunk")
  
@@ -55,8 +55,14 @@ index 606fce0..313260f 100644
      # 전문(全文) 기준 route_hint — 청킹 경로가 애초에 적절했는지 manifest 에
      # 남긴다. 판정 실패는 청킹을 막지 않는다 (graceful degrade).
      route: dict | None = None
-@@ -682,7 +708,12 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+@@ -728,10 +754,18 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+             full_metrics = _metrics_mod.compute_all(
+                 text, genre=args.genre, baseline_path=args.baseline
+             )
++            # v2.6 신형 티 계수는 원문이 필요하다 — 단일 모드(main)와 같은 방식.
++            full_metrics["_text"] = text
              route = compute_route_hint(full_metrics)
++            full_metrics.pop("_text", None)
          except Exception:  # noqa: BLE001 — 권고 산출 실패는 치명 아님.
              route = None
 -    if len(text) <= CHUNK_RECOMMEND_MIN_CHARS:
@@ -69,7 +75,7 @@ index 606fce0..313260f 100644
          warnings.append(
              f"입력 {len(text):,}자 ≤ 청킹 권장 최소 {CHUNK_RECOMMEND_MIN_CHARS:,}자 "
              f"— 단일 콜 실증 범위라 --chunk 비권장 (권고, route_hint 참조)"
-@@ -769,6 +800,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+@@ -818,6 +852,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
          "max_chunk_chars": MAX_CHUNK_CHARS,
          "route_hint": route["route_hint"] if route else None,
          "route_reason": route["route_reason"] if route else None,
@@ -77,7 +83,7 @@ index 606fce0..313260f 100644
          "chunk_count": total,
          "body_chunk_count": sum(1 for e in entries if not e["passthrough"]),
          "passthrough_chunk_count": sum(1 for e in entries if e["passthrough"]),
-@@ -825,6 +857,11 @@ def main(argv: list[str] | None = None) -> int:
+@@ -874,6 +909,11 @@ def main(argv: list[str] | None = None) -> int:
          help="장문 청킹 모드: 01_input.txt 를 손실 없이 분할해 청크별 "
          "input_with_metrics 파일과 chunk_manifest.json 을 만든다.",
      )
@@ -102,3 +108,51 @@ index 6e32cc7..1d87af1 100644
  
      report = {
          "source_chars": len(text),
+diff --git a/vendor/humanize-engine/scripts/restore_modality.py b/vendor/humanize-engine/scripts/restore_modality.py
+index dc5e4a3..33a59e7 100644
+--- a/vendor/humanize-engine/scripts/restore_modality.py
++++ b/vendor/humanize-engine/scripts/restore_modality.py
+@@ -255,9 +255,9 @@ def main(argv: list[str] | None = None) -> int:
+     ap.add_argument("--json", action="store_true", help="보고를 JSON으로 stderr에 출력")
+     args = ap.parse_args(argv)
+ 
+-    with open(args.before, encoding="utf-8") as f:
++    with open(args.before, encoding="utf-8", newline="") as f:
+         before = f.read()
+-    with open(args.after, encoding="utf-8") as f:
++    with open(args.after, encoding="utf-8", newline="") as f:
+         after = f.read()
+ 
+     result, restored, skipped = restore(before, after)
+@@ -277,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
+             print(f"  (보류) {s['after'][:40]} — {s['reason']}", file=sys.stderr)
+ 
+     if args.out:
+-        with open(args.out, "w", encoding="utf-8") as f:
++        with open(args.out, "w", encoding="utf-8", newline="") as f:
+             f.write(result)
+     else:
+         sys.stdout.write(result)
+diff --git a/vendor/humanize-engine/scripts/strip_injected_commas.py b/vendor/humanize-engine/scripts/strip_injected_commas.py
+index 1cbbd34..8f52d83 100644
+--- a/vendor/humanize-engine/scripts/strip_injected_commas.py
++++ b/vendor/humanize-engine/scripts/strip_injected_commas.py
+@@ -105,15 +105,15 @@ def main(argv: list[str] | None = None) -> int:
+     )
+     args = ap.parse_args(argv)
+ 
+-    with open(args.before, encoding="utf-8") as f:
++    with open(args.before, encoding="utf-8", newline="") as f:
+         before = f.read()
+-    with open(args.after, encoding="utf-8") as f:
++    with open(args.after, encoding="utf-8", newline="") as f:
+         after = f.read()
+ 
+     fixed, report = strip_injected(before, after, all_sentences=args.all)
+ 
+     if args.out:
+-        with open(args.out, "w", encoding="utf-8") as f:
++        with open(args.out, "w", encoding="utf-8", newline="") as f:
+             f.write(fixed)
+     else:
+         sys.stdout.write(fixed)
