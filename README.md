@@ -13,7 +13,10 @@
 - Codex CLI 0.149 이상
 - Codex CLI의 ChatGPT 로그인
 
-변환 모델은 사용자 Codex 설정과 관계없이 `gpt-5.6-sol`, reasoning effort `high`로 고정됩니다.
+변환 엔진은 화면에서 GPT와 Claude 중 선택할 수 있습니다.
+
+- **GPT** (기본): 사용자 Codex 설정과 관계없이 `gpt-5.6-sol`, reasoning effort `medium`로 고정됩니다.
+- **Claude**: 서버에 로그인된 Claude Code CLI로 `claude-opus-5`, effort `medium`를 호출합니다. 서버 PC에 Claude CLI 설치와 로그인(`claude` 실행 후 로그인)이 필요하며, CLI가 없으면 화면의 Claude 버튼이 비활성화됩니다.
 
 Codex 로그인 확인:
 

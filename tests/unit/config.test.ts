@@ -8,7 +8,7 @@ describe("loadConfig", () => {
     const config = loadConfig({}, root);
 
     expect(config.host).toBe("0.0.0.0");
-    expect(config.port).toBe(3210);
+    expect(config.port).toBe(7882);
     expect(config.maxAcceptedJobs).toBe(3);
     expect(config.maxActiveJobs).toBe(1);
     expect(config.chunkTimeoutMs).toBe(10 * 60 * 1000);

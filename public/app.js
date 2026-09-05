@@ -18,6 +18,8 @@ const elements = {
   copy: document.querySelector("#copy-button"),
   download: document.querySelector("#download-button"),
   reset: document.querySelector("#reset-button"),
+  engineInputs: [...document.querySelectorAll("#engine-select input[name=engine]")],
+  claudeOption: document.querySelector("#engine-option-claude"),
   status: document.querySelector("#status"),
   statusChip: document.querySelector("#status-chip"),
   statusMessage: document.querySelector("#status-message"),
@@ -29,6 +31,7 @@ const elements = {
 };
 
 let engineReady = false;
+let claudeAvailable = false;
 let running = false;
 let controller;
 let sourceFile;
@@ -39,6 +42,29 @@ let runCompleted = false;
 
 function countCharacters(text) {
   return Array.from(text).length;
+}
+
+function selectedEngine() {
+  return elements.engineInputs.find(input => input.checked)?.value ?? "codex";
+}
+
+function applyClaudeAvailability() {
+  const claudeInput = elements.engineInputs.find(
+    input => input.value === "claude"
+  );
+  if (!claudeInput) return;
+  claudeInput.disabled = !claudeAvailable;
+  if (elements.claudeOption) {
+    elements.claudeOption.title = claudeAvailable
+      ? ""
+      : "서버에서 Claude CLI를 사용할 수 없습니다.";
+  }
+  if (!claudeAvailable && claudeInput.checked) {
+    const codexInput = elements.engineInputs.find(
+      input => input.value === "codex"
+    );
+    if (codexInput) codexInput.checked = true;
+  }
 }
 
 function setStep(index) {
@@ -88,6 +114,10 @@ function refreshControls() {
   const canDownload = Boolean(resultDownloadName && elements.result.value);
   elements.sourceCount.textContent = `${countCharacters(elements.source.value).toLocaleString("ko-KR")}자`;
   elements.transform.disabled = !engineReady || !hasSource || running;
+  elements.engineInputs.forEach(input => {
+    input.disabled =
+      running || (input.value === "claude" && !claudeAvailable);
+  });
   elements.fileButton.disabled = running;
   elements.reset.disabled = running || (!hasSource && !elements.result.value);
   elements.copy.disabled = elements.result.value.length === 0;
@@ -192,12 +222,15 @@ async function startTransform() {
   setStep(1);
   applyProgress({ type: "accepted" });
   try {
-    const response = await fetch("/api/transform", {
-      method: "POST",
-      headers: { "content-type": "text/plain; charset=utf-8" },
-      body: elements.source.value,
-      signal: controller.signal
-    });
+    const response = await fetch(
+      `/api/transform?engine=${encodeURIComponent(selectedEngine())}`,
+      {
+        method: "POST",
+        headers: { "content-type": "text/plain; charset=utf-8" },
+        body: elements.source.value,
+        signal: controller.signal
+      }
+    );
     await consumeNdjson(response);
   } catch (error) {
     if (controller.signal.aborted) {
@@ -331,6 +364,8 @@ async function checkHealth() {
     const response = await fetch("/api/health", { cache: "no-store" });
     const body = await response.json();
     engineReady = response.ok && body.status === "ready";
+    claudeAvailable = engineReady && body.claudeAvailable === true;
+    applyClaudeAvailability();
     if (!engineReady) {
       setStatus("error", "엔진 점검", body.message || "서버의 변환 엔진을 사용할 수 없습니다.");
     }
@@ -341,5 +376,6 @@ async function checkHealth() {
 }
 
 showResultState();
+applyClaudeAvailability();
 refreshControls();
 checkHealth();

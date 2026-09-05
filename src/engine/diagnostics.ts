@@ -1,8 +1,3 @@
-import {
-  HUMANIZE_MODEL,
-  HUMANIZE_REASONING_EFFORT
-} from "./model-policy.js";
-
 export type RouteHint = "light" | "standard" | "heavy";
 export type ProcessingMode = "single" | "chunked";
 export type GateCode =
@@ -17,8 +12,8 @@ export interface ChunkTiming {
 }
 
 export interface TransformDiagnostics {
-  model: typeof HUMANIZE_MODEL;
-  reasoningEffort: typeof HUMANIZE_REASONING_EFFORT;
+  model: string;
+  reasoningEffort: string;
   processingMode: ProcessingMode;
   routeHint: RouteHint | null;
   sourceChars: number;

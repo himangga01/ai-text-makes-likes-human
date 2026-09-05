@@ -27,12 +27,39 @@ describe("GET /api/health", () => {
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({
         status: "ready",
+        pid: process.pid,
         engine: "codex-cli",
         engineVersion: "0.149.0",
         humanizeVersion: "2.3.2",
+        claudeAvailable: false,
         activeJobs: 0,
         queuedJobs: 0
       });
+    } finally {
+      await close(running.server);
+    }
+  });
+
+  it("reports claudeAvailable when a Claude engine is configured", async () => {
+    const app = createApp({
+      config,
+      queue: new TransformQueue({ maxActive: 1, maxAccepted: 3 }),
+      engine: { transform: async () => { throw new Error("not used"); } },
+      claudeEngine: { transform: async () => { throw new Error("not used"); } },
+      preflight: {
+        ready: true,
+        nodeVersion: "24.19.0",
+        pythonVersion: "3.14.7",
+        codexVersion: "0.149.0",
+        humanizeVersion: "2.3.2"
+      }
+    });
+    const running = await listen(app);
+    try {
+      const response = await fetch(`${running.baseUrl}/api/health`);
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body.claudeAvailable).toBe(true);
     } finally {
       await close(running.server);
     }
@@ -57,6 +84,7 @@ describe("GET /api/health", () => {
       const body = await response.json();
       expect(body).toEqual({
         status: "degraded",
+        pid: process.pid,
         errorCode: "ENGINE_UNAVAILABLE",
         message: "서버의 Codex 로그인이 필요합니다.",
         activeJobs: 0,

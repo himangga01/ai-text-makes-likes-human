@@ -11,6 +11,7 @@ export interface AppConfig {
   readonly runtimeRoot: string;
   readonly vendorRoot: string;
   readonly codexCommand: string;
+  readonly claudeCommand: string;
   readonly pythonCommand: string;
   readonly autoRoute: boolean;
   readonly chunkConcurrency: 1 | 2;
@@ -20,7 +21,7 @@ export function loadConfig(
   env: NodeJS.ProcessEnv,
   projectRoot: string
 ): AppConfig {
-  const port = Number(env.PORT ?? 3210);
+  const port = Number(env.PORT ?? 7882);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("PORT must be an integer from 1 to 65535");
   }
@@ -41,6 +42,7 @@ export function loadConfig(
     runtimeRoot: path.join(projectRoot, "runtime", "jobs"),
     vendorRoot: path.join(projectRoot, "vendor", "humanize-engine"),
     codexCommand: env.CODEX_COMMAND ?? "codex",
+    claudeCommand: env.CLAUDE_COMMAND ?? "claude",
     pythonCommand: env.PYTHON_COMMAND ?? "python",
     autoRoute: env.HUMANIZE_AUTO_ROUTE !== "0",
     chunkConcurrency: concurrency

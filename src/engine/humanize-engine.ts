@@ -63,6 +63,8 @@ export interface HumanizeEngineOptions {
   python: PythonAdapter;
   codex: CodexAdapter;
   chunkConcurrency: 1 | 2;
+  model?: string;
+  reasoningEffort?: string;
   now?: () => number;
   maxObservedCodexConcurrency?: () => number;
 }
@@ -104,6 +106,8 @@ export class HumanizeEngine {
   private readonly python: PythonAdapter;
   private readonly codex: CodexAdapter;
   private readonly chunkConcurrency: 1 | 2;
+  private readonly model: string;
+  private readonly reasoningEffort: string;
   private readonly now: () => number;
   private readonly maxObservedCodexConcurrency: () => number;
 
@@ -111,6 +115,8 @@ export class HumanizeEngine {
     this.python = options.python;
     this.codex = options.codex;
     this.chunkConcurrency = options.chunkConcurrency;
+    this.model = options.model ?? HUMANIZE_MODEL;
+    this.reasoningEffort = options.reasoningEffort ?? HUMANIZE_REASONING_EFFORT;
     this.now = options.now ?? (() => performance.now());
     this.maxObservedCodexConcurrency =
       options.maxObservedCodexConcurrency ?? (() => 1);
@@ -360,8 +366,8 @@ export class HumanizeEngine {
     const output = await readFile(finalPath, "utf8");
     const sourceChars = codePointLength(source);
     const diagnostics: TransformDiagnostics = {
-      model: HUMANIZE_MODEL,
-      reasoningEffort: HUMANIZE_REASONING_EFFORT,
+      model: this.model,
+      reasoningEffort: this.reasoningEffort,
       processingMode: manifest.processingMode,
       routeHint: manifest.routeHint,
       sourceChars,

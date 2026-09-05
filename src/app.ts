@@ -5,9 +5,15 @@ import path from "node:path";
 import express, { type Express } from "express";
 import type { AppConfig } from "./config.js";
 import type { TransformEvent } from "./contracts.js";
+import { ClaudeRunner } from "./engine/claude-runner.js";
 import { CodexRunner } from "./engine/codex-runner.js";
 import { CodexSemaphore } from "./engine/codex-semaphore.js";
 import { EngineError } from "./engine/errors.js";
+import {
+  CLAUDE_MODEL,
+  CLAUDE_REASONING_EFFORT,
+  parseEngineChoice
+} from "./engine/model-policy.js";
 import {
   HumanizeEngine,
   type HumanizeRequest,
@@ -35,12 +41,14 @@ export interface AppDependencies {
   config: AppConfig;
   queue: TransformQueue;
   engine: HumanizeService;
+  claudeEngine?: HumanizeService;
   preflight: PreflightReport;
   logger?: AppLogger;
 }
 
 export interface ProductionRuntime {
   engine: HumanizeEngine;
+  claudeEngine?: HumanizeEngine;
   queue: TransformQueue;
   preflight: PreflightReport;
 }
@@ -94,21 +102,54 @@ export async function createProductionRuntime(
     runner,
     autoRoute: config.autoRoute
   });
+  const quickRulesPath = path.join(
+    config.vendorRoot,
+    "skills",
+    "humanize-korean",
+    "references",
+    "quick-rules.md"
+  );
   const codexSemaphore = new CodexSemaphore(2);
   const codex = new CodexRunner({
     codexCommand: config.codexCommand,
     schemaPath: path.join(config.projectRoot, "src", "engine", "output-schema.json"),
-    quickRulesPath: path.join(
-      config.vendorRoot,
-      "skills",
-      "humanize-korean",
-      "references",
-      "quick-rules.md"
-    ),
+    quickRulesPath,
     timeoutMs: config.chunkTimeoutMs,
     runner,
     permitPool: codexSemaphore
   });
+  const claudeAvailable = await runner
+    .run({
+      command: config.claudeCommand,
+      args: ["--version"],
+      cwd: config.projectRoot,
+      timeoutMs: 10_000
+    })
+    .then(probe => probe.exitCode === 0 && probe.termination === "exit")
+    .catch(() => false);
+  const claudeSemaphore = new CodexSemaphore(2);
+  const claudeEngine = claudeAvailable
+    ? new HumanizeEngine({
+        python,
+        codex: new ClaudeRunner({
+          claudeCommand: config.claudeCommand,
+          schemaPath: path.join(
+            config.projectRoot,
+            "src",
+            "engine",
+            "output-schema.json"
+          ),
+          quickRulesPath,
+          timeoutMs: config.chunkTimeoutMs,
+          runner,
+          permitPool: claudeSemaphore
+        }),
+        chunkConcurrency: config.chunkConcurrency,
+        model: CLAUDE_MODEL,
+        reasoningEffort: CLAUDE_REASONING_EFFORT,
+        maxObservedCodexConcurrency: () => claudeSemaphore.maxObserved
+      })
+    : undefined;
   return {
     engine: new HumanizeEngine({
       python,
@@ -116,6 +157,7 @@ export async function createProductionRuntime(
       chunkConcurrency: config.chunkConcurrency,
       maxObservedCodexConcurrency: () => codexSemaphore.maxObserved
     }),
+    claudeEngine,
     queue: new TransformQueue({
       maxActive: config.maxActiveJobs,
       maxAccepted: config.maxAcceptedJobs
@@ -142,7 +184,7 @@ async function streamResult(
 }
 
 export function createApp(dependencies: AppDependencies): Express {
-  const { config, queue, engine, preflight } = dependencies;
+  const { config, queue, engine, claudeEngine, preflight } = dependencies;
   const logger = dependencies.logger ?? defaultLogger;
   const app = express();
   app.disable("x-powered-by");
@@ -170,6 +212,7 @@ export function createApp(dependencies: AppDependencies): Express {
     if (!preflight.ready) {
       response.status(503).json({
         status: "degraded",
+        pid: process.pid,
         errorCode: preflight.errorCode ?? "ENGINE_UNAVAILABLE",
         message:
           preflight.message ?? "서버의 변환 엔진을 사용할 수 없습니다.",
@@ -180,9 +223,11 @@ export function createApp(dependencies: AppDependencies): Express {
     }
     response.json({
       status: "ready",
+      pid: process.pid,
       engine: "codex-cli",
       engineVersion: preflight.codexVersion,
       humanizeVersion: preflight.humanizeVersion,
+      claudeAvailable: Boolean(claudeEngine),
       activeJobs: stats.active,
       queuedJobs: stats.queued
     });
@@ -203,6 +248,23 @@ export function createApp(dependencies: AppDependencies): Express {
       });
       return;
     }
+
+    const engineChoice = parseEngineChoice(request.query.engine);
+    if (!engineChoice) {
+      response.status(400).json({
+        code: "INVALID_ENGINE",
+        message: "지원하지 않는 변환 엔진입니다."
+      });
+      return;
+    }
+    if (engineChoice === "claude" && !claudeEngine) {
+      response.status(503).json({
+        code: "ENGINE_UNAVAILABLE",
+        message: "Claude 엔진을 사용할 수 없습니다. 서버에 Claude CLI 설치와 로그인이 필요합니다."
+      });
+      return;
+    }
+    const selectedEngine = engineChoice === "claude" ? claudeEngine! : engine;
 
     const jobId = randomUUID();
     const reservation = queue.reserve(jobId);
@@ -252,7 +314,7 @@ export function createApp(dependencies: AppDependencies): Express {
             clientController.signal,
             queueSignal
           ]);
-          const result = await engine.transform({
+          const result = await selectedEngine.transform({
             jobId,
             workspace: workspace!,
             signal,
@@ -270,6 +332,7 @@ export function createApp(dependencies: AppDependencies): Express {
           logger.info({
             event: "transform_complete",
             jobId,
+            engine: engineChoice,
             sourceChars: result.sourceChars,
             outputChars: result.outputChars,
             chunks: result.chunks,
@@ -285,6 +348,7 @@ export function createApp(dependencies: AppDependencies): Express {
       logger.error({
         event: "transform_failed",
         jobId,
+        engine: engineChoice,
         code: event.type === "error" ? event.code : "INTERNAL_ERROR",
         elapsedMs: Date.now() - startedAt
       });

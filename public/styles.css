@@ -419,6 +419,52 @@ textarea:focus {
   background: #fff;
 }
 
+.engine-select {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--canvas);
+}
+
+.engine-option {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.engine-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.engine-option span {
+  padding: 7px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.engine-option input:checked + span {
+  background: var(--primary);
+  color: #fff;
+}
+
+.engine-option input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.engine-option input:disabled + span {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .progress-panel {
   padding: 15px 24px 18px;
   border-top: 1px solid var(--line);

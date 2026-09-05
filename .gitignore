@@ -7,6 +7,9 @@ runtime/jobs/*
 !runtime/jobs/.gitkeep
 runtime/test-tmp/
 runtime/server.lock
+runtime/hermes-service-state.json
+runtime/hermes-service-state.json.*.tmp
+runtime/hermes-service-control.lock/
 .env
 *.log
 __pycache__/

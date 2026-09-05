@@ -98,7 +98,7 @@ async function fixture(
 describe("CodexRunner", () => {
   it("uses the approved fixed model policy", () => {
     expect(HUMANIZE_MODEL).toBe("gpt-5.6-sol");
-    expect(HUMANIZE_REASONING_EFFORT).toBe("high");
+    expect(HUMANIZE_REASONING_EFFORT).toBe("medium");
   });
 
   it("invokes isolated ephemeral Codex and returns schema-checked JSON", async () => {
@@ -126,7 +126,7 @@ describe("CodexRunner", () => {
         "--model",
         "gpt-5.6-sol",
         "--config",
-        'model_reasoning_effort="high"',
+        'model_reasoning_effort="medium"',
         "--sandbox",
         "read-only",
         "--output-schema",

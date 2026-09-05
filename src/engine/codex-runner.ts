@@ -32,22 +32,22 @@ function invalid(message: string, cause?: unknown): EngineError {
   return new EngineError("ENGINE_OUTPUT_INVALID", false, message, { cause });
 }
 
-function parseResult(raw: string): CodexResult {
+export function parseEngineResult(raw: string, label = "Codex"): CodexResult {
   let value: unknown;
   try {
     value = JSON.parse(raw);
   } catch (error) {
-    throw invalid("Codex final output is not JSON", error);
+    throw invalid(`${label} final output is not JSON`, error);
   }
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw invalid("Codex final output must be an object");
+    throw invalid(`${label} final output must be an object`);
   }
   const result = value as Record<string, unknown>;
   if (
     typeof result.rewrittenText !== "string" ||
     result.rewrittenText.trim().length === 0
   ) {
-    throw invalid("Codex rewrittenText must be a nonempty string");
+    throw invalid(`${label} rewrittenText must be a nonempty string`);
   }
   if (
     !Array.isArray(result.warnings) ||
@@ -56,7 +56,7 @@ function parseResult(raw: string): CodexResult {
       warning => typeof warning !== "string" || warning.length > 300
     )
   ) {
-    throw invalid("Codex warnings must be a bounded string array");
+    throw invalid(`${label} warnings must be a bounded string array`);
   }
   return {
     rewrittenText: result.rewrittenText,
@@ -143,7 +143,7 @@ export class CodexRunner {
     }
 
     try {
-      return parseResult(await readFile(resultPath, "utf8"));
+      return parseEngineResult(await readFile(resultPath, "utf8"));
     } catch (error) {
       if (error instanceof EngineError) throw error;
       throw invalid("Codex result file is missing", error);

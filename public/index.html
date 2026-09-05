@@ -84,6 +84,17 @@
         </div>
 
         <div class="action-zone">
+          <fieldset id="engine-select" class="engine-select">
+            <legend class="visually-hidden">변환 엔진 선택</legend>
+            <label class="engine-option">
+              <input type="radio" name="engine" value="codex" checked>
+              <span>GPT</span>
+            </label>
+            <label class="engine-option" id="engine-option-claude">
+              <input type="radio" name="engine" value="claude">
+              <span>Claude</span>
+            </label>
+          </fieldset>
           <button id="transform-button" class="button button-primary" type="button" disabled>
             문장 변환하기 <span aria-hidden="true">→</span>
           </button>

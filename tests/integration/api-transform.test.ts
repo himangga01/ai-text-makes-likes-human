@@ -26,14 +26,25 @@ function ready() {
   };
 }
 
-async function createTestApp(engine: { transform(request: HumanizeRequest): Promise<HumanizeResult> }, logger?: AppLogger) {
+async function createTestApp(
+  engine: { transform(request: HumanizeRequest): Promise<HumanizeResult> },
+  logger?: AppLogger,
+  claudeEngine?: { transform(request: HumanizeRequest): Promise<HumanizeResult> }
+) {
   const outer = await makeTestRoot();
   const config = {
     ...loadConfig({}, process.cwd()),
     runtimeRoot: path.join(outer, "jobs")
   };
   const queue = new TransformQueue({ maxActive: 1, maxAccepted: 3 });
-  const app = createApp({ config, queue, engine, preflight: ready(), logger });
+  const app = createApp({
+    config,
+    queue,
+    engine,
+    claudeEngine,
+    preflight: ready(),
+    logger
+  });
   const running = await listen(app);
   servers.push(running.server);
   return { ...running, outer, config, queue };
@@ -150,6 +161,7 @@ describe("POST /api/transform", () => {
         "chunks",
         "diagnostics",
         "elapsedMs",
+        "engine",
         "event",
         "jobId",
         "outputChars",
@@ -252,6 +264,117 @@ describe("POST /api/transform", () => {
       expect(test.queue.stats()).toEqual({ active: 0, queued: 0, reserved: 0 });
     } finally {
       controller.abort();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("routes engine=claude to the Claude engine", async () => {
+    let codexCalls = 0;
+    let claudeCalls = 0;
+    const makeEngine = (
+      counter: () => void
+    ): { transform(request: HumanizeRequest): Promise<HumanizeResult> } => ({
+      async transform(request) {
+        counter();
+        const finalPath = request.workspace.path("03_reassembled.md");
+        await writeFile(finalPath, "결과", "utf8");
+        return {
+          finalPath,
+          sourceChars: 2,
+          outputChars: 2,
+          chunks: 1,
+          warnings: [],
+          diagnostics: {
+            model: "claude-opus-5",
+            reasoningEffort: "high",
+            processingMode: "single",
+            routeHint: "standard",
+            sourceChars: 2,
+            bodyChunks: 1,
+            codexCalls: 1,
+            retries: 0,
+            gateCodes: ["GATE_OK"],
+            maxObservedCodexConcurrency: 1,
+            prepareMs: 1,
+            codexMs: 1,
+            gateMs: 1,
+            assembleMs: 1,
+            totalMs: 4
+          }
+        };
+      }
+    });
+    const test = await createTestApp(
+      makeEngine(() => { codexCalls += 1; }),
+      undefined,
+      makeEngine(() => { claudeCalls += 1; })
+    );
+    try {
+      const response = await fetch(
+        `${test.baseUrl}/api/transform?engine=claude`,
+        {
+          method: "POST",
+          headers: { "content-type": "text/plain; charset=utf-8" },
+          body: "원문"
+        }
+      );
+      expect(response.status).toBe(200);
+      const events = parseNdjson(await response.text());
+      expect(events.at(-1)?.type).toBe("done");
+      expect(claudeCalls).toBe(1);
+      expect(codexCalls).toBe(0);
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("returns 503 when engine=claude is requested but not configured", async () => {
+    const test = await createTestApp({
+      transform: async () => {
+        throw new Error("must not run");
+      }
+    });
+    try {
+      const response = await fetch(
+        `${test.baseUrl}/api/transform?engine=claude`,
+        {
+          method: "POST",
+          headers: { "content-type": "text/plain; charset=utf-8" },
+          body: "원문"
+        }
+      );
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({
+        code: "ENGINE_UNAVAILABLE",
+        message: "Claude 엔진을 사용할 수 없습니다. 서버에 Claude CLI 설치와 로그인이 필요합니다."
+      });
+      expect(test.queue.stats()).toEqual({ active: 0, queued: 0, reserved: 0 });
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("rejects an unknown engine value", async () => {
+    const test = await createTestApp({
+      transform: async () => {
+        throw new Error("must not run");
+      }
+    });
+    try {
+      const response = await fetch(
+        `${test.baseUrl}/api/transform?engine=gemini`,
+        {
+          method: "POST",
+          headers: { "content-type": "text/plain; charset=utf-8" },
+          body: "원문"
+        }
+      );
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        code: "INVALID_ENGINE",
+        message: "지원하지 않는 변환 엔진입니다."
+      });
+    } finally {
       await removeTestRoot(test.outer);
     }
   });
