@@ -4,6 +4,7 @@ import {
   TextFileError
 } from "./text-file.js";
 import { progressForEvent } from "./progress.js";
+import { desktop, health, transform } from "./transport.js";
 
 const elements = {
   shell: document.querySelector("#editor-shell"),
@@ -32,6 +33,18 @@ const elements = {
 
 let engineReady = false;
 let claudeAvailable = false;
+let codexAvailable = false;
+const warnings = new Set();
+const warningPanel = document.querySelector("#warnings-panel");
+const warningList = document.querySelector("#warnings-list");
+
+function clearWarnings() { warnings.clear(); warningList.replaceChildren(); warningPanel.hidden = true; }
+function addWarning(message) {
+  if (warnings.has(message)) return;
+  warnings.add(message);
+  const item = document.createElement("li"); item.textContent = message; warningList.append(item); warningPanel.hidden = false;
+}
+function selectedReady() { return selectedEngine() === "claude" ? claudeAvailable : codexAvailable; }
 let running = false;
 let controller;
 let sourceFile;
@@ -49,21 +62,10 @@ function selectedEngine() {
 }
 
 function applyClaudeAvailability() {
-  const claudeInput = elements.engineInputs.find(
-    input => input.value === "claude"
-  );
-  if (!claudeInput) return;
-  claudeInput.disabled = !claudeAvailable;
-  if (elements.claudeOption) {
-    elements.claudeOption.title = claudeAvailable
-      ? ""
-      : "서버에서 Claude CLI를 사용할 수 없습니다.";
-  }
-  if (!claudeAvailable && claudeInput.checked) {
-    const codexInput = elements.engineInputs.find(
-      input => input.value === "codex"
-    );
-    if (codexInput) codexInput.checked = true;
+  for (const input of elements.engineInputs) {
+    const ready = input.value === "claude" ? claudeAvailable : codexAvailable;
+    input.disabled = running || !ready;
+    input.closest("label").title = ready ? "" : "이 CLI의 설치·로그인 상태를 확인해 주세요.";
   }
 }
 
@@ -113,14 +115,16 @@ function refreshControls() {
   const hasSource = elements.source.value.trim().length > 0;
   const canDownload = Boolean(resultDownloadName && elements.result.value);
   elements.sourceCount.textContent = `${countCharacters(elements.source.value).toLocaleString("ko-KR")}자`;
-  elements.transform.disabled = !engineReady || !hasSource || running;
+  elements.transform.disabled = !engineReady || !selectedReady() || !hasSource || running;
   elements.engineInputs.forEach(input => {
     input.disabled =
-      running || (input.value === "claude" && !claudeAvailable);
+      running || (input.value === "claude" ? !claudeAvailable : !codexAvailable);
   });
+  elements.source.readOnly = running;
+  document.querySelectorAll("#desktop-settings button").forEach(button => { button.disabled = running; });
   elements.fileButton.disabled = running;
   elements.reset.disabled = running || (!hasSource && !elements.result.value);
-  elements.copy.disabled = elements.result.value.length === 0;
+  elements.copy.disabled = !runCompleted || elements.result.value.length === 0;
   elements.download.hidden = !canDownload;
   elements.download.disabled = !canDownload || running;
 }
@@ -135,7 +139,7 @@ function setRunning(value) {
 
 function showResultState() {
   elements.empty.hidden = elements.result.value.length > 0;
-  elements.copy.disabled = elements.result.value.length === 0;
+  elements.copy.disabled = !runCompleted || elements.result.value.length === 0;
 }
 
 function handleEvent(event) {
@@ -166,14 +170,14 @@ function handleEvent(event) {
       showResultState();
       break;
     case "warning":
-      setStatus("warning", "검토 권장", event.message);
+      addWarning(event.message);
       break;
     case "done":
       runCompleted = true;
       resultDownloadName = activeDownloadName;
       setStatus(
         "success",
-        "완료",
+        warnings.size ? "완료 · 검토 권장" : "완료",
         `${event.chunks}개 구간 · ${(event.elapsedMs / 1000).toFixed(1)}초 만에 완료했습니다.`
       );
       setStep(2);
@@ -186,26 +190,6 @@ function handleEvent(event) {
   }
 }
 
-async function consumeNdjson(response) {
-  if (!response.ok || !response.body) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.message || "변환 요청을 시작하지 못했습니다.");
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (line.trim()) handleEvent(JSON.parse(line));
-    }
-    if (done) break;
-  }
-  if (buffer.trim()) handleEvent(JSON.parse(buffer));
-}
 
 async function startTransform() {
   if (running || elements.source.value.trim().length === 0) return;
@@ -213,26 +197,23 @@ async function startTransform() {
   activeDownloadName =
     sourceFile?.format === "markdown"
       ? getMarkdownDownloadName(sourceFile.fileName)
-      : undefined;
+      : desktop ? (sourceFile?.fileName?.replace(/\.txt$/i, "") || "humanized") + ".txt" : undefined;
   runCompleted = false;
+  elements.result.value = "";
+  clearWarnings();
+  showResultState();
   clearResultDownload();
   resetProgress();
   setRunning(true);
-  setStatus("processing", "접수 중", "서버에 원문을 안전하게 전달하고 있습니다.");
+  setStatus("processing", "접수 중", desktop ? "선택한 CLI로 변환을 준비합니다." : "서버에 원문을 안전하게 전달하고 있습니다.");
   setStep(1);
   applyProgress({ type: "accepted" });
   try {
-    const response = await fetch(
-      `/api/transform?engine=${encodeURIComponent(selectedEngine())}`,
-      {
-        method: "POST",
-        headers: { "content-type": "text/plain; charset=utf-8" },
-        body: elements.source.value,
-        signal: controller.signal
-      }
-    );
-    await consumeNdjson(response);
+    await transform(elements.source.value, selectedEngine(), controller.signal, handleEvent);
+    if (!runCompleted) throw new Error("완료 응답을 받지 못했습니다. 다시 시도해 주세요.");
   } catch (error) {
+    elements.result.value = "";
+    runCompleted = false;
     if (controller.signal.aborted) {
       setStatus("warning", "취소됨", "변환을 취소했습니다. 원문은 그대로 남아 있습니다.");
     } else {
@@ -249,6 +230,7 @@ async function startTransform() {
 }
 
 elements.source.addEventListener("input", () => {
+  if (!running) { elements.result.value = ""; runCompleted = false; clearWarnings(); showResultState(); }
   sourceFile = undefined;
   elements.fileName.hidden = true;
   elements.fileName.textContent = "";
@@ -266,14 +248,21 @@ elements.source.addEventListener("input", () => {
   }
 });
 
-elements.fileButton.addEventListener("click", () => elements.fileInput.click());
-elements.fileInput.addEventListener("change", async () => {
-  const file = elements.fileInput.files?.[0];
+elements.fileButton.addEventListener("click", async () => {
+  if (!desktop) { elements.fileInput.click(); return; }
+  try {
+    const selected = await window.humanizeDesktop.openText();
+    if (selected) await loadFile(new File([selected.bytes], selected.name));
+  } catch (error) { setStatus("error", "파일 오류", error.message); }
+});
+elements.fileInput.addEventListener("change", () => loadFile(elements.fileInput.files?.[0]));
+async function loadFile(file) {
   if (!file) return;
   const previous = elements.source.value;
   try {
     const loaded = await readTextFile(file);
     elements.source.value = loaded.text;
+    elements.result.value = ""; runCompleted = false; clearWarnings(); showResultState();
     sourceFile = {
       fileName: loaded.fileName,
       format: loaded.format
@@ -295,11 +284,12 @@ elements.fileInput.addEventListener("change", async () => {
   } finally {
     elements.fileInput.value = "";
   }
-});
+}
 
 elements.transform.addEventListener("click", startTransform);
 elements.cancel.addEventListener("click", () => controller?.abort());
 elements.reset.addEventListener("click", () => {
+  runCompleted = false; clearWarnings();
   elements.source.value = "";
   elements.result.value = "";
   sourceFile = undefined;
@@ -316,6 +306,7 @@ elements.reset.addEventListener("click", () => {
 });
 
 async function copyResultText() {
+  if (desktop) { await window.humanizeDesktop.copyText(elements.result.value); return; }
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(elements.result.value);
     return;
@@ -344,8 +335,13 @@ elements.copy.addEventListener("click", async () => {
   }
 });
 
-elements.download.addEventListener("click", () => {
+elements.download.addEventListener("click", async () => {
   if (!resultDownloadName || !elements.result.value) return;
+  if (desktop) {
+    try { await window.humanizeDesktop.saveText({ text: elements.result.value, name: resultDownloadName }); }
+    catch (error) { setStatus("error", "저장 오류", error.message); }
+    return;
+  }
   const blob = new Blob([elements.result.value], {
     type: "text/markdown;charset=utf-8"
   });
@@ -361,16 +357,20 @@ elements.download.addEventListener("click", () => {
 
 async function checkHealth() {
   try {
-    const response = await fetch("/api/health", { cache: "no-store" });
-    const body = await response.json();
-    engineReady = response.ok && body.status === "ready";
-    claudeAvailable = engineReady && body.claudeAvailable === true;
+    const body = await health();
+    engineReady = body.status === "ready";
+    codexAvailable = engineReady && (body.providers ? body.providers.codex.ready : true);
+    claudeAvailable = engineReady && (body.providers ? body.providers.claude.ready : body.claudeAvailable === true);
+    if (desktop) {
+      for (const kind of ["codex", "claude"]) document.querySelector(`#${kind}-health`).textContent = body.providers?.[kind]?.message || body.message || "사용할 수 없습니다.";
+    }
     applyClaudeAvailability();
     if (!engineReady) {
       setStatus("error", "엔진 점검", body.message || "서버의 변환 엔진을 사용할 수 없습니다.");
     }
   } catch {
-    setStatus("error", "연결 오류", "서버 상태를 확인하지 못했습니다.");
+    engineReady = false; codexAvailable = false; claudeAvailable = false;
+    setStatus("error", "연결 오류", "엔진 상태를 확인하지 못했습니다.");
   }
   refreshControls();
 }
@@ -378,4 +378,33 @@ async function checkHealth() {
 showResultState();
 applyClaudeAvailability();
 refreshControls();
-checkHealth();
+for (const input of elements.engineInputs) input.addEventListener("change", () => {
+  refreshControls();
+  if (desktop) window.humanizeDesktop.selectEngine(selectedEngine()).catch(error => setStatus("error", "설정 오류", error.message));
+});
+async function initialize() {
+  if (desktop) {
+    document.body.classList.add("desktop-app");
+    document.querySelector("#hero-title").textContent = "한국어 문장을 자연스럽게 다듬으세요";
+    document.querySelector("#network-scope").textContent = "내 PC에서 실행";
+    document.querySelector("#desktop-settings").hidden = false;
+    document.querySelector(".privacy-note").textContent = "원문은 선택한 CLI로 처리하며 변환 이력은 앱에 저장하지 않습니다.";
+    elements.download.textContent = "결과 저장";
+    try {
+      const preferences = await window.humanizeDesktop.preferences();
+      const selected = elements.engineInputs.find(input => input.value === preferences.selectedEngine);
+      if (selected) selected.checked = true;
+    } catch { /* keep default choice */ }
+    document.querySelector("#refresh-health").addEventListener("click", checkHealth);
+    for (const button of document.querySelectorAll("[data-choose-cli]")) button.addEventListener("click", async () => {
+      try { await window.humanizeDesktop.chooseCli(button.dataset.chooseCli); await checkHealth(); }
+      catch (error) { setStatus("error", "설정 오류", error.message); }
+    });
+    for (const button of document.querySelectorAll("[data-reset-cli]")) button.addEventListener("click", async () => {
+      try { await window.humanizeDesktop.resetCli(button.dataset.resetCli); await checkHealth(); }
+      catch (error) { setStatus("error", "설정 오류", error.message); }
+    });
+  }
+  await checkHealth();
+}
+initialize();

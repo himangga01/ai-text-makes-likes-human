@@ -1,8 +1,10 @@
 import type { AppConfig } from "../config.js";
 import type { CommandRunner } from "./command-runner.js";
+import { probeProvider, type ProviderHealthMap } from "../runtime/provider-health.js";
 
 export interface PreflightReport {
   ready: boolean;
+  providers?: ProviderHealthMap;
   nodeVersion: string;
   pythonVersion?: string;
   codexVersion?: string;
@@ -66,43 +68,17 @@ export async function runPreflight(
       return unavailable("Python 3.11 이상이 필요합니다.");
     }
 
-    const codex = await runner.run({
-      command: config.codexCommand,
-      args: ["--version"],
-      cwd: config.projectRoot,
-      timeoutMs: 10_000
-    });
-    if (codex.exitCode !== 0 || codex.termination !== "exit") {
-      return unavailable("Codex CLI 0.149.0 이상이 필요합니다.");
-    }
-    const codexVersion = parseVersion(
-      `${codex.stdout}\n${codex.stderr}`,
-      "Codex"
-    );
-    if (!atLeast(codexVersion, "0.149.0")) {
-      return unavailable("Codex CLI 0.149.0 이상이 필요합니다.");
-    }
-
-    const login = await runner.run({
-      command: config.codexCommand,
-      args: ["login", "status"],
-      cwd: config.projectRoot,
-      timeoutMs: 10_000
-    });
-    if (
-      login.exitCode !== 0 ||
-      login.termination !== "exit" ||
-      !`${login.stdout}\n${login.stderr}`.includes("Logged in")
-    ) {
-      return unavailable("서버의 Codex 로그인이 필요합니다.");
-    }
-
+    const codex = await probeProvider("codex", config.codexCommand, config.projectRoot, runner);
+    const claude = await probeProvider("claude", config.claudeCommand, config.projectRoot, runner);
+    const ready = codex.ready || claude.ready;
     return {
-      ready: true,
+      ready,
       nodeVersion: process.versions.node,
       pythonVersion,
-      codexVersion,
-      humanizeVersion: engineVersion
+      codexVersion: codex.version,
+      humanizeVersion: engineVersion,
+      providers: { codex, claude },
+      ...(ready ? {} : { errorCode: "ENGINE_UNAVAILABLE" as const, message: codex.message })
     };
   } catch {
     return unavailable("서버의 변환 엔진을 사용할 수 없습니다.");

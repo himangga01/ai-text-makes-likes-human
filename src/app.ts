@@ -5,25 +5,18 @@ import path from "node:path";
 import express, { type Express } from "express";
 import type { AppConfig } from "./config.js";
 import type { TransformEvent } from "./contracts.js";
-import { ClaudeRunner } from "./engine/claude-runner.js";
-import { CodexRunner } from "./engine/codex-runner.js";
-import { CodexSemaphore } from "./engine/codex-semaphore.js";
 import { EngineError } from "./engine/errors.js";
 import {
-  CLAUDE_MODEL,
-  CLAUDE_REASONING_EFFORT,
   parseEngineChoice
 } from "./engine/model-policy.js";
 import {
-  HumanizeEngine,
   type HumanizeRequest,
   type HumanizeResult
 } from "./engine/humanize-engine.js";
-import { PythonEngine } from "./engine/python-engine.js";
 import { JobWorkspace } from "./engine/workspace.js";
 import { isAllowedClientAddress } from "./network/private-address.js";
-import type { CommandRunner } from "./process/command-runner.js";
-import { runPreflight, type PreflightReport } from "./process/preflight.js";
+export { createProductionRuntime, type ProductionRuntime } from "./runtime/create-runtime.js";
+import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
 import { NdjsonWriter } from "./transport/ndjson.js";
 import { streamRequestBody } from "./transport/request-body.js";
@@ -46,12 +39,6 @@ export interface AppDependencies {
   logger?: AppLogger;
 }
 
-export interface ProductionRuntime {
-  engine: HumanizeEngine;
-  claudeEngine?: HumanizeEngine;
-  queue: TransformQueue;
-  preflight: PreflightReport;
-}
 
 const defaultLogger: AppLogger = {
   info: value => console.log(JSON.stringify(value)),
@@ -87,84 +74,6 @@ function publicEvent(error: unknown): TransformEvent {
   };
 }
 
-export async function createProductionRuntime(
-  config: AppConfig,
-  runner: CommandRunner
-): Promise<ProductionRuntime> {
-  const engineVersion = await readFile(
-    path.join(config.vendorRoot, "ENGINE_VERSION"),
-    "utf8"
-  );
-  const preflight = await runPreflight(config, runner, engineVersion);
-  const python = new PythonEngine({
-    pythonCommand: config.pythonCommand,
-    vendorRoot: config.vendorRoot,
-    runner,
-    autoRoute: config.autoRoute
-  });
-  const quickRulesPath = path.join(
-    config.vendorRoot,
-    "skills",
-    "humanize-korean",
-    "references",
-    "quick-rules.md"
-  );
-  const codexSemaphore = new CodexSemaphore(2);
-  const codex = new CodexRunner({
-    codexCommand: config.codexCommand,
-    schemaPath: path.join(config.projectRoot, "src", "engine", "output-schema.json"),
-    quickRulesPath,
-    timeoutMs: config.chunkTimeoutMs,
-    runner,
-    permitPool: codexSemaphore
-  });
-  const claudeAvailable = await runner
-    .run({
-      command: config.claudeCommand,
-      args: ["--version"],
-      cwd: config.projectRoot,
-      timeoutMs: 10_000
-    })
-    .then(probe => probe.exitCode === 0 && probe.termination === "exit")
-    .catch(() => false);
-  const claudeSemaphore = new CodexSemaphore(2);
-  const claudeEngine = claudeAvailable
-    ? new HumanizeEngine({
-        python,
-        codex: new ClaudeRunner({
-          claudeCommand: config.claudeCommand,
-          schemaPath: path.join(
-            config.projectRoot,
-            "src",
-            "engine",
-            "output-schema.json"
-          ),
-          quickRulesPath,
-          timeoutMs: config.chunkTimeoutMs,
-          runner,
-          permitPool: claudeSemaphore
-        }),
-        chunkConcurrency: config.chunkConcurrency,
-        model: CLAUDE_MODEL,
-        reasoningEffort: CLAUDE_REASONING_EFFORT,
-        maxObservedCodexConcurrency: () => claudeSemaphore.maxObserved
-      })
-    : undefined;
-  return {
-    engine: new HumanizeEngine({
-      python,
-      codex,
-      chunkConcurrency: config.chunkConcurrency,
-      maxObservedCodexConcurrency: () => codexSemaphore.maxObserved
-    }),
-    claudeEngine,
-    queue: new TransformQueue({
-      maxActive: config.maxActiveJobs,
-      maxAccepted: config.maxAcceptedJobs
-    }),
-    preflight
-  };
-}
 
 async function streamResult(
   writer: NdjsonWriter,
@@ -228,6 +137,7 @@ export function createApp(dependencies: AppDependencies): Express {
       engineVersion: preflight.codexVersion,
       humanizeVersion: preflight.humanizeVersion,
       claudeAvailable: Boolean(claudeEngine),
+      ...(preflight.providers ? { providers: preflight.providers } : {}),
       activeJobs: stats.active,
       queuedJobs: stats.queued
     });
@@ -255,6 +165,10 @@ export function createApp(dependencies: AppDependencies): Express {
         code: "INVALID_ENGINE",
         message: "지원하지 않는 변환 엔진입니다."
       });
+      return;
+    }
+    if (preflight.providers && !preflight.providers[engineChoice].ready) {
+      response.status(503).json({ code: "ENGINE_UNAVAILABLE", message: preflight.providers[engineChoice].message });
       return;
     }
     if (engineChoice === "claude" && !claudeEngine) {

@@ -58,8 +58,9 @@ async function main(): Promise<void> {
     const forceExit = setTimeout(() => process.exit(1), 15_000);
     forceExit.unref();
     try {
-      await closeServer(server);
+      const closing = closeServer(server);
       await runtime.queue.shutdown();
+      await closing;
       await clearStaleJobs(config.runtimeRoot);
       await serverLock.release();
       clearTimeout(forceExit);

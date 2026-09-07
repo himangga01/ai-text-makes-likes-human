@@ -110,6 +110,7 @@ export class CodexRunner {
         args: [
           "exec",
           "--ephemeral",
+          "--skip-git-repo-check",
           "--ignore-user-config",
           "--ignore-rules",
           "--model",

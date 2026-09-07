@@ -44,6 +44,7 @@ function extractResultText(stdout: string): string {
       `Claude CLI reported failure (subtype: ${String(record.subtype)})`
     );
   }
+  if (record.structured_output && typeof record.structured_output === "object") return JSON.stringify(record.structured_output);
   if (typeof record.result !== "string" || record.result.length === 0) {
     throw invalid("Claude CLI result is missing");
   }
@@ -113,6 +114,9 @@ export class ClaudeRunner {
         args: [
           "-p",
           "--restricted",
+          "--strict-mcp-config",
+          "--tools",
+          "",
           "--no-session-persistence",
           "--model",
           CLAUDE_MODEL,

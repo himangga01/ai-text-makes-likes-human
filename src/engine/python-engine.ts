@@ -42,6 +42,7 @@ export interface GateResult {
   status: "ok" | "warn" | "abort" | "error";
   exitCode: 0 | 1 | 2 | 3;
   gateCodes: GateCode[];
+  policy?: "accept" | "retry" | "rollback" | "accept-with-warning" | "error";
 }
 
 export interface RestoreReport {
@@ -303,18 +304,19 @@ export class PythonEngine {
   async verify(
     beforePath: string,
     afterPath: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    attempt: 1 | 2 = 1
   ): Promise<GateResult> {
     const result = await this.run(
       [
-        this.script("verify_gates.py"),
+        path.resolve(this.vendorRoot, "../../engine_runtime/workflow.py"),
+        "--vendor-root", this.vendorRoot,
+        "--attempt", String(attempt),
         "--before",
         path.resolve(beforePath),
         "--after",
         path.resolve(afterPath),
-        "--genre",
-        "essay",
-        "--json"
+
       ],
       path.dirname(beforePath),
       signal
@@ -332,7 +334,8 @@ export class PythonEngine {
     return {
       status: statuses[exitCode],
       exitCode,
-      gateCodes: [GATE_CODES[exitCode]]
+      gateCodes: [GATE_CODES[exitCode]],
+      ...(typeof report.policy === "string" ? { policy: report.policy as GateResult["policy"] } : {})
     };
   }
 

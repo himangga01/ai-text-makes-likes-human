@@ -1,6 +1,9 @@
 node_modules/
 .worktrees/
 dist/
+desktop-dist/
+build-resources/
+release/
 playwright-report/
 test-results/
 runtime/jobs/*

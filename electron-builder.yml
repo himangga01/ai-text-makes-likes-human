@@ -1,0 +1,37 @@
+appId: kr.humanize.desktop
+productName: HumanizeKR
+electronVersion: 44.2.0
+directories:
+  output: release
+files:
+  - desktop-dist/**
+  - public/**
+  - package.json
+  - '!node_modules/**'
+extraMetadata:
+  main: desktop-dist/main.cjs
+asar: true
+npmRebuild: false
+extraResources:
+  - from: build-resources/icon.ico
+    to: icon.ico
+  - from: vendor/humanize-engine
+    to: engine/vendor/humanize-engine
+    filter: ['**/*', '!**/__pycache__/**', '!**/*.pyc']
+  - from: engine_runtime
+    to: engine/engine_runtime
+    filter: ['**/*.py']
+  - from: build-resources/python
+    to: engine/python
+  - from: src/engine/output-schema.json
+    to: engine/src/engine/output-schema.json
+win:
+  target:
+    - target: portable
+      arch: [x64]
+  artifactName: HumanizeKR-${version}-win-${arch}.${ext}
+  icon: build-resources/icon.ico
+  signExecutable: false
+portable:
+  requestExecutionLevel: user
+  unpackDirName: false

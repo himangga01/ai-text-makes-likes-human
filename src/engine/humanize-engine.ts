@@ -30,7 +30,8 @@ export interface PythonAdapter {
   verify(
     beforePath: string,
     afterPath: string,
-    signal: AbortSignal
+    signal: AbortSignal,
+    attempt?: 1 | 2
   ): Promise<GateResult>;
   reassemble(runDir: string, signal: AbortSignal): Promise<string>;
 }
@@ -238,7 +239,7 @@ export class HumanizeEngine {
       throw validation(`Chunk ${chunk.index} gate execution failed`);
     }
 
-    if (gate.status === "warn" || gate.status === "abort") {
+    if (gate.policy === "retry" || (!gate.policy && (gate.status === "warn" || gate.status === "abort"))) {
       retries += 1;
       this.recordChunkWarning(context, warnings, {
         code: "CHUNK_RETRY",
@@ -263,7 +264,8 @@ export class HumanizeEngine {
       gate = await this.python.verify(
         chunkSourcePath,
         rewrittenPath,
-        context.signal
+        context.signal,
+        2
       );
       gateMs += this.now() - secondGateStartedAt;
       gateCodes.push(...gate.gateCodes);

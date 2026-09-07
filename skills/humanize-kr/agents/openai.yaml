@@ -1,0 +1,4 @@
+interface:
+  display_name: "한국어 문장 다듬기"
+  short_description: "원문 내용을 보존하고 Python 검증을 거쳐 한국어 문체를 자연스럽게 수정"
+  default_prompt: "$humanize-kr 이 한국어 문서를 자연스럽게 다듬고 검증된 결과 파일을 만들어 줘."

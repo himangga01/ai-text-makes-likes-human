@@ -46,6 +46,7 @@ function terminateProcessTree(pid: number): void {
 }
 
 export class SpawnCommandRunner implements CommandRunner {
+  constructor(private readonly onProcess?: (pid: number, alive: boolean) => void) {}
   run(request: CommandRequest): Promise<CommandResult> {
     return new Promise((resolve, reject) => {
       if (request.signal?.aborted) {
@@ -67,6 +68,8 @@ export class SpawnCommandRunner implements CommandRunner {
         stdio: ["pipe", "pipe", "pipe"]
       });
 
+      if (child.pid !== undefined) this.onProcess?.(child.pid, true);
+      child.once("close", () => { if (child.pid !== undefined) this.onProcess?.(child.pid, false); });
       let stdout = "";
       let stderr = "";
       let termination: CommandTermination = "exit";

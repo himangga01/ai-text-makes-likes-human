@@ -71,6 +71,10 @@ function envelope(result: unknown): string {
 }
 
 describe("ClaudeRunner", () => {
+  it("reads the native CLI structured_output response", async () => {
+    const { runner } = makeRunner([exited(JSON.stringify({ is_error: false, subtype: "success", structured_output: { rewrittenText: "수치는 12명이다.", warnings: [] } }))]);
+    expect(await runner.transform(inputPath, outputPath, 1, new AbortController().signal)).toEqual({ rewrittenText: "수치는 12명이다.", warnings: [] });
+  });
   it("invokes the restricted Claude CLI and persists the parsed result", async () => {
     const { runner, fake } = makeRunner([
       exited(envelope({ rewrittenText: "다듬어진 문장", warnings: ["주의"] }))
@@ -92,6 +96,9 @@ describe("ClaudeRunner", () => {
     expect(call.args).toEqual([
       "-p",
       "--restricted",
+      "--strict-mcp-config",
+      "--tools",
+      "",
       "--no-session-persistence",
       "--model",
       CLAUDE_MODEL,

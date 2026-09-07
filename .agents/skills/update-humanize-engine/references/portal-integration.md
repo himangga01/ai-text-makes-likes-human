@@ -2,6 +2,8 @@
 
 이 문서는 저장소를 읽을 때의 점검 경로다. 실제 값과 구현은 현재 서비스 파일을 우선한다.
 
+Windows 앱과 두 윤문 스킬도 같은 vendor를 배포한다. `engine_runtime/workflow.py`는 수치·인용 등 명백한 보존 실패를 hard gate로 처리하는 제품 정책이며 upstream의 통계 경고와 구분한다. 새 upstream과 이 정책의 호환성, Gateway의 원문·manifest·청크 hash 검증을 함께 확인한다. 갱신 후 `skills:build`, 패키지 설치 검증, `desktop:portable`을 실행해 같은 engine commit으로 배포한다. Electron main/preload/worker 리소스 경로와 내장 Python 실행을 보존한다.
+
 ## 갱신 범위
 
 | 파일 | 확인할 내용 |

@@ -59,6 +59,12 @@ npm.cmd run typecheck
 npm.cmd test
 npm.cmd run build
 npm.cmd run test:e2e
+npm.cmd run test:skills
+npm.cmd run desktop:build
+npm.cmd run test:desktop
+npm.cmd run skills:build
+node scripts/verify-skill-packages.mjs
+npm.cmd run desktop:portable
 git diff --check
 ```
 
@@ -71,3 +77,5 @@ live 검증과 성능 벤치마크는 계정 쿼터를 소비한다. 현재 요�
 현재 요청에서 커밋·push·배포가 허용되어 있으면 해당 범위까지 수행한다. 엔진 갱신 요청만으로 운영 서버 재시작이나 원격 push까지 허용됐다고 간주하지 않는다. 최종 답변에는 이전/새 커밋, 반영 내역, 패치 조정, 검증 결과와 생략한 live 검증, Git 및 배포 상태를 간단히 남긴다.
 
 감지 도우미를 수정할 때는 `python "<skill-dir>/scripts/test_check_upstream.py"`로 임시 Git 저장소를 사용하는 오프라인 동작 검증을 실행한다.
+
+앱·스킬 배포 시 `engine_runtime/workflow.py`의 보존 정책, `skill_gateway.py`의 상태·원문 hash 계약을 유지한다. `release/build-info.json`, 두 스킬의 `distribution.json` 및 vendor 핀이 일치하는지 확인한다. EXE는 `node scripts/smoke-portable.mjs`로 복사 경로에서 모의 CLI 검증할 수 있다. `--live`는 실제 계정 호출이므로 일반 검증과 구분한다. 자세한 빌드·설치 경로는 서비스의 `docs/desktop.md`를 읽는다.
