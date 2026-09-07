@@ -1,0 +1,4 @@
+interface:
+  display_name: "Humanize 엔진 업데이트"
+  short_description: "포크의 새 커밋을 확인하고 서비스 엔진과 패치를 검증하며 갱신"
+  default_prompt: "$update-humanize-engine im-not-ai_fork의 최신 변경을 우리 서비스에 반영하고 검증해 줘."
