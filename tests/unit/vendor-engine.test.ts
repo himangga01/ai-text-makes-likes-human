@@ -34,7 +34,7 @@ describe("vendored humanize engine", () => {
     const version = await readFile(path.join(root, "ENGINE_VERSION"), "utf8");
 
     expect(version).toBe(
-      "version=2.3.2\ncommit=31a66d165a9cc6c26c4c1246553f95d0468d27fb\n"
+      "version=2.3.2\ncommit=9747f036cdc28a1a8aea4dc71fef1f7846eb96f7\n"
     );
   });
 });

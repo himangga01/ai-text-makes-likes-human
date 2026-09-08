@@ -59,7 +59,7 @@ class UpstreamChecks(unittest.TestCase):
         self.temporary.cleanup()
 
     def check(self, ref="HEAD"):
-        return inspect(self.project, self.upstream.as_uri(), ref)
+        return inspect(self.project, self.upstream.as_uri(), ref, self.upstream)
 
     def test_unchanged_remote_is_noop(self):
         result = self.check()
@@ -115,6 +115,52 @@ class UpstreamChecks(unittest.TestCase):
         (self.project / "package.json").write_text('{"name":"unrelated"}', encoding="utf-8")
         with self.assertRaises(ValueError):
             self.check()
+
+    def test_different_hash_without_history_is_not_an_upgrade(self):
+        (self.upstream / "rules.txt").write_text("updated", encoding="utf-8")
+        commit(self.upstream)
+        result = inspect(self.project, self.upstream.as_uri())
+        self.assertEqual(result["status"], "history_required")
+        self.assertTrue(result["commit_difference"])
+        self.assertFalse(result["update_available"])
+
+    def test_old_remote_branch_is_identified_as_a_downgrade(self):
+        git(self.upstream, "branch", "lagging", self.pin)
+        (self.upstream / "rules.txt").write_text("new rules", encoding="utf-8")
+        newest = commit(self.upstream)
+        self.marker.write_text(f"version=2.3.2\ncommit={newest}\n", encoding="utf-8")
+        result = self.check("refs/heads/lagging")
+        self.assertEqual(result["status"], "upstream_behind")
+        self.assertEqual(result["behind_commits"], 1)
+        self.assertFalse(result["update_available"])
+
+    def test_missing_base_cannot_be_assumed_to_be_an_upgrade(self):
+        self.marker.write_text("version=2.3.2\ncommit=" + "0" * 40 + "\n", encoding="utf-8")
+        result = self.check()
+        self.assertEqual(result["status"], "history_required")
+        self.assertEqual(result["history_reason"], "pinned_commit_missing")
+        self.assertFalse(result["update_available"])
+
+    def test_shallow_history_is_not_reported_as_divergence(self):
+        (self.upstream / "rules.txt").write_text("new rules", encoding="utf-8")
+        newest = commit(self.upstream)
+        (self.upstream / ".git/shallow").write_text(newest + "\n", encoding="ascii")
+        result = self.check()
+        self.assertEqual(result["status"], "history_required")
+        self.assertEqual(result["history_reason"], "incomplete_shallow_history")
+        self.assertFalse(result["update_available"])
+
+    def test_divergent_history_needs_review(self):
+        (self.upstream / "rules.txt").write_text("main change", encoding="utf-8")
+        newest = commit(self.upstream)
+        self.marker.write_text(f"version=2.3.2\ncommit={newest}\n", encoding="utf-8")
+        tree = git(self.upstream, "rev-parse", self.pin + "^{tree}")
+        side = git(self.upstream, "-c", "user.name=Skill Fixture", "-c", "user.email=skill-test@example.invalid", "commit-tree", tree, "-p", self.pin, "-m", "side branch")
+        git(self.upstream, "update-ref", "refs/heads/side", side)
+        result = self.check("refs/heads/side")
+        self.assertEqual(result["status"], "history_diverged")
+        self.assertEqual((result["behind_commits"], result["ahead_commits"]), (1, 1))
+        self.assertFalse(result["update_available"])
 
 
 if __name__ == "__main__":

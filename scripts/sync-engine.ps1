@@ -1,9 +1,9 @@
 param(
-  [string]$Source = 'C:\project\2026\im-not-ai'
+  [Parameter(Mandatory=$true)][string]$Source
 )
 
 $ErrorActionPreference = 'Stop'
-$expectedCommit = '31a66d165a9cc6c26c4c1246553f95d0468d27fb'
+$expectedCommit = '9747f036cdc28a1a8aea4dc71fef1f7846eb96f7'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $patchPath = Join-Path $PSScriptRoot 'patches\humanize-engine-portal.patch'
 $destination = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\vendor\humanize-engine'))
@@ -18,15 +18,12 @@ if ($skill -notmatch 'version:\s*"2\.3\.2"') {
   throw 'Expected im-not-ai version 2.3.2'
 }
 
-$commit = (git -C $Source rev-parse HEAD).Trim()
+$commitOutput = & git -C $Source rev-parse HEAD
+if ($LASTEXITCODE -ne 0) { throw "Source is not a readable Git checkout" }
+$commit = $commitOutput.Trim()
 if ($commit -ne $expectedCommit) {
   throw "Unexpected upstream commit: $commit"
 }
-
-$scriptDestination = Join-Path $destination 'scripts'
-$referenceDestination = Join-Path $destination 'skills\humanize-korean\references'
-New-Item -ItemType Directory -Force -Path $scriptDestination | Out-Null
-New-Item -ItemType Directory -Force -Path $referenceDestination | Out-Null
 
 $scripts = @(
   'prepare_monolith_input.py',
@@ -42,10 +39,6 @@ $scripts = @(
   'build_diagnosis_rules.py'
 )
 
-foreach ($name in $scripts) {
-  Copy-Item -Force -LiteralPath (Join-Path $Source "scripts\$name") -Destination (Join-Path $scriptDestination $name)
-}
-
 $references = @(
   'quick-rules.md',
   'quick-rules.header.md',
@@ -58,6 +51,27 @@ $references = @(
   'baseline.json',
   'baseline_v2.json'
 )
+
+$dirty = @(& git -C $Source status --porcelain --untracked-files=no)
+if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the source checkout' }
+if ($dirty.Count -gt 0) { throw 'Uncommitted upstream changes; use a clean pinned checkout' }
+$required = @('LICENSE')
+$required += $scripts | ForEach-Object { "scripts/$_" }
+$required += $references | ForEach-Object { "skills/humanize-korean/references/$_" }
+foreach ($relative in $required) {
+  if (-not (Test-Path -LiteralPath (Join-Path $Source $relative) -PathType Leaf)) {
+    throw "Required upstream file is missing: $relative"
+  }
+}
+
+$scriptDestination = Join-Path $destination 'scripts'
+$referenceDestination = Join-Path $destination 'skills\humanize-korean\references'
+New-Item -ItemType Directory -Force -Path $scriptDestination | Out-Null
+New-Item -ItemType Directory -Force -Path $referenceDestination | Out-Null
+
+foreach ($name in $scripts) {
+  Copy-Item -Force -LiteralPath (Join-Path $Source "scripts\$name") -Destination (Join-Path $scriptDestination $name)
+}
 
 foreach ($name in $references) {
   Copy-Item -Force -LiteralPath (Join-Path $Source "skills\humanize-korean\references\$name") -Destination (Join-Path $referenceDestination $name)
@@ -82,7 +96,7 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 )
 [IO.File]::WriteAllText(
   (Join-Path $destination 'UPSTREAM.md'),
-  "# Vendored Humanize Engine`n`nSource: https://github.com/epoko77-ai/im-not-ai`nVersion: 2.3.2`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n- Feeds the source text to the v2.6 route tell counter in --chunk mode so short documents are not misrouted to light.`n- Keeps LF/CRLF intact in restore_modality.py and strip_injected_commas.py file I/O.`n",
+  "# Vendored Humanize Engine`n`nSource: https://github.com/himangga01/im-not-ai_fork`nVersion: 2.3.2`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n- Feeds the source text to the v2.6 route tell counter in --chunk mode so short documents are not misrouted to light.`n- Keeps LF/CRLF intact in restore_modality.py and strip_injected_commas.py file I/O.`n",
   $utf8NoBom
 )
 

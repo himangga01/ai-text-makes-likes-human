@@ -14,7 +14,7 @@ DEFAULT_UPSTREAM = "https://github.com/himangga01/im-not-ai_fork.git"
 OID = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z", re.IGNORECASE)
 
 
-def git(*args: str) -> str:
+def git_result(*args: str) -> subprocess.CompletedProcess:
     environment = dict(os.environ, GIT_TERMINAL_PROMPT="0", GIT_OPTIONAL_LOCKS="0")
     try:
         result = subprocess.run(
@@ -24,6 +24,11 @@ def git(*args: str) -> str:
         )
     except subprocess.TimeoutExpired as error:
         raise RuntimeError("Git command timed out; check repository access") from error
+    return result
+
+
+def git(*args: str) -> str:
+    result = git_result(*args)
     if result.returncode != 0:
         # Avoid echoing remotes, credentials, or arbitrary stderr in JSON logs.
         raise RuntimeError(f"Git command failed (exit {result.returncode}); check repository access and the requested ref")
@@ -34,7 +39,31 @@ def normalized_source(value: str) -> str:
     return value.strip().rstrip("/").removesuffix(".git")
 
 
-def inspect(project: Path, upstream: str, ref: str = "HEAD") -> dict:
+def compare_history(repository: Path | None, pinned: str, latest: str) -> dict:
+    if pinned == latest:
+        return {"lineage": "same", "ahead_commits": 0, "behind_commits": 0}
+    if repository is None:
+        return {"lineage": "unknown", "history_reason": "history_repository_required"}
+    prefix = ("-C", str(repository.resolve()))
+    git(*prefix, "rev-parse", "--git-dir")
+    for label, commit in (("pinned", pinned), ("target", latest)):
+        if git_result(*prefix, "cat-file", "-e", commit + "^{commit}").returncode != 0:
+            return {"lineage": "unknown", "history_reason": label + "_commit_missing"}
+    forward = git_result(*prefix, "merge-base", "--is-ancestor", pinned, latest)
+    backward = git_result(*prefix, "merge-base", "--is-ancestor", latest, pinned)
+    if forward.returncode not in (0, 1) or backward.returncode not in (0, 1):
+        raise RuntimeError("Could not compare the upstream commit history")
+    if forward.returncode == 0:
+        return {"lineage": "ahead", "ahead_commits": int(git(*prefix, "rev-list", "--count", pinned + ".." + latest)), "behind_commits": 0}
+    if backward.returncode == 0:
+        return {"lineage": "behind", "ahead_commits": 0, "behind_commits": int(git(*prefix, "rev-list", "--count", latest + ".." + pinned))}
+    if git(*prefix, "rev-parse", "--is-shallow-repository").strip() == "true":
+        return {"lineage": "unknown", "history_reason": "incomplete_shallow_history"}
+    counts = git(*prefix, "rev-list", "--left-right", "--count", pinned + "..." + latest).split()
+    return {"lineage": "diverged", "behind_commits": int(counts[0]), "ahead_commits": int(counts[1])}
+
+
+def inspect(project: Path, upstream: str, ref: str = "HEAD", history_repo: Path | None = None) -> dict:
     project = project.resolve()
     package = json.loads((project / "package.json").read_text(encoding="utf-8-sig"))
     if package.get("name") != "ai-text-makes-likes-human":
@@ -79,11 +108,11 @@ def inspect(project: Path, upstream: str, ref: str = "HEAD") -> dict:
 
     pinned_commit = pin["commit"].lower()
     provenance_changed = normalized_source(recorded_source or "") != normalized_source(upstream)
-    update_available = pinned_commit != latest
-    status = (
-        "update_available" if update_available else
-        "provenance_update_required" if provenance_changed else "up_to_date"
-    )
+    history = compare_history(history_repo, pinned_commit, latest)
+    update_available = history["lineage"] == "ahead"
+    status = {"ahead": "update_available", "behind": "upstream_behind", "diverged": "history_diverged", "unknown": "history_required"}.get(history["lineage"])
+    if status is None:
+        status = "provenance_update_required" if provenance_changed else "up_to_date"
     worktree_status = git("-C", str(project), "status", "--porcelain=v1", "--untracked-files=normal")
     return {
         "status": status,
@@ -97,6 +126,8 @@ def inspect(project: Path, upstream: str, ref: str = "HEAD") -> dict:
         "recorded_source": recorded_source,
         "source_migration_required": provenance_changed,
         "update_available": update_available,
+        "commit_difference": pinned_commit != latest,
+        **history,
         "worktree_dirty": bool(worktree_status.strip()),
     }
 
@@ -106,9 +137,10 @@ def main() -> int:
     parser.add_argument("--project-root", type=Path, default=DEFAULT_PROJECT)
     parser.add_argument("--upstream-url", default=DEFAULT_UPSTREAM)
     parser.add_argument("--ref", default="HEAD")
+    parser.add_argument("--history-repo", type=Path, help="Read-only Git checkout containing both commits; no fetch is performed")
     args = parser.parse_args()
     try:
-        result = inspect(args.project_root, args.upstream_url, args.ref)
+        result = inspect(args.project_root, args.upstream_url, args.ref, args.history_repo)
     except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired) as error:
         print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False))
         return 2

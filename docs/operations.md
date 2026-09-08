@@ -81,6 +81,8 @@ Get-ChildItem .\runtime\jobs -Force
 
 ## 엔진 업데이트
 
+`$update-humanize-engine`을 실행하면 원본 `epoko77-ai/im-not-ai`를 사용자 포크 `himangga01/im-not-ai_fork`에 먼저 동기화·push하고 서비스 및 배포물을 갱신합니다. 현재 고정 커밋은 `9747f036cdc28a1a8aea4dc71fef1f7846eb96f7`입니다. 직접 동기화 스크립트를 실행할 때는 깨끗한 포크 체크아웃을 `-Source`로 지정해야 합니다.
+
 Humanize 엔진은 `vendor/humanize-engine`에 고정되어 있어 형제 저장소를 런타임에 참조하지 않습니다. upstream `im-not-ai`는 규칙과 스크립트가 바뀌어도 SKILL.md의 version 문자열을 `2.3.2`로 유지하므로, 실제 고정 기준은 `ENGINE_VERSION`의 commit입니다. 승인된 upstream commit으로 갱신할 때:
 
 1. `scripts/sync-engine.ps1`의 기대 버전과 commit을 검토
@@ -89,7 +91,7 @@ Humanize 엔진은 `vendor/humanize-engine`에 고정되어 있어 형제 저장
 4. 전체 테스트와 live 테스트 실행
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-engine.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\sync-engine.ps1 -Source '<동기화한 포크 체크아웃 절대 경로>'
 $env:PYTHONDONTWRITEBYTECODE='1'
 python .\vendor\humanize-engine\scripts\build_quick_rules.py --check
 python .\vendor\humanize-engine\scripts\build_diagnosis_rules.py --check
