@@ -1,0 +1,140 @@
+{
+  "missing_rule": {
+    "written": 85,
+    "parsed": 84,
+    "missing": [
+      "J-1"
+    ]
+  },
+  "overlapping_lexicon": {
+    "판단되어진다.": 2,
+    "보여진다.": 4,
+    "잊혀진다.": 2
+  },
+  "number_association_swap": {
+    "before": "서울은 10명이고 부산은 20명이다.",
+    "after": "서울은 20명이고 부산은 10명이다.",
+    "exit_code": 0,
+    "change_rate": 0.09999999999999998,
+    "failures": [],
+    "dropped_numbers": [],
+    "log": "[P0 문자율] 10.0% [전문] — OK (경고 30% / 중단 50%)\n[P1 목표달성] N/A — 구조 진단 (어휘 S1 앵커 없음)\n[P2 전멸] C-8 대구 0 → 0 — 스킵 (원문 대구 < 5)\n[P3 golden] PASS (수치 주입·각주·인용·register 이상 없음)\n[P4 터치율] 100.0% (1/1 문장) — 보고 전용\n[P5 서법] 소실 0문장 (참고 총수: 당위 0→0 / 완곡 0→0) — OK\ngate: OK — 수렴\n{\n  \"genre\": \"essay\",\n  \"change_rate\": {\n    \"rate\": 0.1,\n    \"scope\": \"전문\",\n    \"verdict\": \"OK\"\n  },\n  \"s1_targets\": [],\n  \"antithesis\": {\n    \"before\": 0,\n    \"after\": 0,\n    \"verdict\": \"스킵 (원문 대구 < 5)\"\n  },\n  \"golden\": [],\n  \"sentence_touch\": {\n    \"rate\": 1.0,\n    \"touched\": 1,\n    \"total\": 1\n  },\n  \"numbers_dropped\": [],\n  \"modality\": {\n    \"lost_pairs\": [],\n    \"uncertain_pairs\": [],\n    \"counts\": {\n      \"deontic\": {\n        \"before\": 0,\n        \"after\": 0\n      },\n      \"hedge\": {\n        \"before\": 0,\n        \"after\": 0\n      }\n    },\n    \"verdict\": \"OK\"\n  },\n  \"gate\": {\n    \"verdict\": \"OK — 수렴\",\n    \"exit_code\": 0\n  }\n}\n"
+  },
+  "number_deletion": {
+    "before": "참여 인원은 20명이었다. 조사 결과는 보고서에 기록했다.",
+    "after": "참여 인원은 여러 명이었다. 조사 결과는 보고서에 기록했다.",
+    "exit_code": 0,
+    "change_rate": 0.07692307692307687,
+    "failures": [],
+    "dropped_numbers": [
+      "20"
+    ],
+    "log": "[P0 문자율] 7.7% [전문] — OK (경고 30% / 중단 50%)\n[P1 목표달성] N/A — 구조 진단 (어휘 S1 앵커 없음)\n[P2 전멸] C-8 대구 0 → 0 — 스킵 (원문 대구 < 5)\n[P3 golden] PASS (수치 주입·각주·인용·register 이상 없음)\n[P4 터치율] 50.0% (1/2 문장) — 보고 전용\n[P4 수치소실] 관찰: ['20'] (문장 병합·표기 통합이면 정상 — exit 미반영, 확인 요망)\n[P5 서법] 소실 0문장 (참고 총수: 당위 0→0 / 완곡 0→0) — OK\ngate: OK — 수렴\n{\n  \"genre\": \"essay\",\n  \"change_rate\": {\n    \"rate\": 0.0769,\n    \"scope\": \"전문\",\n    \"verdict\": \"OK\"\n  },\n  \"s1_targets\": [],\n  \"antithesis\": {\n    \"before\": 0,\n    \"after\": 0,\n    \"verdict\": \"스킵 (원문 대구 < 5)\"\n  },\n  \"golden\": [],\n  \"sentence_touch\": {\n    \"rate\": 0.5,\n    \"touched\": 1,\n    \"total\": 2\n  },\n  \"numbers_dropped\": [\n    \"20\"\n  ],\n  \"modality\": {\n    \"lost_pairs\": [],\n    \"uncertain_pairs\": [],\n    \"counts\": {\n      \"deontic\": {\n        \"before\": 0,\n        \"after\": 0\n      },\n      \"hedge\": {\n        \"before\": 0,\n        \"after\": 0\n      }\n    },\n    \"verdict\": \"OK\"\n  },\n  \"gate\": {\n    \"verdict\": \"OK — 수렴\",\n    \"exit_code\": 0\n  }\n}\n"
+  },
+  "polarity_flip": {
+    "before": "이 제품은 안전하다.",
+    "after": "이 제품은 안전하지 않다.",
+    "exit_code": 0,
+    "change_rate": 0.12,
+    "failures": [],
+    "dropped_numbers": [],
+    "log": "[P0 문자율] 12.0% [전문] — OK (경고 30% / 중단 50%)\n[P1 목표달성] N/A — 구조 진단 (어휘 S1 앵커 없음)\n[P2 전멸] C-8 대구 0 → 0 — 스킵 (원문 대구 < 5)\n[P3 golden] PASS (수치 주입·각주·인용·register 이상 없음)\n[P4 터치율] 100.0% (1/1 문장) — 보고 전용\n[P5 서법] 소실 0문장 (참고 총수: 당위 0→0 / 완곡 0→0) — OK\ngate: OK — 수렴\n{\n  \"genre\": \"essay\",\n  \"change_rate\": {\n    \"rate\": 0.12,\n    \"scope\": \"전문\",\n    \"verdict\": \"OK\"\n  },\n  \"s1_targets\": [],\n  \"antithesis\": {\n    \"before\": 0,\n    \"after\": 0,\n    \"verdict\": \"스킵 (원문 대구 < 5)\"\n  },\n  \"golden\": [],\n  \"sentence_touch\": {\n    \"rate\": 1.0,\n    \"touched\": 1,\n    \"total\": 1\n  },\n  \"numbers_dropped\": [],\n  \"modality\": {\n    \"lost_pairs\": [],\n    \"uncertain_pairs\": [],\n    \"counts\": {\n      \"deontic\": {\n        \"before\": 0,\n        \"after\": 0\n      },\n      \"hedge\": {\n        \"before\": 0,\n        \"after\": 0\n      }\n    },\n    \"verdict\": \"OK\"\n  },\n  \"gate\": {\n    \"verdict\": \"OK — 수렴\",\n    \"exit_code\": 0\n  }\n}\n"
+  },
+  "short_quote": {
+    "before": "그는 \"승인한다\"고 말했다.",
+    "after": "그는 \"거절한다\"고 말했다.",
+    "exit_code": 0,
+    "change_rate": 0.1333333333333333,
+    "failures": [],
+    "dropped_numbers": [],
+    "log": "[P0 문자율] 13.3% [전문] — OK (경고 30% / 중단 50%)\n[P1 목표달성] N/A — 구조 진단 (어휘 S1 앵커 없음)\n[P2 전멸] C-8 대구 0 → 0 — 스킵 (원문 대구 < 5)\n[P3 golden] PASS (수치 주입·각주·인용·register 이상 없음)\n[P4 터치율] 100.0% (1/1 문장) — 보고 전용\n[P5 서법] 소실 0문장 (참고 총수: 당위 0→0 / 완곡 0→0) — OK\ngate: OK — 수렴\n{\n  \"genre\": \"essay\",\n  \"change_rate\": {\n    \"rate\": 0.1333,\n    \"scope\": \"전문\",\n    \"verdict\": \"OK\"\n  },\n  \"s1_targets\": [],\n  \"antithesis\": {\n    \"before\": 0,\n    \"after\": 0,\n    \"verdict\": \"스킵 (원문 대구 < 5)\"\n  },\n  \"golden\": [],\n  \"sentence_touch\": {\n    \"rate\": 1.0,\n    \"touched\": 1,\n    \"total\": 1\n  },\n  \"numbers_dropped\": [],\n  \"modality\": {\n    \"lost_pairs\": [],\n    \"uncertain_pairs\": [],\n    \"counts\": {\n      \"deontic\": {\n        \"before\": 0,\n        \"after\": 0\n      },\n      \"hedge\": {\n        \"before\": 0,\n        \"after\": 0\n      }\n    },\n    \"verdict\": \"OK\"\n  },\n  \"gate\": {\n    \"verdict\": \"OK — 수렴\",\n    \"exit_code\": 0\n  }\n}\n"
+  },
+  "restore_example": {
+    "before": "성장률은 낮은 것으로 판단된다.",
+    "candidate": "성장률은 낮은 수치다.",
+    "result": "성장률은 낮은 것으로 판단된다.",
+    "restored": 1,
+    "skipped": 0
+  },
+  "comma_example": {
+    "result": "문서를 읽고 결과를 정리했다.",
+    "commas_removed": 1,
+    "sentences_touched": 1
+  },
+  "sanitize_example": {
+    "result": "한글 문장\n",
+    "report": {
+      "changed": true,
+      "before_chars": 10,
+      "after_chars": 6,
+      "counts": {
+        "hangul_recomposed": 1,
+        "invisible": 1,
+        "bidi": 0,
+        "tag_chars": 0,
+        "special_spaces": 1,
+        "line_breaks": 1,
+        "trailing_space_lines": 0
+      },
+      "summary": "분해된 한글 1자 결합 · 보이지 않는 문자 1개 제거 · 특수 공백 1개 정리 · 줄바꿈 1개 통일"
+    }
+  },
+  "route_mode_difference": {
+    "text": "핵심은 실행에 있다. 중요한 것은 검증이다. 필요한 것은 자료이다. 과제도 남아 있다.",
+    "normal": "standard",
+    "normal_signals": {
+      "lexical_tell_count": 3,
+      "v26_tells": {
+        "분열문(D-8)": 2,
+        "과제슬롯(D-12)": 1
+      },
+      "risk_band": "low",
+      "char_count": 48
+    },
+    "chunk": "light"
+  },
+  "stale_metrics_on_failure": {
+    "log": "run_dir=C:\\project\\2026\\ai-text-makes-likes-human\\runtime\\research-im-not-ai\\probes\\route\ncombined=C:\\project\\2026\\ai-text-makes-likes-human\\runtime\\research-im-not-ai\\probes\\route\\01_input_with_metrics.txt\nrisk_band=absent  risk_score=absent\nroute_hint=absent\ndegraded=True\n",
+    "old_json_survives": true,
+    "error_exists": true,
+    "combined_contains_metrics": false
+  },
+  "baseline_signals": {
+    "conclusion_pivot_count": 0.0,
+    "safe_balance_count": 0.0,
+    "double_passive_count": null,
+    "by_passive_count": null,
+    "have_make_literal_count": null,
+    "double_particle_count": null
+  },
+  "placeholder_scores": {
+    "warning_count": 14,
+    "nonnull_scores": 14
+  },
+  "change_rate_implementations": {
+    "case": "repetitive 900-char source with short prefix insertion",
+    "runtime": 0.0022172949002217113,
+    "test_helper": 1.0
+  },
+  "corruption_tense": {
+    "clean": "문제가 심해졌다.",
+    "corrupted": "문제가 심화되고 있다.",
+    "checks": []
+  },
+  "per_chunk_summary_contract": {
+    "scenario": "simulated chunk responses each contain monolith summary",
+    "chunks": 2,
+    "reassembled": "# 첫 절\n첫 문단을 기록했다.\n<!-- HUMANIZE-SUMMARY grade: A -->\n\n# 다음 절\n다음 문단을 기록했다.\n<!-- HUMANIZE-SUMMARY grade: A -->\n",
+    "gate_visible_body": "# 첫 절\n첫 문단을 기록했다."
+  },
+  "chunk_limit_is_soft": {
+    "sizes": [
+      10000
+    ],
+    "warnings": [
+      "문장 경계로 쪼갤 수 없는 초장 구간 10000자 (offset 0) — 경고 기준(4000) 초과 허용, 검토 요망",
+      "청크 1 크기 10000자 — 상한(9000) 초과"
+    ]
+  },
+  "source_status_after": ""
+}

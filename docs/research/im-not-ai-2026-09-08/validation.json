@@ -1,0 +1,68 @@
+{
+  "install_flags": {
+    "exit_code": 0,
+    "stdout": "install flag tests passed\n",
+    "stderr": "",
+    "isolated_temp": "C:\\project\\2026\\ai-text-makes-likes-human\\runtime\\research-im-not-ai\\install-flags-d78bf7b8760a47518e40500a97381204"
+  },
+  "pytest": {
+    "summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "3",
+      "skipped": "1",
+      "tests": "356",
+      "time": "1.394",
+      "timestamp": "2026-09-08T13:15:03.343155+09:00",
+      "hostname": "DESKTOP-1II271Q"
+    },
+    "failed": [
+      {
+        "class": "tests.test_console_encoding.SkillRootDerivationTests",
+        "name": "test_derivation_works_for_plugin_layout",
+        "message": "FileNotFoundError: [WinError 2] 지정된 파일을 찾을 수 없습니다"
+      },
+      {
+        "class": "tests.test_console_encoding.SkillRootDerivationTests",
+        "name": "test_derivation_works_for_symlink_install",
+        "message": "FileNotFoundError: [WinError 2] 지정된 파일을 찾을 수 없습니다"
+      },
+      {
+        "class": "tests.test_plugin_manifests",
+        "name": "test_copilot_plugin_exposes_single_call_skill_and_references",
+        "message": "AssertionError: assert False\n +  where False = is_file()\n +    where is_file = ((WindowsPath('C:/project/2026/im-not-ai/codex/skills/humanize-korean') / 'references') / 'quick-rules.md').is_file"
+      }
+    ],
+    "skipped": [
+      {
+        "name": "test_live_workspace_run_routes_light_or_standard",
+        "message": "실측 run 없음 (fresh clone)"
+      }
+    ]
+  },
+  "bash_recheck": {
+    "summary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "2",
+      "skipped": "0",
+      "tests": "3",
+      "time": "0.158",
+      "timestamp": "2026-09-08T13:15:36.386094+09:00",
+      "hostname": "DESKTOP-1II271Q"
+    },
+    "failed": [
+      {
+        "class": "tests.test_console_encoding.SkillRootDerivationTests",
+        "name": "test_derivation_works_for_plugin_layout",
+        "message": "AssertionError: False is not true : 플러그인 레이아웃에서 유도 실패: /c/Users/Public/Documents/ESTsoft/CreatorTemp/tmp5hfh7t3k/install-root"
+      },
+      {
+        "class": "tests.test_console_encoding.SkillRootDerivationTests",
+        "name": "test_derivation_works_for_symlink_install",
+        "message": "AssertionError: WindowsPath('C:/c/project/2026/im-not-ai') != WindowsPath('C:/project/2026/im-not-ai') : 심링크 설치에서 유도 실패: /c/project/2026/im-not-ai (cd -P 누락 의심)"
+      }
+    ],
+    "skipped": []
+  }
+}
