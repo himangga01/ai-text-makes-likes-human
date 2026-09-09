@@ -30,7 +30,24 @@ public class FakeCli {
     if (text.Contains("NUMBER_FIXTURE")) text = text.Replace("12", "13");
     var serializer = new JavaScriptSerializer();
     serializer.MaxJsonLength = Int32.MaxValue;
-    var response = new { rewrittenText = text, warnings = new string[0] };
+    if (!String.IsNullOrEmpty(trace)) {
+      int modelIndex=Array.IndexOf(args,"--model");
+      int effortIndex=Array.IndexOf(args,"--effort");
+      string effort=effortIndex>=0?args[effortIndex+1]:"";
+      foreach(string arg in args) if(arg.StartsWith("model_reasoning_effort=")) effort=arg.Substring("model_reasoning_effort=".Length).Trim('"');
+      File.AppendAllText(trace+".settings",serializer.Serialize(new { engine=claude?"claude":"codex",model=modelIndex>=0?args[modelIndex+1]:"",effort=effort })+"\n");
+    }
+    object response = new { rewrittenText = text, warnings = new string[0] };
+    if (text.TrimStart().StartsWith("{") && text.Contains("\"batchId\"")) {
+      var batch = serializer.DeserializeObject(text) as System.Collections.Generic.Dictionary<string, object>;
+      var blocks = batch["blocks"] as object[];
+      var outputBlocks = new System.Collections.Generic.List<object>();
+      foreach (object b in blocks) {
+        var block = b as System.Collections.Generic.Dictionary<string, object>;
+        outputBlocks.Add(new { id=block["id"], sourceHash=block["sourceHash"], edits=new object[0] });
+      }
+      response = new { schemaVersion=1, batchId=batch["batchId"], sourceHash=batch["sourceHash"], blocks=outputBlocks, warnings=new string[0] };
+    }
     if (claude) Console.WriteLine(serializer.Serialize(new { is_error = false, subtype = "success", structured_output = response }));
     else {
       int index = Array.IndexOf(args, "--output-last-message");

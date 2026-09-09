@@ -27,6 +27,7 @@ export type TransformProgressEvent = {
 };
 
 export type TransformEvent =
+  | { type: "document-result"; artifactId: string; name: string; format: "docx"|"pptx"; bytes: number; sha256: string; preview: string }
   | { type: "accepted"; jobId: string; position: number }
   | { type: "queued"; position: number }
   | TransformProgressEvent

@@ -10,6 +10,7 @@ const data = await readFile(file);
 const hash = createHash("sha256").update(data).digest("hex");
 await writeFile(file + ".sha256", `${hash}  ${path.basename(file)}\n`);
 await writeFile("release/build-info.json", JSON.stringify({ appVersion: pkg.version, electron: pkg.devDependencies.electron,
+  documentParser: JSON.parse(await readFile('python-document-deps.lock.json','utf8')),
   python: JSON.parse(await readFile("python-runtime.json", "utf8")), engine: (await readFile("vendor/humanize-engine/ENGINE_VERSION", "utf8")).trim(),
   artifact: path.basename(file), bytes: data.length, sha256: hash, signed: false }, null, 2));
 console.log(`Portable EXE: ${file} (${data.length} bytes)\nSHA256: ${hash}`);

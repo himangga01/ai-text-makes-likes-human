@@ -1,0 +1,8 @@
+{
+  "name": "lxml",
+  "version": "6.1.3",
+  "filename": "lxml-6.1.3-cp314-cp314-win_amd64.whl",
+  "url": "https://files.pythonhosted.org/packages/0f/bc/5811cc73cac05e324e05ba9b0924e1a163a317a167ede8a9c748b11db30a/lxml-6.1.3-cp314-cp314-win_amd64.whl",
+  "sha256": "66299564c046bc7e0cc5de5106601eae907e9fa5904cd68a323380a8502f7861",
+  "license": "BSD-3-Clause; bundled libxml2/libxslt licenses included in wheel"
+}

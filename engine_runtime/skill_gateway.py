@@ -224,6 +224,15 @@ def main() -> int:
     args = parser.parse_args()
     root, vendor = args.workspace_root.resolve(), args.vendor_root.resolve()
     try:
+        document = args.command == "prepare" and Path(args.input).suffix.lower() in (".docx", ".pptx")
+        if args.command != "prepare" and len(args.job) == 36 and args.job.startswith("job-") and all(c in "0123456789abcdef" for c in args.job[4:]):
+            state_file = root / args.job / "job.json"
+            if state_file.is_file():
+                document = json.loads(state_file.read_text(encoding="utf-8")).get("kind") == "document"
+        if document:
+            from documents.workflow import dispatch
+            print(json.dumps(dispatch(args, root, vendor), ensure_ascii=False))
+            return 0
         if args.command == "prepare":
             result = prepare(args.input, root, vendor)
         else:

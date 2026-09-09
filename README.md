@@ -188,3 +188,9 @@ npm.cmd start
 ```
 
 운영 점검과 복구 절차는 [docs/operations.md](docs/operations.md)를 참고하세요.
+
+## DOCX · PPTX 지원 (0.3.0)
+
+0.3.1에서는 웹·Windows 앱의 연결 설정에서 모델과 추론 레벨을 선택할 수 있습니다. CLI 상태 아이콘, 같은 높이의 원문·결과 필드, 전체 진행률 옆 경과 시간을 추가했습니다. [0.3.1 변경 내용](docs/releases/0.3.1.md)
+
+웹·Windows 앱·Claude/Codex 스킬에서 Word와 PowerPoint 문서를 윤문하고 같은 형식의 새 파일로 저장합니다. 서식·표·도형 구조를 보존하며, 처리하지 않는 객체와 원문 복원 구간을 고지합니다. [사용법과 지원 범위](docs/documents.md) · [릴리스 기록](docs/releases/0.3.0.md)

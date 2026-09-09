@@ -19,6 +19,7 @@ import type {
   RestoreReport
 } from "./python-engine.js";
 import type { JobWorkspace } from "./workspace.js";
+import type { ModelSettings } from './model-policy.js';
 
 export interface PythonAdapter {
   prepare(runDir: string, signal: AbortSignal): Promise<ChunkManifest>;
@@ -41,11 +42,13 @@ export interface CodexAdapter {
     inputPath: string,
     outputPath: string,
     attempt: 1 | 2,
-    signal: AbortSignal
+    signal: AbortSignal,
+    settings?: ModelSettings
   ): Promise<CodexResult>;
 }
 
 export interface HumanizeRequest {
+  settings?: ModelSettings;
   jobId: string;
   workspace: JobWorkspace;
   signal: AbortSignal;
@@ -77,6 +80,7 @@ export interface HumanizeEngineOptions {
 }
 
 interface ChunkTaskContext {
+  settings?: ModelSettings;
   sourcePoints: readonly string[];
   workspace: JobWorkspace;
   signal: AbortSignal;
@@ -217,7 +221,8 @@ export class HumanizeEngine {
       chunkSourcePath,
       context.workspace.path(`codex-${chunk.index}-attempt-1.json`),
       1,
-      context.signal
+      context.signal,
+      context.settings
     );
     codexMs += this.now() - firstCodexStartedAt;
     codexCalls += 1;
@@ -251,7 +256,8 @@ export class HumanizeEngine {
         chunkSourcePath,
         context.workspace.path(`codex-${chunk.index}-attempt-2.json`),
         2,
-        context.signal
+        context.signal,
+        context.settings
       );
       codexMs += this.now() - secondCodexStartedAt;
       codexCalls += 1;
@@ -360,6 +366,7 @@ export class HumanizeEngine {
       async ({ chunk, bodyIndex }, signal) => {
         this.ensureActive(signal);
         return this.processChunk(chunk, {
+          settings: request.settings,
           sourcePoints,
           workspace: request.workspace,
           signal,
@@ -419,8 +426,8 @@ export class HumanizeEngine {
     const output = await readFile(finalPath, "utf8");
     const sourceChars = sourcePoints.length;
     const diagnostics: TransformDiagnostics = {
-      model: this.model,
-      reasoningEffort: this.reasoningEffort,
+      model: request.settings?.model ?? this.model,
+      reasoningEffort: request.settings?.effort ?? this.reasoningEffort,
       processingMode: manifest.processingMode,
       routeHint: manifest.routeHint,
       sourceChars,

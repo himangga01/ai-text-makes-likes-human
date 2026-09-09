@@ -26,7 +26,7 @@
       <section class="hero" aria-labelledby="hero-title">
         <p class="eyebrow">KOREAN WRITING ASSISTANT</p>
         <h1 id="hero-title">AI 문체는 덜고,<br><strong>내 문장은 살립니다.</strong></h1>
-        <p class="hero-copy">원문을 붙여넣거나 TXT·MD 파일을 불러온 뒤, 변환 버튼을 눌러보세요.</p>
+        <p class="hero-copy">원문을 붙여넣거나 TXT·MD·DOCX·PPTX 파일을 불러온 뒤, 변환 버튼을 눌러보세요.</p>
       </section>
 
       <ol id="workflow-steps" class="workflow-steps" aria-label="이용 순서">
@@ -35,19 +35,29 @@
         <li><span>03</span> 결과 확인</li>
       </ol>
 
-      <details id="desktop-settings" class="desktop-settings" hidden>
-        <summary>Claude · Codex 연결 설정</summary>
-        <p>이 PC에 설치·로그인된 CLI를 사용합니다. 사용할 엔진을 아래 편집기에서 선택하세요.</p>
-        <div class="provider-settings">
-          <div><strong>Codex</strong><p id="codex-health">점검 중</p><code>codex login</code>
-            <div><button type="button" class="button button-secondary" data-choose-cli="codex">EXE 경로 선택</button>
-            <button type="button" class="button button-ghost" data-reset-cli="codex">자동 탐색</button></div></div>
-          <div><strong>Claude Code</strong><p id="claude-health">점검 중</p><code>claude auth login</code>
-            <div><button type="button" class="button button-secondary" data-choose-cli="claude">EXE 경로 선택</button>
-            <button type="button" class="button button-ghost" data-reset-cli="claude">자동 탐색</button></div></div>
+      <section id="desktop-settings" class="desktop-settings" aria-labelledby="connection-heading">
+        <div class="connection-heading">
+          <div><h2 id="connection-heading">CLI 연결 및 모델 설정</h2><p id="connection-scope">서버 PC에 설치·로그인된 CLI를 사용합니다.</p></div>
+          <button id="refresh-health" type="button" class="button button-secondary">↻ 연결 다시 점검</button>
         </div>
-        <button id="refresh-health" type="button" class="button button-secondary">엔진 다시 점검</button>
-      </details>
+        <div class="provider-settings">
+          <article class="provider-card" data-provider="codex" data-connection="checking">
+            <div class="provider-heading"><strong>Codex</strong><span id="codex-connection" class="connection-badge" data-state="checking"><span class="connection-icon" aria-hidden="true">◌</span><span class="connection-label">점검 중</span></span></div>
+            <p id="codex-health" class="provider-health">설치와 로그인 상태를 확인합니다.</p>
+            <div class="model-controls"><label for="codex-model">모델<select id="codex-model" data-model="codex"><option value="gpt-5.6-sol">GPT-5.6 Sol</option></select></label>
+              <label for="codex-effort">추론 레벨<select id="codex-effort" data-effort="codex"><option value="medium">Medium · 기본</option></select></label></div>
+            <div class="cli-path-controls" hidden><button type="button" class="button button-secondary" data-choose-cli="codex">EXE 경로 선택</button><button type="button" class="button button-ghost" data-reset-cli="codex">자동 탐색</button></div>
+          </article>
+          <article class="provider-card" data-provider="claude" data-connection="checking">
+            <div class="provider-heading"><strong>Claude Code</strong><span id="claude-connection" class="connection-badge" data-state="checking"><span class="connection-icon" aria-hidden="true">◌</span><span class="connection-label">점검 중</span></span></div>
+            <p id="claude-health" class="provider-health">설치와 로그인 상태를 확인합니다.</p>
+            <div class="model-controls"><label for="claude-model">모델<select id="claude-model" data-model="claude"><option value="claude-opus-5">Claude Opus 5</option></select></label>
+              <label for="claude-effort">추론 레벨<select id="claude-effort" data-effort="claude"><option value="medium">Medium · 기본</option></select></label></div>
+            <div class="cli-path-controls" hidden><button type="button" class="button button-secondary" data-choose-cli="claude">EXE 경로 선택</button><button type="button" class="button button-ghost" data-reset-cli="claude">자동 탐색</button></div>
+          </article>
+        </div>
+        <p class="connection-note"><span id="connection-checked">연결 점검 중</span> · 설치·로그인 확인 상태입니다. 모델 접근 권한과 사용 한도는 실제 실행 시 확인됩니다.</p>
+      </section>
 
       <section id="editor-shell" class="editor-shell" data-state="idle" aria-label="문장 변환 편집기">
         <div class="editor-grid">
@@ -61,14 +71,14 @@
             </div>
 
             <div class="panel-toolbar">
-              <input id="text-file-input" class="visually-hidden-file" type="file" accept=".txt,.md,text/plain,text/markdown" aria-label="TXT 또는 MD 파일 선택">
+              <input id="text-file-input" class="visually-hidden-file" type="file" accept=".txt,.md,.docx,.pptx,text/plain,text/markdown" aria-label="TXT, MD, DOCX 또는 PPTX 파일 선택">
               <button id="text-file-button" class="button button-secondary" type="button">
-                <span aria-hidden="true">＋</span> TXT·MD 불러오기
+                <span aria-hidden="true">＋</span> 파일 불러오기
               </button>
               <button id="reset-button" class="button button-ghost" type="button">초기화</button>
             </div>
 
-            <div id="source-file-name" class="file-chip" hidden></div>
+            <div class="file-slot"><div id="source-file-name" class="file-chip" hidden></div></div>
             <label class="visually-hidden" for="source-text">다듬을 원본 문구</label>
             <textarea id="source-text" placeholder="다듬고 싶은 한국어 문장을 여기에 붙여넣으세요." spellcheck="true"></textarea>
           </section>
@@ -79,11 +89,12 @@
                 <span class="panel-kicker">RESULT</span>
                 <h2 id="result-heading">수정된 문구 출력</h2>
               </div>
-              <div class="panel-actions">
-                <button id="download-button" class="button button-secondary" type="button" hidden disabled>MD 다운로드</button>
-                <button id="copy-button" class="button button-ghost" type="button" disabled>복사</button>
-              </div>
             </div>
+            <div class="panel-toolbar panel-actions">
+              <button id="download-button" class="button button-secondary" type="button" hidden disabled>결과 다운로드</button>
+              <button id="copy-button" class="button button-ghost" type="button" disabled>복사</button>
+            </div>
+            <div class="file-slot"><span class="output-hint">원문 구조와 내용을 확인하며 다듬습니다</span></div>
 
             <div class="result-wrap">
               <label class="visually-hidden" for="result-text">변환된 문구</label>
@@ -102,11 +113,11 @@
             <legend class="visually-hidden">변환 엔진 선택</legend>
             <label class="engine-option">
               <input type="radio" name="engine" value="codex" checked>
-              <span>Codex</span>
+              <span>Codex</span><span class="engine-connection" data-engine-status="codex" aria-label="점검 중">◌</span>
             </label>
             <label class="engine-option" id="engine-option-claude">
               <input type="radio" name="engine" value="claude">
-              <span>Claude Code</span>
+              <span>Claude Code</span><span class="engine-connection" data-engine-status="claude" aria-label="점검 중">◌</span>
             </label>
           </fieldset>
           <button id="transform-button" class="button button-primary" type="button" disabled>
@@ -118,7 +129,7 @@
         <div id="progress-panel" class="progress-panel" hidden>
           <div class="progress-meta">
             <span id="progress-label">전체 진행률</span>
-            <strong id="progress-value">0%</strong>
+            <div class="progress-readouts"><span class="elapsed-label">경과 시간 <time id="elapsed-time" role="timer" aria-live="off">00:00</time></span><strong id="progress-value">0%</strong></div>
           </div>
           <progress id="progress" max="100" value="0" aria-labelledby="progress-label progress-value"></progress>
         </div>

@@ -20,6 +20,9 @@ import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
 import { NdjsonWriter } from "./transport/ndjson.js";
 import { streamRequestBody } from "./transport/request-body.js";
+import { mountDocumentRoutes } from './documents/routes.js';
+import type { DocumentEngine } from './documents/document-engine.js';
+import { MODEL_OPTIONS, parseModelSettings, type ModelSettings } from './engine/model-policy.js';
 
 export interface AppLogger {
   info(value: Record<string, unknown>): void;
@@ -31,6 +34,8 @@ export interface HumanizeService {
 }
 
 export interface AppDependencies {
+  refreshHealth?: () => Promise<PreflightReport>;
+  documentEngine?: DocumentEngine;
   config: AppConfig;
   queue: TransformQueue;
   engine: HumanizeService;
@@ -115,12 +120,16 @@ export function createApp(dependencies: AppDependencies): Express {
     next();
   });
 
-  app.get("/api/health", (_request, response) => {
+  app.get("/api/health", async (_request, response) => {
+    if (dependencies.refreshHealth) await dependencies.refreshHealth();
     const stats = queue.stats();
     response.setHeader("Cache-Control", "no-store");
     if (!preflight.ready) {
       response.status(503).json({
         status: "degraded",
+        providers: preflight.providers,
+        modelOptions: MODEL_OPTIONS,
+        checkedAt: new Date().toISOString(),
         pid: process.pid,
         errorCode: preflight.errorCode ?? "ENGINE_UNAVAILABLE",
         message:
@@ -131,12 +140,15 @@ export function createApp(dependencies: AppDependencies): Express {
       return;
     }
     response.json({
+      documentsAvailable: dependencies.documentEngine ? await dependencies.documentEngine.health() : false,
+      modelOptions: MODEL_OPTIONS,
+      checkedAt: new Date().toISOString(),
       status: "ready",
       pid: process.pid,
       engine: "codex-cli",
       engineVersion: preflight.codexVersion,
       humanizeVersion: preflight.humanizeVersion,
-      claudeAvailable: Boolean(claudeEngine),
+      claudeAvailable: preflight.providers?.claude.ready ?? Boolean(claudeEngine),
       ...(preflight.providers ? { providers: preflight.providers } : {}),
       activeJobs: stats.active,
       queuedJobs: stats.queued
@@ -179,6 +191,9 @@ export function createApp(dependencies: AppDependencies): Express {
       return;
     }
     const selectedEngine = engineChoice === "claude" ? claudeEngine! : engine;
+    let settings: ModelSettings;
+    try { settings = parseModelSettings(engineChoice, request.query.model, request.query.effort); }
+    catch (error) { response.status(400).json({code:'INVALID_MODEL_SETTINGS',message:(error as Error).message}); return; }
 
     const jobId = randomUUID();
     const reservation = queue.reserve(jobId);
@@ -229,6 +244,7 @@ export function createApp(dependencies: AppDependencies): Express {
             queueSignal
           ]);
           const result = await selectedEngine.transform({
+            settings,
             jobId,
             workspace: workspace!,
             signal,
@@ -276,6 +292,7 @@ export function createApp(dependencies: AppDependencies): Express {
     }
   });
 
+  mountDocumentRoutes(app, dependencies);
   app.use(express.static(path.join(config.projectRoot, "public"), {
     etag: true,
     maxAge: 0,

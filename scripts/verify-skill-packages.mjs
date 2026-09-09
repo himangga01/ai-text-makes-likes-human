@@ -30,6 +30,19 @@ for (const host of ["Claude", "Codex"]) {
   call("finalize", "--job", state.job, "--output", output);
   if ((await readFile(output, "utf8")) !== input) throw new Error("Packaged skill changed the source");
   call("cleanup", "--job", state.job);
+  for (const format of ['docx','pptx']) {
+    state=call('prepare','--input',path.resolve(`tests/fixtures/documents/mixed.${format}`));
+    while(state.status==='rewrite') {
+      const batch=JSON.parse(await readFile(state.inputPath,'utf8'));
+      await writeFile(state.responsePath,JSON.stringify({schemaVersion:1,batchId:batch.batchId,sourceHash:batch.sourceHash,
+        blocks:batch.blocks.map(b=>({id:b.id,sourceHash:b.sourceHash,edits:[]})),warnings:[]}));
+      state=call('accept','--job',state.job,'--chunk',String(state.chunk),'--attempt',String(state.attempt),'--source-hash',state.sourceHash,'--response',state.responsePath);
+    }
+    const officeOutput=path.join(root,`result.${format}`);
+    call('finalize','--job',state.job,'--output',officeOutput);
+    if((await readFile(officeOutput)).subarray(0,2).toString()!=='PK')throw new Error('Office package output missing');
+    call('cleanup','--job',state.job);
+  }
   if ((await readdir(jobs)).length !== 0) throw new Error("Packaged skill leaked a job");
-  console.log(`${host}: installed twice, embedded Python roundtrip, Unicode preservation and cleanup passed`);
+  console.log(`${host}: installed twice, embedded Python TXT/DOCX/PPTX roundtrip, Unicode preservation and cleanup passed`);
 }

@@ -1,12 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config.js";
 import { createApp } from "../../src/app.js";
+import { MODEL_OPTIONS } from '../../src/engine/model-policy.js';
 import { TransformQueue } from "../../src/queue/transform-queue.js";
 import { close, listen } from "../helpers/http-app.js";
 
 const config = loadConfig({}, process.cwd());
 
 describe("GET /api/health", () => {
+  it('refreshes provider readiness instead of retaining the startup login status',async()=>{
+    const preflight={ready:false,nodeVersion:'24.19.0',message:'로그인 필요'};
+    let count=0;
+    const app=createApp({config,queue:new TransformQueue({maxActive:1,maxAccepted:3}),
+      engine:{transform:async()=>{throw new Error('not used');}},preflight,
+      refreshHealth:async()=>{count++;Object.assign(preflight,{ready:true,message:undefined});return preflight;}});
+    const running=await listen(app);
+    try {const response=await fetch(`${running.baseUrl}/api/health`);expect(response.status).toBe(200);expect(count).toBe(1);}
+    finally {await close(running.server);}
+  });
   it("returns public readiness and live queue counts", async () => {
     const queue = new TransformQueue({ maxActive: 1, maxAccepted: 3 });
     const app = createApp({
@@ -26,6 +37,9 @@ describe("GET /api/health", () => {
       const response = await fetch(`${running.baseUrl}/api/health`);
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({
+        modelOptions: MODEL_OPTIONS,
+        checkedAt: expect.any(String),
+        documentsAvailable: false,
         status: "ready",
         pid: process.pid,
         engine: "codex-cli",
@@ -83,6 +97,8 @@ describe("GET /api/health", () => {
       expect(response.status).toBe(503);
       const body = await response.json();
       expect(body).toEqual({
+        modelOptions: MODEL_OPTIONS,
+        checkedAt: expect.any(String),
         status: "degraded",
         pid: process.pid,
         errorCode: "ENGINE_UNAVAILABLE",

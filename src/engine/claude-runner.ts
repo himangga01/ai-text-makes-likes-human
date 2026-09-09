@@ -10,8 +10,11 @@ import {
 import { EngineError } from "./errors.js";
 import { CLAUDE_MODEL, CLAUDE_REASONING_EFFORT } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
+import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface ClaudeRunnerOptions {
+  promptBuilder?: typeof buildHumanizePrompt;
+  resultParser?: typeof parseEngineResult;
   claudeCommand: string;
   schemaPath: string;
   quickRulesPath: string;
@@ -88,9 +91,11 @@ export class ClaudeRunner {
     inputPath: string,
     outputPath: string,
     attempt: 1 | 2,
-    signal: AbortSignal
+    signal: AbortSignal,
+    settings?: ModelSettings
   ): Promise<CodexResult> {
     const sourcePath = path.resolve(inputPath);
+    const selection = parseModelSettings('claude', settings?.model, settings?.effort);
     const resultPath = path.resolve(outputPath);
     const [source, quickRules, schema] = await Promise.all([
       readFile(sourcePath, "utf8"),
@@ -105,7 +110,7 @@ export class ClaudeRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = buildHumanizePrompt({ source, quickRules, attempt, nonce });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce });
 
     await rm(resultPath, { force: true });
     const command = await this.options.permitPool.run(signal, () =>
@@ -119,9 +124,9 @@ export class ClaudeRunner {
           "",
           "--no-session-persistence",
           "--model",
-          CLAUDE_MODEL,
+          selection.model,
           "--effort",
-          CLAUDE_REASONING_EFFORT,
+          selection.effort,
           "--output-format",
           "json",
           "--json-schema",
@@ -145,7 +150,7 @@ export class ClaudeRunner {
       throw invalid("Claude exited without a valid result");
     }
 
-    const result = parseEngineResult(
+    const result = (this.options.resultParser ?? parseEngineResult)(
       extractResultText(command.stdout),
       "Claude"
     );

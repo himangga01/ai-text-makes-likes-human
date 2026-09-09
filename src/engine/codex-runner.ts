@@ -8,6 +8,7 @@ import {
   HUMANIZE_REASONING_EFFORT
 } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
+import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface CodexResult {
   rewrittenText: string;
@@ -20,6 +21,8 @@ export interface CodexPermitPool {
 }
 
 export interface CodexRunnerOptions {
+  promptBuilder?: typeof buildHumanizePrompt;
+  resultParser?: typeof parseEngineResult;
   codexCommand: string;
   schemaPath: string;
   quickRulesPath: string;
@@ -85,9 +88,11 @@ export class CodexRunner {
     inputPath: string,
     outputPath: string,
     attempt: 1 | 2,
-    signal: AbortSignal
+    signal: AbortSignal,
+    settings?: ModelSettings
   ): Promise<CodexResult> {
     const sourcePath = path.resolve(inputPath);
+    const selection = parseModelSettings('codex', settings?.model, settings?.effort);
     const resultPath = path.resolve(outputPath);
     const [source, quickRules] = await Promise.all([
       readFile(sourcePath, "utf8"),
@@ -101,7 +106,7 @@ export class CodexRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = buildHumanizePrompt({ source, quickRules, attempt, nonce });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce });
 
     await rm(resultPath, { force: true });
     const command = await this.options.permitPool.run(signal, () =>
@@ -114,9 +119,9 @@ export class CodexRunner {
           "--ignore-user-config",
           "--ignore-rules",
           "--model",
-          HUMANIZE_MODEL,
+          selection.model,
           "--config",
-          `model_reasoning_effort="${HUMANIZE_REASONING_EFFORT}"`,
+          `model_reasoning_effort="${selection.effort}"`,
           "--sandbox",
           "read-only",
           "--output-schema",
@@ -144,7 +149,7 @@ export class CodexRunner {
     }
 
     try {
-      return parseEngineResult(await readFile(resultPath, "utf8"));
+      return (this.options.resultParser ?? parseEngineResult)(await readFile(resultPath, "utf8"));
     } catch (error) {
       if (error instanceof EngineError) throw error;
       throw invalid("Codex result file is missing", error);

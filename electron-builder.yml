@@ -20,7 +20,7 @@ extraResources:
     filter: ['**/*', '!**/__pycache__/**', '!**/*.pyc']
   - from: engine_runtime
     to: engine/engine_runtime
-    filter: ['**/*.py']
+    filter: ['**/*.py', '**/*.json']
   - from: build-resources/python
     to: engine/python
   - from: src/engine/output-schema.json

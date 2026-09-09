@@ -1,0 +1,19 @@
+{
+  "type": "object", "additionalProperties": false,
+  "required": ["schemaVersion", "batchId", "sourceHash", "blocks", "warnings"],
+  "properties": {
+    "schemaVersion": {"type": "integer", "enum": [1]},
+    "batchId": {"type": "string"}, "sourceHash": {"type": "string"},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "blocks": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false, "required": ["id", "sourceHash", "edits"],
+      "properties": {"id": {"type": "string"}, "sourceHash": {"type": "string"}, "edits": {
+        "type": "array", "items": {"type": "object", "additionalProperties": false,
+          "required": ["start", "end", "before", "after"], "properties": {
+            "start": {"type": "integer"}, "end": {"type": "integer"},
+            "before": {"type": "string"}, "after": {"type": "string"}
+          }}
+      }}
+    }}
+  }
+}

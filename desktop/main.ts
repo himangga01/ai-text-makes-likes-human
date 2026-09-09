@@ -1,9 +1,11 @@
 import { app, BrowserWindow, protocol, ipcMain, dialog, clipboard, utilityProcess, type UtilityProcess, type IpcMainInvokeEvent } from "electron";
-import { readFile, writeFile, mkdir, readdir, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir, rm, copyFile } from "node:fs/promises";
+import { constants } from 'node:fs';
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { parseEngineChoice, type EngineChoice } from "../src/engine/model-policy.js";
+import { parseModelSettings, type ModelSettings } from '../src/engine/model-policy.js';
 
 app.setName("HumanizeKR");
 if (process.env.HUMANIZE_USER_DATA) app.setPath("userData", path.resolve(process.env.HUMANIZE_USER_DATA));
@@ -12,8 +14,8 @@ const resourceRoot = app.isPackaged ? path.join(process.resourcesPath, "engine")
 const publicRoot = path.join(app.isPackaged ? app.getAppPath() : resourceRoot, "public");
 const jobsRoot = path.join(app.getPath("userData"), "jobs");
 const settingsPath = path.join(app.getPath("userData"), "settings.json");
-type Preferences = { selectedEngine: EngineChoice; commands: Partial<Record<EngineChoice, string>> };
-let preferences: Preferences = { selectedEngine: "codex", commands: {} };
+type Preferences = { selectedEngine: EngineChoice; commands: Partial<Record<EngineChoice, string>>; models: Partial<Record<EngineChoice, ModelSettings>> };
+let preferences: Preferences = { selectedEngine: "codex", commands: {}, models: {} };
 let window: BrowserWindow | undefined;
 let worker: UtilityProcess | undefined;
 let activeId: string | undefined;
@@ -84,6 +86,12 @@ function registerIpc() {
   handle("preferences", () => preferences);
   handle("health", () => request("health", { commands: preferences.commands }));
   handle("select-engine", async value => { if (activeId) throw new Error("변환 중입니다."); preferences.selectedEngine = engine(value); await persist(); });
+  handle('select-model', async value => {
+    if(activeId) throw new Error('변환 중입니다.');
+    const choice=engine(value?.engine);
+    preferences.models[choice]=parseModelSettings(choice,value?.model,value?.effort);
+    await persist();return preferences.models[choice];
+  });
   handle("choose-cli", async value => {
     const choice = engine(value); if (activeId) throw new Error("변환 중입니다.");
     const selected = await dialog.showOpenDialog(window!, { title: `${choice} 실행 파일 선택`, properties: ["openFile"], filters: [{ name: "CLI 실행 파일", extensions: ["exe"] }] });
@@ -93,16 +101,34 @@ function registerIpc() {
   handle("reset-cli", async value => { if (activeId) throw new Error("변환 중입니다."); delete preferences.commands[engine(value)]; await persist(); return preferences; });
   handle("transform", async value => {
     if (activeId) throw new Error("이미 변환 중입니다.");
-    const input = { text: text(value?.text), engine: engine(value?.engine), commands: preferences.commands };
+    const choice=engine(value?.engine);
+    const input = { text: text(value?.text), engine: choice, commands: preferences.commands,
+      settings:parseModelSettings(choice,value?.settings?.model,value?.settings?.effort) };
     if (!input.text.trim()) throw new Error("원문을 입력해 주세요.");
     const id = randomUUID(); activeId = id;
     try { return await request("transform", { input }, id); } finally { if (activeId === id) activeId = undefined; }
   });
+  handle('transform-document',async value=>{
+    if(activeId) throw new Error('이미 변환 중입니다.');
+    const id=randomUUID();activeId=id;
+    try {const choice=engine(value?.engine);return await request('document-transform',{input:{id:text(value?.id),token:text(value?.token),engine:choice,commands:preferences.commands,settings:parseModelSettings(choice,value?.settings?.model,value?.settings?.effort)}},id);}
+    finally {if(activeId===id)activeId=undefined;}
+  });
+  handle('close-document',value=>request('document-close',{documentId:text(value?.id),token:text(value?.token)}));
+  handle('save-document',async value=>{
+    const info=await request('document-result',{documentId:text(value?.id),token:text(value?.token)});
+    const selected=await dialog.showSaveDialog(window!,{defaultPath:info.name,filters:[{name:'Office 문서',extensions:[info.format]}]});
+    if(selected.canceled||!selected.filePath)return false;
+    if(path.resolve(selected.filePath)===info.original||path.extname(selected.filePath).toLowerCase()!=='.'+info.format)throw new Error('원본과 다른 새 파일 이름을 지정해 주세요.');
+    await copyFile(info.output,selected.filePath,constants.COPYFILE_EXCL);return true;
+  });
   handle("cancel", () => { if (activeId) worker?.postMessage({ kind: "cancel", id: activeId }); });
   handle("open-text", async () => {
-    const selected = await dialog.showOpenDialog(window!, { properties: ["openFile"], filters: [{ name: "텍스트 문서", extensions: ["txt", "md"] }] });
+    if(activeId)throw new Error('변환 중입니다.');
+    const selected = await dialog.showOpenDialog(window!, { properties: ["openFile"], filters: [{ name: "지원 문서", extensions: ["txt", "md", "docx", "pptx"] }] });
     const file = selected.filePaths[0]; if (selected.canceled || !file) return null;
-    if (!/\.(txt|md)$/i.test(file)) throw new Error("TXT 또는 MD 파일을 선택해 주세요.");
+    if(/\.(docx|pptx)$/i.test(file))return {document:await request('document-import',{file})};
+    if (!/\.(txt|md)$/i.test(file)) throw new Error("TXT, MD, DOCX 또는 PPTX 파일을 선택해 주세요.");
     return { name: path.basename(file), bytes: new Uint8Array(await readFile(file)) };
   });
   handle("save-text", async value => {
@@ -127,6 +153,9 @@ async function initialize() {
   try {
     const saved = JSON.parse(await readFile(settingsPath, "utf8"));
     preferences.selectedEngine = parseEngineChoice(saved.selectedEngine) ?? "codex";
+    for (const kind of ['codex','claude'] as const) {
+      try { preferences.models[kind]=parseModelSettings(kind,saved.models?.[kind]?.model,saved.models?.[kind]?.effort); } catch {}
+    }
     for (const choice of ["codex", "claude"] as const) if (typeof saved.commands?.[choice] === "string") preferences.commands[choice] = saved.commands[choice];
   } catch { /* first run or invalid preferences */ }
   protocol.handle("humanize", async incoming => {

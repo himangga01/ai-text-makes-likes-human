@@ -11,8 +11,11 @@ import { CodexSemaphore } from "../engine/codex-semaphore.js";
 import { CLAUDE_MODEL, CLAUDE_REASONING_EFFORT } from "../engine/model-policy.js";
 import { TransformQueue } from "../queue/transform-queue.js";
 import { resolveCli } from "./cli-path.js";
+import { DocumentEngine } from '../documents/document-engine.js';
 
 export interface ProductionRuntime {
+  refreshHealth: () => Promise<PreflightReport>;
+  documentEngine: DocumentEngine;
   engine: HumanizeEngine;
   claudeEngine?: HumanizeEngine;
   queue: TransformQueue;
@@ -29,6 +32,17 @@ export async function createProductionRuntime(
     "utf8"
   );
   const preflight = await runPreflight(config, runner, engineVersion);
+  let refreshing: Promise<PreflightReport> | undefined;
+  let checkedAt = Date.now();
+  const refreshHealth = () => {
+    if (refreshing) return refreshing;
+    if (Date.now() - checkedAt < 3000) return Promise.resolve(preflight);
+    refreshing = runPreflight(config, runner, engineVersion).then(next => {
+      Object.assign(preflight, next, { providers: next.providers, message: next.message, errorCode: next.errorCode });
+      checkedAt = Date.now(); return preflight;
+    }).finally(() => { refreshing = undefined; });
+    return refreshing;
+  };
   const python = new PythonEngine({
     pythonCommand: config.pythonCommand,
     vendorRoot: config.vendorRoot,
@@ -51,10 +65,8 @@ export async function createProductionRuntime(
     runner,
     permitPool: codexSemaphore
   });
-  const claudeAvailable = preflight.providers?.claude.ready === true;
   const claudeSemaphore = new CodexSemaphore(2);
-  const claudeEngine = claudeAvailable
-    ? new HumanizeEngine({
+  const claudeEngine = new HumanizeEngine({
         python,
         codex: new ClaudeRunner({
           claudeCommand: config.claudeCommand,
@@ -73,9 +85,10 @@ export async function createProductionRuntime(
         model: CLAUDE_MODEL,
         reasoningEffort: CLAUDE_REASONING_EFFORT,
         maxObservedCodexConcurrency: () => claudeSemaphore.maxObserved
-      })
-    : undefined;
+      });
   return {
+    refreshHealth,
+    documentEngine: new DocumentEngine(config, runner),
     engine: new HumanizeEngine({
       python,
       codex,

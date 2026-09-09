@@ -5,6 +5,7 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({
       json: {
         status: "ready",
+        checkedAt: '2026-09-09T07:00:00.000Z',
         engine: "codex-cli",
         engineVersion: "0.149.0",
         humanizeVersion: "2.3.2",

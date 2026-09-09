@@ -82,6 +82,7 @@ npm.cmd run build
 npm.cmd run test:e2e
 npm.cmd run test:skills
 npm.cmd run desktop:build
+npm.cmd run test:documents
 npm.cmd run test:desktop
 npm.cmd run skills:build
 node scripts/verify-skill-packages.mjs
@@ -102,3 +103,5 @@ live 검증과 성능 벤치마크는 계정 쿼터를 소비한다. 현재 요�
 감지 도우미를 수정할 때는 `python "<skill-dir>/scripts/test_check_upstream.py"`로 임시 Git 저장소를 사용하는 오프라인 동작 검증을 실행한다.
 
 앱·스킬 배포 시 `engine_runtime/workflow.py`의 보존 정책, `skill_gateway.py`의 상태·원문 hash 계약을 유지한다. `release/build-info.json`, 두 스킬의 `distribution.json` 및 vendor 핀이 일치하는지 확인한다. EXE는 `node scripts/smoke-portable.mjs`로 복사 경로에서 모의 CLI 검증할 수 있다. `--live`는 실제 계정 호출이므로 일반 검증과 구분한다. 자세한 빌드·설치 경로는 서비스의 `docs/desktop.md`를 읽는다.
+
+DOCX/PPTX 지원도 함께 검증한다. 문서 전용 보존 제약은 upstream의 목록 산문화·제목 삭제보다 우선한다. `engine_runtime/documents`와 응답 JSON schema, `python-document-deps.lock.json`의 lxml 버전이 EXE·두 스킬 ZIP에 실제 포함되는지 확인한다. `verify-skill-packages.mjs`의 Office 문서 왕복 검사를 통과하고, 문서 코드·규칙 변경 시 Word/PowerPoint 렌더링과 선택 CLI 검증 결과를 남긴다. upstream 파일 동기화로 제품용 문서 어댑터를 덮어쓰지 않는다.

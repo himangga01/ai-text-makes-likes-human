@@ -6,7 +6,7 @@ export async function health() {
   return response.json();
 }
 
-export async function transform(text, engine, signal, onEvent) {
+export async function transform(text, engine, signal, onEvent, settings) {
   if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
   if (desktop) {
     let failure;
@@ -17,13 +17,14 @@ export async function transform(text, engine, signal, onEvent) {
     const cancel = () => window.humanizeDesktop.cancel().catch(() => {});
     signal.addEventListener("abort", cancel, { once: true });
     try {
-      await window.humanizeDesktop.transform({ text, engine });
+      await window.humanizeDesktop.transform({ text, engine, settings });
       if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
       if (failure) throw failure;
     } finally { unsubscribe(); signal.removeEventListener("abort", cancel); }
     return;
   }
-  const response = await fetch(`/api/transform?engine=${encodeURIComponent(engine)}`, {
+  const query=new URLSearchParams({engine,...(settings?{model:settings.model,effort:settings.effort}:{})});
+  const response = await fetch(`/api/transform?${query}`, {
     method: "POST", headers: { "content-type": "text/plain; charset=utf-8" }, body: text, signal
   });
   if (!response.ok || !response.body) {

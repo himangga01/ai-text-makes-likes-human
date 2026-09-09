@@ -109,7 +109,7 @@ test("TXT selection stays local until the transform button is clicked", async ({
   expect(transformCalls).toBe(1);
 });
 
-test("unsupported file keeps the existing source", async ({ page }) => {
+test("malformed Office file keeps the existing source", async ({ page }) => {
   await page.goto("/");
   await page.locator("#source-text").fill("기존 문구");
   await page.locator("#text-file-input").setInputFiles({
@@ -121,7 +121,7 @@ test("unsupported file keeps the existing source", async ({ page }) => {
 
   await expect(page.locator("#source-text")).toHaveValue("기존 문구");
   await expect(page.locator("#status")).toContainText(
-    "TXT 또는 MD 파일만 불러올 수 있습니다."
+    "DOCX/PPTX ZIP 문서를 읽지 못했습니다."
   );
 });
 

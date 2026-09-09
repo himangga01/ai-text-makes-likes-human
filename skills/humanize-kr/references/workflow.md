@@ -2,7 +2,7 @@
 
 `skillRoot`는 현재 SKILL.md의 부모다. Windows에서는 `$python = Join-Path $skillRoot 'python/python.exe'`, `$gateway = Join-Path $skillRoot 'engine_runtime/skill_gateway.py'`로 잡고 `& $python $gateway ...`를 사용한다. 본문을 명령 인자에 넣지 않는다. 원문·결과·JSON 쓰기는 UTF-8을 사용한다.
 
-1. 사용자가 파일을 제공했다면 그 TXT/MD를 사용한다. 대화로 원문을 제공했다면 고유한 임시 `.txt` 파일에 원문을 그대로 기록한다. 만들어진 파일만 나중에 정리한다.
+1. 사용자가 파일을 제공했다면 TXT/MD/DOCX/PPTX를 사용한다. DOCX/PPTX는 prepare 후 kind=document 분기에서 [documents.md](documents.md)를 따른다. 대화로 원문을 제공했다면 고유한 임시 `.txt` 파일에 원문을 그대로 기록한다. 만들어진 파일만 나중에 정리한다.
 2. `prepare --input <원문 파일>`을 실행한다. JSON의 job, sourceHash, status를 보관한다. Gateway 기본 작업 위치는 사용자 TEMP의 `humanize-kr-skills`다.
 3. `status: rewrite`이면 inputPath에 있는 청크와 rulesPath의 규칙을 읽는다. 사실·주장·수치·고유명사·직접 인용·제목·문단 순서·말투·Markdown 표식을 보존하고 번역투만 다듬는다. 새로운 사실·비유·예시를 추가하지 않는다. attempt가 2이면 더 보수적으로 편집한다.
 4. responsePath에 아래 JSON을 기록한다. 원문 이외의 해설이나 코드 펜스를 rewrittenText에 넣지 않는다. warnings는 최대 20개, 각 300자 이하이며 없으면 빈 배열이다.

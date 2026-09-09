@@ -55,12 +55,22 @@ function parseNdjson(text: string): Array<Record<string, unknown>> {
 }
 
 describe("POST /api/transform", () => {
+  it('rejects unsupported model settings before allocating a job or invoking the engine',async()=>{
+    let calls=0;
+    const test=await createTestApp({transform:async()=>{calls++;throw new Error('must not run');}});
+    try {
+      const response=await fetch(`${test.baseUrl}/api/transform?model=gpt-5.6-luna&effort=ultra`,{method:'POST',headers:{'content-type':'text/plain'},body:'원문'});
+      expect(response.status).toBe(400);expect((await response.json() as any).code).toBe('INVALID_MODEL_SETTINGS');expect(calls).toBe(0);
+      expect(test.queue.stats()).toMatchObject({active:0,queued:0});
+    } finally {await removeTestRoot(test.outer);}
+  });
   it("streams a verified result and removes its workspace without logging content", async () => {
     const logs: unknown[] = [];
     const source = "비밀 원문은 1,200명을 언급한다.";
     const test = await createTestApp(
       {
         async transform(request) {
+          expect(request.settings).toEqual({model:'gpt-6-astra',effort:'low'});
           request.onEvent({
             type: "progress",
             phase: "transform",
@@ -102,7 +112,7 @@ describe("POST /api/transform", () => {
       { info: value => logs.push(value), error: value => logs.push(value) }
     );
     try {
-      const response = await fetch(`${test.baseUrl}/api/transform`, {
+      const response = await fetch(`${test.baseUrl}/api/transform?model=gpt-6-astra&effort=low`, {
         method: "POST",
         headers: { "content-type": "text/plain; charset=utf-8" },
         body: source

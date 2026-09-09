@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { prepareDocumentDeps } from './prepare-document-deps.mjs';
 const require = createRequire(import.meta.url);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export async function preparePython() {
@@ -29,6 +30,7 @@ export async function preparePython() {
     await writeFile(path.join(destination, "runtime-lock.json"), JSON.stringify(lock, null, 2));
   }
   await access(path.join(destination, "python.exe"));
+  await prepareDocumentDeps(destination);
   return destination;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
