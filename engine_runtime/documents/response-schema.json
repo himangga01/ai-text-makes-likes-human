@@ -1,16 +1,16 @@
 {
   "type": "object", "additionalProperties": false,
-  "required": ["schemaVersion", "batchId", "sourceHash", "blocks", "warnings"],
+  "required": ["schemaVersion", "batchId", "sourceHash", "reviewedIds", "blocks", "warnings"],
   "properties": {
-    "schemaVersion": {"type": "integer", "enum": [1]},
+    "schemaVersion": {"type": "integer", "enum": [2]},
+    "reviewedIds": {"type": "array", "items": {"type": "string"}},
     "batchId": {"type": "string"}, "sourceHash": {"type": "string"},
     "warnings": {"type": "array", "items": {"type": "string"}},
     "blocks": {"type": "array", "items": {
       "type": "object", "additionalProperties": false, "required": ["id", "sourceHash", "edits"],
       "properties": {"id": {"type": "string"}, "sourceHash": {"type": "string"}, "edits": {
         "type": "array", "items": {"type": "object", "additionalProperties": false,
-          "required": ["start", "end", "before", "after"], "properties": {
-            "start": {"type": "integer"}, "end": {"type": "integer"},
+          "required": ["before", "after"], "properties": {
             "before": {"type": "string"}, "after": {"type": "string"}
           }}
       }}

@@ -138,13 +138,45 @@ class Documents(unittest.TestCase):
         out=self.work/'breaks.docx';export(p,m,{b['id']:self.edits(b)},out)
         after=next(x for x in extract(Package(out))['blocks'] if '\n\t' in x['text'])
         self.assertIn('갖고 있다.\n\t',after['text'])
+    def test_many_short_paragraphs_use_bounded_larger_batches(self):
+        def change(parts):
+            para='<w:p><w:r><w:t>강한 경쟁력을 가지고 있다.</w:t></w:r></w:p>'
+            parts['word/document.xml']=parts['word/document.xml'].replace(b'<w:body>', ('<w:body>'+para*200).encode())
+        manifest=extract(Package(self.mutate('docx',change),'docx'))
+        self.assertEqual(len(manifest['batches']),3)
+        self.assertTrue(all(len(batch)<=96 for batch in manifest['batches']))
+        ids=[id for batch in manifest['batches'] for id in batch]
+        self.assertEqual(ids,[b['id'] for b in manifest['blocks'] if b['editable'] and b['text'].strip()])
+
+    def test_sparse_response_requires_complete_review_and_rejects_foreign_edits(self):
+        root=self.work/'jobs';vendor=ROOT/'vendor/humanize-engine'
+        state=prepare(FIXTURES/'mixed.docx',root,vendor)
+        batch=json.loads(Path(state['inputPath']).read_text(encoding='utf-8'))
+        ids=[b['id'] for b in batch['blocks']]
+        value={'schemaVersion':2,'batchId':batch['batchId'],'sourceHash':batch['sourceHash'],
+               'reviewedIds':ids,'blocks':[],'warnings':[]}
+        def submit(payload):
+            Path(state['responsePath']).write_text(json.dumps(payload),encoding='utf-8')
+            return dispatch(SimpleNamespace(command='accept',job=state['job'],chunk=state['chunk'],attempt=state['attempt'],source_hash=state['sourceHash'],response=state['responsePath']),root,vendor)
+        for bad_ids in (ids[:-1],ids+[ids[0]],list(reversed(ids))):
+            if bad_ids!=ids:
+                with self.assertRaises(DocumentError):submit({**value,'reviewedIds':bad_ids})
+        with self.assertRaises(DocumentError):submit({**value,'blocks':[{'id':'foreign','sourceHash':'x','edits':[]}]})
+        with self.assertRaises(DocumentError):submit({**value,'blocks':[{'id':ids[0],'sourceHash':batch['blocks'][0]['sourceHash'],'edits':[]}]*2})
+        done=submit(value)
+        self.assertEqual(done['status'],'ready-to-finalize')
+        out=self.work/'sparse.docx'
+        dispatch(SimpleNamespace(command='finalize',job=state['job'],output=str(out)),root,vendor)
+        self.assertEqual(Package(out).parts,self.package().parts)
+
     def test_gateway_complete_and_no_overwrite(self):
         root=self.work/'jobs';vendor=ROOT/'vendor/humanize-engine'
         state=prepare(FIXTURES/'mixed.docx',root,vendor)
         while state['status']=='rewrite':
             batch=json.loads(Path(state['inputPath']).read_text(encoding='utf-8'))
-            value={'schemaVersion':1,'batchId':batch['batchId'],'sourceHash':batch['sourceHash'],'warnings':[],
-                   'blocks':[{'id':b['id'],'sourceHash':b['sourceHash'],'edits':self.edits(b)} for b in batch['blocks']]}
+            value={'schemaVersion':2,'batchId':batch['batchId'],'sourceHash':batch['sourceHash'],'warnings':[],
+                   'reviewedIds':[b['id'] for b in batch['blocks']],
+                   'blocks':[{'id':b['id'],'sourceHash':b['sourceHash'],'edits':self.edits(b)} for b in batch['blocks'] if self.edits(b)]}
             Path(state['responsePath']).write_text(json.dumps(value),encoding='utf-8')
             state=dispatch(SimpleNamespace(command='accept',job=state['job'],chunk=state['chunk'],attempt=state['attempt'],source_hash=state['sourceHash'],response=state['responsePath']),root,vendor)
         out=self.work/'out.docx'
@@ -153,5 +185,27 @@ class Documents(unittest.TestCase):
         with self.assertRaises(DocumentError):dispatch(SimpleNamespace(command='finalize',job=state['job'],output=str(out)),root,vendor)
         dispatch(SimpleNamespace(command='cleanup',job=state['job']),root,vendor)
         self.assertFalse((root/state['job']).exists())
+
+class CompactBatchTests(unittest.TestCase):
+    def test_exact_anchors_resolve_unicode_but_never_guess(self):
+        from documents.model import resolve_edits
+        block={'text':'😀 강한 경쟁력을 가지고 있다.'}
+        edits=resolve_edits(block,[{'before':'가지고 있다','after':'갖고 있다'}])
+        self.assertEqual(block['text'][edits[0]['start']:edits[0]['end']],'가지고 있다')
+        for text,before in [('가 가','가'),('가','나'),('가','')]:
+            with self.assertRaises(DocumentError):resolve_edits({'text':text},[{'before':before,'after':'다'}])
+    def test_protected_union_and_partial_text(self):
+        from documents.model import has_editable_text
+        self.assertFalse(has_editable_text('가나다라', [{'start':0,'end':2},{'start':1,'end':4}]))
+        self.assertTrue(has_editable_text('가나다라', [{'start':0,'end':2}]))
+
+    def test_public_spans_hide_style_and_xml_paths(self):
+        from documents.model import public_block
+        manifest=extract(Package(FIXTURES/'mixed.docx'))
+        block=next(b for b in manifest['blocks'] if b['editable'])
+        public=public_block(block)
+        self.assertTrue(all(set(span)=={'start','end'} for span in public['spans']))
+        self.assertTrue(all('style' in span for span in block['spans']))
+        self.assertEqual(public['sourceHash'],block['sourceHash'])
 
 if __name__=='__main__':unittest.main()

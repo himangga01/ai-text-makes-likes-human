@@ -1,6 +1,6 @@
 {
   "name": "ai-text-makes-likes-human",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "한국어 윤문 · Claude/Codex CLI 스킬과 portable Windows 앱",
   "main": "index.js",
   "scripts": {
@@ -14,6 +14,7 @@
     "test:e2e": "playwright test",
     "test:live": "cross-env RUN_CODEX_LIVE=1 vitest run tests/integration/codex-live.test.ts",
     "test:performance": "cross-env RUN_CODEX_LIVE=1 vitest run tests/integration/performance-live.test.ts",
+    "benchmark:speed": "node scripts/benchmark-speed.mjs",
     "desktop:dev": "node scripts/build-desktop.mjs && node scripts/run-desktop.mjs",
     "desktop:build": "node scripts/build-desktop.mjs",
     "desktop:portable": "node scripts/package-desktop.mjs",

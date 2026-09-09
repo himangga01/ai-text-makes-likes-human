@@ -4,11 +4,11 @@ import os
 from pathlib import Path
 import uuid
 from .package import Package, DocumentError, digest
-from .model import extract, apply_edits, export
+from .model import extract, apply_edits, export, public_block, resolve_edits
 
 def save(file, value):
     temp=file.with_suffix('.tmp')
-    temp.write_text(json.dumps(value,ensure_ascii=False),encoding='utf-8')
+    temp.write_text(json.dumps(value,ensure_ascii=False,separators=(',', ':')),encoding='utf-8')
     temp.replace(file)
 
 def prepare(input_path, root, vendor):
@@ -29,9 +29,6 @@ def prepare(input_path, root, vendor):
            'status':'active','accepted':{},'warnings':manifest['warnings'],'restored':0}
     save(job/'job.json',state)
     return next_batch(job,state,manifest)
-
-def public_block(block):
-    return {k:block[k] for k in ('id','location','text','sourceHash','spans','protected','maxChars')}
 
 def next_batch(job,state,manifest):
     base={'job':job.name,'kind':'document','format':state['format'],'name':state['name'],
@@ -60,23 +57,37 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
         raise DocumentError('모델 응답이 너무 큽니다.')
     value=json.loads(response.read_text(encoding='utf-8-sig'))
     ids=manifest['batches'][state['current']]
-    if not isinstance(value,dict) or set(value)!={'schemaVersion','batchId','sourceHash','blocks','warnings'} or type(value.get('schemaVersion')) is not int or value.get('schemaVersion')!=1 or value.get('sourceHash')!=source_hash or value.get('batchId')!=str(chunk):
+    if not isinstance(value,dict):
+        raise DocumentError('문서 응답 형식이 잘못되었습니다.')
+    version=value.get('schemaVersion')
+    expected={'schemaVersion','batchId','sourceHash','blocks','warnings'}
+    if version==2: expected.add('reviewedIds')
+    if set(value)!=expected or type(version) is not int or version not in (1,2) or value.get('sourceHash')!=source_hash or value.get('batchId')!=str(chunk):
         raise DocumentError('문서 응답 식별 정보가 다릅니다.')
     items=value.get('blocks')
-    if not isinstance(items,list) or any(not isinstance(b,dict) or set(b)!={'id','sourceHash','edits'} for b in items) or [b.get('id') for b in items]!=ids:
+    if not isinstance(items,list) or any(not isinstance(b,dict) or set(b)!={'id','sourceHash','edits'} or not isinstance(b.get('id'),str) for b in items):
         raise DocumentError('응답 블록이 누락·중복되었거나 순서가 다릅니다.')
+    item_ids=[b['id'] for b in items]
+    if version==1:
+        valid_ids=item_ids==ids
+    else:
+        # An omitted block is unchanged ONLY after explicit review of the whole batch.
+        valid_ids=value.get('reviewedIds')==ids and len(set(item_ids))==len(item_ids) and item_ids==[id for id in ids if id in item_ids]
+    if not valid_ids:
+        raise DocumentError('검토 ID가 누락·중복되었거나 순서가 다릅니다.')
     warnings=value.get('warnings')
     if not isinstance(warnings,list) or len(warnings)>20 or any(not isinstance(w,str) or len(w)>300 for w in warnings):
         raise DocumentError('경고 응답 형식이 잘못되었습니다.')
     by_id={b['id']:b for b in manifest['blocks']}
-    pending={}; failures=[]
+    pending={id:[] for id in ids if id not in item_ids}; failures=[]
     for item in items:
         block=by_id[item['id']]
         if item.get('sourceHash')!=block['sourceHash']:
             raise DocumentError('블록 원문 해시가 다릅니다.')
         try:
-            apply_edits(block,item.get('edits'))
-            pending[block['id']]=item['edits']
+            edits=resolve_edits(block,item.get('edits')) if version==2 else item.get('edits')
+            apply_edits(block,edits)
+            pending[block['id']]=edits
         except DocumentError as exc:
             failures.append((block,str(exc)))
     if failures and attempt==1:

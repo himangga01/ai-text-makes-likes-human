@@ -19,8 +19,8 @@ async function setup(){
    if(!request.args.includes('--output-last-message')&&!request.args.includes('--json-schema'))return native.run(request);
    const match=request.stdin!.match(/BEGIN_SOURCE_([a-f0-9]+)\r?\n(.*?)\r?\nEND_SOURCE_\1/s)!;
    const batch=JSON.parse(match[2]!);
-   const output={schemaVersion:1,batchId:batch.batchId,sourceHash:batch.sourceHash,warnings:[],
-     blocks:batch.blocks.map((b:any)=>({id:b.id,sourceHash:b.sourceHash,edits:[]}))};
+   const output={schemaVersion:2,batchId:batch.batchId,sourceHash:batch.sourceHash,warnings:[],
+     reviewedIds:batch.blocks.map((b:any)=>b.id),blocks:[]};
    const claude=request.args.includes('--json-schema');calls.push(claude?'claude':'codex');
    expect(request.args[request.args.indexOf('--model')+1]).toBe(claude?'claude-sonnet-5':'gpt-6-astra');
    expect(request.args).toContain(claude?'low':'model_reasoning_effort="low"');

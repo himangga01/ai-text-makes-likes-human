@@ -34,8 +34,8 @@ for (const host of ["Claude", "Codex"]) {
     state=call('prepare','--input',path.resolve(`tests/fixtures/documents/mixed.${format}`));
     while(state.status==='rewrite') {
       const batch=JSON.parse(await readFile(state.inputPath,'utf8'));
-      await writeFile(state.responsePath,JSON.stringify({schemaVersion:1,batchId:batch.batchId,sourceHash:batch.sourceHash,
-        blocks:batch.blocks.map(b=>({id:b.id,sourceHash:b.sourceHash,edits:[]})),warnings:[]}));
+      await writeFile(state.responsePath,JSON.stringify({schemaVersion:2,batchId:batch.batchId,sourceHash:batch.sourceHash,
+        reviewedIds:batch.blocks.map(b=>b.id),blocks:[],warnings:[]}));
       state=call('accept','--job',state.job,'--chunk',String(state.chunk),'--attempt',String(state.attempt),'--source-hash',state.sourceHash,'--response',state.responsePath);
     }
     const officeOutput=path.join(root,`result.${format}`);

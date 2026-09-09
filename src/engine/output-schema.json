@@ -2,11 +2,19 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "additionalProperties": false,
-  "required": ["rewrittenText", "warnings"],
+  "required": ["rewrittenText", "edits", "warnings"],
   "properties": {
     "rewrittenText": {
       "type": "string",
-      "minLength": 1
+      "minLength": 0
+    },
+    "edits": {
+      "type": "array", "maxItems": 200,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["before", "after"],
+        "properties": {"before": {"type": "string", "minLength": 1}, "after": {"type": "string"}}
+      }
     },
     "warnings": {
       "type": "array",

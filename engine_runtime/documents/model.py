@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import json
 from .package import W, A, P, R, E, XMLSPACE, Package, DocumentError, local, ns, digest
 
 PROTECTED = {'hyperlink', 'fldSimple', 'fldChar', 'instrText', 'fld', 'bookmarkStart', 'bookmarkEnd',
@@ -11,6 +12,21 @@ MODAL = re.compile(r'않|없|못|아니|금지|불가|해야|필요|수\s*있|�
 
 def _nearest(node, names):
     return next((a for a in node.iterancestors() if local(a) in names), None)
+
+
+def public_block(block):
+    # Style identity and XML paths remain local for verification, never in the prompt.
+    return {**{k: block[k] for k in ('id', 'location', 'text', 'sourceHash', 'protected', 'maxChars')},
+            'spans': [{'start': s['start'], 'end': s['end']} for s in block['spans']]}
+
+
+def has_editable_text(text, protected):
+    cursor = 0
+    for span in sorted(protected, key=lambda s: s['start']):
+        if text[cursor:span['start']].strip():
+            return True
+        cursor = max(cursor, span['end'])
+    return bool(text[cursor:].strip())
 
 def extract(pkg: Package):
     parts = [(pkg.main, 0)]
@@ -83,7 +99,7 @@ def extract(pkg: Package):
                     protected_spans.append({'start': offset, 'end': offset+len(sentence)})
                 offset += len(sentence)
             protected_spans += [{'start': m.start(), 'end': m.end()} for m in QUOTE.finditer(text)]
-            editable = bool(re.search('[가-힣]', text)) and not protected and len(text) <= 9000
+            editable = bool(re.search('[가-힣]', text)) and not protected and len(text) <= 9000 and has_editable_text(text, protected_spans)
             if protected or len(text) > 9000:
                 warnings.append(f'{location}: 필드·보호 구조 또는 긴 구간을 원문으로 유지합니다.')
             blocks.append({'id': f'b{len(blocks)+1}', 'part': part, 'location': location, 'text': text,
@@ -99,19 +115,40 @@ def extract(pkg: Package):
         warnings.append('발표자 노트·마스터·테마·미디어는 원본을 유지합니다. 결과 슬라이드의 배치를 확인해 주세요.')
     else:
         warnings.append('머리글·바닥글·각주·미주·주석은 원본을 유지합니다. 결과 문서의 페이지 배치를 확인해 주세요.')
-    batches, current, size = [], [], 0
+    batches, current, size, packet_size = [], [], 0, 0
     for block in blocks:
         if not block['editable'] or not block['text'].strip():
             continue
-        if current and (size+len(block['text']) > 7000 or len(current) >= 32):
-            batches.append(current); current=[]; size=0
-        current.append(block['id']); size += len(block['text'])
+        # Bound both text and actual metadata. Many tiny Word paragraphs should not
+        # each consume a separate 32-item invocation; dense spans still split early.
+        cost = len(json.dumps(public_block(block), ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+        if current and (size+len(block['text']) > 7000 or len(current) >= 96 or packet_size+cost > 48000):
+            batches.append(current); current=[]; size=0; packet_size=0
+        current.append(block['id']); size += len(block['text']); packet_size += cost
     if current:
         batches.append(current)
     return {'schemaVersion': 1, 'format': pkg.format, 'sourceHash': pkg.hash,
             'partHashes': {name: digest(data) for name,data in pkg.parts.items()},
             'blocks': blocks, 'batches': batches, 'warnings': list(dict.fromkeys(warnings)),
             'sourceChars': total, 'slides': len(parts) if pkg.format == 'pptx' else 0}
+
+def resolve_edits(block, edits):
+    """Resolve compact exact anchors locally; never guess among duplicate matches."""
+    if not isinstance(edits,list) or len(edits)>200:
+        raise DocumentError('편집 목록이 잘못되었습니다.')
+    result=[]
+    for edit in edits:
+        if isinstance(edit,dict) and set(edit)=={'before','after'}:
+            before=edit['before']
+            if not isinstance(before,str) or not before:
+                raise DocumentError('편집 원문이 비어 있습니다.')
+            start=block['text'].find(before)
+            if start<0 or block['text'].find(before,start+1)>=0:
+                raise DocumentError('편집 원문이 없거나 여러 번 등장합니다. 문맥을 포함해 유일하게 지정해 주세요.')
+            edit={**edit,'start':start,'end':start+len(before)}
+        result.append(edit)
+    return result
+
 
 def apply_edits(block, edits):
     if not isinstance(edits, list) or len(edits)>200:

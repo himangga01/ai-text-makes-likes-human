@@ -10,6 +10,7 @@ import {
 import { EngineError } from "./errors.js";
 import { CLAUDE_MODEL, CLAUDE_REASONING_EFFORT } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
+import { parseTextResult } from './text-edits.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface ClaudeRunnerOptions {
@@ -150,10 +151,8 @@ export class ClaudeRunner {
       throw invalid("Claude exited without a valid result");
     }
 
-    const result = (this.options.resultParser ?? parseEngineResult)(
-      extractResultText(command.stdout),
-      "Claude"
-    );
+    const raw = extractResultText(command.stdout);
+    const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude');
     await writeFile(resultPath, JSON.stringify(result), "utf8");
     return result;
   }

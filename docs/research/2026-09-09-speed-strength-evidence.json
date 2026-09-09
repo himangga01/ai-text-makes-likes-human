@@ -1,0 +1,84 @@
+{
+  "date": "2026-09-09",
+  "productVersion": "0.3.1",
+  "sourceCommit": "a2aff0f",
+  "liveBaseline": {
+    "model": "gpt-6-astra",
+    "effort": "low",
+    "pptx": {
+      "seconds": 44.146,
+      "sourceChars": 720,
+      "blocks": 17,
+      "eligible": 16,
+      "fullyProtectedEligible": 1,
+      "batchSizes": [
+        16
+      ],
+      "changedBlocks": 4,
+      "noEditBlocks": 12,
+      "packetChars": 6569,
+      "repeatedRulesChars": 8489,
+      "reconstructedResponseChars": 1972
+    },
+    "docx": {
+      "seconds": 447.394,
+      "sourceChars": 5415,
+      "blocks": 242,
+      "eligible": 241,
+      "fullyProtectedEligible": 20,
+      "shortAtMost20": 143,
+      "duplicateTextCount": 16,
+      "batchSizes": [
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        32,
+        17
+      ],
+      "changedBlocks": 4,
+      "noEditBlocks": 237,
+      "packetChars": 83990,
+      "repeatedRulesChars": 67912,
+      "reconstructedResponseChars": 26890
+    }
+  },
+  "localReplay": [
+    {
+      "format": "pptx",
+      "replayIncludes": "prepare + recorded-response accept + finalize + cleanup; no LLM",
+      "batches": 1,
+      "milliseconds": [
+        404.4,
+        402.4,
+        401.8
+      ]
+    },
+    {
+      "format": "docx",
+      "replayIncludes": "prepare + recorded-response accept + finalize + cleanup; no LLM",
+      "batches": 8,
+      "milliseconds": [
+        1244.3,
+        1263.9,
+        1240.9
+      ]
+    }
+  ],
+  "simulation": {
+    "responseOriginalChars": 26890,
+    "responseCompactChars": 2303,
+    "responseCharacterReductionPercent": 91.4,
+    "compactInputAfterProtectedFilterAndStyleRemovalChars": 29040,
+    "batchCountsAtCaps": {
+      "32": 8,
+      "64": 4,
+      "96": 3,
+      "128": 2
+    },
+    "unit": "Unicode characters, not tokens",
+    "limitations": "Re-serialization of recorded accepted edits; no optimized live model call or strength A/B benchmark was performed."
+  }
+}

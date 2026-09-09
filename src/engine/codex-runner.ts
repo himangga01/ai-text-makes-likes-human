@@ -8,6 +8,7 @@ import {
   HUMANIZE_REASONING_EFFORT
 } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
+import { parseTextResult } from './text-edits.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface CodexResult {
@@ -149,7 +150,8 @@ export class CodexRunner {
     }
 
     try {
-      return (this.options.resultParser ?? parseEngineResult)(await readFile(resultPath, "utf8"));
+      const raw = await readFile(resultPath, "utf8");
+      return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex');
     } catch (error) {
       if (error instanceof EngineError) throw error;
       throw invalid("Codex result file is missing", error);

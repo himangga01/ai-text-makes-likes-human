@@ -1,0 +1,787 @@
+{
+  "historicalDocumentBaseline": {
+    "docx": {
+      "elapsedMs": 447394,
+      "batches": 8,
+      "changedBlocks": 4
+    },
+    "pptx": {
+      "elapsedMs": 44146,
+      "batches": 1,
+      "changedBlocks": 4
+    }
+  },
+  "records": {
+    "baseline": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 17566.7449,
+        "calls": [
+          {
+            "elapsedMs": 17013.9796,
+            "promptChars": 9678,
+            "stdoutChars": 592,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 106.02040000000001,
+          "codexMs": 17015.5872,
+          "restoreMs": 161.87129999999888,
+          "gateMs": 199.57070000000022,
+          "assembleMs": 80.2515999999996,
+          "totalMs": 17565.4273
+        }
+      },
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 16533.018300000003,
+        "calls": [
+          {
+            "elapsedMs": 15957.492900000001,
+            "promptChars": 9678,
+            "stdoutChars": 597,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 99.52760000000126,
+          "codexMs": 15958.4284,
+          "restoreMs": 188.03889999999956,
+          "gateMs": 201.48219999999856,
+          "assembleMs": 82.75940000000264,
+          "totalMs": 16532.0368
+        }
+      },
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 21934.7371,
+        "calls": [
+          {
+            "elapsedMs": 21394.5435,
+            "promptChars": 9678,
+            "stdoutChars": 602,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 103.92599999999948,
+          "codexMs": 21395.375499999995,
+          "restoreMs": 158.59030000000348,
+          "gateMs": 193.9878000000026,
+          "assembleMs": 79.95230000000447,
+          "totalMs": 21933.404300000002
+        }
+      }
+    ],
+    "candidate-1": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 13806.0775,
+        "calls": [
+          {
+            "elapsedMs": 13284.320099999999,
+            "promptChars": 9972,
+            "stdoutChars": 223,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 99.5452,
+          "codexMs": 13286.291500000001,
+          "restoreMs": 150.58419999999933,
+          "gateMs": 188.22769999999946,
+          "assembleMs": 78.1213000000007,
+          "totalMs": 13804.9108
+        }
+      },
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 11530.590999999999,
+        "calls": [
+          {
+            "elapsedMs": 10994.3483,
+            "promptChars": 9972,
+            "stdoutChars": 224,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 96.36180000000058,
+          "codexMs": 10995.1864,
+          "restoreMs": 160.15460000000166,
+          "gateMs": 192.89640000000145,
+          "assembleMs": 83.2573999999986,
+          "totalMs": 11529.223500000002
+        }
+      },
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 14649.451900000004,
+        "calls": [
+          {
+            "elapsedMs": 14122.208499999997,
+            "promptChars": 9972,
+            "stdoutChars": 288,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 102.09530000000086,
+          "codexMs": 14123.388499999997,
+          "restoreMs": 152.61559999999736,
+          "gateMs": 190.498599999999,
+          "assembleMs": 78.54409999999916,
+          "totalMs": 14648.690000000002
+        }
+      }
+    ],
+    "candidate-2": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 15590.207199999999,
+        "calls": [
+          {
+            "elapsedMs": 15057.9679,
+            "promptChars": 10060,
+            "stdoutChars": 224,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 98.1751,
+          "codexMs": 15059.8423,
+          "restoreMs": 155.2467000000015,
+          "gateMs": 191.92689999999857,
+          "assembleMs": 81.83739999999852,
+          "totalMs": 15589.101999999999
+        }
+      },
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 14988.542500000001,
+        "calls": [
+          {
+            "elapsedMs": 14464.194100000002,
+            "promptChars": 10060,
+            "stdoutChars": 288,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 99.4926000000014,
+          "codexMs": 14465.170300000002,
+          "restoreMs": 155.1218000000008,
+          "gateMs": 185.42989999999918,
+          "assembleMs": 80.43309999999838,
+          "totalMs": 14987.223100000001
+        }
+      },
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 14192.5956,
+        "calls": [
+          {
+            "elapsedMs": 13655.645500000002,
+            "promptChars": 10060,
+            "stdoutChars": 220,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "gpt-6-astra",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 99.3734000000004,
+          "codexMs": 13656.8639,
+          "restoreMs": 152.0376000000033,
+          "gateMs": 204.32830000000104,
+          "assembleMs": 77.57289999999921,
+          "totalMs": 14191.816600000002
+        }
+      }
+    ],
+    "claude-baseline": [
+      {
+        "provider": "claude",
+        "settings": {
+          "model": "claude-sonnet-5",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 23430.3161,
+        "calls": [
+          {
+            "elapsedMs": 22918.3979,
+            "promptChars": 9678,
+            "stdoutChars": 3315,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "claude-sonnet-5",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 94.3067,
+          "codexMs": 22920.7604,
+          "restoreMs": 145.98790000000008,
+          "gateMs": 186.56270000000222,
+          "assembleMs": 79.17059999999765,
+          "totalMs": 23428.9621
+        }
+      },
+      {
+        "provider": "claude",
+        "settings": {
+          "model": "claude-sonnet-5",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 9310.814899999998,
+        "calls": [
+          {
+            "elapsedMs": 8801.921900000001,
+            "promptChars": 9678,
+            "stdoutChars": 3326,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "claude-sonnet-5",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 95.3054000000011,
+          "codexMs": 8803.3112,
+          "restoreMs": 149.9581999999973,
+          "gateMs": 183.574099999998,
+          "assembleMs": 75.92879999999786,
+          "totalMs": 9309.865999999998
+        }
+      },
+      {
+        "provider": "claude",
+        "settings": {
+          "model": "claude-sonnet-5",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 13605.057400000005,
+        "calls": [
+          {
+            "elapsedMs": 13091.438000000002,
+            "promptChars": 9678,
+            "stdoutChars": 3303,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "claude-sonnet-5",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 99.10580000000482,
+          "codexMs": 13092.936199999996,
+          "restoreMs": 150.20679999999993,
+          "gateMs": 184.66570000000502,
+          "assembleMs": 75.49329999999463,
+          "totalMs": 13604.176200000002
+        }
+      }
+    ],
+    "claude-candidate": [
+      {
+        "provider": "claude",
+        "settings": {
+          "model": "claude-sonnet-5",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 5266.974,
+        "calls": [
+          {
+            "elapsedMs": 4761.6882,
+            "promptChars": 10060,
+            "stdoutChars": 2872,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "claude-sonnet-5",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 93.9836,
+          "codexMs": 4763.841100000001,
+          "restoreMs": 147.70890000000054,
+          "gateMs": 181.9451999999992,
+          "assembleMs": 76.19260000000031,
+          "totalMs": 5265.802699999999
+        }
+      },
+      {
+        "provider": "claude",
+        "settings": {
+          "model": "claude-sonnet-5",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 5280.962399999999,
+        "calls": [
+          {
+            "elapsedMs": 4777.1934,
+            "promptChars": 10060,
+            "stdoutChars": 2900,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "claude-sonnet-5",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 93.88839999999982,
+          "codexMs": 4778.830200000001,
+          "restoreMs": 148.15799999999945,
+          "gateMs": 180.50290000000132,
+          "assembleMs": 76.63750000000073,
+          "totalMs": 5280.0192
+        }
+      },
+      {
+        "provider": "claude",
+        "settings": {
+          "model": "claude-sonnet-5",
+          "effort": "low"
+        },
+        "sourceChars": 567,
+        "elapsedMs": 5503.7968,
+        "calls": [
+          {
+            "elapsedMs": 4996.6811,
+            "promptChars": 10060,
+            "stdoutChars": 2897,
+            "exitCode": 0
+          }
+        ],
+        "diagnostics": {
+          "model": "claude-sonnet-5",
+          "reasoningEffort": "low",
+          "processingMode": "single",
+          "routeHint": "light",
+          "sourceChars": 567,
+          "bodyChunks": 1,
+          "codexCalls": 1,
+          "retries": 0,
+          "restoredSentences": 0,
+          "removedCommas": 0,
+          "gateCodes": [
+            "GATE_OK",
+            "GATE_OK"
+          ],
+          "maxObservedCodexConcurrency": 1,
+          "prepareMs": 94.92720000000008,
+          "codexMs": 4998.596100000001,
+          "restoreMs": 146.78330000000096,
+          "gateMs": 183.1095000000023,
+          "assembleMs": 76.95650000000023,
+          "totalMs": 5502.644700000001
+        }
+      }
+    ],
+    "document-candidate-2": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 5415,
+        "elapsedMs": 64669.0334,
+        "calls": [
+          {
+            "elapsedMs": 27168.7714,
+            "promptChars": 30192,
+            "stdoutChars": 1030,
+            "exitCode": 0
+          },
+          {
+            "elapsedMs": 21165.189199999997,
+            "promptChars": 28610,
+            "stdoutChars": 981,
+            "exitCode": 0
+          },
+          {
+            "elapsedMs": 15578.108,
+            "promptChars": 15603,
+            "stdoutChars": 510,
+            "exitCode": 0
+          }
+        ],
+        "batches": 3,
+        "changedBlocks": 4,
+        "restoredBlocks": 0
+      }
+    ],
+    "docx-final": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 5415,
+        "elapsedMs": 81485.1446,
+        "calls": [
+          {
+            "elapsedMs": 23429.484800000002,
+            "promptChars": 30219,
+            "stdoutChars": 1199,
+            "exitCode": 0
+          },
+          {
+            "elapsedMs": 22766.3437,
+            "promptChars": 28637,
+            "stdoutChars": 1263,
+            "exitCode": 0
+          },
+          {
+            "elapsedMs": 18809.064599999998,
+            "promptChars": 28694,
+            "stdoutChars": 997,
+            "exitCode": 0
+          },
+          {
+            "elapsedMs": 15542.223099999988,
+            "promptChars": 15630,
+            "stdoutChars": 496,
+            "exitCode": 0
+          }
+        ],
+        "batches": 3,
+        "changedBlocks": 5,
+        "restoredBlocks": 0
+      }
+    ],
+    "pptx-candidate": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 720,
+        "elapsedMs": 49672.6834,
+        "calls": [
+          {
+            "elapsedMs": 24704.172000000002,
+            "promptChars": 13197,
+            "stdoutChars": 831,
+            "exitCode": 0
+          },
+          {
+            "elapsedMs": 24489.683699999998,
+            "promptChars": 13254,
+            "stdoutChars": 831,
+            "exitCode": 0
+          }
+        ],
+        "batches": 1,
+        "changedBlocks": 4,
+        "restoredBlocks": 0
+      }
+    ],
+    "pptx-candidate-2": [
+      {
+        "provider": "codex",
+        "settings": {
+          "model": "gpt-6-astra",
+          "effort": "low"
+        },
+        "sourceChars": 720,
+        "elapsedMs": 17154.953,
+        "calls": [
+          {
+            "elapsedMs": 16786.7712,
+            "promptChars": 13224,
+            "stdoutChars": 789,
+            "exitCode": 0
+          }
+        ],
+        "batches": 1,
+        "changedBlocks": 4,
+        "restoredBlocks": 0
+      }
+    ]
+  },
+  "claudeOfficeSmoke": [
+    {
+      "provider": "claude",
+      "settings": {
+        "model": "claude-sonnet-5",
+        "effort": "low"
+      },
+      "sourceChars": 129,
+      "elapsedMs": 24302.3154,
+      "calls": [
+        {
+          "elapsedMs": 14214.1368,
+          "promptChars": 11040,
+          "stdoutChars": 3530,
+          "exitCode": 0
+        },
+        {
+          "elapsedMs": 9676.985899999998,
+          "promptChars": 11097,
+          "stdoutChars": 3483,
+          "exitCode": 0
+        }
+      ],
+      "changedBlocks": 1,
+      "restoredBlocks": 2
+    }
+  ],
+  "ipcOrderingReproduction": {
+    "previous": {
+      "settledBeforeDone": true,
+      "unsubscribedBeforeDone": true
+    },
+    "fixed": {
+      "settledBeforeDone": false,
+      "unsubscribedBeforeDone": false
+    }
+  }
+}

@@ -10,17 +10,24 @@ export async function transform(text, engine, signal, onEvent, settings) {
   if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
   if (desktop) {
     let failure;
+    let finish;
+    const completed = new Promise(resolve => { finish = resolve; });
     const unsubscribe = window.humanizeDesktop.onEvent(event => {
-      if (failure) return;
-      try { onEvent(event); } catch (error) { failure = error; }
+      if (!failure) try { onEvent(event); } catch (error) { failure = error; }
+      if (event.type === 'done' || event.type === 'error') finish();
     });
     const cancel = () => window.humanizeDesktop.cancel().catch(() => {});
     signal.addEventListener("abort", cancel, { once: true });
+    let timer;
     try {
       await window.humanizeDesktop.transform({ text, engine, settings });
+      // Invoke responses and event messages can reach the renderer in either order.
+      await Promise.race([completed, new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('완료 응답을 받지 못했습니다.')), 5000);
+      })]);
       if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
       if (failure) throw failure;
-    } finally { unsubscribe(); signal.removeEventListener("abort", cancel); }
+    } finally { clearTimeout(timer); unsubscribe(); signal.removeEventListener("abort", cancel); }
     return;
   }
   const query=new URLSearchParams({engine,...(settings?{model:settings.model,effort:settings.effort}:{})});

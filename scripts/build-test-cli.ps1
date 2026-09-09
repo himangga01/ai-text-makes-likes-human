@@ -37,16 +37,16 @@ public class FakeCli {
       foreach(string arg in args) if(arg.StartsWith("model_reasoning_effort=")) effort=arg.Substring("model_reasoning_effort=".Length).Trim('"');
       File.AppendAllText(trace+".settings",serializer.Serialize(new { engine=claude?"claude":"codex",model=modelIndex>=0?args[modelIndex+1]:"",effort=effort })+"\n");
     }
-    object response = new { rewrittenText = text, warnings = new string[0] };
+    object response = new { rewrittenText = text, edits = new object[0], warnings = new string[0] };
     if (text.TrimStart().StartsWith("{") && text.Contains("\"batchId\"")) {
       var batch = serializer.DeserializeObject(text) as System.Collections.Generic.Dictionary<string, object>;
       var blocks = batch["blocks"] as object[];
-      var outputBlocks = new System.Collections.Generic.List<object>();
+      var reviewedIds = new System.Collections.Generic.List<object>();
       foreach (object b in blocks) {
         var block = b as System.Collections.Generic.Dictionary<string, object>;
-        outputBlocks.Add(new { id=block["id"], sourceHash=block["sourceHash"], edits=new object[0] });
+        reviewedIds.Add(block["id"]);
       }
-      response = new { schemaVersion=1, batchId=batch["batchId"], sourceHash=batch["sourceHash"], blocks=outputBlocks, warnings=new string[0] };
+      response = new { schemaVersion=2, batchId=batch["batchId"], sourceHash=batch["sourceHash"], reviewedIds=reviewedIds, blocks=new object[0], warnings=new string[0] };
     }
     if (claude) Console.WriteLine(serializer.Serialize(new { is_error = false, subtype = "success", structured_output = response }));
     else {
