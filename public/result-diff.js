@@ -202,6 +202,7 @@ export function createResultDiff({
       const expectedGeneration = generation;
       elements.root.hidden = false;
       elements.final.textContent = String(finalText);
+      elements.changes.replaceChildren();
       elements.notice.hidden = true;
       elements.notice.textContent = "";
       emitStatus(onStatus, "computing", "변경 내용을 비교하고 있습니다.");
@@ -222,6 +223,7 @@ export function createResultDiff({
         if (error?.name === "AbortError" && (expectedGeneration !== generation || disposed)) {
           return { status: "stale" };
         }
+        if (expectedGeneration === generation && !disposed) elements.changes.replaceChildren();
         emitStatus(onStatus, "error", error instanceof Error ? error.message : String(error));
         throw error;
       }

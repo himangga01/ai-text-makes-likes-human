@@ -18,6 +18,71 @@ async function mountResultDiff(page: import("@playwright/test").Page) {
   });
 }
 
+async function mountControlledResultDiff(
+  page: import("@playwright/test").Page,
+  renderBatchSize = 100
+) {
+  await page.goto("/");
+  await page.evaluate(async batchSize => {
+    const { createResultDiff } = await import("/result-diff.js");
+    const { diffText } = await import("/text-diff.js");
+    const container = document.createElement("div");
+    container.id = "result-diff-test-host";
+    document.body.replaceChildren(container);
+    const statuses: unknown[] = [];
+    const workers: any[] = [];
+    const frames: FrameRequestCallback[] = [];
+    const workerFactory = () => {
+      const listeners = new Map<string, Array<(event: any) => void>>();
+      const worker = {
+        request: undefined as any,
+        addEventListener(type: string, listener: (event: any) => void) {
+          const registered = listeners.get(type) ?? [];
+          registered.push(listener);
+          listeners.set(type, registered);
+        },
+        postMessage(message: any) {
+          this.request = message;
+        },
+        terminate() {},
+        respond() {
+          const result = diffText(
+            this.request.source,
+            this.request.target,
+            this.request.options
+          );
+          for (const listener of listeners.get("message") ?? []) {
+            listener({
+              data: {
+                type: "result",
+                generation: this.request.generation,
+                result
+              }
+            });
+          }
+        },
+        fail(message: string) {
+          for (const listener of listeners.get("error") ?? []) listener({ message });
+        }
+      };
+      workers.push(worker);
+      return worker;
+    };
+    Object.assign(window, {
+      __resultDiffStatuses: statuses,
+      __controlledDiff: { workers, frames },
+      __resultDiff: createResultDiff({
+        container,
+        onStatus: (status: unknown) => statuses.push(status),
+        workerThreshold: 1,
+        workerFactory,
+        renderBatchSize: batchSize,
+        scheduleFrame: (callback: FrameRequestCallback) => frames.push(callback)
+      })
+    });
+  }, renderBatchSize);
+}
+
 test("renders exact safe text with semantic change nodes and host-controlled modes", async ({ page }) => {
   await mountResultDiff(page);
   const source = '<img src=x onerror="window.__xss=1">\n기존 문장 👨‍👩‍👧‍👦';
@@ -107,6 +172,91 @@ test("final-view selection keeps native copy behavior", async ({ page }) => {
     text: "브라우저가 처리할 값",
     statusAdded: 0
   });
+});
+
+test("a new generation clears a superseded partial render and preserves the latest result", async ({ page }) => {
+  await mountControlledResultDiff(page, 1);
+  const state = await page.evaluate(async () => {
+    const component = (window as any).__resultDiff;
+    const controlled = (window as any).__controlledDiff;
+    const changes = document.querySelector(".result-diff__changes")!;
+    const finalView = document.querySelector(".result-diff__final")!;
+    const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+    const first = component.setResult("OLD-A OLD-B", "OLD-A NEW-B");
+    controlled.workers[0].respond();
+    await tick();
+    const partialBeforeSupersede = changes.textContent;
+
+    const second = component.setResult("LATEST OLD", "LATEST FINAL");
+    const pendingChanges = changes.textContent;
+    const pendingFinal = finalView.textContent;
+    controlled.workers[1].respond();
+
+    for (let index = 0; index < 20; index += 1) {
+      const frame = controlled.frames.shift();
+      if (frame) frame(performance.now());
+      await tick();
+    }
+    const [firstResult, secondResult] = await Promise.all([first, second]);
+    return {
+      partialBeforeSupersede,
+      pendingChanges,
+      pendingFinal,
+      firstStatus: firstResult.status,
+      secondStatus: secondResult.status,
+      finalText: finalView.textContent,
+      renderedText: changes.textContent
+    };
+  });
+
+  expect(state.partialBeforeSupersede).toContain("OLD-A");
+  expect(state.pendingChanges).toBe("");
+  expect(state.pendingFinal).toBe("LATEST FINAL");
+  expect(state.firstStatus).toBe("stale");
+  expect(state.secondStatus).toBe("rendered");
+  expect(state.finalText).toBe("LATEST FINAL");
+  expect(state.renderedText).not.toContain("OLD-A");
+});
+
+test("a rejected worker leaves the latest final text without an older diff", async ({ page }) => {
+  await mountControlledResultDiff(page);
+  const state = await page.evaluate(async () => {
+    const component = (window as any).__resultDiff;
+    const controlled = (window as any).__controlledDiff;
+    const changes = document.querySelector(".result-diff__changes")!;
+    const finalView = document.querySelector(".result-diff__final")!;
+
+    const first = component.setResult("PREVIOUS SOURCE", "PREVIOUS FINAL");
+    controlled.workers[0].respond();
+    await first;
+    const previousChanges = changes.textContent;
+
+    const rejected = component.setResult("FAILED SOURCE", "LATEST FINAL");
+    const pendingChanges = changes.textContent;
+    controlled.workers[1].fail("worker rejected");
+    let errorMessage = "";
+    try {
+      await rejected;
+    } catch (error) {
+      errorMessage = (error as Error).message;
+    }
+    return {
+      previousChanges,
+      pendingChanges,
+      afterFailureChanges: changes.textContent,
+      finalText: finalView.textContent,
+      rootVisible: !(document.querySelector(".result-diff") as HTMLElement).hidden,
+      errorMessage
+    };
+  });
+
+  expect(state.previousChanges).toContain("PREVIOUS");
+  expect(state.pendingChanges).toBe("");
+  expect(state.afterFailureChanges).toBe("");
+  expect(state.finalText).toBe("LATEST FINAL");
+  expect(state.rootVisible).toBe(true);
+  expect(state.errorMessage).toBe("worker rejected");
 });
 
 test("diff selection copy emits only final text and preserves the clipboard for unsafe ranges", async ({ page }) => {
