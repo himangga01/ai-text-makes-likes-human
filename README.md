@@ -2,11 +2,15 @@
 
 PC에 설치·로그인된 **Claude Code 또는 Codex CLI**와 Humanize KR 규칙으로 한국어 문체를 다듬습니다. Windows portable 앱, Claude·Codex 윤문 스킬, 기존 LAN 웹 포털을 제공합니다.
 
-- **Windows 앱:** `release/HumanizeKR-0.3.3-win-x64-self-signed.exe`를 실행하고 Claude Code·Codex 중 사용할 엔진을 선택합니다. 앱에 Electron과 Python이 포함되어 있어 앱용 Node.js·Python 설치나 포털 실행이 필요하지 않습니다.
+- **Windows 앱:** `release/HumanizeKR-0.4.0-win-x64-self-signed.exe`를 실행하고 Claude Code·Codex 중 사용할 엔진을 선택합니다. 앱에 Electron과 Python이 포함되어 있어 앱용 Node.js·Python 설치나 포털 실행이 필요하지 않습니다.
 - **Claude·Codex 스킬:** `release/`의 호스트별 ZIP 또는 설치 도우미로 `humanize-kr`를 추가합니다. `/humanize-kr` 또는 `$humanize-kr`로 현재 세션에서 윤문합니다.
 - **LAN 포털:** 아래의 Windows 서버 설정과 `start-portal.cmd`를 사용합니다.
 
 앱 실행·스킬 설치·개발 빌드 안내는 [docs/desktop.md](docs/desktop.md)에 있습니다. EXE와 ZIP은 빌드 산출물이므로 Git 소스 이력에 포함하지 않습니다.
+
+직접 입력하거나 붙여넣은 텍스트는 **보통·중간·강하게·매우 강하게** 중 변환 강도를 선택합니다. 각 버튼에서 편집 범위 설명을 볼 수 있습니다. 완료 후 추가·변경된 문구는 연노랑, 삭제된 문구는 빨강 취소선으로 표시하며 **최종문**으로 전환해 정리된 결과를 확인할 수 있습니다. 복사·저장은 삭제 표시를 제외한 최종 문구만 사용합니다. TXT·MD·DOCX·PPTX 파일 입력에는 이 강도·변경 표시 기능을 적용하지 않습니다.
+
+높은 강도에서도 숫자·인용·조건 등 보호 대상과 핵심 내용을 우선합니다. 검증 결과에 따라 수정 범위가 줄거나 원문으로 돌아갈 수 있으며, 강도가 변경량이나 처리 시간을 보장하지는 않습니다.
 
 사실·수치·고유명사·직접 인용을 보존하는 검증 절차가 포함되어 있지만, 중요한 문서는 최종 사용 전에 사람이 다시 확인하세요.
 
