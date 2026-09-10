@@ -55,7 +55,9 @@ test('model and effort preferences survive restart and reach the CLI with equal-
     await expect(page.locator('#result-diff-host ins, #result-diff-host del')).toHaveCount(0);
     await expect(page.locator('#result-diff-host .result-diff__changes')).toHaveText('원문을 그대로 둔다. 자연스러운 문장을 보존한다. 내용을 확인했다.');
     const sourceBox=await page.locator('#source-text').boundingBox(),diffBox=await page.locator('#result-diff-host .result-diff__changes').boundingBox();
+    expect(sourceBox!.y).toBeCloseTo(diffBox!.y, 3);
     expect(sourceBox!.height).toBeCloseTo(diffBox!.height, 3);
+    expect(sourceBox!.y+sourceBox!.height).toBeCloseTo(diffBox!.y+diffBox!.height, 3);
     const settings=(await readFile(path.join(data,'calls.txt.settings'),'utf8')).trim().split('\n').map(x=>JSON.parse(x));
     expect(settings[0]).toEqual({engine:'codex',model:'gpt-6-astra',effort:'low',strength:'strong'});
     // Visual capture is a separate QA artifact; hidden Windows compositor capture

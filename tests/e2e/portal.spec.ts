@@ -271,6 +271,39 @@ test("TXT selection stays local until the transform button is clicked", async ({
   expect(transformCalls).toBe(1);
 });
 
+test("TXT imports disable strength and transform controls until reading settles", async ({ page }) => {
+  await page.addInitScript(() => {
+    const arrayBuffer = File.prototype.arrayBuffer;
+    let release: (() => void) | undefined;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    Object.defineProperty(window, "__releaseTextRead", {
+      configurable: true,
+      value: () => release?.()
+    });
+    File.prototype.arrayBuffer = async function() {
+      await pending;
+      return arrayBuffer.call(this);
+    };
+  });
+  await page.goto("/");
+  await page.locator("#source-text").fill("이전 직접 입력");
+  await expect(page.locator("#transform-button")).toBeEnabled();
+
+  await page.locator("#text-file-input").setInputFiles({
+    name: "delayed.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("늦게 읽은 파일", "utf8")
+  });
+  await expect(page.locator('#rewrite-strength input[value="normal"]')).toBeDisabled();
+  await expect(page.locator("#transform-button")).toBeDisabled();
+  await expect(page.locator("#source-text")).toHaveValue("이전 직접 입력");
+
+  await page.evaluate(() => (window as Window & { __releaseTextRead(): void }).__releaseTextRead());
+  await expect(page.locator("#source-text")).toHaveValue("늦게 읽은 파일");
+  await expect(page.locator("#rewrite-controls")).toBeHidden();
+  await expect(page.locator("#transform-button")).toBeEnabled();
+});
+
 test("malformed Office file keeps the existing source", async ({ page }) => {
   await page.goto("/");
   await page.locator("#source-text").fill("기존 문구");

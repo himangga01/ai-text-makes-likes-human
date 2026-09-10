@@ -458,11 +458,13 @@ elements.fileInput.addEventListener("change", () => loadFile(elements.fileInput.
 async function loadFile(file) {
   if (!file) return;
   const previous = elements.source.value;
+  importing=true;
   clearCompletedResult();
   clearResultDownload();
+  refreshControls();
   try {
     if(isOfficeFile(file.name)) {
-      importing=true;refreshControls();setStatus('processing','문서 읽기','문서 구조와 윤문할 텍스트를 확인합니다.');
+      setStatus('processing','문서 읽기','문서 구조와 윤문할 텍스트를 확인합니다.');
       await loadOffice(await importDocument(file));return;
     }
     const loaded = await readTextFile(file);

@@ -409,6 +409,10 @@ textarea:focus {
   box-shadow: 0 1px 3px rgba(31, 38, 51, 0.14);
 }
 
+.result-diff {
+  position: relative;
+}
+
 .result-diff,
 .result-diff__changes,
 .result-diff__final {
@@ -421,6 +425,15 @@ textarea:focus {
   color: var(--muted);
   font-size: 12px;
   line-height: 1.55;
+}
+
+.result-diff__copy-hint {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  right: 18px;
+  left: 18px;
+  margin: 0;
 }
 
 .result-diff__notice {
@@ -446,6 +459,10 @@ textarea:focus {
   letter-spacing: -0.02em;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.result-diff__changes {
+  padding-top: 78px;
 }
 
 .result-diff__insert {
@@ -948,7 +965,7 @@ progress::-webkit-progress-value {
 .editor-panel .result-diff__final {
   height: var(--editor-text-height); min-height: 0;
 }
-.panel-toolbar { min-height: 44px; }
+.panel-toolbar { min-height: 52px; }
 .file-slot { height: 34px; min-width: 0; display: flex; align-items: flex-start; }
 .file-slot .file-chip { max-width: 100%; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .output-hint { font-size: 12px; color: var(--muted); line-height: 28px; }
