@@ -2,6 +2,17 @@
 export interface SourceSentence { start: number; end: number; text: string; protected: boolean; concepts: string[] }
 const segmenter = new Intl.Segmenter('ko', { granularity: 'sentence' });
 const functionalNouns = new Set(['것','이것','그것','저것','수','중','등','점','경우','작업','수행','방식','부분','측면','통해','대해']);
+// Match the complete remainder of a token, never just a particle-like prefix
+// in a new compound such as 문제의식 or 자료가치. Unknown forms fail closed.
+const conceptSuffixes = new Set([
+  '', '의', '을', '를', '은', '는', '이', '가', '에', '로', '으로', '에서', '에게',
+  '도', '만', '과', '와', '이다', '이며', '이고',
+  '에는', '에도', '에만', '에서는', '에서도', '에서만',
+  '에게는', '에게도', '에게만', '로는', '로도', '로만', '으로는', '으로도', '으로만',
+  '와는', '과는', '와도', '과도', '와의', '과의',
+  '만은', '만을', '만이', '만의', '만으로', '만으로도', '만으로는',
+  '로부터', '로부터는', '로부터도', '으로부터', '으로부터는', '으로부터도'
+]);
 function isAdnominalVerb(token: string): boolean {
   return /(?:하는|되는|있는|없는|않는)$/u.test(token);
 }
@@ -58,7 +69,10 @@ export function checkDirectTextFidelity(source: string, candidate: string): Fide
     const original = before[index]!, rewritten = after[index];
     if (!rewritten) continue;
     if (original.protected && original.text !== rewritten.text) violations++;
-    if (original.concepts.some(term => !(rewritten.text.match(/[가-힣]+/gu) ?? []).some(token => token === term || new RegExp(`^${term}(?:에서|에게|으로|이다|이며|이고|의|을|를|은|는|이|가|에|로|도|과|와|만)`, 'u').test(token)))) violations++;
+    const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
+    if (original.concepts.some(term => !tokens.some(token =>
+      token.startsWith(term) && conceptSuffixes.has(token.slice(term.length))
+    ))) violations++;
   }
   return { violations, protectedSentences: before.filter(sentence => sentence.protected).length };
 }

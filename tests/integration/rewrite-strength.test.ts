@@ -133,3 +133,14 @@ it('full-source guard restores a post-verification assembly omission before emit
  expect(result.diagnostics.fullSourceRollbacks).toBe(1);
  expect(result.warnings).toContainEqual(expect.objectContaining({code:'DIRECT_TEXT_DOCUMENT_ROLLED_BACK'}));
 },30000);
+
+it.each([
+ ['문제를 정리한다.','문제의식을 정리한다.'],
+ ['자료를 검토한다.','자료가치를 검토한다.']
+])('rolls back a compound substitution after both native CLI candidates: %s',async(before,after)=>{
+ const source=before+' 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+ const {output,result,calls}=await run(source,s=>s.replace(before,after));
+ expect(output).toBe(source);
+ expect(calls).toHaveLength(2);
+ expect(result.diagnostics).toMatchObject({fidelityGuardFailures:2,rolledBackChunks:1});
+},30000);

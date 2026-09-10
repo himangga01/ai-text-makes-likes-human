@@ -36,3 +36,23 @@ it('does not mistake adnominal verb endings for core nouns during safe compressi
  expect(checkDirectTextFidelity('검토 의견을 반영하는 작업을 진행했다.','검토 의견을 반영했다.').violations).toBe(0);
  expect(checkDirectTextFidelity('이 방안은 반복되는 작업을 정리한다.','이 방안은 작업의 반복을 정리한다.').violations).toBe(0);
 });
+
+it.each([
+ ['문제를 정리한다.','문제의식을 정리한다.'],
+ ['자료를 검토한다.','자료가치를 검토한다.']
+])('rejects a new compound instead of treating its prefix as an attached particle: %s', (source,candidate)=>{
+ expect(checkDirectTextFidelity(source,candidate).violations).toBeGreaterThan(0);
+});
+it.each([
+ ['자료를 검토한다.','자료 검토를 진행한다.'],
+ ['자료를 검토한다.','자료는 검토한다.'],
+ ['자료를 검토한다.','자료에도 검토를 진행한다.'],
+ ['자료를 검토한다.','자료에서는 검토를 진행한다.'],
+ ['자료를 검토한다.','자료만으로도 검토를 진행한다.'],
+ ['자료를 검토한다.','자료로부터는 검토를 진행한다.'],
+ ['자료를 검토한다.','자료와의 검토를 진행한다.'],
+ ['이 자료는 중요하다.','중요한 것은 자료이다.']
+])('retains recognized vocabulary with complete supported particle sequences: %s -> %s',(source,candidate)=>{
+ // This guard checks vocabulary identity, not semantic equivalence of these grammar probes.
+ expect(checkDirectTextFidelity(source,candidate).violations).toBe(0);
+});
