@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { checkDirectTextFidelity, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
+import { checkDirectTextFidelity, restoreProtectedSentences, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
 import { parseTextResult } from '../../src/engine/text-edits.js';
 it('preserves concept identity instead of accepting a concept as a substring of a different word',()=>{
   expect(checkDirectTextFidelity('자료의 안전성이 중요하다.','자료의 불안전성이 중요하다.').violations).toBeGreaterThan(0);
@@ -11,6 +11,22 @@ it('protects sentence/paragraph correspondence and Markdown headings',()=>{
     ['# 검토\n자료를 정리한다.','# 자료\n자료를 정리한다.'],
     ['검토를 진행한다. 자료를 정리한다.','자료를 정리한다. 검토를 진행한다.']
   ]) expect(checkDirectTextFidelity(source,output).violations).toBeGreaterThan(0);
+});
+it('declines restoration when a protected sentence moved into a conceptless unprotected slot',()=>{
+  const source='자료는 정리할 수 있다. 정리한다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+  const candidate='자료를 정리한다. 자료는 정리할 수 있다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+  expect(restoreProtectedSentences(source,candidate)).toEqual({
+    rewrittenText:candidate,
+    restoredProtectedSentences:0
+  });
+});
+it('declines restoration when a changed unprotected slot has no usable concept anchor',()=>{
+  const source='자료는 정리할 수 있다. 정리한다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+  const candidate='자료를 정리한다. 검토한다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+  expect(restoreProtectedSentences(source,candidate)).toEqual({
+    rewrittenText:candidate,
+    restoredProtectedSentences:0
+  });
 });
 it('assigns local sentence spans despite astral characters and freezes quotes and numeric facts',()=>{
   const source='😀 자료를 정리한다. 오늘은 12일이다. “확인했다”라고 말했다.';

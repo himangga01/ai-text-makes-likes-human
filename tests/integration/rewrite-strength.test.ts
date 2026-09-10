@@ -74,6 +74,15 @@ it.each(['normal','medium','strong'] as const)('keeps protected-sentence repair 
   expect(result.diagnostics).toMatchObject({restoredProtectedSentences:0,conservativeRetries:1,rolledBackChunks:1});
 },30000);
 
+it('retries and rolls back when a protected sentence moves into a conceptless slot',async()=>{
+  const source='자료는 정리할 수 있다. 정리한다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+  const candidate='자료를 정리한다. 자료는 정리할 수 있다. 다음 문장은 그대로 둔다. 마지막 문장도 그대로다.\n';
+  const {output,result,calls}=await run(source,()=>candidate);
+  expect(output).toBe(source);
+  expect(calls).toHaveLength(2);
+  expect(result.diagnostics).toMatchObject({restoredProtectedSentences:0,conservativeRetries:1,rolledBackChunks:1});
+},30000);
+
 it.each([
   ['added sentence','민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.','지수는 사과를 샀고 민수는 배를 샀다. 새 문장을 더했다. 오늘 장터는 조용하다.'],
   ['missing sentence','민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.','지수는 사과를 샀고 민수는 배를 샀다.'],

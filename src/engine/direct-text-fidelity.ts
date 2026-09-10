@@ -64,6 +64,12 @@ function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, 
   ));
 }
 
+function couldCorrespondForRestoration(original: SourceSentence, rewritten: SourceSentence): boolean {
+  return original.text === rewritten.text || (
+    original.concepts.length > 0 && preservesConcepts(original, rewritten, restorationConceptSuffixes)
+  );
+}
+
 function lineMarker(value: string): string | undefined {
   return value.match(/^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?)/u)?.[0];
 }
@@ -102,7 +108,13 @@ export function restoreProtectedSentences(source: string, candidate: string): Pr
   for (let index = 0; index < originals.length; index++) {
     const original = originals[index]!, replacement = rewritten[index]!;
     if (!original.protected) {
-      if (!preservesConcepts(original, replacement)) {
+      if (original.text !== replacement.text && (
+        !original.concepts.length ||
+        !preservesConcepts(original, replacement) ||
+        originals.some((other, otherIndex) =>
+          otherIndex !== index && other.protected && couldCorrespondForRestoration(other, replacement)
+        )
+      )) {
         return { rewrittenText: candidate, restoredProtectedSentences: 0 };
       }
       continue;
@@ -114,10 +126,7 @@ export function restoreProtectedSentences(source: string, candidate: string): Pr
       return { rewrittenText: candidate, restoredProtectedSentences: 0 };
     }
     const couldBelongElsewhere = originals.some((other, otherIndex) =>
-      otherIndex !== index && (
-        other.text === replacement.text ||
-        (other.concepts.length > 0 && preservesConcepts(other, replacement, restorationConceptSuffixes))
-      )
+      otherIndex !== index && couldCorrespondForRestoration(other, replacement)
     );
     if (couldBelongElsewhere) {
       return { rewrittenText: candidate, restoredProtectedSentences: 0 };
