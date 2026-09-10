@@ -47,10 +47,69 @@ def warning_reasons(report: object, exit_code: int, stderr: str = "") -> dict:
         return unknown
     reasons = []
     try:
-        if report["gate"]["exit_code"] != exit_code:
+        def fields(value: object, keys: set) -> bool:
+            return isinstance(value, dict) and set(value) == keys
+
+        def count(value: object) -> bool:
+            return type(value) is int and value >= 0
+
+        def ratio(value: object) -> bool:
+            return type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 1
+
+        # Validate every nested producer shape before classifying any reason.
+        # Silently ignoring a future nested warning would falsely prove P1-only.
+        shapes = {
+            "change_rate": {"rate", "scope", "verdict"},
+            "antithesis": {"before", "after", "verdict"},
+            "sentence_touch": {"rate", "touched", "total"},
+            "modality": {"lost_pairs", "uncertain_pairs", "counts", "verdict"},
+            "gate": {"exit_code", "verdict"},
+        }
+        if any(not fields(report[name], keys) for name, keys in shapes.items()):
+            return unknown
+        gate_verdicts = {0: "OK — 수렴", 1: "WARN — 경고. 사용자 고지 + finalize 승급",
+                         2: "ABORT — 강제 중단. 윤문본 채택 금지"}
+        gate_report = report["gate"]
+        if (type(gate_report["exit_code"]) is not int or gate_report["exit_code"] != exit_code
+                or exit_code not in gate_verdicts or gate_report["verdict"] != gate_verdicts[exit_code]):
+            return unknown
+        if report["genre"] not in ("essay", "column", "report", "blog", "abstract"):
+            return unknown
+        change = report["change_rate"]
+        if (change["scope"] not in ("전문", "본문만 (마크업 제외)") or
+                change["verdict"] not in ("OK", "WARN — 과윤문 경고", "ABORT — 강제 중단. 윤문본 채택 금지")):
+            return unknown
+        touch = report["sentence_touch"]
+        if not ratio(touch["rate"]) or not count(touch["touched"]) or not count(touch["total"]) or touch["touched"] > touch["total"]:
+            return unknown
+        modality = report["modality"]
+        counts = modality["counts"]
+        if not fields(counts, {"deontic", "hedge"}):
+            return unknown
+        if any(not fields(pair, {"before", "after"}) or not all(count(v) for v in pair.values())
+               for pair in counts.values()):
+            return unknown
+        for key in ("lost_pairs", "uncertain_pairs"):
+            pairs = modality[key]
+            if not isinstance(pairs, list) or any(
+                not fields(pair, {"kind", "before", "after"}) or
+                pair["kind"] not in ("당위", "추측") or
+                not isinstance(pair["before"], str) or not isinstance(pair["after"], str)
+                for pair in pairs
+            ):
+                return unknown
+        expected_modality = f"FAIL — 서법 소실 {len(modality['lost_pairs'])}문장" if modality["lost_pairs"] else "OK"
+        if modality["verdict"] != expected_modality:
+            return unknown
+        if not isinstance(report["golden"], list) or any(
+            not fields(item, {"code", "message"}) or not all(isinstance(v, str) for v in item.values())
+            for item in report["golden"]
+        ):
+            return unknown
+        if not isinstance(report["numbers_dropped"], list) or any(not isinstance(v, str) for v in report["numbers_dropped"]):
             return unknown
         rate = report["change_rate"]["rate"]
-        if type(rate) not in (int, float) or not math.isfinite(rate) or not 0 <= rate <= 1:
+        if not ratio(rate):
             return unknown
         # Use verdict as well as rounded rate; a rounded boundary must never
         # promote a candidate. Thresholds and upstream gate remain unchanged.
@@ -80,6 +139,10 @@ def warning_reasons(report: object, exit_code: int, stderr: str = "") -> dict:
                 return unknown
         anti = report["antithesis"]
         if any(type(anti[key]) is not int or anti[key] < 0 for key in ("before", "after")):
+            return unknown
+        expected_anti = "FAIL — 전멸" if anti["before"] >= 5 and anti["after"] == 0 else (
+            "OK" if anti["before"] >= 5 else "스킵 (원문 대구 < 5)")
+        if anti["verdict"] != expected_anti:
             return unknown
         if anti["before"] >= 5 and anti["after"] == 0:
             reasons.append("P2_ANTITHESIS")
