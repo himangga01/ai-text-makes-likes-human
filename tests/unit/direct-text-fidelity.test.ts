@@ -72,3 +72,22 @@ it.each([
  // This guard checks vocabulary identity, not semantic equivalence of these grammar probes.
  expect(checkDirectTextFidelity(source,candidate).violations).toBe(0);
 });
+
+it.each(['했는지','했는지에','됐는지','됐는지에'])('recognizes the complete verbal realization %s',suffix=>{
+ expect(checkDirectTextFidelity('문장 표현을 확인한다.',`문장으로 표현${suffix} 확인한다.`).violations).toBe(0);
+ expect(checkDirectTextFidelity('문장 표현을 확인한다.',`문장으로 표현${suffix}평가를 확인한다.`).violations).toBeGreaterThan(0);
+});
+it.each(['과정에서','과정에 있어서'])('permits only contextual action-preserving compression of %s',construction=>{
+ const source=`자료를 검토하는 ${construction} 내용을 확인했다.`;
+ for(const ending of ['하면서','하며'])expect(checkDirectTextFidelity(source,`자료를 검토${ending} 내용을 확인했다.`).violations).toBe(0);
+ for(const candidate of ['내용을 확인했다.','자료를 정리하면서 내용을 확인했다.','문서를 검토하면서 내용을 확인했다.','자료를 검토한 뒤 내용을 확인했다.'])expect(checkDirectTextFidelity(source,candidate).violations).toBeGreaterThan(0);
+});
+it.each(['승인 과정','제조 과정','교육 과정','검토하는 과정'])('preserves substantive %s',phrase=>{
+ expect(checkDirectTextFidelity(`${phrase}을 기록했다.`, '기록했다.').violations).toBeGreaterThan(0);
+});
+it('does not omit an additional substantive process when compressing a functional process',()=>{
+ expect(checkDirectTextFidelity('자료를 검토하는 과정에서 승인 과정을 기록했다.','자료를 검토하면서 승인을 기록했다.').violations).toBeGreaterThan(0);
+});
+it('rejects a compound masquerading as the retained original process construction',()=>{
+ expect(checkDirectTextFidelity('자료를 검토하는 과정에서 내용을 확인했다.','자료를 검토하는 과정에서평가 내용을 확인했다.').violations).toBeGreaterThan(0);
+});

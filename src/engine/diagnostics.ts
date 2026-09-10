@@ -16,6 +16,7 @@ export interface ChunkTiming {
 export interface TransformDiagnostics {
   requestedStrength?: RewriteStrength;
   conservativeRetries?: number;
+  candidateReviewRetries?: number;
   skippedSentences?: number;
   fidelityGuardFailures?: number;
   rolledBackChunks?: number;

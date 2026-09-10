@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { EngineError } from "./errors.js";
+import { parseGateReasonMetadata, type GateReasonMetadata } from './candidate-review.js';
 import type {
   GateCode,
   ProcessingMode,
@@ -39,6 +40,8 @@ export interface ChunkManifest {
 }
 
 export interface GateResult {
+  warningReasons?: GateReasonMetadata;
+  hardFailures?: string[];
   status: "ok" | "warn" | "abort" | "error";
   exitCode: 0 | 1 | 2 | 3;
   gateCodes: GateCode[];
@@ -335,6 +338,10 @@ export class PythonEngine {
       status: statuses[exitCode],
       exitCode,
       gateCodes: [GATE_CODES[exitCode]],
+      ...(parseGateReasonMetadata(report.warningReasons) ? { warningReasons: parseGateReasonMetadata(report.warningReasons)! } : {}),
+      ...(Array.isArray(report.hardFailures) && report.hardFailures.length <= 100 &&
+        report.hardFailures.every(code => typeof code === 'string' && code.length <= 100)
+        ? { hardFailures: report.hardFailures as string[] } : {}),
       ...(typeof report.policy === "string" ? { policy: report.policy as GateResult["policy"] } : {})
     };
   }

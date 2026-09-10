@@ -20,15 +20,22 @@ export function parseTextResult(raw: string, source: string, label = 'CLI', opti
   }
   const sentences = options?.inputKind === 'direct-text' ? sourceSentences(source) : undefined;
   let fidelityIssues = 0;
-  let cursor = 0;
-  const pieces: string[] = [];
+  const intervals: Array<{ at: number; before: string; after: string }> = [];
   for (const edit of value.edits) {
     if (!edit || typeof edit !== 'object' || Array.isArray(edit) ||
         Object.keys(edit).sort().join(',') !== 'after,before' ||
         typeof edit.before !== 'string' || !edit.before.length ||
         typeof edit.after !== 'string' || edit.after.length > 100000) return fail();
     const at = source.indexOf(edit.before);
-    if (at < cursor || at < 0 || source.indexOf(edit.before, at + 1) !== -1) return fail();
+    if (at < 0 || source.indexOf(edit.before, at + 1) !== -1) return fail();
+    intervals.push({ at, before: edit.before, after: edit.after });
+  }
+  if (sentences) intervals.sort((left, right) => left.at - right.at);
+  let cursor = 0;
+  const pieces: string[] = [];
+  for (const edit of intervals) {
+    const at = edit.at;
+    if (at < cursor) return fail();
     if (sentences && edit.before !== edit.after) {
       // Trim unchanged disambiguating context before checking the local source span.
       let prefix = 0, suffix = 0;

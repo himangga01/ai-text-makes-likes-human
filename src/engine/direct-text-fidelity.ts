@@ -5,6 +5,7 @@ const functionalNouns = new Set(['것','이것','그것','저것','수','중','�
 // Match the complete remainder of a token, never just a particle-like prefix
 // in a new compound such as 문제의식 or 자료가치. Unknown forms fail closed.
 const conceptSuffixes = new Set([
+  '했는지', '했는지에', '됐는지', '됐는지에',
   '', '의', '을', '를', '은', '는', '이', '가', '에', '로', '으로', '에서', '에게',
   '도', '만', '과', '와', '이다', '이며', '이고',
   '에는', '에도', '에만', '에서는', '에서도', '에서만',
@@ -57,9 +58,20 @@ export function sourceSentences(source: string): SourceSentence[] {
   return result;
 }
 export interface FidelityReport { violations: number; protectedSentences: number }
+function permitsFunctionalProcessOmission(source: string, candidate: string): boolean {
+  const construction = /(?<![가-힣])([가-힣]+)하는 과정(?:에서|에 있어서)(?![가-힣])/gu;
+  const matches = [...source.matchAll(construction)];
+  // Every process reference must be functional; a second substantive reference
+  // cannot disappear merely because a functional one is also present.
+  if (!matches.length || /(?<![가-힣])과정[가-힣]*/u.test(source.replace(construction, ''))) return false;
+  const tokens: string[] = candidate.match(/[가-힣]+/gu) ?? [];
+  const retained = [...candidate.matchAll(construction)].map(match => match[1]);
+  return matches.every(match => tokens.includes(`${match[1]}하면서`) || tokens.includes(`${match[1]}하며`) || retained.includes(match[1]));
+}
+
 function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, suffixes = conceptSuffixes): boolean {
   const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
-  return original.concepts.every(term => tokens.some(token =>
+  return original.concepts.every(term => (term === '과정' && permitsFunctionalProcessOmission(original.text, rewritten.text)) || tokens.some(token =>
     token.startsWith(term) && suffixes.has(token.slice(term.length))
   ));
 }

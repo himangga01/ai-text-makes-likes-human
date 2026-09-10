@@ -123,3 +123,13 @@ describe("PythonEngine integration", () => {
     }
   });
 });
+
+it('passes the recorded P1-only warning through the real Python adapter',async()=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ const runDir=await makeTestRoot();
+ try{
+  const before=path.join(runDir,'before.txt'),after=path.join(runDir,'after.txt');
+  await writeFile(before,fixture.source);await writeFile(after,fixture.candidate);
+  expect(await engine.verify(before,after,new AbortController().signal)).toMatchObject({status:'warn',exitCode:1,policy:'retry',hardFailures:[],warningReasons:{version:1,codes:['P1_STYLE_TARGET']}});
+ }finally{await removeTestRoot(runDir);}
+});

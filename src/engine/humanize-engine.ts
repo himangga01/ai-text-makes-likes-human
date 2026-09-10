@@ -1,3 +1,4 @@
+import { candidateReviewForRetry, type CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { checkDirectTextFidelity, restoreProtectedSentences } from './direct-text-fidelity.js';
 import { readFile, writeFile } from "node:fs/promises";
@@ -46,7 +47,8 @@ export interface CodexAdapter {
     attempt: 1 | 2,
     signal: AbortSignal,
     settings?: ModelSettings,
-    rewriteOptions?: RewriteOptions
+    rewriteOptions?: RewriteOptions,
+    candidateReview?: CandidateReview
   ): Promise<CodexResult>;
 }
 
@@ -105,6 +107,7 @@ export interface ChunkTaskResult {
   rolledBackChunks: number;
   protectedSentences: number;
   restoredProtectedSentences: number;
+  candidateReviewRetries: number;
   gateCodes: GateCode[];
   timings: ChunkTiming;
 }
@@ -206,6 +209,7 @@ export class HumanizeEngine {
     let fidelityGuardFailures = 0;
     let rolledBackChunks = 0;
     let restoredProtectedSentences = 0;
+    let candidateReviewRetries = 0;
     const direct = context.rewriteOptions?.inputKind === 'direct-text';
     const protectedSentences = direct ? checkDirectTextFidelity(sourceText, sourceText).protectedSentences : 0;
     let fidelityFailed = false;
@@ -300,6 +304,18 @@ export class HumanizeEngine {
         message: `${chunk.index}번 구간을 더 보수적으로 다시 다듬습니다.`
       });
 
+      const candidateReview = !fidelityFailed ? candidateReviewForRetry({
+        source: sourceText, candidate: await readFile(rewrittenPath, 'utf8'),
+        options: context.rewriteOptions, gate, parserIssues: candidateFidelityIssues, skippedSentences
+      }) : undefined;
+      if (candidateReview) {
+        candidateReviewRetries++;
+        this.recordChunkWarning(context, warnings, {
+          code: 'DIRECT_TEXT_CANDIDATE_REVIEW_RETRY',
+          message: `${chunk.index}번 구간은 문체 목표 경고만 남아 이전 후보를 원문과 보수적으로 대조하는 재시도를 수행합니다. 불확실한 수정은 되돌립니다.`
+        });
+      }
+      this.ensureActive(context.signal);
       const secondCodexStartedAt = this.now();
       const second = await this.codex.transform(
         chunkSourcePath,
@@ -307,7 +323,8 @@ export class HumanizeEngine {
         2,
         context.signal,
         context.settings,
-        context.rewriteOptions
+        context.rewriteOptions,
+        candidateReview
       );
       codexMs += this.now() - secondCodexStartedAt;
       codexCalls += 1;
@@ -353,7 +370,7 @@ export class HumanizeEngine {
       retries,
       restoredSentences,
       removedCommas,
-      skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences, restoredProtectedSentences,
+      skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences, restoredProtectedSentences, candidateReviewRetries,
       gateCodes,
       timings: { codexMs, restoreMs, gateMs }
     };
@@ -489,6 +506,7 @@ export class HumanizeEngine {
     const diagnostics: TransformDiagnostics = {
       ...(rewriteOptions ? {requestedStrength: rewriteOptions.strength} : {}),
       ...(rewriteOptions?.inputKind === 'direct-text' ? {
+        candidateReviewRetries: chunkResults.reduce((sum, result) => sum + result.candidateReviewRetries, 0),
         conservativeRetries: chunkResults.reduce((sum, result) => sum + result.retries, 0),
         skippedSentences: chunkResults.reduce((sum, result) => sum + result.skippedSentences, 0),
         fidelityGuardFailures: chunkResults.reduce((sum, result) => sum + result.fidelityGuardFailures, 0) + fullFidelityFailures,

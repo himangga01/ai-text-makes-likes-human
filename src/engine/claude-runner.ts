@@ -1,3 +1,4 @@
+import type { CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
@@ -95,7 +96,8 @@ export class ClaudeRunner {
     attempt: 1 | 2,
     signal: AbortSignal,
     settings?: ModelSettings,
-    rewriteOptions?: RewriteOptions
+    rewriteOptions?: RewriteOptions,
+    candidateReview?: CandidateReview
   ): Promise<CodexResult> {
     const options = parseRewriteOptions(rewriteOptions?.inputKind, rewriteOptions?.strength);
     const sourcePath = path.resolve(inputPath);
@@ -109,12 +111,11 @@ export class ClaudeRunner {
 
     let nonce = randomUUID().replaceAll("-", "");
     while (
-      source.includes(`BEGIN_SOURCE_${nonce}`) ||
-      source.includes(`END_SOURCE_${nonce}`)
+      source.includes(nonce) || candidateReview?.candidate.includes(nonce)
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview });
 
     await rm(resultPath, { force: true });
     const command = await this.options.permitPool.run(signal, () =>

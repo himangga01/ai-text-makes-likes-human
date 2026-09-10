@@ -14,14 +14,15 @@ import { JobWorkspace } from '../../src/engine/workspace.js';
 import { SpawnCommandRunner, type CommandRequest } from '../../src/process/command-runner.js';
 import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
 
-async function run(source: string, rewrite: (source:string,attempt:number)=>string, kind:'codex'|'claude'='codex', options:any={inputKind:'direct-text',strength:'very-strong'}, viaWeb=false, beforeAssembly?: (workspace:JobWorkspace)=>void) {
+async function run(source: string, rewrite: (source:string,attempt:number)=>string | {rewrittenText:string;edits:{before:string;after:string}[];warnings:string[]}, kind:'codex'|'claude'='codex', options:any={inputKind:'direct-text',strength:'very-strong'}, viaWeb=false, beforeAssembly?: (workspace:JobWorkspace)=>void, signal = new AbortController().signal, eventHook?: (event:any)=>void) {
   const outer=await makeTestRoot();const workspace=await JobWorkspace.create(outer,'strength');const calls:CommandRequest[]=[];
   try {
     await writeFile(workspace.path('01_input.txt'),source,'utf8');
     const runner={async run(request:CommandRequest) {
       calls.push(request);
       const source=request.stdin!.match(/BEGIN_SOURCE_([a-f0-9]+)\n([\s\S]*)\nEND_SOURCE_\1/)![2]!;
-      const payload={rewrittenText:rewrite(source,calls.length),edits:[],warnings:[]};
+      const rewritten= rewrite(source,calls.length);
+      const payload=typeof rewritten==='string'?{rewrittenText:rewritten,edits:[],warnings:[]}:rewritten;
       if(kind==='codex')await writeFile(request.args[request.args.indexOf('--output-last-message')+1]!,JSON.stringify(payload));
       return {exitCode:0,termination:'exit' as const,stdout:JSON.stringify({is_error:false,subtype:'success',structured_output:payload}),stderr:''};
     }};
@@ -41,7 +42,7 @@ async function run(source: string, rewrite: (source:string,attempt:number)=>stri
         return {output:events.filter(event=>event.type==='result-delta').map(event=>event.text).join(''),result:result!,calls};
       } finally {await close(server.server);}
     }
-    result=await engine.transform({jobId:workspace.jobId,workspace,signal:new AbortController().signal,onEvent:(event:any)=>{if(event.phase==='assemble')beforeAssembly?.(workspace);},rewriteOptions:options} as any);
+    result=await engine.transform({jobId:workspace.jobId,workspace,signal,onEvent:(event:any)=>{eventHook?.(event);if(event.phase==='assemble')beforeAssembly?.(workspace);},rewriteOptions:options} as any);
     return {output:await readFile(result.finalPath,'utf8'),result,calls};
   } finally {await workspace.cleanup();await removeTestRoot(outer);}
 }
@@ -181,4 +182,54 @@ it.each([
  expect(output).toBe(source);
  expect(calls).toHaveLength(2);
  expect(result.diagnostics).toMatchObject({fidelityGuardFailures:2,rolledBackChunks:1});
+},30000);
+
+it.each(['codex','claude'] as const)('keeps a guarded recorded candidate available to the actual second %s call',async kind=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ const {output,result,calls}=await run(fixture.source,()=>fixture.candidate,kind);
+ expect(output.trim()).toBe(fixture.candidate.trim());
+ expect(calls).toHaveLength(2);
+ expect(calls[0]!.stdin).not.toContain('BEGIN_CANDIDATE_');
+ expect(calls[1]!.stdin).toContain(fixture.candidate.trim());
+ expect(calls[1]!.stdin).toContain('BEGIN_CANDIDATE_');
+ expect(calls[1]!.stdin).toContain(fixture.source.trim());
+ expect(calls[1]!.stdin).not.toContain('바뀐 부분만 edits');
+ expect(result.diagnostics).toMatchObject({candidateReviewRetries:1,codexCalls:2,conservativeRetries:1,fidelityGuardFailures:0});
+ expect(result.warnings).toContainEqual(expect.objectContaining({code:'DIRECT_TEXT_CANDIDATE_REVIEW_RETRY'}));
+ expect(result.warnings).toContainEqual(expect.objectContaining({code:'CHUNK_WARNING_ACCEPTED'}));
+ expect(JSON.stringify(result.diagnostics)).not.toContain(fixture.candidate.trim());
+},30000);
+it('honors the second review reverting the suggestion instead of automatically selecting attempt one',async()=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ const {output,calls}=await run(fixture.source,(s,attempt)=>attempt===1?fixture.candidate:s);
+ expect(calls).toHaveLength(2);expect(calls[1]!.stdin).toContain('BEGIN_CANDIDATE_');expect(output.trim()).toBe(fixture.source.trim());
+},30000);
+it('rolls back an invalid second review even when the first candidate passed every guard',async()=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ const {output,result,calls}=await run(fixture.source,(_s,attempt)=>attempt===1?fixture.candidate:fixture.candidate.replace('정확성','안전성'));
+ expect(calls).toHaveLength(2);expect(output.trim()).toBe(fixture.source.trim());
+ expect(result.diagnostics).toMatchObject({candidateReviewRetries:1,rolledBackChunks:1,fidelityGuardFailures:1});
+},30000);
+it('never promotes a candidate with a failed direct fidelity check even if Python reports P1',async()=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ const {calls,result}=await run(fixture.source,()=>fixture.candidate.replace('정확성','안전성'));
+ expect(calls).toHaveLength(2);expect(calls[1]!.stdin).not.toContain('BEGIN_CANDIDATE_');
+ expect(result.diagnostics).toMatchObject({candidateReviewRetries:0,rolledBackChunks:1});
+},30000);
+
+it.each(['codex','claude'] as const)('rejects %s retry edit anchors that exist only in the suggested candidate',async kind=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ let attempts=0;
+ await expect(run(fixture.source,(_s,attempt)=>{attempts=attempt;return attempt===1?fixture.candidate:{rewrittenText:'',edits:[{before:'별도의 항목을 두어 검토 기록을 구분했다',after:'별도의 항목으로 검토 기록을 구분했다'}],warnings:[]};},kind)).rejects.toMatchObject({publicCode:'ENGINE_OUTPUT_INVALID'});
+ expect(attempts).toBe(2);
+},30000);
+it.each(['before','during'] as const)('honors cancellation %s the candidate-review model call',async timing=>{
+ const {default:fixture}=await import('../fixtures/direct-live-quality.json');
+ const controller=new AbortController();let attempts=0;
+ await expect(run(fixture.source,(_s,attempt)=>{
+  attempts=attempt;if(attempt===2 && timing==='during')controller.abort();return fixture.candidate;
+ },'codex',{inputKind:'direct-text',strength:'very-strong'},false,undefined,controller.signal,event=>{
+  if(timing==='before' && event.code==='DIRECT_TEXT_CANDIDATE_REVIEW_RETRY')controller.abort();
+ })).rejects.toMatchObject({publicCode:'CLIENT_ABORTED'});
+ expect(attempts).toBe(timing==='before'?1:2);
 },30000);
