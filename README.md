@@ -16,7 +16,66 @@ PC에 설치·로그인된 **Claude Code 또는 Codex CLI**와 Humanize KR 규�
 
 검증 게이트 직전에 결정적 후처리 두 단계가 실행됩니다. 윤문 과정에서 "~해야 한다"·"~로 판단된다" 같은 당위·유보 표현이 사라진 문장은 원문 문장으로 되돌리고, 윤문이 새로 쓴 문장에 끼어든 연결어미 뒤 쉼표는 제거합니다. 되돌린 문장이 있으면 결과 화면에 안내가 표시됩니다.
 
-## 처음 한 번만 설정하기
+## Claude·Codex 스킬 사용하기
+
+`humanize-kr`는 현재 로그인한 **Claude Code 또는 Codex 세션**에서 한국어 문장을 다듬는 스킬입니다. 사용할 호스트 하나만 준비하면 됩니다. 같은 와이파이에 연결하거나 웹 포털·Windows 앱을 실행할 필요가 없습니다. Windows용 스킬 ZIP에는 검증에 필요한 Python·Node가 포함되어 있습니다.
+
+### 설치 또는 업데이트
+
+이 PC에는 두 호스트용 `0.4.0` 스킬이 설치되어 있습니다. 다른 PC에 설치하거나 다시 업데이트하려면 프로젝트 루트에서 사용할 호스트의 명령을 실행합니다. 해당 ZIP이 `release/`에 있어야 하며, ZIP은 Git 소스에 포함되지 않습니다.
+
+```powershell
+# Claude Code
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 -HostName Claude -Scope User -Archive .\release\humanize-kr-claude-0.4.0-win-x64.zip -Replace
+
+# Codex
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 -HostName Codex -Scope User -Archive .\release\humanize-kr-codex-0.4.0-win-x64.zip -Replace
+```
+
+`-Replace`는 기존 스킬을 백업한 뒤 갱신합니다. Claude는 `%USERPROFILE%\.claude\skills\humanize-kr`, Codex는 `%USERPROFILE%\.agents\skills\humanize-kr`에 설치됩니다. 스킬이 목록에 바로 보이지 않으면 새 세션을 시작하세요.
+
+### 텍스트 다듬기와 변경 비교
+
+아래 예시를 **각 호스트의 대화 입력란**에 입력합니다. PowerShell 명령이 아닙니다.
+
+Claude Code:
+
+```text
+/humanize-kr 아래 글을 매우 강하게 다듬고, 변경 비교 HTML도 만들어 줘.
+
+담당자는 자료의 정리 작업을 수행한다. 이 방안은 강한 경쟁력을 가지고 있다.
+```
+
+Codex:
+
+```text
+$humanize-kr 아래 글을 매우 강하게 다듬고, 변경 비교 HTML도 만들어 줘.
+
+담당자는 자료의 정리 작업을 수행한다. 이 방안은 강한 경쟁력을 가지고 있다.
+```
+
+| 요청할 강도 | 편집 범위 |
+|---|---|
+| 보통 · 기본값 | 원래 표현을 살려 어색한 부분을 다듬습니다. |
+| 중간 | 어휘와 길어진 표현을 더 자연스럽게 정리합니다. |
+| 강하게 | 문장 구조와 반복 표현까지 적극적으로 바꿉니다. |
+| 매우 강하게 | 뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다. |
+
+강도를 생략하면 **보통**으로 처리합니다. 비교가 필요하면 예시처럼 **변경 비교 HTML도 만들어 달라**고 요청하세요. 검증된 최종 텍스트 파일과 비교 HTML을 받을 수 있습니다. HTML은 브라우저에서 바로 열리며, 추가·변경은 연노랑, 삭제는 빨강 취소선으로 표시됩니다. **최종문 보기·복사**에는 삭제 표시를 제외한 최종 문구만 들어갑니다.
+
+### 파일 다듬기
+
+TXT·MD·DOCX·PPTX는 파일 경로를 지정해 요청합니다. 예를 들어 Claude Code에서는 다음과 같이 입력하고, Codex에서는 앞부분을 `$humanize-kr`로 바꿉니다.
+
+```text
+/humanize-kr "C:\문서\보고서.docx"를 다듬고 원본과 다른 새 파일로 저장해 줘.
+```
+
+**파일 입력에는 강도 선택과 HTML 변경 비교를 적용하지 않습니다.** Word·PowerPoint는 서식과 구조를 보존하며 같은 형식의 새 파일로 저장합니다. 원본은 덮어쓰지 않습니다. 숫자·인용·조건 등 보호 대상과 검증 결과에 따라 일부 문장은 유지되거나 복원될 수 있으므로 결과와 안내를 함께 확인하세요.
+
+일반 윤문에는 `humanize-kr`를 사용합니다. `update-humanize-engine`은 오픈소스 엔진 갱신을 위한 개발용 관리 스킬입니다. 자세한 설치 안내는 [Windows 앱·스킬 안내](docs/desktop.md), 처리 절차는 [스킬 설명](skills/humanize-kr/SKILL.md)을 참고하세요.
+
+## LAN 웹 포털: 처음 한 번만 설정하기
 
 서버로 사용할 Windows PC에 다음 프로그램이 필요합니다.
 
