@@ -74,6 +74,41 @@ test("uses the HTTP module worker and renders a bounded truthful fallback for 50
   await expect(page.locator(".result-diff__notice")).toContainText(/간략|한도/);
 });
 
+test("final-view selection keeps native copy behavior", async ({ page }) => {
+  await mountResultDiff(page);
+  const copied = await page.evaluate(async () => {
+    const component = (window as any).__resultDiff;
+    await component.setResult("삭제될 원문", "그대로 복사할 최종문");
+    component.setMode("final");
+    const finalView = document.querySelector(".result-diff__final")!;
+    const range = document.createRange();
+    range.selectNodeContents(finalView);
+    const selection = getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    const data = new DataTransfer();
+    data.setData("text/plain", "브라우저가 처리할 값");
+    const statusCount = (window as any).__resultDiffStatuses.length;
+    const event = new ClipboardEvent("copy", {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: data
+    });
+    document.dispatchEvent(event);
+    return {
+      prevented: event.defaultPrevented,
+      text: data.getData("text/plain"),
+      statusAdded: (window as any).__resultDiffStatuses.length - statusCount
+    };
+  });
+
+  expect(copied).toEqual({
+    prevented: false,
+    text: "브라우저가 처리할 값",
+    statusAdded: 0
+  });
+});
+
 test("diff selection copy emits only final text and preserves the clipboard for unsafe ranges", async ({ page }) => {
   await mountResultDiff(page);
   await page.evaluate(async () => {

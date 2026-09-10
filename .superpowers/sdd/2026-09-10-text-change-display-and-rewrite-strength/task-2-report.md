@@ -134,3 +134,9 @@ Within the diff view, native Ctrl+C and context-menu copy go through the documen
 - Component creation replaces all children of its `container`; give it a dedicated host element.
 - The coarse notice should stay visible. It explains why a large or high-edit-distance input has only a whole-source deletion and whole-target insertion.
 - `Intl.Segmenter`, module workers, `Range.intersectsNode`, and the ClipboardEvent `clipboardData` path are available in the project's current Electron/Chromium target. No compatibility dependency or CDN was added.
+
+## Review fix round 1: final-view native copy
+
+The document-level copy handler originally classified every selection inside the component root but outside `.result-diff__changes` as a cross-boundary selection. As a result, selecting text wholly inside `.result-diff__final` called `preventDefault()` and emitted the cross-boundary warning even though diff-specific filtering did not apply.
+
+A focused Playwright regression was added first. RED reproduced the problem with `prevented: true` and one added warning status where native behavior required `prevented: false` and no status. The classifier now returns `unhandled` immediately when the range does not intersect the diff pane. A range that intersects the diff but has either endpoint outside it remains `outside`, so the existing cross-boundary and deletion-only protections are unchanged. The focused regression then passed; the complete component file is covered again in the verification recorded for the fix commit.

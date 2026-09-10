@@ -53,10 +53,7 @@ export function createDiffCopyHandlers({ root, changes, onStatus, getSelection }
       return { kind: "none", selection };
     }
     const range = selection.getRangeAt(0);
-    if (!intersects(range, root)) return { kind: "none", selection };
-    if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) {
-      return { kind: "outside", selection, range };
-    }
+    if (!intersects(range, changes)) return { kind: "none", selection };
     if (!changes.contains(range.startContainer) || !changes.contains(range.endContainer)) {
       return { kind: "outside", selection, range };
     }
