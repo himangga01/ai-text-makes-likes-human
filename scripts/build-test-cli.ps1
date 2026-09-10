@@ -35,7 +35,14 @@ public class FakeCli {
       int effortIndex=Array.IndexOf(args,"--effort");
       string effort=effortIndex>=0?args[effortIndex+1]:"";
       foreach(string arg in args) if(arg.StartsWith("model_reasoning_effort=")) effort=arg.Substring("model_reasoning_effort=".Length).Trim('"');
-      File.AppendAllText(trace+".settings",serializer.Serialize(new { engine=claude?"claude":"codex",model=modelIndex>=0?args[modelIndex+1]:"",effort=effort })+"\n");
+      string strength="";
+      if(prompt.Contains("<rewrite_policy>")) {
+        if(prompt.Contains("very-strong")) strength="very-strong";
+        else if(prompt.Contains("strong")) strength="strong";
+        else if(prompt.Contains("medium")) strength="medium";
+        else strength="normal";
+      }
+      File.AppendAllText(trace+".settings",serializer.Serialize(new { engine=claude?"claude":"codex",model=modelIndex>=0?args[modelIndex+1]:"",effort=effort,strength=strength })+"\n");
     }
     object response = new { rewrittenText = text, edits = new object[0], warnings = new string[0] };
     if (text.TrimStart().StartsWith("{") && text.Contains("\"batchId\"")) {

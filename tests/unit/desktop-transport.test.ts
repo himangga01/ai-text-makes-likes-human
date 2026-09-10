@@ -26,4 +26,38 @@ describe('desktop text completion ordering', () => {
     expect(events).toHaveLength(2);
     expect(unsubscribed).toBe(true);
   });
+
+  it('sends the captured direct-text strength as top-level desktop fields', async () => {
+    let listener: (event: unknown) => void = () => {};
+    let payload: unknown;
+    const source = await readFile('public/transport.js', 'utf8');
+    const bridge = {
+      onEvent(callback: typeof listener) { listener = callback; return () => {}; },
+      async transform(value: unknown) {
+        payload = value;
+        queueMicrotask(() => listener({ type: 'done' }));
+      },
+      async cancel() {}
+    };
+    const transform = runInNewContext(source.replaceAll('export ', '') + '\ntransform;', {
+      window: { humanizeDesktop: bridge }, setTimeout, clearTimeout, DOMException, URLSearchParams
+    });
+
+    await transform(
+      '원문',
+      'codex',
+      new AbortController().signal,
+      () => {},
+      { model: 'gpt-6-astra', effort: 'low' },
+      { inputKind: 'direct-text', strength: 'strong' }
+    );
+
+    expect(payload).toEqual({
+      text: '원문',
+      engine: 'codex',
+      settings: { model: 'gpt-6-astra', effort: 'low' },
+      inputKind: 'direct-text',
+      strength: 'strong'
+    });
+  });
 });

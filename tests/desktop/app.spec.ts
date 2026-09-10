@@ -36,19 +36,28 @@ test('model and effort preferences survive restart and reach the CLI with equal-
     await first.page.locator('#codex-effort').selectOption('low');
     await first.page.locator('#claude-model').selectOption('claude-sonnet-5');
     await first.page.locator('#claude-effort').selectOption('high');
-    await expect.poll(async()=>JSON.parse(await readFile(path.join(profile,'settings.json'),'utf8')).models.claude).toEqual({model:'claude-sonnet-5',effort:'high'});
+    await first.page.locator('#rewrite-strength input[value="strong"]').check();
+    await expect.poll(async()=>JSON.parse(await readFile(path.join(profile,'settings.json'),'utf8'))).toMatchObject({models:{claude:{model:'claude-sonnet-5',effort:'high'}},rewriteStrength:'strong'});
   } finally {await close(first.app);}
   const {app,page,data}=await launch('both',profile);
   try {
     await expect(page.locator('#codex-model')).toHaveValue('gpt-6-astra');await expect(page.locator('#codex-effort')).toHaveValue('low');
     await expect(page.locator('#claude-model')).toHaveValue('claude-sonnet-5');await expect(page.locator('#claude-effort')).toHaveValue('high');
+    await expect(page.locator('#rewrite-strength input[value="strong"]')).toBeChecked();
     await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');
     const a=await page.locator('#source-text').boundingBox(),b=await page.locator('#result-text').boundingBox();
     expect(a!.height).toBe(b!.height);expect(a!.y).toBe(b!.y);
     await page.locator('#source-text').fill('원문을 그대로 둔다. 자연스러운 문장을 보존한다. 내용을 확인했다.');
     await page.locator('#transform-button').click();await expect(page.locator('#status-chip')).toContainText('완료');
+    await expect(page.locator('#result-strength')).toHaveText('사용한 변환 강도 · 강하게');
+    await expect(page.locator('#result-view-controls')).toBeVisible();
+    await expect(page.locator('#result-diff-host')).toBeVisible();
+    await expect(page.locator('#result-diff-host ins, #result-diff-host del')).toHaveCount(0);
+    await expect(page.locator('#result-diff-host .result-diff__changes')).toHaveText('원문을 그대로 둔다. 자연스러운 문장을 보존한다. 내용을 확인했다.');
+    const sourceBox=await page.locator('#source-text').boundingBox(),diffBox=await page.locator('#result-diff-host .result-diff__changes').boundingBox();
+    expect(sourceBox!.height).toBeCloseTo(diffBox!.height, 3);
     const settings=(await readFile(path.join(data,'calls.txt.settings'),'utf8')).trim().split('\n').map(x=>JSON.parse(x));
-    expect(settings[0]).toEqual({engine:'codex',model:'gpt-6-astra',effort:'low'});
+    expect(settings[0]).toEqual({engine:'codex',model:'gpt-6-astra',effort:'low',strength:'strong'});
     // Visual capture is a separate QA artifact; hidden Windows compositor capture
     // can stall despite all IPC, persistence and layout assertions succeeding.
     if(process.env.VISUAL_CAPTURE==='1')await page.screenshot({path:'test-results/desktop-model-settings.png',fullPage:true,animations:'disabled'});
@@ -61,11 +70,13 @@ for (const format of ['docx','pptx']) test(`Office ${format} keeps a document ha
     await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},path.resolve(`tests/fixtures/documents/mixed.${format}`));
     await page.locator('#text-file-button').click();
     await expect(page.locator('#source-file-name')).toContainText(format.toUpperCase());
+    await expect(page.locator('#rewrite-controls')).toBeHidden();
     await expect(page.locator('#source-text')).toHaveJSProperty('readOnly',true);
     await page.evaluate(()=>{(window as any).__events=[];(window as any).humanizeDesktop.onEvent((e:any)=>(window as any).__events.push(e.type));});
     await page.locator('#transform-button').click();
     await page.waitForFunction(()=>['success','error'].includes((document.querySelector('#status') as HTMLElement).dataset.state??''));
     expect(await page.locator('#status-chip').innerText(),`${await page.locator('#status-message').innerText()} events=${await page.evaluate(()=>(window as any).__events.join(','))}`).toContain('완료');
+    await expect(page.locator('#result-view-controls')).toBeHidden();
     await expect(page.locator('#download-button')).toBeEnabled();
     const output=path.join(data,`saved.${format}`);
     await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},output);
@@ -90,10 +101,13 @@ test("isolated renderer uses only the selected CLI and supports native save/copy
     await page.locator("#text-file-button").click();
     await expect(page.locator("#source-text")).toHaveValue(source);
     await expect(page.locator("#source-file-name")).toContainText("UTF-16");
+    await expect(page.locator("#rewrite-controls")).toBeHidden();
     await page.locator("#transform-button").click();
     await expect(page.locator("#status-chip")).toContainText("완료");
     await expect(page.locator("#result-text")).toHaveValue(/12명/);
     expect((await readFile(path.join(data, "calls.txt"), "utf8")).trim().split("\n").every(value => value === "claude")).toBe(true);
+    expect((await readFile(path.join(data, "calls.txt.settings"), "utf8")).trim().split("\n").map(value => JSON.parse(value).strength).every(value => value === "")).toBe(true);
+    await expect(page.locator("#result-view-controls")).toBeHidden();
     await page.locator("#copy-button").click();
     expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toContain("12명");
     const output = path.join(data, "result.md");

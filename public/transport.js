@@ -6,7 +6,7 @@ export async function health() {
   return response.json();
 }
 
-export async function transform(text, engine, signal, onEvent, settings) {
+export async function transform(text, engine, signal, onEvent, settings, rewriteOptions) {
   if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
   if (desktop) {
     let failure;
@@ -20,7 +20,7 @@ export async function transform(text, engine, signal, onEvent, settings) {
     signal.addEventListener("abort", cancel, { once: true });
     let timer;
     try {
-      await window.humanizeDesktop.transform({ text, engine, settings });
+      await window.humanizeDesktop.transform({ text, engine, settings, ...(rewriteOptions ?? {}) });
       // Invoke responses and event messages can reach the renderer in either order.
       await Promise.race([completed, new Promise((_, reject) => {
         timer = setTimeout(() => reject(new Error('완료 응답을 받지 못했습니다.')), 5000);
@@ -30,7 +30,7 @@ export async function transform(text, engine, signal, onEvent, settings) {
     } finally { clearTimeout(timer); unsubscribe(); signal.removeEventListener("abort", cancel); }
     return;
   }
-  const query=new URLSearchParams({engine,...(settings?{model:settings.model,effort:settings.effort}:{})});
+  const query=new URLSearchParams({engine,...(settings?{model:settings.model,effort:settings.effort}:{}),...(rewriteOptions??{})});
   const response = await fetch(`/api/transform?${query}`, {
     method: "POST", headers: { "content-type": "text/plain; charset=utf-8" }, body: text, signal
   });

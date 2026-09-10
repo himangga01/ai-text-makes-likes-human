@@ -5,6 +5,7 @@ import {
 } from "./text-file.js";
 import { progressForEvent } from "./progress.js";
 import { desktop, health, transform } from "./transport.js";
+import { createResultDiff } from "./result-diff.js";
 import { isOfficeFile, importDocument, closeDocument, transformDocument, saveDocument } from './document-file.js';
 import { connectionState, formatElapsed, effortLabels } from './connection-settings.js';
 
@@ -21,6 +22,13 @@ const elements = {
   copy: document.querySelector("#copy-button"),
   download: document.querySelector("#download-button"),
   reset: document.querySelector("#reset-button"),
+  rewriteControls: document.querySelector("#rewrite-controls"),
+  rewriteOptionList: document.querySelector("#rewrite-option-list"),
+  resultStrength: document.querySelector("#result-strength"),
+  resultViewControls: document.querySelector("#result-view-controls"),
+  resultModeButtons: [...document.querySelectorAll("[data-result-mode]")],
+  changeLegend: document.querySelector("#change-legend"),
+  resultDiffHost: document.querySelector("#result-diff-host"),
   engineInputs: [...document.querySelectorAll("#engine-select input[name=engine]")],
   claudeOption: document.querySelector("#engine-option-claude"),
   status: document.querySelector("#status"),
@@ -59,11 +67,85 @@ let documentResult;
 let importing = false;
 let documentFailed = false;
 let checkingHealth = false;
+let finalText = "";
+let activeRun;
+let resultMode = "diff";
+let resultGeneration = 0;
+let comparisonReady = false;
 let elapsedStarted;
 let elapsedInterval;
 let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh']}],claude:[{id:'claude-opus-5',label:'Claude Opus 5',efforts:['low','medium','high','xhigh','max']}]};
 let selections={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-opus-5',effort:'medium'}};
+const bundledRewriteOptions = [
+  { id: "normal", label: "보통", description: "원래 표현을 살려 어색한 부분을 다듬습니다." },
+  { id: "medium", label: "중간", description: "어휘와 길어진 표현을 더 자연스럽게 정리합니다." },
+  { id: "strong", label: "강하게", description: "문장 구조와 반복 표현까지 적극적으로 바꿉니다." },
+  { id: "very-strong", label: "매우 강하게", description: "뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다." }
+];
+let rewriteOptions = bundledRewriteOptions;
+let rewriteStrength = "normal";
 try {const saved=JSON.parse(localStorage.getItem('humanize-model-settings')??'null');if(saved&&typeof saved==='object')for(const kind of ['codex','claude'])if(saved[kind])selections[kind]=saved[kind];}catch{}
+if (!desktop) {
+  const savedStrength = localStorage.getItem("humanize-rewrite-strength");
+  if (bundledRewriteOptions.some(option => option.id === savedStrength)) rewriteStrength = savedStrength;
+}
+
+const resultDiff = createResultDiff({
+  container: elements.resultDiffHost,
+  onStatus(event) {
+    if (event.type === "copy-warning") addWarning(event.message);
+  }
+});
+
+function normalizeLineEndings(text) {
+  return String(text).replace(/\r\n?/g, "\n");
+}
+
+function renderRewriteOptions(options = rewriteOptions) {
+  if (!Array.isArray(options) || options.length !== 4 || !options.every(option =>
+    bundledRewriteOptions.some(fallback => fallback.id === option?.id) &&
+    typeof option.label === "string" && typeof option.description === "string"
+  )) options = bundledRewriteOptions;
+  rewriteOptions = options;
+  if (!rewriteOptions.some(option => option.id === rewriteStrength)) rewriteStrength = "normal";
+  elements.rewriteOptionList.replaceChildren(...rewriteOptions.map(option => {
+    const label = document.createElement("label");
+    label.className = "strength-option";
+    const input = document.createElement("input");
+    input.type = "radio";
+    input.name = "rewrite-strength";
+    input.value = option.id;
+    input.checked = option.id === rewriteStrength;
+    const body = document.createElement("span");
+    body.className = "strength-option-body";
+    const title = document.createElement("span");
+    title.className = "strength-option-title";
+    title.textContent = option.label;
+    const description = document.createElement("span");
+    description.className = "strength-option-description";
+    description.textContent = option.description;
+    body.append(title, description);
+    label.append(input, body);
+    return label;
+  }));
+  for (const input of elements.rewriteOptionList.querySelectorAll("input")) {
+    input.addEventListener("change", handleRewriteStrengthChange);
+  }
+}
+
+async function handleRewriteStrengthChange(event) {
+  const previous = rewriteStrength;
+  rewriteStrength = event.target.value;
+  try {
+    if (desktop) await window.humanizeDesktop.selectRewriteStrength(rewriteStrength);
+    else localStorage.setItem("humanize-rewrite-strength", rewriteStrength);
+  } catch (error) {
+    rewriteStrength = previous;
+    renderRewriteOptions();
+    setStatus("error", "설정 저장 오류", error.message);
+  }
+  refreshControls();
+}
 
 function renderModelControls(kind) {
   const model=document.querySelector(`#${kind}-model`);const effort=document.querySelector(`#${kind}-effort`);
@@ -122,6 +204,68 @@ function clearResultDownload() {
   elements.download.disabled = true;
 }
 
+function directTextInput() {
+  return !sourceFile && !officeDocument;
+}
+
+function setResultMode(nextMode, focusFinal = false) {
+  resultMode = nextMode;
+  const showComparison = runCompleted && comparisonReady && directTextInput() && nextMode === "diff";
+  elements.result.hidden = showComparison;
+  elements.resultDiffHost.hidden = !showComparison;
+  elements.changeLegend.hidden = !showComparison;
+  for (const button of elements.resultModeButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.resultMode === nextMode));
+  }
+  if (nextMode === "final" && focusFinal) elements.result.focus();
+}
+
+function clearCompletedResult() {
+  resultGeneration += 1;
+  comparisonReady = false;
+  finalText = "";
+  activeRun = undefined;
+  runCompleted = false;
+  elements.result.value = "";
+  elements.resultStrength.hidden = true;
+  elements.resultStrength.textContent = "";
+  elements.resultViewControls.hidden = true;
+  resultDiff.reset();
+  setResultMode("diff");
+}
+
+function renderCompletedResult(run) {
+  elements.result.value = finalText;
+  if (run.inputKind === "direct-text") {
+    const option = rewriteOptions.find(candidate => candidate.id === run.strength)
+      ?? bundledRewriteOptions.find(candidate => candidate.id === run.strength);
+    elements.resultStrength.textContent = `사용한 변환 강도 · ${option?.label ?? run.strength}`;
+    elements.resultStrength.hidden = false;
+    elements.resultViewControls.hidden = false;
+    resultMode = "diff";
+    setResultMode("diff");
+    const expectedGeneration = resultGeneration;
+    const expectedFinalText = finalText;
+    setTimeout(() => {
+      if (expectedGeneration !== resultGeneration || !runCompleted) return;
+      void resultDiff.setResult(run.sourceSnapshot, expectedFinalText).then(outcome => {
+        if (outcome.status !== "rendered" || expectedGeneration !== resultGeneration || finalText !== expectedFinalText) return;
+        comparisonReady = true;
+        setResultMode(resultMode);
+      }).catch(() => {
+        if (expectedGeneration !== resultGeneration) return;
+        addWarning("변경 비교를 만들지 못했습니다. 최종문에서 결과를 확인해 주세요.");
+        setResultMode("final");
+      });
+    }, 0);
+  } else {
+    elements.resultStrength.hidden = true;
+    elements.resultViewControls.hidden = true;
+    resultDiff.reset();
+    setResultMode("final");
+  }
+}
+
 function resetProgress() {
   stopElapsed();document.querySelector('#elapsed-time').textContent='00:00';
   lastProgress = 0;
@@ -147,7 +291,8 @@ function applyProgress(event) {
 
 function refreshControls() {
   const hasSource = elements.source.value.trim().length > 0;
-  const canDownload = Boolean(resultDownloadName && elements.result.value);
+  const canDownload = Boolean(resultDownloadName && finalText);
+  const showRewriteControls = directTextInput();
   elements.sourceCount.textContent = `${countCharacters(elements.source.value).toLocaleString("ko-KR")}자`;
   elements.transform.disabled = !engineReady || !selectedReady() || !hasSource || running || importing || checkingHealth || documentFailed || Boolean(documentResult);
   elements.engineInputs.forEach(input => {
@@ -158,6 +303,8 @@ function refreshControls() {
   document.querySelectorAll("#desktop-settings button").forEach(button => { button.disabled = running; });
   document.querySelector('#refresh-health').disabled=running||checkingHealth;
   document.querySelectorAll('.model-controls select').forEach(select=>{select.disabled=running||importing||checkingHealth;});
+  elements.rewriteControls.hidden = !showRewriteControls;
+  elements.rewriteOptionList.querySelectorAll("input").forEach(input => { input.disabled = running || importing; });
   elements.fileButton.disabled = running || importing;
   elements.reset.disabled = running || importing || (!hasSource && !elements.result.value);
   elements.copy.disabled = !runCompleted || elements.result.value.length === 0;
@@ -174,8 +321,8 @@ function setRunning(value) {
 }
 
 function showResultState() {
-  elements.empty.hidden = elements.result.value.length > 0;
-  elements.copy.disabled = !runCompleted || elements.result.value.length === 0;
+  elements.empty.hidden = finalText.length > 0;
+  elements.copy.disabled = !runCompleted || finalText.length === 0;
 }
 
 function handleEvent(event) {
@@ -184,8 +331,7 @@ function handleEvent(event) {
     case 'document-result':
       documentResult=event;
       activeDownloadName=event.name;
-      elements.result.value=event.preview;
-      showResultState();
+      if (activeRun) activeRun.streamedText = event.preview;
       break;
     case "accepted":
       setStatus("processing", "접수", "변환 작업을 준비하고 있습니다.");
@@ -203,21 +349,22 @@ function handleEvent(event) {
       break;
     }
     case "result-start":
-      elements.result.value = "";
+      if (activeRun) activeRun.streamedText = "";
       elements.empty.hidden = true;
       setStep(2);
       break;
     case "result-delta":
-      elements.result.value += event.text;
-      showResultState();
+      if (activeRun) activeRun.streamedText += event.text;
       break;
     case "warning":
       addWarning(event.message);
       break;
     case "done":
       stopElapsed();
+      finalText = activeRun?.streamedText ?? "";
       runCompleted = true;
       resultDownloadName = activeDownloadName;
+      renderCompletedResult(activeRun);
       setStatus(
         "success",
         warnings.size ? "완료 · 검토 권장" : "완료",
@@ -241,8 +388,11 @@ async function startTransform() {
     sourceFile?.format === "markdown"
       ? getMarkdownDownloadName(sourceFile.fileName)
       : desktop ? (sourceFile?.fileName?.replace(/\.txt$/i, "") || "humanized") + ".txt" : undefined;
-  runCompleted = false;
-  elements.result.value = "";
+  const inputKind = officeDocument ? undefined : sourceFile ? "text-file" : "direct-text";
+  const sourceSnapshot = normalizeLineEndings(elements.source.value);
+  const strength = inputKind === "direct-text" ? rewriteStrength : inputKind === "text-file" ? "normal" : undefined;
+  clearCompletedResult();
+  activeRun = { sourceSnapshot, inputKind, strength, streamedText: "" };
   clearWarnings();
   showResultState();
   clearResultDownload();
@@ -255,12 +405,11 @@ async function startTransform() {
   try {
     const settings={...selections[selectedEngine()]};
     if(officeDocument)await transformDocument(officeDocument,selectedEngine(),controller.signal,handleEvent,settings);
-    else await transform(elements.source.value, selectedEngine(), controller.signal, handleEvent,settings);
+    else await transform(sourceSnapshot, selectedEngine(), controller.signal, handleEvent,settings,{inputKind,strength});
     if (!runCompleted) throw new Error("완료 응답을 받지 못했습니다. 다시 시도해 주세요.");
   } catch (error) {
     if(officeDocument){documentFailed=true;documentResult=undefined;void closeDocument(officeDocument);}
-    elements.result.value = "";
-    runCompleted = false;
+    clearCompletedResult();
     if (controller.signal.aborted) {
       setStatus("warning", "취소됨", "변환을 취소했습니다. 원문은 그대로 남아 있습니다.");
     } else {
@@ -270,6 +419,7 @@ async function startTransform() {
   } finally {
     stopElapsed();
     controller = undefined;
+    activeRun = undefined;
     activeDownloadName = undefined;
     if (!runCompleted) clearResultDownload();
     setRunning(false);
@@ -278,7 +428,7 @@ async function startTransform() {
 }
 
 elements.source.addEventListener("input", () => {
-  if (!running) { elements.result.value = ""; runCompleted = false; clearWarnings(); showResultState(); }
+  if (!running) { clearCompletedResult(); clearWarnings(); showResultState(); }
   sourceFile = undefined;
   elements.fileName.hidden = true;
   elements.fileName.textContent = "";
@@ -308,6 +458,8 @@ elements.fileInput.addEventListener("change", () => loadFile(elements.fileInput.
 async function loadFile(file) {
   if (!file) return;
   const previous = elements.source.value;
+  clearCompletedResult();
+  clearResultDownload();
   try {
     if(isOfficeFile(file.name)) {
       importing=true;refreshControls();setStatus('processing','문서 읽기','문서 구조와 윤문할 텍스트를 확인합니다.');
@@ -316,7 +468,7 @@ async function loadFile(file) {
     const loaded = await readTextFile(file);
     await closeDocument(officeDocument);officeDocument=undefined;documentResult=undefined;documentFailed=false;
     elements.source.value = loaded.text;
-    elements.result.value = ""; runCompleted = false; clearWarnings(); showResultState();
+    clearCompletedResult(); clearWarnings(); showResultState();
     sourceFile = {
       fileName: loaded.fileName,
       format: loaded.format
@@ -342,7 +494,7 @@ async function loadFile(file) {
 }
 async function loadOffice(info) {
   await closeDocument(officeDocument);officeDocument=info;documentResult=undefined;documentFailed=false;
-  sourceFile={fileName:info.name,format:info.format};elements.source.value=info.preview;elements.result.value='';runCompleted=false;
+  sourceFile={fileName:info.name,format:info.format};elements.source.value=info.preview;clearCompletedResult();
   clearWarnings();for(const warning of info.warnings??[])addWarning(warning);
   clearResultDownload();resetProgress();showResultState();
   elements.fileName.hidden=false;elements.fileName.textContent=`${info.name.replace('-humanized','')} · ${info.format.toUpperCase()} · 윤문 ${info.editableBlocks}개 / 보존 ${info.preservedBlocks}개${info.slides?' · '+info.slides+'슬라이드':''}`;
@@ -353,9 +505,8 @@ elements.transform.addEventListener("click", startTransform);
 elements.cancel.addEventListener("click", () => controller?.abort());
 elements.reset.addEventListener("click", () => {
   void closeDocument(officeDocument);officeDocument=undefined;documentResult=undefined;documentFailed=false;
-  runCompleted = false; clearWarnings();
+  clearCompletedResult(); clearWarnings();
   elements.source.value = "";
-  elements.result.value = "";
   sourceFile = undefined;
   activeDownloadName = undefined;
   clearResultDownload();
@@ -370,19 +521,36 @@ elements.reset.addEventListener("click", () => {
 });
 
 async function copyResultText() {
-  if (desktop) { await window.humanizeDesktop.copyText(elements.result.value); return; }
+  if (desktop) { await window.humanizeDesktop.copyText(finalText); return; }
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(elements.result.value);
+    await navigator.clipboard.writeText(finalText);
     return;
   }
 
-  elements.result.focus();
-  elements.result.select();
+  const active = document.activeElement;
+  const inputSelection = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement
+    ? { start: active.selectionStart, end: active.selectionEnd, direction: active.selectionDirection }
+    : undefined;
+  const selection = document.getSelection();
+  const ranges = selection ? Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index).cloneRange()) : [];
+  selection?.removeAllRanges();
+  const temporary = document.createElement("textarea");
+  temporary.className = "clipboard-fallback";
+  temporary.setAttribute("aria-hidden", "true");
+  temporary.value = finalText;
+  document.body.append(temporary);
+  temporary.focus();
+  temporary.select();
   const copied = document.execCommand("copy");
-  elements.result.setSelectionRange(
-    elements.result.value.length,
-    elements.result.value.length
-  );
+  temporary.remove();
+  if (active instanceof HTMLElement) active.focus();
+  if (inputSelection && (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement)) {
+    active.setSelectionRange(inputSelection.start, inputSelection.end, inputSelection.direction);
+  }
+  if (selection) {
+    selection.removeAllRanges();
+    for (const range of ranges) selection.addRange(range);
+  }
   if (!copied) throw new Error("copy command failed");
 }
 
@@ -401,13 +569,13 @@ elements.copy.addEventListener("click", async () => {
 
 elements.download.addEventListener("click", async () => {
   if(officeDocument&&documentResult){try{await saveDocument(officeDocument,documentResult.name);}catch(e){setStatus('error','저장 오류',e.message);}return;}
-  if (!resultDownloadName || !elements.result.value) return;
+  if (!resultDownloadName || !finalText) return;
   if (desktop) {
-    try { await window.humanizeDesktop.saveText({ text: elements.result.value, name: resultDownloadName }); }
+    try { await window.humanizeDesktop.saveText({ text: finalText, name: resultDownloadName }); }
     catch (error) { setStatus("error", "저장 오류", error.message); }
     return;
   }
-  const blob = new Blob([elements.result.value], {
+  const blob = new Blob([finalText], {
     type: "text/markdown;charset=utf-8"
   });
   const url = URL.createObjectURL(blob);
@@ -428,6 +596,7 @@ async function checkHealth() {
   try {
     const body = await health();
     if(body.modelOptions)modelOptions=body.modelOptions;
+    renderRewriteOptions(body.rewriteOptions);
     for(const kind of ['codex','claude']) {
       renderModelControls(kind);
       const provider=body.providers?.[kind]??{ready:body.status==='ready'&&(kind==='codex'||body.claudeAvailable===true),installed:body.status==='ready',authenticated:body.status==='ready'&&(kind==='codex'||body.claudeAvailable===true),message:body.message};
@@ -456,7 +625,11 @@ async function checkHealth() {
 
 showResultState();
 applyClaudeAvailability();
+renderRewriteOptions();
 refreshControls();
+for (const button of elements.resultModeButtons) button.addEventListener("click", event => {
+  setResultMode(button.dataset.resultMode, event.detail === 0 && button.dataset.resultMode === "final");
+});
 for (const input of elements.engineInputs) input.addEventListener("change", () => {
   refreshControls();
   if (desktop) window.humanizeDesktop.selectEngine(selectedEngine()).catch(error => setStatus("error", "설정 오류", error.message));
@@ -481,6 +654,10 @@ async function initialize() {
     try {
       const preferences = await window.humanizeDesktop.preferences();
       if(preferences.models)for(const kind of ['codex','claude'])if(preferences.models[kind])selections[kind]=preferences.models[kind];
+      if (rewriteOptions.some(option => option.id === preferences.rewriteStrength)) {
+        rewriteStrength = preferences.rewriteStrength;
+        renderRewriteOptions();
+      }
       const selected = elements.engineInputs.find(input => input.value === preferences.selectedEngine);
       if (selected) selected.checked = true;
     } catch { /* keep default choice */ }

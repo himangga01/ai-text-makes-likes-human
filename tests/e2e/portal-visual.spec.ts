@@ -20,6 +20,21 @@ async function showState(
   page: import("@playwright/test").Page,
   state: "queued" | "processing" | "success" | "error"
 ) {
+  if (state === "success") {
+    await page.route("**/api/transform*", route => route.fulfill({
+      status: 200,
+      contentType: "application/x-ndjson; charset=utf-8",
+      body:
+        '{"type":"accepted","jobId":"visual-success","position":0}\n' +
+        '{"type":"result-start"}\n' +
+        '{"type":"result-delta","text":"여러 요인으로 이런 결과가 나왔다."}\n' +
+        '{"type":"done","sourceChars":33,"outputChars":19,"chunks":4,"elapsedMs":8400}\n'
+    }));
+    await page.locator("#source-text").fill("이 결과는 다양한 요인에 의해 도출되어진 것으로 판단됩니다.");
+    await page.locator("#transform-button").click();
+    await expect(page.locator("#result-diff-host")).toBeVisible();
+    return;
+  }
   await page.locator("#source-text").fill(
     "이 결과는 다양한 요인에 의해 도출되어진 것으로 판단됩니다."
   );
@@ -55,13 +70,6 @@ async function showState(
       message.textContent = "2/4 구간을 다듬는 중입니다.";
       progress.value = 28.75;
       progressValue.textContent = "29%";
-    } else if (selected === "success") {
-      chip.textContent = "완료";
-      message.textContent = "4개 구간 · 8.4초 만에 완료했습니다.";
-      progress.value = 100;
-      progressValue.textContent = "100%";
-      result.value = "여러 요인으로 이런 결과가 나왔다.";
-      empty.hidden = true;
     } else {
       chip.textContent = "검증 오류";
       message.textContent = "내용 보존 검증을 통과하지 못했습니다.";
