@@ -55,6 +55,15 @@ function parseNdjson(text: string): Array<Record<string, unknown>> {
 }
 
 describe("POST /api/transform", () => {
+  it.each(['strength=strong','inputKind=text-file&strength=strong','inputKind=direct-text&strength=maximum','inputKind=direct-text&strength=normal&strength=strong'])('rejects invalid rewrite options before queue reservation: %s',async query=>{
+    const test=await createTestApp({transform:async()=>{throw new Error('must not run');}});
+    try {
+      test.queue.reserve('one');test.queue.reserve('two');test.queue.reserve('three');
+      const response=await fetch(`${test.baseUrl}/api/transform?${query}`,{method:'POST',headers:{'content-type':'text/plain'},body:'원문'});
+      expect(response.status).toBe(400);expect((await response.json()).code).toBe('INVALID_REWRITE_OPTIONS');
+      expect(test.queue.stats()).toMatchObject({reserved:3});
+    } finally {await removeTestRoot(test.outer);}
+  });
   it('rejects unsupported model settings before allocating a job or invoking the engine',async()=>{
     let calls=0;
     const test=await createTestApp({transform:async()=>{calls++;throw new Error('must not run');}});

@@ -37,6 +37,7 @@ describe("GET /api/health", () => {
       const response = await fetch(`${running.baseUrl}/api/health`);
       expect(response.status).toBe(200);
       expect(await response.json()).toEqual({
+        rewriteOptions: expect.arrayContaining([{id:'very-strong',label:'매우 강하게',description:expect.any(String)}]),
         modelOptions: MODEL_OPTIONS,
         checkedAt: expect.any(String),
         documentsAvailable: false,
@@ -97,6 +98,7 @@ describe("GET /api/health", () => {
       expect(response.status).toBe(503);
       const body = await response.json();
       expect(body).toEqual({
+        rewriteOptions: expect.arrayContaining([{id:'very-strong',label:'매우 강하게',description:expect.any(String)}]),
         modelOptions: MODEL_OPTIONS,
         checkedAt: expect.any(String),
         status: "degraded",

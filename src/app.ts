@@ -1,3 +1,4 @@
+import { REWRITE_OPTIONS, parseRewriteOptions, type RewriteOptions } from './engine/rewrite-policy.js';
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -128,7 +129,8 @@ export function createApp(dependencies: AppDependencies): Express {
       response.status(503).json({
         status: "degraded",
         providers: preflight.providers,
-        modelOptions: MODEL_OPTIONS,
+        rewriteOptions: REWRITE_OPTIONS,
+      modelOptions: MODEL_OPTIONS,
         checkedAt: new Date().toISOString(),
         pid: process.pid,
         errorCode: preflight.errorCode ?? "ENGINE_UNAVAILABLE",
@@ -141,6 +143,7 @@ export function createApp(dependencies: AppDependencies): Express {
     }
     response.json({
       documentsAvailable: dependencies.documentEngine ? await dependencies.documentEngine.health() : false,
+      rewriteOptions: REWRITE_OPTIONS,
       modelOptions: MODEL_OPTIONS,
       checkedAt: new Date().toISOString(),
       status: "ready",
@@ -195,6 +198,10 @@ export function createApp(dependencies: AppDependencies): Express {
     try { settings = parseModelSettings(engineChoice, request.query.model, request.query.effort); }
     catch (error) { response.status(400).json({code:'INVALID_MODEL_SETTINGS',message:(error as Error).message}); return; }
 
+    let rewriteOptions: RewriteOptions | undefined;
+    try { rewriteOptions = parseRewriteOptions(request.query.inputKind, request.query.strength); }
+    catch (error) { response.status(400).json({code:'INVALID_REWRITE_OPTIONS',message:(error as Error).message}); return; }
+
     const jobId = randomUUID();
     const reservation = queue.reserve(jobId);
     if (!reservation) {
@@ -245,6 +252,7 @@ export function createApp(dependencies: AppDependencies): Express {
           ]);
           const result = await selectedEngine.transform({
             settings,
+            rewriteOptions,
             jobId,
             workspace: workspace!,
             signal,

@@ -1,3 +1,4 @@
+import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
@@ -12,6 +13,7 @@ import { parseTextResult } from './text-edits.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface CodexResult {
+  fidelityIssues?: number;
   rewrittenText: string;
   warnings: string[];
 }
@@ -90,8 +92,10 @@ export class CodexRunner {
     outputPath: string,
     attempt: 1 | 2,
     signal: AbortSignal,
-    settings?: ModelSettings
+    settings?: ModelSettings,
+    rewriteOptions?: RewriteOptions
   ): Promise<CodexResult> {
+    const options = parseRewriteOptions(rewriteOptions?.inputKind, rewriteOptions?.strength);
     const sourcePath = path.resolve(inputPath);
     const selection = parseModelSettings('codex', settings?.model, settings?.effort);
     const resultPath = path.resolve(outputPath);
@@ -107,7 +111,7 @@ export class CodexRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options });
 
     await rm(resultPath, { force: true });
     const command = await this.options.permitPool.run(signal, () =>
@@ -151,7 +155,7 @@ export class CodexRunner {
 
     try {
       const raw = await readFile(resultPath, "utf8");
-      return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex');
+      return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex', options);
     } catch (error) {
       if (error instanceof EngineError) throw error;
       throw invalid("Codex result file is missing", error);

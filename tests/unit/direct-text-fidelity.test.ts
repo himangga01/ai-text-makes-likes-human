@@ -1,0 +1,38 @@
+import { expect, it } from 'vitest';
+import { checkDirectTextFidelity, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
+import { parseTextResult } from '../../src/engine/text-edits.js';
+it('preserves concept identity instead of accepting a concept as a substring of a different word',()=>{
+  expect(checkDirectTextFidelity('자료의 안전성이 중요하다.','자료의 불안전성이 중요하다.').violations).toBeGreaterThan(0);
+});
+it('protects sentence/paragraph correspondence and Markdown headings',()=>{
+  for(const [source,output] of [
+    ['검토를 진행한다. 자료를 정리한다.','검토를 진행하고 자료를 정리한다.'],
+    ['검토를 진행한다.\n\n자료를 정리한다.','검토를 진행한다. 자료를 정리한다.'],
+    ['# 검토\n자료를 정리한다.','# 자료\n자료를 정리한다.'],
+    ['검토를 진행한다. 자료를 정리한다.','자료를 정리한다. 검토를 진행한다.']
+  ]) expect(checkDirectTextFidelity(source,output).violations).toBeGreaterThan(0);
+});
+it('assigns local sentence spans despite astral characters and freezes quotes and numeric facts',()=>{
+  const source='😀 자료를 정리한다. 오늘은 12일이다. “확인했다”라고 말했다.';
+  const spans=sourceSentences(source);
+  expect(spans.map(s=>source.slice(s.start,s.end))).toEqual(['😀 자료를 정리한다.','오늘은 12일이다.','“확인했다”라고 말했다.']);
+  expect(spans.map(s=>s.protected)).toEqual([false,true,true]);
+});
+it('marks compact changes spanning multiple source sentences for conservative retry',()=>{
+  const source='자료를 정리한다. 검토를 진행한다.';
+  const raw=JSON.stringify({rewrittenText:'',edits:[{before:source,after:'자료를 정리했다. 검토를 진행했다.'}],warnings:[]});
+  const result=parseTextResult(raw,source,'CLI',{inputKind:'direct-text',strength:'very-strong'} as any) as any;
+  expect(result.fidelityIssues??0).toBeGreaterThan(0);
+  expect(parseTextResult(raw,source).rewrittenText).toBe('자료를 정리했다. 검토를 진행했다.');
+});
+it('allows an exact edit with unchanged surrounding sentence context',()=>{
+  const source='자료를 정리한다. 검토를 진행한다.';
+  const raw=JSON.stringify({rewrittenText:'',edits:[{before:source,after:'자료를 정리한다. 검토를 진행했다.'}],warnings:[]});
+  const result=parseTextResult(raw,source,'CLI',{inputKind:'direct-text',strength:'strong'} as any) as any;
+  expect(result.fidelityIssues??0).toBe(0);
+});
+
+it('does not mistake adnominal verb endings for core nouns during safe compression',()=>{
+ expect(checkDirectTextFidelity('검토 의견을 반영하는 작업을 진행했다.','검토 의견을 반영했다.').violations).toBe(0);
+ expect(checkDirectTextFidelity('이 방안은 반복되는 작업을 정리한다.','이 방안은 작업의 반복을 정리한다.').violations).toBe(0);
+});

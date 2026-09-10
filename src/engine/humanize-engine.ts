@@ -1,3 +1,5 @@
+import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
+import { checkDirectTextFidelity } from './direct-text-fidelity.js';
 import { readFile, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import type { EventSink } from "../contracts.js";
@@ -43,11 +45,13 @@ export interface CodexAdapter {
     outputPath: string,
     attempt: 1 | 2,
     signal: AbortSignal,
-    settings?: ModelSettings
+    settings?: ModelSettings,
+    rewriteOptions?: RewriteOptions
   ): Promise<CodexResult>;
 }
 
 export interface HumanizeRequest {
+  rewriteOptions?: RewriteOptions;
   settings?: ModelSettings;
   jobId: string;
   workspace: JobWorkspace;
@@ -80,6 +84,7 @@ export interface HumanizeEngineOptions {
 }
 
 interface ChunkTaskContext {
+  rewriteOptions?: RewriteOptions;
   settings?: ModelSettings;
   sourcePoints: readonly string[];
   workspace: JobWorkspace;
@@ -95,6 +100,10 @@ export interface ChunkTaskResult {
   retries: number;
   restoredSentences: number;
   removedCommas: number;
+  skippedSentences: number;
+  fidelityGuardFailures: number;
+  rolledBackChunks: number;
+  protectedSentences: number;
   gateCodes: GateCode[];
   timings: ChunkTiming;
 }
@@ -192,6 +201,19 @@ export class HumanizeEngine {
     let gateMs = 0;
     let restoredSentences = 0;
     let removedCommas = 0;
+    let skippedSentences = 0;
+    let fidelityGuardFailures = 0;
+    let rolledBackChunks = 0;
+    const direct = context.rewriteOptions?.inputKind === 'direct-text';
+    const protectedSentences = direct ? checkDirectTextFidelity(sourceText, sourceText).protectedSentences : 0;
+    let fidelityFailed = false;
+    let candidateFidelityIssues = 0;
+    if (protectedSentences > 0 && context.rewriteOptions?.strength !== 'normal') {
+      this.recordChunkWarning(context, warnings, {
+        code: 'DIRECT_TEXT_PROTECTED_SENTENCES',
+        message: `${chunk.index}번 구간의 ${protectedSentences}개 문장은 사실·인용·서법 또는 조건 보존을 위해 원문을 유지하므로 변경 범위가 작을 수 있습니다.`
+      });
+    }
 
     await writeFile(chunkSourcePath, sourceText, "utf8");
 
@@ -208,6 +230,17 @@ export class HumanizeEngine {
       restoreMs += this.now() - startedAt;
       restoredSentences += report.restoredSentences;
       removedCommas += report.removedCommas;
+      if (direct) {
+        skippedSentences += report.skippedSentences;
+        fidelityFailed = candidateFidelityIssues > 0 || report.skippedSentences > 0 || checkDirectTextFidelity(sourceText, await readFile(rewrittenPath, 'utf8')).violations > 0;
+        if (fidelityFailed) {
+          fidelityGuardFailures++;
+          this.recordChunkWarning(context, warnings, {
+            code: 'DIRECT_TEXT_FIDELITY_RESTRICTED',
+            message: `${chunk.index}번 구간에서 문장 경계·사실 관계·핵심 개념 또는 서법 보존을 확인하지 못해 넓은 수정을 제한했습니다.`
+          });
+        }
+      }
       if (report.restoredSentences > 0) {
         this.recordChunkWarning(context, warnings, {
           code: "MODALITY_RESTORED",
@@ -222,13 +255,15 @@ export class HumanizeEngine {
       context.workspace.path(`codex-${chunk.index}-attempt-1.json`),
       1,
       context.signal,
-      context.settings
+      context.settings,
+      context.rewriteOptions
     );
     codexMs += this.now() - firstCodexStartedAt;
     codexCalls += 1;
     this.ensureActive(context.signal);
     context.onWorkUnit("transform");
     this.collectCodexWarnings(context, warnings, first.warnings);
+    candidateFidelityIssues = first.fidelityIssues ?? 0;
     await writeFile(rewrittenPath, first.rewrittenText, "utf8");
     await restore();
 
@@ -244,7 +279,7 @@ export class HumanizeEngine {
       throw validation(`Chunk ${chunk.index} gate execution failed`);
     }
 
-    if (gate.policy === "retry" || (!gate.policy && (gate.status === "warn" || gate.status === "abort"))) {
+    if (fidelityFailed || gate.policy === "retry" || (!gate.policy && (gate.status === "warn" || gate.status === "abort"))) {
       retries += 1;
       this.recordChunkWarning(context, warnings, {
         code: "CHUNK_RETRY",
@@ -257,12 +292,14 @@ export class HumanizeEngine {
         context.workspace.path(`codex-${chunk.index}-attempt-2.json`),
         2,
         context.signal,
-        context.settings
+        context.settings,
+        context.rewriteOptions
       );
       codexMs += this.now() - secondCodexStartedAt;
       codexCalls += 1;
       this.ensureActive(context.signal);
       this.collectCodexWarnings(context, warnings, second.warnings);
+      candidateFidelityIssues = second.fidelityIssues ?? 0;
       await writeFile(rewrittenPath, second.rewrittenText, "utf8");
       await restore();
 
@@ -278,7 +315,8 @@ export class HumanizeEngine {
       if (gate.status === "error") {
         throw validation(`Chunk ${chunk.index} retry gate execution failed`);
       }
-      if (gate.status === "abort") {
+      if (fidelityFailed || gate.status === "abort") {
+        if (direct) rolledBackChunks++;
         await writeFile(rewrittenPath, sourceText, "utf8");
         this.recordChunkWarning(context, warnings, {
           code: "CHUNK_ROLLED_BACK",
@@ -301,12 +339,14 @@ export class HumanizeEngine {
       retries,
       restoredSentences,
       removedCommas,
+      skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences,
       gateCodes,
       timings: { codexMs, restoreMs, gateMs }
     };
   }
 
   async transform(request: HumanizeRequest): Promise<HumanizeResult> {
+    const rewriteOptions = parseRewriteOptions(request.rewriteOptions?.inputKind, request.rewriteOptions?.strength);
     const totalStartedAt = this.now();
     this.ensureActive(request.signal);
     const warnings: HumanizeWarning[] = [];
@@ -367,6 +407,7 @@ export class HumanizeEngine {
         this.ensureActive(signal);
         return this.processChunk(chunk, {
           settings: request.settings,
+          rewriteOptions,
           sourcePoints,
           workspace: request.workspace,
           signal,
@@ -407,6 +448,12 @@ export class HumanizeEngine {
     const assembleFinishedAt = this.now();
     const assembleMs = assembleFinishedAt - assembleStartedAt;
     const fullGateStartedAt = assembleFinishedAt;
+    let fullFidelityFailures = 0;
+    if (rewriteOptions?.inputKind === 'direct-text' && checkDirectTextFidelity(source, await readFile(finalPath, 'utf8')).violations > 0) {
+      fullFidelityFailures = 1;
+      await writeFile(finalPath, source, 'utf8');
+      this.emitWarning(request, warnings, {code:'DIRECT_TEXT_DOCUMENT_ROLLED_BACK',message:'전체 글의 문장 경계·내용 보존을 확인하지 못해 원문을 유지했습니다.'});
+    }
     const fullGate = await this.python.verify(
       sourcePath,
       finalPath,
@@ -426,6 +473,15 @@ export class HumanizeEngine {
     const output = await readFile(finalPath, "utf8");
     const sourceChars = sourcePoints.length;
     const diagnostics: TransformDiagnostics = {
+      ...(rewriteOptions ? {requestedStrength: rewriteOptions.strength} : {}),
+      ...(rewriteOptions?.inputKind === 'direct-text' ? {
+        conservativeRetries: chunkResults.reduce((sum, result) => sum + result.retries, 0),
+        skippedSentences: chunkResults.reduce((sum, result) => sum + result.skippedSentences, 0),
+        fidelityGuardFailures: chunkResults.reduce((sum, result) => sum + result.fidelityGuardFailures, 0) + fullFidelityFailures,
+        rolledBackChunks: chunkResults.reduce((sum, result) => sum + result.rolledBackChunks, 0),
+        protectedSentences: chunkResults.reduce((sum, result) => sum + result.protectedSentences, 0),
+        fullSourceRollbacks: fullFidelityFailures
+      } : {}),
       model: request.settings?.model ?? this.model,
       reasoningEffort: request.settings?.effort ?? this.reasoningEffort,
       processingMode: manifest.processingMode,

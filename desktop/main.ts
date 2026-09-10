@@ -1,3 +1,5 @@
+import { defaultPreferences, loadPreferences, savePreferences, selectRewriteStrength } from './preferences.js';
+import { parseRewriteOptions } from '../src/engine/rewrite-policy.js';
 import { app, BrowserWindow, protocol, ipcMain, dialog, clipboard, utilityProcess, type UtilityProcess, type IpcMainInvokeEvent } from "electron";
 import { readFile, writeFile, mkdir, readdir, rm, copyFile } from "node:fs/promises";
 import { constants } from 'node:fs';
@@ -14,8 +16,7 @@ const resourceRoot = app.isPackaged ? path.join(process.resourcesPath, "engine")
 const publicRoot = path.join(app.isPackaged ? app.getAppPath() : resourceRoot, "public");
 const jobsRoot = path.join(app.getPath("userData"), "jobs");
 const settingsPath = path.join(app.getPath("userData"), "settings.json");
-type Preferences = { selectedEngine: EngineChoice; commands: Partial<Record<EngineChoice, string>>; models: Partial<Record<EngineChoice, ModelSettings>> };
-let preferences: Preferences = { selectedEngine: "codex", commands: {}, models: {} };
+let preferences = defaultPreferences();
 let window: BrowserWindow | undefined;
 let worker: UtilityProcess | undefined;
 let activeId: string | undefined;
@@ -75,8 +76,8 @@ function engine(value: unknown): EngineChoice {
 }
 function text(value: unknown): string { if (typeof value !== "string") throw new Error("텍스트가 필요합니다."); return value; }
 function persist() {
-  const value = JSON.stringify(preferences);
-  saving = saving.catch(() => {}).then(async () => { await mkdir(path.dirname(settingsPath), { recursive: true }); await writeFile(settingsPath, value, "utf8"); });
+  const snapshot = structuredClone(preferences);
+  saving = saving.catch(() => {}).then(() => savePreferences(settingsPath, snapshot));
   return saving;
 }
 function handle(name: string, task: (value: any) => unknown) {
@@ -92,6 +93,10 @@ function registerIpc() {
     preferences.models[choice]=parseModelSettings(choice,value?.model,value?.effort);
     await persist();return preferences.models[choice];
   });
+  handle('select-rewrite-strength', value => {
+    if (activeId) throw new Error('변환 중입니다.');
+    return selectRewriteStrength(preferences,value,persist);
+  });
   handle("choose-cli", async value => {
     const choice = engine(value); if (activeId) throw new Error("변환 중입니다.");
     const selected = await dialog.showOpenDialog(window!, { title: `${choice} 실행 파일 선택`, properties: ["openFile"], filters: [{ name: "CLI 실행 파일", extensions: ["exe"] }] });
@@ -102,7 +107,9 @@ function registerIpc() {
   handle("transform", async value => {
     if (activeId) throw new Error("이미 변환 중입니다.");
     const choice=engine(value?.engine);
-    const input = { text: text(value?.text), engine: choice, commands: preferences.commands,
+    const rewriteOptions = parseRewriteOptions(value?.inputKind,value?.strength);
+    const input = { text: text(value?.text), engine: choice, commands: {...preferences.commands},
+      ...(rewriteOptions ? {inputKind:rewriteOptions.inputKind,strength:rewriteOptions.strength} : {}),
       settings:parseModelSettings(choice,value?.settings?.model,value?.settings?.effort) };
     if (!input.text.trim()) throw new Error("원문을 입력해 주세요.");
     const id = randomUUID(); activeId = id;
@@ -150,14 +157,7 @@ async function initialize() {
       if (path.dirname(target) === path.resolve(jobsRoot)) await rm(target, { recursive: true, force: true });
     }
   }
-  try {
-    const saved = JSON.parse(await readFile(settingsPath, "utf8"));
-    preferences.selectedEngine = parseEngineChoice(saved.selectedEngine) ?? "codex";
-    for (const kind of ['codex','claude'] as const) {
-      try { preferences.models[kind]=parseModelSettings(kind,saved.models?.[kind]?.model,saved.models?.[kind]?.effort); } catch {}
-    }
-    for (const choice of ["codex", "claude"] as const) if (typeof saved.commands?.[choice] === "string") preferences.commands[choice] = saved.commands[choice];
-  } catch { /* first run or invalid preferences */ }
+  preferences = await loadPreferences(settingsPath);
   protocol.handle("humanize", async incoming => {
     const url = new URL(incoming.url);
     if (url.hostname !== "app") return new Response("Forbidden", { status: 403 });

@@ -1,3 +1,4 @@
+import { REWRITE_OPTIONS, parseRewriteOptions } from '../src/engine/rewrite-policy.js';
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { loadConfig } from "../src/config.js";
 import { createProductionRuntime } from "../src/runtime/create-runtime.js";
@@ -56,10 +57,11 @@ async function runtime(commands: Record<string, string> = {}) {
     codexCommand: commands.codex || base.codexCommand, claudeCommand: commands.claude || base.claudeCommand
   }, new SpawnCommandRunner((pid, alive) => port.postMessage({ kind: "child", pid, alive })));
 }
-async function transform(id: string, input: { text: string; engine: string; commands: Record<string, string>; settings?:ModelSettings }, signal: AbortSignal) {
+async function transform(id: string, input: { text: string; engine: string; commands: Record<string, string>; inputKind?:unknown; strength?:unknown; settings?:ModelSettings }, signal: AbortSignal) {
   let workspace: JobWorkspace | undefined;
   const startedAt = Date.now();
   try {
+    const rewriteOptions = parseRewriteOptions(input.inputKind,input.strength);
     const engineChoice = parseEngineChoice(input.engine);
     if (!engineChoice || typeof input.text !== "string" || !input.text.trim()) throw new EngineError("EMPTY_INPUT", false, "Empty input");
     event(id, { type: "accepted", jobId: id, position: 0 });
@@ -69,7 +71,7 @@ async function transform(id: string, input: { text: string; engine: string; comm
     workspace = await JobWorkspace.create(jobs, id);
     await writeFile(workspace.path("01_input.txt"), input.text.replace(/\r\n?/g, "\n"), "utf8");
     const engine = engineChoice === "claude" ? services.claudeEngine! : services.engine;
-    const result = await engine.transform({ jobId: id, workspace, signal, settings:input.settings, onEvent: value => event(id, value) });
+    const result = await engine.transform({ jobId: id, workspace, signal, settings:input.settings, rewriteOptions, onEvent: value => event(id, value) });
     if (signal.aborted) throw new EngineError("CLIENT_ABORTED", true, "Cancelled");
     const text = await readFile(result.finalPath, "utf8");
     event(id, { type: "result-start" });
@@ -102,6 +104,7 @@ port.on("message", ({ data }) => {
     if (data.kind === "health") {
       const services = await runtime(data.commands);
       respond({ status: services.preflight.ready ? "ready" : "degraded", ...services.preflight,
+        rewriteOptions: REWRITE_OPTIONS,
         modelOptions: MODEL_OPTIONS, checkedAt:new Date().toISOString(),
         documentsAvailable: await services.documentEngine.health(),
         claudeAvailable: Boolean(services.claudeEngine), activeJobs: active ? 1 : 0, queuedJobs: 0 });

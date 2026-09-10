@@ -1,3 +1,4 @@
+import type { RewriteStrength } from './rewrite-policy.js';
 export type RouteHint = "light" | "standard" | "heavy";
 export type ProcessingMode = "single" | "chunked";
 export type GateCode =
@@ -13,6 +14,13 @@ export interface ChunkTiming {
 }
 
 export interface TransformDiagnostics {
+  requestedStrength?: RewriteStrength;
+  conservativeRetries?: number;
+  skippedSentences?: number;
+  fidelityGuardFailures?: number;
+  rolledBackChunks?: number;
+  protectedSentences?: number;
+  fullSourceRollbacks?: number;
   model: string;
   reasoningEffort: string;
   processingMode: ProcessingMode;

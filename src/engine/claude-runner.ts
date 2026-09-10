@@ -1,3 +1,4 @@
+import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -93,8 +94,10 @@ export class ClaudeRunner {
     outputPath: string,
     attempt: 1 | 2,
     signal: AbortSignal,
-    settings?: ModelSettings
+    settings?: ModelSettings,
+    rewriteOptions?: RewriteOptions
   ): Promise<CodexResult> {
+    const options = parseRewriteOptions(rewriteOptions?.inputKind, rewriteOptions?.strength);
     const sourcePath = path.resolve(inputPath);
     const selection = parseModelSettings('claude', settings?.model, settings?.effort);
     const resultPath = path.resolve(outputPath);
@@ -111,7 +114,7 @@ export class ClaudeRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options });
 
     await rm(resultPath, { force: true });
     const command = await this.options.permitPool.run(signal, () =>
@@ -152,7 +155,7 @@ export class ClaudeRunner {
     }
 
     const raw = extractResultText(command.stdout);
-    const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude');
+    const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude', options);
     await writeFile(resultPath, JSON.stringify(result), "utf8");
     return result;
   }
