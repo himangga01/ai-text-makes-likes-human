@@ -20,6 +20,7 @@ export interface TransformDiagnostics {
   fidelityGuardFailures?: number;
   rolledBackChunks?: number;
   protectedSentences?: number;
+  restoredProtectedSentences?: number;
   fullSourceRollbacks?: number;
   model: string;
   reasoningEffort: string;

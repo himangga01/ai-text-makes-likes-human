@@ -46,16 +46,45 @@ async function run(source: string, rewrite: (source:string,attempt:number)=>stri
   } finally {await workspace.cleanup();await removeTestRoot(outer);}
 }
 
-for(const kind of ['codex','claude'] as const)it(`${kind} carries strength into both native prompts and rolls back persistent relation swaps`,async()=>{
+for(const kind of ['codex','claude'] as const)it(`${kind} restores a changed protected fact without discarding eligible edits`,async()=>{
   const source='민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.\n';
-  const {output,result,calls}=await run(source,s=>s.replace('민수는 사과를 샀고 지수는 배를 샀다','지수는 사과를 샀고 민수는 배를 샀다'),kind);
+  const {output,result,calls}=await run(source,s=>s.replace('민수는 사과를 샀고 지수는 배를 샀다','지수는 사과를 샀고 민수는 배를 샀다').replace('오늘 장터는 조용하다','오늘 장터에는 고요함이 감돈다'),kind);
+  expect(output).toBe('민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터에는 고요함이 감돈다.\n');
+  expect(calls).toHaveLength(1);
+  expect(calls[0]!.stdin).toContain('많은 문장');
+  expect(result.diagnostics).toMatchObject({requestedStrength:'very-strong',conservativeRetries:0,fidelityGuardFailures:0,rolledBackChunks:0,restoredProtectedSentences:1});
+  expect(result.warnings).toContainEqual(expect.objectContaining({code:'DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED'}));
+},30000);
+
+it('keeps broad first-attempt edits after mechanically restoring one protected sentence',async()=>{
+  const source='이번 검토에서 중요한 것은 자료의 정확성이다. 담당자는 자료의 정리 작업을 수행한다.\n\n이 방안은 강한 경쟁력을 가지고 있다. 운영 과정에 있어서 검토 기록은 중요한 역할을 수행한다.\n\n회의에서는 초안과 관련된 내용을 논의했다. 작성자는 검토 의견을 반영하는 작업을 진행했다.\n\n자료의 구분이 이루어지고 기록의 정리가 진행된다. 문서의 핵심은 검토 결과를 명확하게 전달하는 것이다.\n';
+  const candidate='이번 검토에서는 자료의 정확성이 중요하다. 담당자는 자료를 정리한다.\n\n이 방안은 경쟁력이 강하다. 운영 과정에서 검토 기록의 역할은 중요하다.\n\n회의에서는 초안에 관한 내용을 논의했다. 작성자는 검토 의견을 반영했다.\n\n자료를 구분하고 기록을 정리한다. 검토 결과를 명확하게 전달하는 것이 문서의 핵심이다.\n';
+  const expected=candidate.replace('자료를 구분하고 기록을 정리한다.','자료의 구분이 이루어지고 기록의 정리가 진행된다.');
+  const {output,result,calls}=await run(source,()=>candidate);
+  expect(output).toBe(expected);
+  expect(calls).toHaveLength(1);
+  expect(result.diagnostics).toMatchObject({restoredProtectedSentences:1,conservativeRetries:0,fidelityGuardFailures:0});
+},30000);
+
+it.each(['normal','medium','strong'] as const)('keeps protected-sentence repair disabled at %s strength',async strength=>{
+  const source='민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.\n';
+  const {output,result,calls}=await run(source,s=>s.replace('민수는 사과를 샀고 지수는 배를 샀다','지수는 사과를 샀고 민수는 배를 샀다'),'codex',{inputKind:'direct-text',strength});
   expect(output).toBe(source);
   expect(calls).toHaveLength(2);
-  expect(calls[0]!.stdin).toContain('많은 문장');
-  expect(calls[1]!.stdin).toContain('요청 강도: very-strong');
-  expect(calls[1]!.stdin).toContain('보수적 재시도');
-  expect(result.diagnostics).toMatchObject({requestedStrength:'very-strong',conservativeRetries:1,fidelityGuardFailures:2,rolledBackChunks:1});
-  expect(result.warnings).toContainEqual(expect.objectContaining({code:'DIRECT_TEXT_FIDELITY_RESTRICTED'}));
+  expect(result.diagnostics).toMatchObject({restoredProtectedSentences:0,conservativeRetries:1,rolledBackChunks:1});
+},30000);
+
+it.each([
+  ['added sentence','민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.','지수는 사과를 샀고 민수는 배를 샀다. 새 문장을 더했다. 오늘 장터는 조용하다.'],
+  ['missing sentence','민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.','지수는 사과를 샀고 민수는 배를 샀다.'],
+  ['moved sentence with matching concepts','자료는 12건이고 기록은 8건이다. 자료와 기록을 정리한다.','자료와 기록을 정리한다. 기록은 8건이고 자료는 12건이다.'],
+  ['changed unprotected concept','민수는 사과를 샀고 지수는 배를 샀다. 자료의 정확성이 중요하다.','지수는 사과를 샀고 민수는 배를 샀다. 자료의 안전성이 중요하다.']
+])('does not guess protected alignment with %s',async(_label,sourceBody,candidateBody)=>{
+  const source=sourceBody+' 마지막 문장은 그대로다.\n';
+  const {output,result,calls}=await run(source,()=>candidateBody+' 마지막 문장은 그대로다.\n');
+  expect(output).toBe(source);
+  expect(calls).toHaveLength(2);
+  expect(result.diagnostics).toMatchObject({restoredProtectedSentences:0,conservativeRetries:1,rolledBackChunks:1});
 },30000);
 
 it.each([
@@ -114,10 +143,10 @@ it('retries a real skipped hedge restoration and rolls back a persistent second 
  expect(output).toBe(source);expect(calls).toHaveLength(2);
  expect(result.diagnostics).toMatchObject({skippedSentences:2,rolledBackChunks:1,conservativeRetries:1});
 },30000);
-it('accepts a safe conservative retry after a rejected factual relation edit',async()=>{
- const source='민수는 사과를 샀고 지수는 배를 샀다. 이 방안은 강한 경쟁력을 가지고 있다.\n';
- const {result,output,calls}=await run(source,(s,attempt)=>attempt===1?s.replace('민수는 사과를 샀고 지수는 배를 샀다','지수는 사과를 샀고 민수는 배를 샀다'):s.replace('가지고 있다','갖고 있다'));
- expect(output).toBe('민수는 사과를 샀고 지수는 배를 샀다. 이 방안은 강한 경쟁력을 갖고 있다.\n');
+it('accepts a safe conservative retry after a rejected unprotected concept edit',async()=>{
+ const source='자료의 정확성이 중요하다. 이 방안은 강한 경쟁력을 가지고 있다.\n';
+ const {result,output,calls}=await run(source,(s,attempt)=>attempt===1?s.replace('정확성','안전성'):s.replace('가지고 있다','갖고 있다'));
+ expect(output).toBe('자료의 정확성이 중요하다. 이 방안은 강한 경쟁력을 갖고 있다.\n');
  expect(calls).toHaveLength(2);expect(result.diagnostics).toMatchObject({fidelityGuardFailures:1,rolledBackChunks:0});
 },30000);
 

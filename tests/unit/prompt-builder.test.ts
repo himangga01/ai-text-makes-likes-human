@@ -34,6 +34,35 @@ describe("buildHumanizePrompt", () => {
     expect(prompt).toContain("확신 없는 수정은 하지 않는다");
   });
 
+  it("requires a full-text first response only for very-strong direct text", () => {
+    const veryStrong = buildHumanizePrompt({
+      source: "자료를 정리한다.",
+      quickRules: "RULE",
+      attempt: 1,
+      nonce: "full",
+      rewriteOptions: { inputKind: "direct-text", strength: "very-strong" }
+    });
+    const retry = buildHumanizePrompt({
+      source: "자료를 정리한다.",
+      quickRules: "RULE",
+      attempt: 2,
+      nonce: "retry-full",
+      rewriteOptions: { inputKind: "direct-text", strength: "very-strong" }
+    });
+    const strong = buildHumanizePrompt({
+      source: "자료를 정리한다.",
+      quickRules: "RULE",
+      attempt: 1,
+      nonce: "compact",
+      rewriteOptions: { inputKind: "direct-text", strength: "strong" }
+    });
+
+    expect(veryStrong).toContain("rewrittenText에 윤문한 전체 원문을 담고 edits는 빈 배열로 둔다");
+    expect(veryStrong).not.toContain("바뀐 부분만 edits");
+    expect(retry).toContain("바뀐 부분만 edits");
+    expect(strong).toContain("바뀐 부분만 edits");
+  });
+
   it("instructs article-style Markdown structure to remain intact", () => {
     const prompt = buildHumanizePrompt({
       source: "# 제목\n\n- 첫 번째 항목",

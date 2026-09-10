@@ -22,6 +22,15 @@ it('very strong prompt asks for broad sentence restructuring and overrides local
   expect(prompt).not.toContain('기계적 표현만 수술적으로');
   expect(prompt).toContain('문장 분할·병합');
 });
+it.each(['strong','very-strong'] as const)('%s first attempt keeps concepts natural and avoids newly injected clichés', strength => {
+  const prompt = buildHumanizePrompt({source:'원문이다.',quickRules:'규칙',attempt:1,nonce:'structure',rewriteOptions:{inputKind:'direct-text',strength}} as any);
+  expect(prompt).toContain('핵심 개념어를 문장 속 자연스러운 자리에 둔다');
+  expect(prompt).toContain('중요한 역할을 수행한다');
+  expect(prompt).toContain('Y에서 X의 역할은 중요하다');
+  expect(prompt).toContain('Y하는 것이 X의 핵심이다');
+  expect(prompt).toContain('X와 Y를 결과에 그대로 쓰지 않는다');
+  expect(prompt).toContain('원문에 없는 사실을 추가하지 않는다');
+});
 it('a retry retains requested strength but limits effective editing scope', () => {
   const prompt = buildHumanizePrompt({source:'원문이다.',quickRules:'규칙',attempt:2,nonce:'retry',rewriteOptions:{inputKind:'direct-text',strength:'very-strong'}} as any);
   expect(prompt).toContain('very-strong');

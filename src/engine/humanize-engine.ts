@@ -1,5 +1,5 @@
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
-import { checkDirectTextFidelity } from './direct-text-fidelity.js';
+import { checkDirectTextFidelity, restoreProtectedSentences } from './direct-text-fidelity.js';
 import { readFile, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import type { EventSink } from "../contracts.js";
@@ -104,6 +104,7 @@ export interface ChunkTaskResult {
   fidelityGuardFailures: number;
   rolledBackChunks: number;
   protectedSentences: number;
+  restoredProtectedSentences: number;
   gateCodes: GateCode[];
   timings: ChunkTiming;
 }
@@ -204,6 +205,7 @@ export class HumanizeEngine {
     let skippedSentences = 0;
     let fidelityGuardFailures = 0;
     let rolledBackChunks = 0;
+    let restoredProtectedSentences = 0;
     const direct = context.rewriteOptions?.inputKind === 'direct-text';
     const protectedSentences = direct ? checkDirectTextFidelity(sourceText, sourceText).protectedSentences : 0;
     let fidelityFailed = false;
@@ -222,6 +224,18 @@ export class HumanizeEngine {
     // commas the rewrite injected after connective endings are removed.
     const restore = async (): Promise<void> => {
       const startedAt = this.now();
+      if (direct && context.rewriteOptions?.strength === 'very-strong') {
+        const candidate = await readFile(rewrittenPath, 'utf8');
+        const protectedRestoration = restoreProtectedSentences(sourceText, candidate);
+        if (protectedRestoration.restoredProtectedSentences > 0) {
+          await writeFile(rewrittenPath, protectedRestoration.rewrittenText, 'utf8');
+          restoredProtectedSentences += protectedRestoration.restoredProtectedSentences;
+          this.recordChunkWarning(context, warnings, {
+            code: 'DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED',
+            message: `${chunk.index}번 구간에서 확실히 대응하는 보호 문장 ${protectedRestoration.restoredProtectedSentences}개를 원문으로 되돌렸습니다.`
+          });
+        }
+      }
       const report = await this.python.restore(
         chunkSourcePath,
         rewrittenPath,
@@ -339,7 +353,7 @@ export class HumanizeEngine {
       retries,
       restoredSentences,
       removedCommas,
-      skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences,
+      skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences, restoredProtectedSentences,
       gateCodes,
       timings: { codexMs, restoreMs, gateMs }
     };
@@ -480,6 +494,7 @@ export class HumanizeEngine {
         fidelityGuardFailures: chunkResults.reduce((sum, result) => sum + result.fidelityGuardFailures, 0) + fullFidelityFailures,
         rolledBackChunks: chunkResults.reduce((sum, result) => sum + result.rolledBackChunks, 0),
         protectedSentences: chunkResults.reduce((sum, result) => sum + result.protectedSentences, 0),
+        restoredProtectedSentences: chunkResults.reduce((sum, result) => sum + result.restoredProtectedSentences, 0),
         fullSourceRollbacks: fullFidelityFailures
       } : {}),
       model: request.settings?.model ?? this.model,

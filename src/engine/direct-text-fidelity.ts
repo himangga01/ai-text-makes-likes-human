@@ -13,6 +13,14 @@ const conceptSuffixes = new Set([
   '만은', '만을', '만이', '만의', '만으로', '만으로도', '만으로는',
   '로부터', '로부터는', '로부터도', '으로부터', '으로부터는', '으로부터도'
 ]);
+// Used only to prove that a changed protected sentence still occupies its
+// original slot before literal restoration. This does not widen the ordinary
+// concept fidelity gate below.
+const restorationConceptSuffixes = new Set([
+  ...conceptSuffixes,
+  '하다', '한다', '했다', '하고', '하며', '하여', '해',
+  '되다', '된다', '됐다', '되고', '되며', '되어', '돼'
+]);
 function isAdnominalVerb(token: string): boolean {
   return /(?:하는|되는|있는|없는|않는)$/u.test(token);
 }
@@ -49,6 +57,87 @@ export function sourceSentences(source: string): SourceSentence[] {
   return result;
 }
 export interface FidelityReport { violations: number; protectedSentences: number }
+function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, suffixes = conceptSuffixes): boolean {
+  const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
+  return original.concepts.every(term => tokens.some(token =>
+    token.startsWith(term) && suffixes.has(token.slice(term.length))
+  ));
+}
+
+function lineMarker(value: string): string | undefined {
+  return value.match(/^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?)/u)?.[0];
+}
+
+function lineSentenceCount(value: string): number {
+  return [...segmenter.segment(value)].filter(item => item.segment.trim()).length;
+}
+
+export interface ProtectedSentenceRestoration {
+  rewrittenText: string;
+  restoredProtectedSentences: number;
+}
+
+/** Restore only mechanically aligned protected sentences. Ambiguous candidates
+ * are returned untouched so the existing retry/rollback path remains active. */
+export function restoreProtectedSentences(source: string, candidate: string): ProtectedSentenceRestoration {
+  const sourceLines = source.split('\n'), candidateLines = candidate.split('\n');
+  if (sourceLines.length !== candidateLines.length) {
+    return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+  }
+  for (let index = 0; index < sourceLines.length; index++) {
+    const original = sourceLines[index]!, rewritten = candidateLines[index]!;
+    if (Boolean(original.trim()) !== Boolean(rewritten.trim()) ||
+        lineSentenceCount(original) !== lineSentenceCount(rewritten) ||
+        lineMarker(original) !== lineMarker(rewritten) ||
+        (/^\s*#{1,6}\s/u.test(original) && original !== rewritten)) {
+      return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+    }
+  }
+
+  const originals = sourceSentences(source), rewritten = sourceSentences(candidate);
+  if (originals.length !== rewritten.length) {
+    return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+  }
+  const changedProtected: Array<{ original: SourceSentence; rewritten: SourceSentence }> = [];
+  for (let index = 0; index < originals.length; index++) {
+    const original = originals[index]!, replacement = rewritten[index]!;
+    if (!original.protected) {
+      if (!preservesConcepts(original, replacement)) {
+        return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+      }
+      continue;
+    }
+    if (original.text === replacement.text) continue;
+    // A changed protected sentence needs at least one recognized lexical anchor;
+    // sentence counts alone are never treated as proof of correspondence.
+    if (!original.concepts.length || !preservesConcepts(original, replacement, restorationConceptSuffixes)) {
+      return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+    }
+    const couldBelongElsewhere = originals.some((other, otherIndex) =>
+      otherIndex !== index && (
+        other.text === replacement.text ||
+        (other.concepts.length > 0 && preservesConcepts(other, replacement, restorationConceptSuffixes))
+      )
+    );
+    if (couldBelongElsewhere) {
+      return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+    }
+    changedProtected.push({ original, rewritten: replacement });
+  }
+  if (!changedProtected.length) {
+    return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+  }
+
+  let repaired = candidate;
+  for (const pair of changedProtected.sort((left, right) => right.rewritten.start - left.rewritten.start)) {
+    repaired = repaired.slice(0, pair.rewritten.start) + pair.original.text + repaired.slice(pair.rewritten.end);
+  }
+  if (checkDirectTextFidelity(source, repaired).violations > 0) {
+    return { rewrittenText: candidate, restoredProtectedSentences: 0 };
+  }
+  return { rewrittenText: repaired, restoredProtectedSentences: changedProtected.length };
+}
+
 export function checkDirectTextFidelity(source: string, candidate: string): FidelityReport {
   const before = sourceSentences(source), after = sourceSentences(candidate);
   let violations = 0;
@@ -69,10 +158,7 @@ export function checkDirectTextFidelity(source: string, candidate: string): Fide
     const original = before[index]!, rewritten = after[index];
     if (!rewritten) continue;
     if (original.protected && original.text !== rewritten.text) violations++;
-    const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
-    if (original.concepts.some(term => !tokens.some(token =>
-      token.startsWith(term) && conceptSuffixes.has(token.slice(term.length))
-    ))) violations++;
+    if (!preservesConcepts(original, rewritten)) violations++;
   }
   return { violations, protectedSentences: before.filter(sentence => sentence.protected).length };
 }
