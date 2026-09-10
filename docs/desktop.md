@@ -34,7 +34,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\install-humanize-skill
 
 프로젝트 범위로 설치할 때는 `-Scope Project -ProjectRoot <프로젝트 경로>`를 추가합니다. Claude는 `.claude/skills/humanize-kr`, Codex는 `.agents/skills/humanize-kr` 아래에 설치됩니다. 같은 ZIP을 재실행하면 기존 설치를 유지합니다. 다른 버전이나 같은 이름의 스킬이 있으면 기본적으로 보존하며, `-Replace`를 지정하면 호스트 설정 폴더의 `skill-backups`에 복사한 후 갱신합니다.
 
-Claude에서 `/humanize-kr 이 문서를 다듬어 줘`, Codex에서 `$humanize-kr 이 문서를 다듬어 줘`로 요청합니다. 목록에 바로 나타나지 않으면 새 세션에서 확인하세요. 현재 세션이 윤문하고 포함된 Python Gateway가 검증하므로 Electron이나 포털을 띄우지 않습니다. 스킬 ZIP에는 Windows용 Python도 포함되어 있습니다.
+Claude에서 `/humanize-kr 이 문서를 다듬어 줘`, Codex에서 `$humanize-kr 이 문서를 다듬어 줘`로 요청합니다. 목록에 바로 나타나지 않으면 새 세션에서 확인하세요. 현재 세션이 윤문하고 포함된 Python Gateway가 검증하므로 Electron이나 포털을 띄우지 않습니다. 스킬 ZIP에는 Windows용 Python과 직접 입력 검증에 쓰는 Node 런타임이 포함되어 있습니다.
+
+대화로 제공한 글에는 `/humanize-kr 아래 글을 매우 강하게 다듬고 변경 비교 HTML도 만들어 줘`처럼 요청할 수 있습니다. Codex에서는 앞부분을 `$humanize-kr`로 바꿉니다. 강도를 지정하지 않으면 보통으로 처리하며, 비교 파일은 브라우저에서 열어 노란색 변경·빨간색 삭제와 최종 문구를 확인합니다. TXT·MD·DOCX·PPTX 파일 입력에는 이 두 옵션을 적용하지 않습니다. 현재 호스트가 직접 윤문하므로 다른 Claude/Codex CLI를 중첩 실행하지 않습니다.
 
 스킬의 임시 작업은 사용자 TEMP의 `humanize-kr-skills` 아래에 생성됩니다. 검증된 결과 파일을 먼저 제공한 후 해당 job을 cleanup합니다. 사용자 원본은 덮어쓰지 않습니다. 호스트의 대화 기록은 Claude/Codex 설정에 따릅니다.
 
@@ -74,6 +76,6 @@ node scripts/smoke-portable.mjs
 
 EXE, 스킬 ZIP, SHA-256 및 `build-info.json`은 `release/`에 생성됩니다. `build-info.json`은 앱·Electron·Python 버전, engine commit, EXE hash를 기록합니다. 빌드와 검증은 원격 업로드나 기존 운영 서버 재시작을 수행하지 않습니다.
 
-초기 타깃은 Windows x64입니다. 실제 검증한 OS와 CLI는 릴리스 검증 기록에 남깁니다. 기본 EXE와 별도로 `HumanizeKR-0.2.1-win-x64-self-signed.exe` 자체서명본도 제공합니다. 자체서명은 공개적으로 신뢰되는 인증서가 아니므로 Windows 경고가 남을 수 있습니다. 업데이트는 기존 앱을 닫고 새 EXE를 실행하는 방식입니다.
+초기 타깃은 Windows x64입니다. 실제 검증한 OS와 CLI는 릴리스 검증 기록에 남깁니다. 기본 EXE와 별도로 `HumanizeKR-0.4.0-win-x64-self-signed.exe` 자체서명본도 제공합니다. 자체서명은 공개적으로 신뢰되는 인증서가 아니므로 Windows 경고가 남을 수 있습니다. 업데이트는 기존 앱을 닫고 새 EXE를 실행하는 방식입니다.
 
 `update-humanize-engine`은 원본 저장소를 사용자 포크에 먼저 동기화·push한 뒤 서비스와 EXE·스킬을 갱신합니다. 포크가 오래됐다는 이유로 작업을 종료하지 않습니다. 현재 엔진 핀은 `9747f036cdc28a1a8aea4dc71fef1f7846eb96f7`이며 [0.2.1 갱신 기록](releases/0.2.1.md)에 검증 결과가 있습니다.
