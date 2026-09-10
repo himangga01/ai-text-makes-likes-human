@@ -3,7 +3,11 @@ import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { preparePython } from "./prepare-python.mjs";
+import { prepareNode } from "./prepare-node.mjs";
+import { buildSkillBridge } from "./build-skill-bridge.mjs";
 const python = await preparePython();
+const node = await prepareNode(python);
+const bridge = await buildSkillBridge();
 await mkdir("release", { recursive: true });
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
 const filter = source => !source.includes("__pycache__") && !source.endsWith(".pyc");
@@ -15,8 +19,10 @@ for (const host of ["claude", "codex"]) {
   await cp("skills/humanize-kr/references", path.join(destination, "references"), { recursive: true });
   if (host === "codex") await cp("skills/humanize-kr/agents", path.join(destination, "agents"), { recursive: true });
   await cp("engine_runtime", path.join(destination, "engine_runtime"), { recursive: true, filter });
+  await cp(bridge, path.join(destination, "engine_runtime/skill-bridge.cjs"));
   await cp("vendor/humanize-engine", path.join(destination, "vendor/humanize-engine"), { recursive: true, filter });
   await cp(python, path.join(destination, "python"), { recursive: true });
+  await cp(node, path.join(destination, "node"), { recursive: true });
   await writeFile(path.join(destination, "distribution.json"), JSON.stringify({ product: "HumanizeKR", version: pkg.version, host,
     engine: (await readFile("vendor/humanize-engine/ENGINE_VERSION", "utf8")).trim() }, null, 2));
   const output = path.resolve("release", `humanize-kr-${host}-${pkg.version}-win-x64.zip`);

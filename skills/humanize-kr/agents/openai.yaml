@@ -1,4 +1,4 @@
 interface:
   display_name: "한국어 문장 다듬기"
-  short_description: "원문 내용을 보존하고 Python 검증을 거쳐 한국어 문체를 자연스럽게 수정"
-  default_prompt: "$humanize-kr 이 한국어 문서를 자연스럽게 다듬고 검증된 결과 파일을 만들어 줘."
+  short_description: "한국어 윤문과 문서 서식 보존, 직접 입력의 강도 선택 및 HTML 변경 비교"
+  default_prompt: "$humanize-kr 이 한국어 원문을 강하게 다듬고 검증된 최종문과 HTML 변경 비교 파일을 만들어 줘."

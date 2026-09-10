@@ -30,6 +30,32 @@ for (const host of ["Claude", "Codex"]) {
   call("finalize", "--job", state.job, "--output", output);
   if ((await readFile(output, "utf8")) !== input) throw new Error("Packaged skill changed the source");
   call("cleanup", "--job", state.job);
+  const nodeLock = JSON.parse(await readFile(path.join(skill, 'node/runtime-lock.json'), 'utf8'));
+  if (nodeLock.version !== '24.19.0' || !(await readFile(path.join(skill, 'node/LICENSE'), 'utf8')).includes('Node.js')) throw new Error('Pinned licensed Node missing');
+  if ((await readdir(path.join(skill,'node'))).sort().join(',') !== 'LICENSE,node.exe,runtime-lock.json') throw new Error('Unexpected Node runtime contents');
+  const fixture = JSON.parse(await readFile('tests/fixtures/direct-live-quality.json','utf8'));
+  for (const strength of ['normal','medium','strong','very-strong']) {
+    const directSource = path.join(root, `direct-${strength}.txt`);
+    const expected = strength === 'very-strong' ? fixture.candidate : fixture.source;
+    await writeFile(directSource, fixture.source, 'utf8');
+    state = call('prepare','--input',directSource,'--input-kind','direct-text','--strength',strength);
+    let attempts = 0;
+    while (state.status === 'rewrite') {
+      if (++attempts > 2) throw new Error('Direct retry bound exceeded');
+      if (state.rewriteOptions.strength !== strength) throw new Error('Requested strength lost');
+      const instructions = await readFile(state.instructionsPath,'utf8');
+      const sentences = JSON.parse(await readFile(state.sentencesPath,'utf8'));
+      if (!instructions.includes(`요청 강도: ${strength}`) || !sentences.length) throw new Error('Host context missing');
+      if (strength === 'very-strong' && state.attempt === 2 && !instructions.includes('BEGIN_CANDIDATE_')) throw new Error('Conservative review context missing');
+      await writeFile(state.responsePath,JSON.stringify({rewrittenText:expected,edits:[],warnings:[]}));
+      state=call('accept','--job',state.job,'--chunk',String(state.chunk),'--attempt',String(state.attempt),'--source-hash',state.sourceHash,'--response',state.responsePath);
+    }
+    const finalPath=path.join(root,`direct-${strength}-final.md`), comparisonPath=path.join(root,`direct-${strength}.html`);
+    const done=call('finalize','--job',state.job,'--output',finalPath,'--comparison-output',comparisonPath);
+    if(done.comparisonPath!==comparisonPath || await readFile(finalPath,'utf8')!==expected) throw new Error('Packaged direct final result differs');
+    if(!(await readFile(comparisonPath,'utf8')).includes('최종문 복사')) throw new Error('Standalone comparison missing');
+    call('cleanup','--job',state.job);
+  }
   for (const format of ['docx','pptx']) {
     state=call('prepare','--input',path.resolve(`tests/fixtures/documents/mixed.${format}`));
     while(state.status==='rewrite') {
@@ -44,5 +70,5 @@ for (const host of ["Claude", "Codex"]) {
     call('cleanup','--job',state.job);
   }
   if ((await readdir(jobs)).length !== 0) throw new Error("Packaged skill leaked a job");
-  console.log(`${host}: installed twice, embedded Python TXT/DOCX/PPTX roundtrip, Unicode preservation and cleanup passed`);
+  console.log(`${host}: installed twice, embedded Python/Node, TXT/DOCX/PPTX and four direct strengths, P1 review, HTML export, Unicode preservation and cleanup passed (${root})`);
 }

@@ -15,6 +15,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from workflow import DEFAULT_VENDOR, restore, verify, validate_response
+from skill_bridge import invoke as bridge, options as rewrite_options
 
 DEFAULT_ROOT = Path(tempfile.gettempdir()) / "humanize-kr-skills"
 
@@ -62,7 +63,8 @@ def decode_input(data: bytes) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n")
 
 
-def prepare(input_path: Path, root: Path, vendor: Path) -> dict:
+def prepare(input_path: Path, root: Path, vendor: Path, input_kind=None, strength=None) -> dict:
+    options = rewrite_options(input_kind, strength)
     if input_path.suffix.lower() not in (".txt", ".md"):
         raise ValueError("Only TXT and MD are supported")
     text = decode_input(input_path.read_bytes())
@@ -90,6 +92,8 @@ def prepare(input_path: Path, root: Path, vendor: Path) -> dict:
                  "vendor": str(vendor), "engineVersion": (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip(),
                  "sourceHash": digest(source), "manifestHash": digest(job / "chunk_manifest.json"),
                  "current": 0, "attempt": 1, "warnings": [], "status": "active"}
+        if options:
+            state["rewriteOptions"] = options
         state["chunkHashes"] = {str(chunk["index"]): digest(job / f"source-{chunk['index']}.txt") for chunk in bodies(manifest)}
         write_json(job / "job.json", state)
         return next_chunk(job, state, manifest)
@@ -134,13 +138,26 @@ def bodies(manifest: dict) -> list:
 def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
     chunks = bodies(manifest)
     common = {"job": job.name, "sourceHash": state["sourceHash"], "warnings": state["warnings"], "totalChunks": len(chunks)}
+    if state.get("rewriteOptions"):
+        common["rewriteOptions"] = state["rewriteOptions"]
     if state["status"] == "done":
-        return {**common, "status": "done", "outputPath": state["outputPath"]}
+        return {**common, "status": "done", "outputPath": state["outputPath"],
+                **({"comparisonPath": state["comparisonPath"]} if state.get("comparisonPath") else {})}
     if state["status"] == "failed":
         return {**common, "status": "failed"}
     if state["current"] >= len(chunks):
         return {**common, "status": "ready-to-finalize"}
     chunk = chunks[state["current"]]
+    if state.get("rewriteOptions", {}).get("inputKind") == "direct-text":
+        context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"],
+                         source=(job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"),
+                         quickRules=(Path(state["vendor"]) / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
+                         candidateReview=state.get("candidateReview"))
+        instructions = job / f"instructions-{chunk['index']}-{state['attempt']}.md"
+        instructions.write_text(context["instructions"], encoding="utf-8")
+        sentences = job / f"sentences-{chunk['index']}.json"
+        write_json(sentences, context["sentences"])
+        common.update(instructionsPath=str(instructions), sentencesPath=str(sentences))
     return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
             "inputPath": str(job / f"source-{chunk['index']}.txt"),
             "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json"),
@@ -154,20 +171,50 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     chunk = chunks[state["current"]]
     if chunk["index"] != chunk_id or state["attempt"] != attempt or state["sourceHash"] != source_hash:
         raise ValueError("Response belongs to another chunk, attempt, or input")
-    response = validate_response(json.loads(response_path.read_text(encoding="utf-8-sig")))
     before = job / f"source-{chunk_id}.txt"
+    source = before.read_text(encoding="utf-8")
+    options = state.get("rewriteOptions", {})
+    direct = options.get("inputKind") == "direct-text"
+    raw = json.loads(response_path.read_text(encoding="utf-8-sig"))
+    response = bridge("parse", **options, source=source, response=raw) if direct else validate_response(raw)
     output = safe_leaf(job, chunk["rewritten_file"])
     output.write_text(response["rewrittenText"].replace("\r\n", "\n").replace("\r", "\n"), encoding="utf-8", newline="")
     vendor = Path(state["vendor"])
+    protected = {"restoredProtectedSentences": 0}
+    if direct:
+        protected = bridge("protect", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+        output.write_text(protected["rewrittenText"], encoding="utf-8", newline="")
     report = restore(before, output, vendor)
+    failed = False
+    if direct:
+        report["restoredProtectedSentences"] = protected["restoredProtectedSentences"]
+        check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+        failed = response.get("fidelityIssues", 0) > 0 or report["skippedSentences"] > 0 or check["violations"] > 0
+        if protected["restoredProtectedSentences"]:
+            state["warnings"].append(f"DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED: {chunk_id}번 구간 보호 문장 {protected['restoredProtectedSentences']}개를 원문으로 복원했습니다.")
+        if failed:
+            state["warnings"].append(f"DIRECT_TEXT_FIDELITY_RESTRICTED: {chunk_id}번 구간의 문장·사실·개념 보존 또는 복원을 확인하지 못했습니다.")
     if report["restoredSentences"]:
         state["warnings"].append(f"{chunk_id}번 구간의 {report['restoredSentences']}개 문장을 원문으로 복원했습니다.")
-    state["warnings"].extend(response["warnings"])
+    # Host warnings can contain raw source text. Direct jobs persist only a count.
+    if direct and response["warnings"]:
+        state["warnings"].append(f"HOST_REVIEW_WARNING: {len(response['warnings'])}개 보존 충돌 사유가 보고되었습니다.")
+    elif not direct:
+        state["warnings"].extend(response["warnings"])
     gate = verify(before, output, vendor, attempt)
     action = gate["policy"]
     if action == "error":
         raise ValueError("Validation could not run")
+    if failed:
+        action = "retry" if attempt == 1 else "rollback"
+    state.pop("candidateReview", None)
     if action == "retry":
+        if direct and not failed and attempt == 1:
+            review = bridge("review", **options, source=source, candidate=output.read_text(encoding="utf-8"),
+                            gate=gate, parserIssues=response.get("fidelityIssues", 0), skippedSentences=report["skippedSentences"])
+            if review.get("candidateReview"):
+                state["candidateReview"] = review["candidateReview"]
+                state["warnings"].append(f"DIRECT_TEXT_CANDIDATE_REVIEW_RETRY: {chunk_id}번 구간의 이전 후보를 원문과 보수적으로 대조합니다. 불확실한 수정은 되돌립니다.")
         state["attempt"] = 2
         state["warnings"].append(f"{chunk_id}번 구간을 보수적으로 다시 다듬어 주세요.")
     else:
@@ -182,15 +229,27 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     return {**next_chunk(job, state, manifest), "decision": action, "restoration": report}
 
 
-def finalize(job: Path, state: dict, manifest: dict, destination: Path) -> dict:
+def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparison: Path | None = None) -> dict:
     if state["status"] != "active" or state["current"] != len(bodies(manifest)):
         raise ValueError("All chunks must be accepted before finalizing")
     destination = destination.resolve()
     if destination == Path(state["inputPath"]) or destination.is_relative_to(job) or destination.exists():
         raise ValueError("Choose a new output file outside the job; original files are never overwritten")
+    direct = state.get("rewriteOptions", {}).get("inputKind") == "direct-text"
+    if comparison is not None:
+        comparison = comparison.resolve()
+        if not direct:
+            raise ValueError("Comparison export is available for direct text only")
+        if (comparison == destination or comparison == Path(state["inputPath"]) or comparison.is_relative_to(job)
+                or comparison.exists() or comparison.suffix.lower() != ".html"):
+            raise ValueError("Choose a new HTML comparison file outside the job")
     vendor = Path(state["vendor"])
     script(vendor, "reassemble_chunks.py", "--run-dir", job, "--output", "final.md", "--report", "assembly.json", "--strict")
     result = job / "final.md"
+    if direct and bridge("check", **state["rewriteOptions"],
+                         source=safe_leaf(job, manifest["source_file"]).read_text(encoding="utf-8"),
+                         candidate=result.read_text(encoding="utf-8"))["violations"]:
+        raise ValueError("Full source fidelity validation failed; no output was exported")
     gate = verify(safe_leaf(job, manifest["source_file"]), result, vendor, 2)
     if gate["gate"]["exit_code"] in (2, 3):
         state["status"] = "failed"
@@ -198,10 +257,28 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path) -> dict:
         raise ValueError("Full document validation failed; no output was exported")
     if gate["gate"]["exit_code"] == 1:
         state["warnings"].append("전체 문서를 최종 사용 전에 검토해 주세요.")
-    with destination.open("xb") as file:
-        file.write(result.read_bytes())
-    state.update(status="done", outputPath=str(destination))
-    write_json(job / "job.json", state)
+    html = None
+    if comparison is not None:
+        html = bridge("comparison", **state["rewriteOptions"],
+                      source=safe_leaf(job, manifest["source_file"]).read_text(encoding="utf-8"),
+                      candidate=result.read_text(encoding="utf-8"))["html"]
+    created = []
+    previous = dict(state)
+    try:
+        for path, content in [(destination, result.read_bytes()), *([(comparison, html.encode("utf-8"))] if html is not None else [])]:
+            with path.open("xb") as file:
+                created.append(path)
+                file.write(content)
+        state.update(status="done", outputPath=str(destination))
+        if comparison is not None:
+            state["comparisonPath"] = str(comparison)
+        write_json(job / "job.json", state)
+    except Exception:
+        for path in created:
+            path.unlink(missing_ok=True)
+        state.clear()
+        state.update(previous)
+        raise
     return next_chunk(job, state, manifest)
 
 
@@ -210,7 +287,10 @@ def main() -> int:
     parser.add_argument("--workspace-root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--vendor-root", type=Path, default=DEFAULT_VENDOR)
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("prepare").add_argument("--input", type=Path, required=True)
+    preparation = sub.add_parser("prepare")
+    preparation.add_argument("--input", type=Path, required=True)
+    preparation.add_argument("--input-kind")
+    preparation.add_argument("--strength")
     for name in ("next", "accept", "finalize", "cleanup"):
         command = sub.add_parser(name)
         command.add_argument("--job", required=True)
@@ -221,6 +301,7 @@ def main() -> int:
             command.add_argument("--response", type=Path, required=True)
         if name == "finalize":
             command.add_argument("--output", type=Path, required=True)
+            command.add_argument("--comparison-output", type=Path)
     args = parser.parse_args()
     root, vendor = args.workspace_root.resolve(), args.vendor_root.resolve()
     try:
@@ -230,11 +311,17 @@ def main() -> int:
             if state_file.is_file():
                 document = json.loads(state_file.read_text(encoding="utf-8")).get("kind") == "document"
         if document:
+            if args.command == "prepare":
+                if args.input_kind == "direct-text":
+                    raise ValueError("Office files cannot be direct text")
+                rewrite_options(args.input_kind, args.strength)
+            if args.command == "finalize" and args.comparison_output is not None:
+                raise ValueError("Comparison export is available for direct text only")
             from documents.workflow import dispatch
             print(json.dumps(dispatch(args, root, vendor), ensure_ascii=False))
             return 0
         if args.command == "prepare":
-            result = prepare(args.input, root, vendor)
+            result = prepare(args.input, root, vendor, args.input_kind, args.strength)
         else:
             with transaction(root, args.job, verify_content=args.command != "cleanup") as (job, state, manifest):
                 if args.command == "next":
@@ -242,7 +329,7 @@ def main() -> int:
                 elif args.command == "accept":
                     result = accept(job, state, manifest, args.chunk, args.attempt, args.source_hash, args.response)
                 elif args.command == "finalize":
-                    result = finalize(job, state, manifest, args.output)
+                    result = finalize(job, state, manifest, args.output, args.comparison_output)
                 else:
                     result = {"status": "cleaned", "job": job.name}
             if args.command == "cleanup":
