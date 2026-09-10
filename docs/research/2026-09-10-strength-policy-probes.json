@@ -1,0 +1,101 @@
+{
+  "method": "Human-authored candidate pairs, deterministic current-code checks only; no LLM calls; gate evaluated before restore to isolate mechanisms",
+  "rows": [
+    {
+      "id": "local",
+      "before": "이 방안은 강한 경쟁력을 가지고 있다.",
+      "proposedAfter": "이 방안은 강한 경쟁력을 갖고 있다.",
+      "changeRate": 0.0732,
+      "restoredCount": 0,
+      "skippedCount": 0,
+      "numberFailures": [],
+      "gateAttempt2": {
+        "gate": {
+          "exit_code": 0
+        },
+        "hardFailures": [],
+        "policy": "accept"
+      }
+    },
+    {
+      "id": "syntax",
+      "before": "이 방안은 강한 경쟁력을 가지고 있다.",
+      "proposedAfter": "이 방안은 경쟁력이 강하다.",
+      "changeRate": 0.3333,
+      "restoredCount": 0,
+      "skippedCount": 0,
+      "numberFailures": [],
+      "gateAttempt2": {
+        "gate": {
+          "exit_code": 1
+        },
+        "hardFailures": [],
+        "policy": "accept-with-warning"
+      }
+    },
+    {
+      "id": "hedge_loss",
+      "before": "이 정책이 결과를 왜곡할 수 있다는 지적도 나온다.",
+      "proposedAfter": "이 정책은 결과를 왜곡한다. 그런 지적도 나온다.",
+      "changeRate": 0.2364,
+      "restoredCount": 0,
+      "skippedCount": 1,
+      "numberFailures": [],
+      "gateAttempt2": {
+        "gate": {
+          "exit_code": 1
+        },
+        "hardFailures": [],
+        "policy": "accept-with-warning"
+      }
+    },
+    {
+      "id": "entity_swap",
+      "before": "민수는 사과를 샀고 지수는 배를 샀다.",
+      "proposedAfter": "지수는 사과를 샀고 민수는 배를 샀다.",
+      "changeRate": 0.0952,
+      "restoredCount": 0,
+      "skippedCount": 0,
+      "numberFailures": [],
+      "gateAttempt2": {
+        "gate": {
+          "exit_code": 0
+        },
+        "hardFailures": [],
+        "policy": "accept"
+      }
+    },
+    {
+      "id": "numbers_swap",
+      "before": "가팀은 12건을 처리했고 나팀은 20건을 처리했다.",
+      "proposedAfter": "가팀은 20건을 처리했고 나팀은 12건을 처리했다.",
+      "changeRate": 0.0714,
+      "restoredCount": 0,
+      "skippedCount": 0,
+      "numberFailures": [],
+      "gateAttempt2": {
+        "gate": {
+          "exit_code": 0
+        },
+        "hardFailures": [],
+        "policy": "accept"
+      }
+    },
+    {
+      "id": "natural",
+      "before": "회의가 끝나면 자료를 보내겠습니다.",
+      "proposedAfter": "회의가 끝나면 자료를 보내겠습니다.",
+      "changeRate": 0.0,
+      "restoredCount": 0,
+      "skippedCount": 0,
+      "numberFailures": [],
+      "gateAttempt2": {
+        "gate": {
+          "exit_code": 0
+        },
+        "hardFailures": [],
+        "policy": "accept"
+      }
+    }
+  ]
+}
