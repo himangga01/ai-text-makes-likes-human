@@ -8,12 +8,13 @@ import { createApp } from '../../src/app.js';
 import { TransformQueue } from '../../src/queue/transform-queue.js';
 import { listen, close } from '../helpers/http-app.js';
 import { makeTestRoot,removeTestRoot } from '../helpers/test-root.js';
+import { documentPythonCommand } from '../helpers/python-command.js';
 
 const cleanup:Array<()=>Promise<unknown>>=[];
 afterEach(async()=>{for(const fn of cleanup.splice(0).reverse())await fn();});
 async function setup(){
  const root=await makeTestRoot();cleanup.push(()=>removeTestRoot(root));
- const config={...loadConfig({},process.cwd()),runtimeRoot:root};
+ const config={...loadConfig({},process.cwd()),runtimeRoot:root,pythonCommand:documentPythonCommand!};
  const native=new SpawnCommandRunner();const calls:string[]=[];
  const runner={async run(request:CommandRequest){
    if(!request.args.includes('--output-last-message')&&!request.args.includes('--json-schema'))return native.run(request);
@@ -35,7 +36,9 @@ async function setup(){
  const server=await listen(app);cleanup.push(()=>close(server.server));
  return {...server,calls,store:app.locals.documentStore};
 }
-for(const format of ['docx','pptx'])for(const cli of ['codex','claude'])it(`imports, verifies and downloads ${format} with selected ${cli}`,async()=>{
+// Office extraction runs in Python with lxml; skip rather than fail on an interpreter without it.
+const officeIt=documentPythonCommand?it:it.skip;
+for(const format of ['docx','pptx'])for(const cli of ['codex','claude'])officeIt(`imports, verifies and downloads ${format} with selected ${cli}`,async()=>{
  const t=await setup();const original=await readFile(path.resolve(`tests/fixtures/documents/mixed.${format}`));
  const response=await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':encodeURIComponent(`보고서.${format}`)},body:original});
  expect(response.status).toBe(201);const doc=await response.json() as any;

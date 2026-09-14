@@ -4,9 +4,13 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { existsSync } from 'node:fs';
+import { buildSkillBridge } from '../../scripts/build-skill-bridge.mjs';
+const bridge = path.resolve('build-resources/skill-bridge/skill-bridge.cjs');
 let browser: Browser;
 let temporary: string;
 beforeAll(async () => {
+  if (!existsSync(bridge)) await buildSkillBridge();
   temporary = await mkdtemp(path.resolve('runtime/test-tmp/skill-comparison-'));
   browser = await chromium.launch({ headless: true });
 });
@@ -14,7 +18,7 @@ afterAll(async () => { await browser?.close(); if (temporary) await rm(temporary
 async function artifact(source: string, candidate: string) {
   const request = path.join(temporary, 'request.json'), result = path.join(temporary, 'result.json');
   await writeFile(request, JSON.stringify({operation:'comparison', source, candidate}));
-  execFileSync(process.execPath, ['build-resources/skill-bridge/skill-bridge.cjs',request,result]);
+  execFileSync(process.execPath, [bridge,request,result]);
   const data = JSON.parse(await readFile(result,'utf8'));
   const file = path.join(temporary,'compare.html'); await writeFile(file,data.html);
   const page = await browser.newPage();

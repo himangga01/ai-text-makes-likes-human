@@ -19,9 +19,9 @@
     "desktop:build": "node scripts/build-desktop.mjs",
     "desktop:portable": "node scripts/package-desktop.mjs",
     "skills:build": "node scripts/package-skills.mjs",
-    "test:skills": "python -m unittest discover -s tests/skills -p test_*.py",
+    "test:skills": "node scripts/python-tests.mjs tests/skills",
     "test:desktop": "playwright test --config playwright.desktop.config.ts",
-    "test:documents": "build-resources\\python\\python.exe -m unittest discover -s tests/documents -p test_*.py"
+    "test:documents": "node scripts/python-tests.mjs tests/documents"
   },
   "repository": {
     "type": "git",

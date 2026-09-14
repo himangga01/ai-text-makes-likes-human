@@ -39,11 +39,16 @@ export function loadConfig(
     maxActiveJobs: 1,
     chunkTimeoutMs: 10 * 60 * 1000,
     minFreeBytes: 1024 ** 3,
-    runtimeRoot: path.join(projectRoot, "runtime", "jobs"),
+    // HUMANIZE_RUNTIME_ROOT lets a test instance run beside the managed service,
+    // which owns the default runtime directory and its single-instance lock.
+    runtimeRoot: env.HUMANIZE_RUNTIME_ROOT
+      ? path.resolve(env.HUMANIZE_RUNTIME_ROOT, "jobs")
+      : path.join(projectRoot, "runtime", "jobs"),
     vendorRoot: path.join(projectRoot, "vendor", "humanize-engine"),
     codexCommand: env.CODEX_COMMAND ?? "codex",
     claudeCommand: env.CLAUDE_COMMAND ?? "claude",
-    pythonCommand: env.PYTHON_COMMAND ?? "python",
+    // macOS and Linux ship python3 without a python alias; Windows installs python.
+    pythonCommand: env.PYTHON_COMMAND ?? (process.platform === "win32" ? "python" : "python3"),
     autoRoute: env.HUMANIZE_AUTO_ROUTE !== "0",
     chunkConcurrency: concurrency
   });

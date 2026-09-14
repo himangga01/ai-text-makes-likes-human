@@ -15,6 +15,35 @@
 - 게이트 직전 후처리: `restore_modality.py`와 `strip_injected_commas.py`를 청크마다 실행. `--all` 격상은 진단 단계가 없으므로 사용하지 않음
 - 줄바꿈: 수신 단계에서 CR·CRLF를 LF로 통일
 
+## macOS 서버 운영
+
+Windows 포털은 `start-portal.cmd`로 실행하지만, macOS 서버는 supervisor가 관리합니다.
+
+```sh
+node dist/ops/hermes-service.js status
+node dist/ops/hermes-service.js restart
+node dist/ops/hermes-service.js stop
+node dist/ops/hermes-service.js start
+node dist/ops/hermes-service.js logs 100
+```
+
+supervisor는 `PYTHON_COMMAND`로 서버용 Python을 전달합니다. 개발 명령과 테스트는 `PYTHON_COMMAND`가 없으면 PATH에서 Python 3.11 이상을 찾습니다. macOS 기본 `python3`는 3.9라 사용할 수 없고, Office 문서 기능은 `lxml`이 설치된 Python이 필요합니다.
+
+```sh
+export PYTHON_COMMAND=$HOME/.hermes/hermes-agent/venv/bin/python
+npm run typecheck
+npm test
+npm run test:documents
+npm run test:skills
+E2E_PORT=7893 npm run test:e2e
+```
+
+`test:skills`는 직접 입력 경로에 Node 브리지가 필요하며, 없으면 자동으로 빌드합니다. 수동 빌드는 `node scripts/build-skill-bridge.mjs`입니다.
+
+운영 중인 서비스는 기본 포트 7882와 `runtime/` 잠금을 점유합니다. 서비스를 멈추지 않고 e2e를 실행하려면 `E2E_PORT`를 지정하세요. 별도 포트로 실행하면 테스트 서버가 `runtime/test-tmp/e2e`를 사용해 운영 job 폴더와 잠금을 건드리지 않습니다. 다른 런타임 경로가 필요하면 `HUMANIZE_RUNTIME_ROOT`로 지정합니다.
+
+Windows 전용 검사는 macOS에서 자동으로 건너뜁니다. 방화벽·엔진 동기화 PowerShell 스크립트 검사, 데스크톱 앱 Playwright 검사, Windows 기준으로 캡처한 시각 스냅샷이 여기에 해당합니다. 릴리스 전 전체 검증은 Windows에서 수행하세요.
+
 ## 시작 전 점검
 
 ```powershell

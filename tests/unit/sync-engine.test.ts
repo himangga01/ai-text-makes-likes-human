@@ -27,7 +27,7 @@ async function fixture(dirty: boolean) {
   return { root, source, target, scriptPath };
 }
 
-describe("engine sync input validation", () => {
+describe.skipIf(process.platform !== "win32")("engine sync input validation", () => {
   it.each([false, true])("preserves vendor when source is invalid (dirty=%s)", async dirty => {
     const test = await fixture(dirty);
     try {

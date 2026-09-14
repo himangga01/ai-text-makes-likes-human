@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const parent = path.resolve("runtime/test-tmp");
 let fixture: string;
+test.skip(process.platform !== "win32", "The Windows fake-CLI fixture and portable EXE are Windows-only");
 test.beforeAll(async () => {
   await mkdir(parent, { recursive: true }); fixture = await mkdtemp(path.join(parent, "desktop-cli-"));
   execFileSync("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.resolve("scripts/build-test-cli.ps1"), "-OutputDirectory", fixture], { windowsHide: true });

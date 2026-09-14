@@ -27,7 +27,7 @@ function powershell(script: string): string {
   );
 }
 
-describe("Windows operator scripts", () => {
+describe.skipIf(process.platform !== "win32")("Windows operator scripts", () => {
   it("checks every host dependency and Codex login without installing", () => {
     const output = cmd("setup-portal.cmd --check");
     expect(output).toContain("CHECK_OK");

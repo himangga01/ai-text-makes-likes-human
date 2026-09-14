@@ -23,7 +23,9 @@ export class DocumentEngine {
   private pool = new CodexSemaphore(1);
   constructor(private config: AppConfig, private runner: CommandRunner) { this.root = path.join(config.runtimeRoot, 'documents'); }
   async python(): Promise<string> {
-    const candidates = [path.join(this.config.projectRoot,'python','python.exe'),path.join(this.config.projectRoot,'build-resources','python','python.exe')];
+    // Bundled Windows runtime first; other platforms fall back to the configured interpreter.
+    const executable = process.platform === 'win32' ? 'python.exe' : path.join('bin','python3');
+    const candidates = [path.join(this.config.projectRoot,'python',executable),path.join(this.config.projectRoot,'build-resources','python',executable)];
     for (const file of candidates) { try { await access(file); return file; } catch {} }
     return this.config.pythonCommand;
   }
@@ -34,7 +36,7 @@ export class DocumentEngine {
   async call(args: string[], signal?: AbortSignal): Promise<DocumentState> {
     const result=await this.runner.run({command:await this.python(), args:[path.join(this.config.projectRoot,'engine_runtime','skill_gateway.py'),
       '--workspace-root',this.root,'--vendor-root',this.config.vendorRoot,...args], cwd:this.config.projectRoot,
-      timeoutMs:120000,signal,env:{...process.env,PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1'}});
+      timeoutMs:120000,signal,env:{...process.env,PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath}});
     if (result.termination==='aborted') throw new EngineError('CLIENT_ABORTED',true,'Cancelled');
     if (result.exitCode!==0) {
       let message='문서를 처리하지 못했습니다. 파일 형식과 보호 설정을 확인해 주세요.';

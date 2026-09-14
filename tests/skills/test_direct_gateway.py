@@ -1,10 +1,25 @@
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import unittest
 import test_gateway
 
+BRIDGE = test_gateway.ROOT / "build-resources/skill-bridge/skill-bridge.cjs"
+
 
 class DirectGatewayTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Direct text needs the Node bridge artifact; build it once so the suite runs on any OS with Node.
+        if BRIDGE.is_file():
+            return
+        node = os.environ.get("NODE_COMMAND") or shutil.which("node")
+        if not node:
+            raise unittest.SkipTest("Node is required to build the skill bridge (node scripts/build-skill-bridge.mjs)")
+        subprocess.run([node, str(test_gateway.ROOT / "scripts/build-skill-bridge.mjs")], check=True, cwd=test_gateway.ROOT)
+
     setUp = test_gateway.GatewayTest.setUp
     tearDown = test_gateway.GatewayTest.tearDown
     call = test_gateway.GatewayTest.call

@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { PythonEngine } from "../../src/engine/python-engine.js";
 import { SpawnCommandRunner } from "../../src/process/command-runner.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
+import { pythonCommand } from "../helpers/python-command.js";
 
 const engine = new PythonEngine({
-  pythonCommand: "python",
+  pythonCommand,
   vendorRoot: path.resolve("vendor/humanize-engine"),
   runner: new SpawnCommandRunner()
 });

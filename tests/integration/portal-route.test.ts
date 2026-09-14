@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { SpawnCommandRunner } from "../../src/process/command-runner.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
+import { pythonCommand } from "../helpers/python-command.js";
 
 const runner = new SpawnCommandRunner();
 const script = path.resolve(
@@ -11,7 +12,7 @@ const script = path.resolve(
 
 async function runPortalRoute(runDir: string) {
   return runner.run({
-    command: "python",
+    command: pythonCommand,
     args: [
       script,
       "--chunk",
@@ -38,7 +39,7 @@ describe("portal route manifest", () => {
       await writeFile(path.join(runDir, "01_input.txt"), shortMarkdown, "utf8");
 
       const result = await runner.run({
-        command: "python",
+        command: pythonCommand,
         args: [
           script,
           "--chunk",

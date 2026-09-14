@@ -555,7 +555,8 @@ test("progress and status stay monotonic across all transform phases", async ({ 
 
 test("copy works on an HTTP LAN page without the Clipboard API", async ({ page }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
-    origin: "http://127.0.0.1:7882"
+    // The portal port is configurable, so grant on the origin this run actually uses.
+    origin: new URL(test.info().project.use.baseURL!).origin
   });
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "clipboard", {
@@ -599,7 +600,8 @@ test("copy works on an HTTP LAN page without the Clipboard API", async ({ page }
 
 test("copying a partial comparison projects the selection to final text", async ({ page }) => {
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
-    origin: "http://127.0.0.1:7882"
+    // The portal port is configurable, so grant on the origin this run actually uses.
+    origin: new URL(test.info().project.use.baseURL!).origin
   });
   await page.route("**/api/transform*", route => route.fulfill({
     status: 200,
@@ -623,7 +625,8 @@ test("copying a partial comparison projects the selection to final text", async 
     selection?.removeAllRanges();
     selection?.addRange(range);
   });
-  await page.keyboard.press("Control+C");
+  // macOS copies with Meta; ControlOrMeta picks the right modifier per platform.
+  await page.keyboard.press("ControlOrMeta+C");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("앞 새 표현 뒤");
 });
 

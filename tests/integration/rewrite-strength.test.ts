@@ -13,6 +13,7 @@ import { ClaudeRunner } from '../../src/engine/claude-runner.js';
 import { JobWorkspace } from '../../src/engine/workspace.js';
 import { SpawnCommandRunner, type CommandRequest } from '../../src/process/command-runner.js';
 import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
+import { pythonCommand } from '../helpers/python-command.js';
 
 async function run(source: string, rewrite: (source:string,attempt:number)=>string | {rewrittenText:string;edits:{before:string;after:string}[];warnings:string[]}, kind:'codex'|'claude'='codex', options:any={inputKind:'direct-text',strength:'very-strong'}, viaWeb=false, beforeAssembly?: (workspace:JobWorkspace)=>void, signal = new AbortController().signal, eventHook?: (event:any)=>void) {
   const outer=await makeTestRoot();const workspace=await JobWorkspace.create(outer,'strength');const calls:CommandRequest[]=[];
@@ -28,7 +29,7 @@ async function run(source: string, rewrite: (source:string,attempt:number)=>stri
     }};
     const settings={schemaPath:path.resolve('src/engine/output-schema.json'),quickRulesPath:path.resolve('vendor/humanize-engine/skills/humanize-korean/references/quick-rules.md'),timeoutMs:1000,runner,permitPool:{maxObserved:1,run:async<T>(_signal:AbortSignal,task:()=>Promise<T>)=>task()}};
     const codex=kind==='codex'?new CodexRunner({...settings,codexCommand:'codex'}):new ClaudeRunner({...settings,claudeCommand:'claude'});
-    const engine=new HumanizeEngine({python:new PythonEngine({pythonCommand:path.resolve('build-resources/python/python.exe'),vendorRoot:path.resolve('vendor/humanize-engine'),runner:new SpawnCommandRunner()}),codex,chunkConcurrency:1});
+    const engine=new HumanizeEngine({python:new PythonEngine({pythonCommand,vendorRoot:path.resolve('vendor/humanize-engine'),runner:new SpawnCommandRunner()}),codex,chunkConcurrency:1});
     let result;
     if (viaWeb) {
       const service={async transform(request:any){result=await engine.transform(request);return result;}};

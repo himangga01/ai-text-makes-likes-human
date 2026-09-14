@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { resolvePythonCommand } from './python-command.mjs';
 const root=process.cwd();
 const label=process.argv[2] ?? 'candidate';
 const base=path.resolve(process.env.BENCH_DIST ?? 'dist');
@@ -27,7 +28,7 @@ const runner={async run(request){const started=performance.now();const result=aw
   if(request.stdin)calls.push({elapsedMs:performance.now()-started,promptChars:Array.from(request.stdin).length,stdoutChars:result.stdout.length,exitCode:result.exitCode});return result;}};
 const options={schemaPath:path.resolve(process.env.BENCH_SCHEMA ?? 'src/engine/output-schema.json'),quickRulesPath:path.join(config.vendorRoot,'skills/humanize-korean/references/quick-rules.md'),timeoutMs:600000,runner,permitPool:new CodexSemaphore(1)};
 const model=provider==='codex'?new CodexRunner({...options,codexCommand:resolveCli(provider)}):new ClaudeRunner({...options,claudeCommand:resolveCli(provider)});
-const python=new PythonEngine({pythonCommand:path.resolve('build-resources/python/python.exe'),vendorRoot:config.vendorRoot,runner});
+const python=new PythonEngine({pythonCommand:resolvePythonCommand(),vendorRoot:config.vendorRoot,runner});
 const engine=new HumanizeEngine({python,codex:model,chunkConcurrency:1});
 const paragraphs=[
   '이번 작업에서는 자료를 정리하고 검토 의견을 모았습니다. 담당자는 초안을 읽고 근거가 부족한 부분을 표시했습니다. 이러한 과정을 통해 검토의 효율성을 제고할 수 있습니다.',

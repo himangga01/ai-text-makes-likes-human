@@ -13,6 +13,7 @@ import { PythonEngine } from "../../src/engine/python-engine.js";
 import { JobWorkspace } from "../../src/engine/workspace.js";
 import { SpawnCommandRunner } from "../../src/process/command-runner.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
+import { pythonCommand } from "../helpers/python-command.js";
 
 class IdentityCodex implements CodexAdapter {
   async transform(inputPath: string) {
@@ -34,7 +35,7 @@ describe("HumanizeEngine integration", () => {
       const engine = new HumanizeEngine({
         ...options,
         python: new PythonEngine({
-          pythonCommand: "python",
+          pythonCommand,
           vendorRoot: path.resolve("vendor/humanize-engine"),
           runner: new SpawnCommandRunner()
         }),
@@ -81,7 +82,7 @@ describe("HumanizeEngine integration", () => {
       );
       const engine = new HumanizeEngine({
         python: new PythonEngine({
-          pythonCommand: "python",
+          pythonCommand,
           vendorRoot: path.resolve("vendor/humanize-engine"),
           runner: new SpawnCommandRunner()
         }),
@@ -116,7 +117,7 @@ describe("HumanizeEngine integration", () => {
       await writeFile(workspace.path("01_input.txt"), source, "utf8");
       const engine = new HumanizeEngine({
         python: new PythonEngine({
-          pythonCommand: "python",
+          pythonCommand,
           vendorRoot: path.resolve("vendor/humanize-engine"),
           runner: new SpawnCommandRunner()
         }),
