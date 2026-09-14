@@ -55,6 +55,31 @@ function parseNdjson(text: string): Array<Record<string, unknown>> {
 }
 
 describe("POST /api/transform", () => {
+  it("logs the internal engine failure reason without exposing it to the client", async () => {
+    const logs: unknown[] = [];
+    const test = await createTestApp(
+      { async transform() { throw new EngineError("ENGINE_OUTPUT_INVALID", false, "Claude text edits are invalid or ambiguous"); } },
+      { info: value => logs.push(value), error: value => logs.push(value) }
+    );
+    try {
+      const response = await fetch(`${test.baseUrl}/api/transform`, {
+        method: "POST",
+        headers: { "content-type": "text/plain; charset=utf-8" },
+        body: "원문입니다."
+      });
+      const body = await response.text();
+      expect(body).toContain("ENGINE_OUTPUT_INVALID");
+      expect(body).not.toContain("ambiguous");
+      expect(logs).toEqual([expect.objectContaining({
+        event: "transform_failed",
+        code: "ENGINE_OUTPUT_INVALID",
+        reason: "Claude text edits are invalid or ambiguous"
+      })]);
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
   it.each(['strength=strong','inputKind=text-file&strength=strong','inputKind=direct-text&strength=maximum','inputKind=direct-text&strength=normal&strength=strong'])('rejects invalid rewrite options before queue reservation: %s',async query=>{
     const test=await createTestApp({transform:async()=>{throw new Error('must not run');}});
     try {

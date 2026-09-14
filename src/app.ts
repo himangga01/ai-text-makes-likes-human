@@ -288,6 +288,8 @@ export function createApp(dependencies: AppDependencies): Express {
         jobId,
         engine: engineChoice,
         code: event.type === "error" ? event.code : "INTERNAL_ERROR",
+        // Engine messages are fixed diagnostics without user text; they separate CLI failures from invalid edits.
+        ...(error instanceof EngineError ? { reason: error.message } : {}),
         elapsedMs: Date.now() - startedAt
       });
     } finally {
