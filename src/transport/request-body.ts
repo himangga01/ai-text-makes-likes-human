@@ -1,6 +1,7 @@
 import { open, statfs, unlink } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
+import { addAbortSignal } from "node:stream";
 import { EngineError } from "../engine/errors.js";
 
 const DEFAULT_CHECK_INTERVAL = 16 * 1024 * 1024;
@@ -78,6 +79,7 @@ export async function streamRequestBody(
   const checkEveryBytes = options.checkEveryBytes ?? DEFAULT_CHECK_INTERVAL;
   const directory = path.dirname(destination);
   let handle: Awaited<ReturnType<typeof open>> | undefined;
+  let created = false;
 
   try {
     if (options.signal.aborted) throw aborted();
@@ -90,6 +92,9 @@ export async function streamRequestBody(
     }
 
     handle = await open(destination, "wx", 0o600);
+    created = true;
+    if (options.signal.aborted) throw aborted();
+    addAbortSignal(options.signal, readable);
     const decoder = new TextDecoder("utf-8", { fatal: true });
     let bytes = 0;
     let chars = 0;
@@ -147,7 +152,8 @@ export async function streamRequestBody(
     return { bytes, chars };
   } catch (error) {
     await handle?.close();
-    await removePartial(destination);
+    if (created) await removePartial(destination);
+    if (options.signal.aborted) throw aborted();
     if (error instanceof EngineError) throw error;
     throw new EngineError(
       "INTERNAL_ERROR",

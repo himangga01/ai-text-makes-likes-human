@@ -12,9 +12,12 @@ export class ArtifactStore {
   readonly records = new Map<string,DocumentRecord>();
   private timer: ReturnType<typeof setInterval>;
   private ready: Promise<void>;
+  private closed=false;
+  private imports=new Set<Promise<unknown>>();
+  private removing=new Map<string,Promise<void>>();
   constructor(readonly root: string, readonly engine: DocumentEngine) {
     this.ready=this.initialize();
-    this.timer=setInterval(()=>{void this.sweep();},60000); this.timer.unref();
+    this.timer=setInterval(()=>{void this.sweep().catch(()=>{});},60000); this.timer.unref();
   }
   private async initialize() {
     await mkdir(this.root,{recursive:true});
@@ -34,7 +37,9 @@ export class ArtifactStore {
   }
   async create(name: string) {
     await this.ready;
+    if(this.closed)throw new Error('Document store is closed');
     await this.sweep();
+    if(this.closed)throw new Error('Document store is closed');
     if(this.records.size>=3) throw new Error('보관 중인 문서가 3개입니다. 이전 문서를 닫은 뒤 다시 시도해 주세요.');
     const ext=path.extname(name).toLowerCase();
     if(!['.docx','.pptx'].includes(ext)) throw new Error('DOCX 또는 PPTX 파일을 선택해 주세요.');
@@ -50,32 +55,61 @@ export class ArtifactStore {
     if(!r || !/^[a-f0-9]{64}$/.test(token) || !timingSafeEqual(Buffer.from(token),Buffer.from(r.token)) || (!r.busy&&r.expires<Date.now())) throw new Error('문서가 만료되었거나 접근 권한이 없습니다. 다시 선택해 주세요.');
     r.expires=Date.now()+30*60000; return r;
   }
-  async inspect(record:DocumentRecord, name:string) {
-    record.state=await this.engine.prepare(record.input,record.controller.signal);
-    record.state.name=path.basename(name,path.extname(name)).replace(/[<>:"/\\|?*]/g,'-')+'-humanized.'+record.state.format;
-    record.name=record.state.name;
-    record.busy=false;
-    return this.public(record);
+  inspect(record:DocumentRecord, name:string) {
+    const task=this.inspectDocument(record,name);this.imports.add(task);
+    return task.finally(()=>this.imports.delete(task));
+  }
+  private async inspectDocument(record:DocumentRecord, name:string) {
+    try {
+      if(this.closed)throw new Error('Document store is closed');
+      record.state=await this.engine.prepare(record.input,record.controller.signal);
+      if(this.closed||record.controller.signal.aborted)throw new Error('Document import was cancelled');
+      record.state.name=path.basename(name,path.extname(name)).replace(/[<>:"/\\|?*]/g,'-')+'-humanized.'+record.state.format;
+      record.name=record.state.name;
+      record.busy=false;
+      return this.public(record);
+    } catch(error) {record.busy=false;await this.remove(record);throw error;}
   }
   public(record:DocumentRecord) {
     const s=record.state!;
     return {id:record.id,token:record.token,name:record.name??s.name,format:s.format,preview:s.preview,sourceChars:s.sourceChars,
       editableBlocks:s.editableBlocks,preservedBlocks:s.preservedBlocks,slides:s.slides,warnings:s.warnings};
   }
-  async importFile(file:string) {
+  importFile(file:string) {
+    const task=this.importDocument(file);this.imports.add(task);
+    return task.finally(()=>this.imports.delete(task));
+  }
+  private async importDocument(file:string) {
     if((await stat(file)).size>50*1024**2) throw new Error('파일은 50 MiB 이하만 지원합니다.');
     const record=await this.create(path.basename(file)); record.original=path.resolve(file);
     try {await copyFile(file,record.input,constants.COPYFILE_EXCL); return await this.inspect(record,path.basename(file));}
     catch(e) {record.busy=false;await this.remove(record);throw e;}
   }
   async remove(record:DocumentRecord) {
+    if(this.records.get(record.id)!==record)return;
     record.controller.abort();
+    record.expires=0;
     if(record.busy||record.readers) {record.expires=0;return;}
-    this.records.delete(record.id);
-    if(record.state) await this.engine.cleanup(record.state.job).catch(()=>{});
-    if(path.dirname(path.resolve(record.dir))===path.resolve(this.root) && path.basename(record.dir)==='doc-'+record.id)
-      await rm(record.dir,{recursive:true,force:true});
+    const existing=this.removing.get(record.id);if(existing)return existing;
+    const task=(async()=>{
+      if(record.state)await this.engine.cleanup(record.state.job);
+      if(path.dirname(path.resolve(record.dir))!==path.resolve(this.root)||path.basename(record.dir)!=='doc-'+record.id)throw new Error('Invalid artifact cleanup path');
+      await rm(record.dir,{recursive:true,force:true});this.records.delete(record.id);
+    })();
+    this.removing.set(record.id,task);
+    try {await task;} finally {this.removing.delete(record.id);}
+  }
+  readResult(id:string,token:string) {
+    const record=this.get(id,token);
+    if(!record.output||record.busy)throw new Error('No document output');
+    record.readers++;let released=false;
+    return {record,release:async()=>{if(released)return;released=true;record.readers--;await this.sweep();}};
   }
   async sweep() {for(const r of this.records.values()) if(!r.busy&&!r.readers&&r.expires<Date.now()) await this.remove(r);}
-  async close() {clearInterval(this.timer);for(const r of this.records.values()) await this.remove(r);}
+  async close() {
+    this.closed=true;clearInterval(this.timer);await this.ready;
+    for(const r of this.records.values())r.controller.abort();
+    await Promise.allSettled([...this.imports]);
+    for(const r of this.records.values())await this.remove(r);
+  }
 }

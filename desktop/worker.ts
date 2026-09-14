@@ -17,9 +17,11 @@ const jobs = process.env.HUMANIZE_JOBS_ROOT!;
 let active: { id: string; controller: AbortController; settled: Promise<void> } | undefined;
 let stopping = false;
 let documentStore: ArtifactStore|undefined;
+let documentStorePromise: Promise<ArtifactStore>|undefined;
+const documentReadLeases=new Map<string,()=>Promise<void>>();
 async function documents() {
-  documentStore ??= new ArtifactStore(path.join(jobs,'document-artifacts'),(await runtime()).documentEngine);
-  return documentStore;
+  documentStorePromise ??= runtime().then(services=>documentStore=new ArtifactStore(path.join(jobs,'document-artifacts'),services.documentEngine));
+  return documentStorePromise;
 }
 async function transformDocument(id:string,input:any,signal:AbortSignal) {
   const store=await documents();const record=store.get(input.id,input.token);
@@ -92,15 +94,20 @@ port.on("message", ({ data }) => {
   const fail = () => port.postMessage({ kind: "response", id: data.id, error: "엔진 작업을 처리하지 못했습니다." });
   (async () => {
     if (data.kind === "shutdown") {
-      stopping = true; active?.controller.abort(); await active?.settled; await documentStore?.close(); respond(true); return;
+      stopping = true; active?.controller.abort(); await active?.settled;
+      await documentStorePromise?.catch(()=>undefined);
+      await Promise.allSettled([...documentReadLeases.values()].map(release=>release()));documentReadLeases.clear();
+      await documentStore?.close(); respond(true); return;
     }
     if (stopping) throw new Error("Stopping");
     if(data.kind==='document-import') {if(active)throw new Error('Busy');respond(await (await documents()).importFile(data.file));return;}
     if(data.kind==='document-close') {const store=await documents();await store.remove(store.get(data.documentId,data.token));respond(true);return;}
     if(data.kind==='document-result') {
-      const store=await documents();const r=store.get(data.documentId,data.token);
-      if(!r.output||r.busy)throw new Error('No output');respond({name:r.name,format:r.state!.format,output:r.output,original:r.original});return;
+      const store=await documents();const lease=store.readResult(data.documentId,data.token);const r=lease.record;
+      documentReadLeases.set(data.id,lease.release);
+      respond({name:r.name,format:r.state!.format,output:r.output,original:r.original,leaseId:data.id});return;
     }
+    if(data.kind==='document-release') {const release=documentReadLeases.get(data.leaseId);documentReadLeases.delete(data.leaseId);await release?.();respond(true);return;}
     if (data.kind === "health") {
       const services = await runtime(data.commands);
       respond({ status: services.preflight.ready ? "ready" : "degraded", ...services.preflight,
@@ -111,10 +118,16 @@ port.on("message", ({ data }) => {
       return;
     }
     if (!['transform','document-transform'].includes(data.kind) || active) throw new Error("Already running");
-    await mkdir(path.resolve(jobs), { recursive: true });
     const controller = new AbortController();
-    const settled = data.kind==='document-transform'?transformDocument(data.id,data.input,controller.signal):transform(data.id, data.input, controller.signal);
-    active = { id: data.id, controller, settled };
-    try { await settled; respond(true); } finally { active = undefined; }
+    let finish!:()=>void;
+    const settled=new Promise<void>(resolve=>finish=resolve);
+    const job={id:data.id,controller,settled};active=job;
+    try {
+      await mkdir(path.resolve(jobs), { recursive: true });
+      controller.signal.throwIfAborted();
+      if(stopping)throw new Error('Stopping');
+      await (data.kind==='document-transform'?transformDocument(data.id,data.input,controller.signal):transform(data.id,data.input,controller.signal));
+      respond(true);
+    } finally {if(active===job)active=undefined;finish();}
   })().catch(fail);
 });

@@ -1,5 +1,6 @@
 import { closeSync, rmSync } from "node:fs";
-import { mkdir, open, readFile, rm, type FileHandle } from "node:fs/promises";
+import { randomUUID } from 'node:crypto';
+import { link, mkdir, open, readFile, rm, rmdir, type FileHandle } from "node:fs/promises";
 import path from "node:path";
 
 function processIsAlive(pid: number): boolean {
@@ -39,6 +40,7 @@ class FileServerLock implements ServerLock {
   }
 
   releaseSync(): void {
+    if (this.released) return;
     if (!this.released) {
       this.released = true;
       try {
@@ -57,27 +59,35 @@ export async function acquireServerLock(runtimeRoot: string): Promise<ServerLock
   await mkdir(resolvedRoot, { recursive: true });
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    const temporary=path.join(resolvedRoot,`.server-lock-${randomUUID()}.tmp`);
+    const handle=await open(temporary,'wx',0o600);
     try {
-      const handle = await open(lockPath, "wx", 0o600);
+      // Publish a complete PID atomically; another startup never observes a
+      // partially-written owner. The temporary file is on the same filesystem.
       await handle.writeFile(`${process.pid}\n`, "utf8");
+      await link(temporary,lockPath);
       return new FileServerLock(handle, lockPath);
     } catch (error) {
+      await handle.close();
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
-
-      let owner = 0;
+      // Serialize stale-owner inspection + deletion. Never delete an unknown
+      // recovery marker: an interrupted recovery fails closed for inspection.
+      const recovery=path.join(resolvedRoot,'server.lock.reclaim');
+      try {await mkdir(recovery);} catch(recoveryError) {
+        if((recoveryError as NodeJS.ErrnoException).code==='EEXIST')throw new Error('Portal lock recovery is already in progress; inspect server.lock.reclaim after all portal processes stop');
+        throw recoveryError;
+      }
       try {
-        owner = Number.parseInt(await readFile(lockPath, "utf8"), 10);
-      } catch (readError) {
-        if ((readError as NodeJS.ErrnoException).code !== "ENOENT") {
+        let owner:number;
+        try {owner=Number((await readFile(lockPath,'utf8')).trim());}
+        catch(readError) {
+          if((readError as NodeJS.ErrnoException).code==='ENOENT')continue;
           throw readError;
         }
-        continue;
-      }
-      if (processIsAlive(owner)) {
-        throw new Error("Portal server is already running");
-      }
-      await rm(lockPath, { force: true });
-    }
+        if(!Number.isInteger(owner)||owner<=0||processIsAlive(owner))throw new Error('Portal server is already running or lock ownership is unknown');
+        await rm(lockPath,{force:true});
+      } finally {await rmdir(recovery);}
+    } finally {await rm(temporary,{force:true});}
   }
 
   throw new Error("Unable to acquire portal server lock");

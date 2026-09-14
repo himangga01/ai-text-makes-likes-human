@@ -4,7 +4,7 @@ import { statfs } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { Transform } from 'node:stream';
-import { ArtifactStore } from './artifact-store.js';
+import { ArtifactStore, type DocumentRecord } from './artifact-store.js';
 import type { AppDependencies } from '../app.js';
 import { NdjsonWriter } from '../transport/ndjson.js';
 import { parseModelSettings } from '../engine/model-policy.js';
@@ -14,28 +14,30 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
   if(!engine) return;
   const store=new ArtifactStore(path.join(deps.config.runtimeRoot,'document-artifacts'),engine);
   app.locals.documentStore=store;
-  app.use('/api/documents',(request,response,next)=>{
-    const origin=request.headers.origin;
-    if(origin && origin!==`${request.protocol}://${request.headers.host}`) {response.status(403).json({message:'허용되지 않은 Origin입니다.'});return;}
-    next();
-  });
   const token=(request:any)=>String(request.headers.authorization??'').replace(/^Bearer /,'');
   app.post('/api/documents',async(request,response)=>{
-    let record;
+    let record:DocumentRecord|undefined;let completed=false;let disconnected=false;
+    const onDisconnect=()=>{if(!completed){disconnected=true;record?.controller.abort();}};
+    request.once('aborted',onDisconnect);response.once('close',onDisconnect);
     try {
       const name=decodeURIComponent(String(request.headers['x-file-name']??''));
       record=await store.create(name);
+      if(disconnected)record.controller.abort();
       const space=await statfs(record.dir);
       if(space.bavail*space.bsize<deps.config.minFreeBytes) throw new Error('문서를 처리할 디스크 공간이 부족합니다.');
       let received=0;
       const limiter=new Transform({transform(chunk,_enc,done){received+=chunk.length;done(received>50*1024**2?new Error('파일은 50 MiB 이하만 지원합니다.'):null,chunk);}});
       await pipeline(request,limiter,createWriteStream(record.input,{flags:'wx'}),{signal:record.controller.signal});
       const info=await store.inspect(record,name);
+      if(record.controller.signal.aborted||response.destroyed)throw new Error('문서 읽기가 취소되었습니다.');
+      completed=true;
       response.status(201).json(info);
-    } catch(e) {if(record){record.busy=false;await store.remove(record);}if(!response.headersSent)response.status(400).json({message:e instanceof Error?e.message:'문서를 읽지 못했습니다.'});}
+    } catch(e) {if(record){record.busy=false;await store.remove(record);}if(!response.headersSent&&!response.destroyed)response.status(400).json({message:e instanceof Error?e.message:'문서를 읽지 못했습니다.'});}
+    finally {request.removeListener('aborted',onDisconnect);response.removeListener('close',onDisconnect);}
   });
   app.post('/api/documents/:id/transform',async(request,response)=>{
     let record; let reservation; let writer:NdjsonWriter|undefined; let finished=false; let owns=false;
+    let removeAbortListener:(()=>void)|undefined;
     try {
       record=store.get(String(request.params.id),token(request));
       if(record.busy||record.output||!record.state) throw new Error('진행 중이거나 완료한 문서입니다. 새로 선택해 주세요.');
@@ -48,6 +50,11 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       record.busy=true;
       owns=true;
       const r=record;
+      const reserved=reservation;
+      const onAbort=()=>reserved.release();
+      r.controller.signal.addEventListener('abort',onAbort,{once:true});
+      removeAbortListener=()=>r.controller.signal.removeEventListener('abort',onAbort);
+      if(r.controller.signal.aborted)onAbort();
       response.setHeader('Content-Type','application/x-ndjson; charset=utf-8');response.setHeader('Cache-Control','no-store');
       response.flushHeaders();writer=new NdjsonWriter(response);
       response.once('close',()=>{if(!finished)r.controller.abort();});
@@ -66,6 +73,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       if(writer) writer.write({type:'error',code:'VALIDATION_FAILED',message,retryable:true});
       else response.status(400).json({message});
     } finally {
+      removeAbortListener?.();
       reservation?.release();
       if(record&&owns){record.busy=false;if(!finished)await store.remove(record);}
       writer?.end();

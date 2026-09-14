@@ -1,6 +1,15 @@
 import { expect, it } from 'vitest';
 import { checkDirectTextFidelity, restoreProtectedSentences, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
 import { parseTextResult } from '../../src/engine/text-edits.js';
+it.each([
+  ['공사 진행은 금지된다.', '공사 진행은 허용된다.'],
+  ['공사 진행은 불가하다.', '공사 진행은 가능하다.'],
+  ['문서를 공개한다.', '문서를 공개하지 않는다.'],
+  ['자료를 검토한다.', '자료를 검토해야 한다.'],
+  ['자료를 전달한다.', '자료를 전달할 수 있다.'],
+])('rejects newly introduced protected meaning in %s', (source, candidate) => {
+  expect(checkDirectTextFidelity(source, candidate).violations).toBeGreaterThan(0);
+});
 it('preserves concept identity instead of accepting a concept as a substring of a different word',()=>{
   expect(checkDirectTextFidelity('자료의 안전성이 중요하다.','자료의 불안전성이 중요하다.').violations).toBeGreaterThan(0);
 });

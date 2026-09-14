@@ -131,6 +131,18 @@ afterEach(async () => {
 });
 
 describe("HermesServiceSupervisor", () => {
+  it('does not remove a replacement lock using an old health inspection', async () => {
+    const runtimeRoot=await makeRuntimeRoot();const platform=new FakeServicePlatform(runtimeRoot);
+    await writeFile(path.join(runtimeRoot,'server.lock'),'99999999\n');
+    let first=true;const health=platform.getHealth.bind(platform);let lockAtSpawn='';
+    platform.getHealth=async()=>{
+      if(first){first=false;platform.running=true;platform.responding=true;await writeFile(path.join(runtimeRoot,'server.lock'),`${platform.pid}\n`);return null;}
+      return health();
+    };
+    platform.spawnService=async()=>{lockAtSpawn=await readFile(path.join(runtimeRoot,'server.lock'),'utf8').catch(()=>'<missing>');};
+    const supervisor=new HermesServiceSupervisor({runtimeRoot,startupTimeoutMs:0},platform);
+    await supervisor.start();expect(lockAtSpawn.trim()).toBe(String(platform.pid));expect(platform.stops).toBe(0);
+  });
   it("adopts an already-running portal without spawning a duplicate", async () => {
     const runtimeRoot = await makeRuntimeRoot();
     const platform = new FakeServicePlatform(runtimeRoot);

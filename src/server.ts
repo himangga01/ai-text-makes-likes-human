@@ -33,10 +33,11 @@ async function main(): Promise<void> {
   process.once("exit", () => serverLock.releaseSync());
   let runtime: Awaited<ReturnType<typeof createProductionRuntime>>;
   let server: Server;
+  let app: ReturnType<typeof createApp>;
   try {
     await clearStaleJobs(config.runtimeRoot);
     runtime = await createProductionRuntime(config, new SpawnCommandRunner());
-    const app = createApp({ config, ...runtime });
+    app = createApp({ config, ...runtime });
     server = app.listen(config.port, config.host);
     await new Promise<void>((resolve, reject) => {
       server.once("listening", resolve);
@@ -59,7 +60,9 @@ async function main(): Promise<void> {
     forceExit.unref();
     try {
       const closing = closeServer(server);
+      const closingDocuments = app.locals.documentStore?.close();
       await runtime.queue.shutdown();
+      await closingDocuments;
       await closing;
       await clearStaleJobs(config.runtimeRoot);
       await serverLock.release();

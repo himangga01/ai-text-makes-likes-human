@@ -124,10 +124,12 @@ function registerIpc() {
   handle('close-document',value=>request('document-close',{documentId:text(value?.id),token:text(value?.token)}));
   handle('save-document',async value=>{
     const info=await request('document-result',{documentId:text(value?.id),token:text(value?.token)});
-    const selected=await dialog.showSaveDialog(window!,{defaultPath:info.name,filters:[{name:'Office 문서',extensions:[info.format]}]});
-    if(selected.canceled||!selected.filePath)return false;
-    if(path.resolve(selected.filePath)===info.original||path.extname(selected.filePath).toLowerCase()!=='.'+info.format)throw new Error('원본과 다른 새 파일 이름을 지정해 주세요.');
-    await copyFile(info.output,selected.filePath,constants.COPYFILE_EXCL);return true;
+    try {
+      const selected=await dialog.showSaveDialog(window!,{defaultPath:info.name,filters:[{name:'Office 문서',extensions:[info.format]}]});
+      if(selected.canceled||!selected.filePath)return false;
+      if(path.resolve(selected.filePath)===info.original||path.extname(selected.filePath).toLowerCase()!=='.'+info.format)throw new Error('원본과 다른 새 파일 이름을 지정해 주세요.');
+      await copyFile(info.output,selected.filePath,constants.COPYFILE_EXCL);return true;
+    } finally {await request('document-release',{leaseId:info.leaseId}).catch(()=>{});}
   });
   handle("cancel", () => { if (activeId) worker?.postMessage({ kind: "cancel", id: activeId }); });
   handle("open-text", async () => {

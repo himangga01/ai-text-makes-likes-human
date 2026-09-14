@@ -21,6 +21,9 @@ export interface DocumentState {
 export class DocumentEngine {
   readonly root: string;
   private pool = new CodexSemaphore(1);
+  private ownedJobs = new Set<string>();
+  private closingJobs = new Set<string>();
+  private pending = new Map<string,Set<Promise<DocumentState>>>();
   constructor(private config: AppConfig, private runner: CommandRunner) { this.root = path.join(config.runtimeRoot, 'documents'); }
   async python(): Promise<string> {
     // Bundled Windows runtime first; other platforms fall back to the configured interpreter.
@@ -33,7 +36,16 @@ export class DocumentEngine {
     try { const r = await this.runner.run({command:await this.python(), args:['-c','from lxml import etree'],cwd:this.config.projectRoot,timeoutMs:10000}); return r.exitCode===0; }
     catch { return false; }
   }
-  async call(args: string[], signal?: AbortSignal): Promise<DocumentState> {
+  call(args: string[], signal?: AbortSignal): Promise<DocumentState> {
+    const at=args.findIndex(arg=>arg==='--job'||arg==='--job-id');
+    const job=at>=0?args[at+1]:undefined;
+    if(job&&this.closingJobs.has(job))return Promise.reject(new Error('Document job is closing'));
+    const task=this.runPython(args,signal);
+    if(!job)return task;
+    const pending=this.pending.get(job)??new Set<Promise<DocumentState>>();this.pending.set(job,pending);pending.add(task);
+    return task.finally(()=>{pending.delete(task);if(!pending.size)this.pending.delete(job);});
+  }
+  private async runPython(args: string[], signal?: AbortSignal): Promise<DocumentState> {
     const result=await this.runner.run({command:await this.python(), args:[path.join(this.config.projectRoot,'engine_runtime','skill_gateway.py'),
       '--workspace-root',this.root,'--vendor-root',this.config.vendorRoot,...args], cwd:this.config.projectRoot,
       timeoutMs:120000,signal,env:{...process.env,PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath}});
@@ -45,8 +57,26 @@ export class DocumentEngine {
     }
     return JSON.parse(result.stdout) as DocumentState;
   }
-  async prepare(file: string, signal?: AbortSignal) { await mkdir(this.root,{recursive:true}); return this.call(['prepare','--input',file],signal); }
-  async cleanup(job: string) { if (/^job-[a-f0-9]{32}$/.test(job)) await this.call(['cleanup','--job',job]); }
+  async prepare(file: string, signal?: AbortSignal) {
+    await mkdir(this.root,{recursive:true});
+    const job='job-'+randomUUID().replaceAll('-','');this.ownedJobs.add(job);
+    try {return await this.call(['prepare','--input',file,'--job-id',job],signal);}
+    catch(error){await this.cleanup(job);throw error;}
+  }
+  async cleanup(job: string) {
+    if (!/^job-[a-f0-9]{32}$/.test(job)) throw new Error('Invalid document job');
+    if(!this.ownedJobs.has(job)){await this.call(['cleanup','--job',job]);return;}
+    this.closingJobs.add(job);
+    try {
+      // Forced process termination leaves Python's marker file behind. For a
+      // job this service created, wait for all child calls before deleting its
+      // private workspace; never bypass a lock belonging to an unknown job.
+      await Promise.allSettled([...(this.pending.get(job)??[])]);
+      const directory=path.resolve(this.root,job);
+      if(path.dirname(directory)!==path.resolve(this.root))throw new Error('Invalid cleanup path');
+      await rm(directory,{recursive:true,force:true});this.ownedJobs.delete(job);
+    } finally {this.closingJobs.delete(job);}
+  }
   async transform(state: DocumentState, engine: 'claude'|'codex', outputDir: string, signal: AbortSignal, onEvent: EventSink, settings?: ModelSettings) {
     const selection = parseModelSettings(engine, settings?.model, settings?.effort);
     const options={schemaPath:path.join(this.config.projectRoot,'engine_runtime','documents','response-schema.json'),

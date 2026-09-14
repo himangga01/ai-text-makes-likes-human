@@ -11,7 +11,7 @@ echo CHECK:Node.js
 where python >nul 2>nul || goto :missing_python
 echo CHECK:Python
 where codex >nul 2>nul || goto :missing_codex
-codex login status >nul 2>nul || goto :login_failed
+call codex login status >nul 2>nul || goto :login_failed
 echo CHECK:Codex login
 
 if "%CHECK_ONLY%"=="1" (

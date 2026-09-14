@@ -11,6 +11,13 @@ import sys
 
 DEFAULT_VENDOR = Path(__file__).resolve().parent.parent / "vendor/humanize-engine"
 
+try:
+    from .quantities import signed_quantities
+except ImportError:  # Executed as a standalone gateway script.
+    # Windows embedded Python's ._pth isolation omits the script directory.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from quantities import signed_quantities
+
 
 def modules(vendor: Path):
     scripts = vendor.resolve() / "scripts"
@@ -175,6 +182,12 @@ def verify(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR, attempt: in
     hard = checks.check_numbers(source, output) + checks.check_quotes(source, output)
     hard += checks.check_headings(source, output) + checks.check_footnotes(source, output)
     codes = sorted({failure.code for failure in hard})
+    if signed_quantities(source) != signed_quantities(output):
+        codes.append("quantity_changed")
+    if any(q not in output and checks._is_protected_quote(source, q)
+           for q in checks.extract_quotes(source, min_len=1)):
+        if "quote_altered" not in codes:
+            codes.append("quote_altered")
     if checks.dropped_numbers(source, output):
         codes.append("number_dropped")
     stdout, stderr = io.StringIO(), io.StringIO()

@@ -2,13 +2,19 @@ from __future__ import annotations
 import re
 import json
 from .package import W, A, P, R, E, XMLSPACE, Package, DocumentError, local, ns, digest
+try:
+    from ..quantities import signed_quantities
+except ImportError:  # Gateway imports documents as a top-level package.
+    from quantities import signed_quantities
 
 PROTECTED = {'hyperlink', 'fldSimple', 'fldChar', 'instrText', 'fld', 'bookmarkStart', 'bookmarkEnd',
              'commentRangeStart', 'commentRangeEnd', 'ins', 'del', 'moveFrom', 'moveTo', 'sdt',
-             'footnoteReference', 'endnoteReference', 'AlternateContent', 'oMath', 'oMathPara'}
+             'footnoteReference', 'endnoteReference', 'AlternateContent', 'oMath', 'oMathPara',
+             'noBreakHyphen', 'softHyphen', 'sym', 'ptab'}
 QUOTE = re.compile(r'"[^"\n]*"|“[^”\n]*”|‘[^’\n]*’|\x27[^\x27\n]*\x27|「[^」]*」|『[^』]*』')
 RISK = re.compile(r'\d|https?://|\b[A-Z][A-Za-z0-9_-]*\b|[가-힣]+(?:님|씨)(?=\s|[.,]|$)')
 MODAL = re.compile(r'않|없|못|아니|금지|불가|해야|필요|수\s*있|판단|추정|보인다|가능|듯')
+SHORT_NEGATION = re.compile(r'(?<!\S)안(?=\s+[가-힣]+(?:다|요)(?=$|[\s.!?,]))')
 
 def _nearest(node, names):
     return next((a for a in node.iterancestors() if local(a) in names), None)
@@ -180,6 +186,10 @@ def apply_edits(block, edits):
         raise DocumentError('문장 변경률이 50% 이상입니다.')
     if MODAL.findall(source)!=MODAL.findall(result):
         raise DocumentError('부정·당위·추측 표현 변화가 감지되었습니다.')
+    if SHORT_NEGATION.findall(source)!=SHORT_NEGATION.findall(result):
+        raise DocumentError('짧은 부정 표현 변화가 감지되었습니다.')
+    if signed_quantities(source)!=signed_quantities(result):
+        raise DocumentError('숫자·부호·단위가 추가되거나 변경되었습니다.')
     return result
 
 def export(pkg, manifest, accepted, output):

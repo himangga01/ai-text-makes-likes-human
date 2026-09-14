@@ -1,11 +1,29 @@
-import { readFile } from "node:fs/promises";
-import { Readable } from "node:stream";
+import { readFile, writeFile } from "node:fs/promises";
+import { Readable, PassThrough } from "node:stream";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { streamRequestBody } from "../../src/transport/request-body.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
 
 describe("streamRequestBody", () => {
+  it('never removes a destination it did not create', async () => {
+    const root=await makeTestRoot(), destination=path.join(root,'existing.txt');
+    try {
+      await writeFile(destination,'original');
+      await expect(streamRequestBody(Readable.from(['new']),destination,{minFreeBytes:1,signal:new AbortController().signal,getFreeBytes:async()=>1000})).rejects.toThrow();
+      expect(await readFile(destination,'utf8')).toBe('original');
+    } finally {await removeTestRoot(root);}
+  });
+
+  it('interrupts an idle upload when its signal is aborted', async () => {
+    const root=await makeTestRoot(), body=new PassThrough(), controller=new AbortController();
+    const task=streamRequestBody(body,path.join(root,'partial.txt'),{minFreeBytes:1,signal:controller.signal,getFreeBytes:async()=>1000});
+    const result=task.then(()=> 'resolved', (e)=>e.publicCode);
+    try {
+      await new Promise(resolve=>setTimeout(resolve,25));controller.abort();
+      expect(await Promise.race([result,new Promise(resolve=>setTimeout(()=>resolve('pending'),200))])).toBe('CLIENT_ABORTED');
+    } finally {body.destroy();await result;await removeTestRoot(root);}
+  });
   it("preserves Korean UTF-8 split across byte chunks", async () => {
     const root = await makeTestRoot();
     const destination = path.join(root, "input.txt");

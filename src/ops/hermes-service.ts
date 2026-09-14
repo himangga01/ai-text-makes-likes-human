@@ -145,7 +145,6 @@ export class HermesServiceSupervisor {
       if (current.running && current.pid !== null && current.identity !== null) {
         await this.platform.stopProcess(current.pid, current.identity);
       }
-      await this.reclaimStaleServerLock(await this.inspect());
       return this.spawnAndClassify(state, "restart");
     });
   }
@@ -202,7 +201,6 @@ export class HermesServiceSupervisor {
       if (current.running && current.pid !== null && current.identity !== null) {
         await this.platform.stopProcess(current.pid, current.identity);
       }
-      await this.reclaimStaleServerLock(await this.inspect());
 
       try {
         await this.platform.spawnService();
@@ -243,7 +241,8 @@ export class HermesServiceSupervisor {
       return this.result("started-unhealthy", state, current.pid);
     }
 
-    await this.reclaimStaleServerLock(current);
+    // The server entry point owns atomic acquisition and stale-lock recovery.
+    // An earlier process/health snapshot cannot authorize deleting that lock.
     return this.spawnAndClassify(state, "start");
   }
 
@@ -256,7 +255,6 @@ export class HermesServiceSupervisor {
       if (current.foreignHealth) {
         return this.result("failed-stop", state, current.pid);
       }
-      await this.reclaimStaleServerLock(current);
       return this.result(alreadyStoppedOutcome, state, current.pid);
     }
 
@@ -334,18 +332,6 @@ export class HermesServiceSupervisor {
       await this.platform.sleep(this.pollIntervalMs);
     } while (Date.now() < deadline);
     return this.inspect();
-  }
-
-  private async reclaimStaleServerLock(
-    inspection: ServiceInspection
-  ): Promise<void> {
-    if (
-      inspection.pid !== null &&
-      inspection.identity === null &&
-      !inspection.foreignHealth
-    ) {
-      await rm(this.serverLockPath, { force: true });
-    }
   }
 
   private async readPid(): Promise<number | null> {

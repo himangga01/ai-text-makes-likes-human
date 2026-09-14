@@ -1,6 +1,8 @@
 from __future__ import annotations
 import json
 import os
+import re
+import shutil
 from pathlib import Path
 import uuid
 from .package import Package, DocumentError, digest
@@ -11,7 +13,9 @@ def save(file, value):
     temp.write_text(json.dumps(value,ensure_ascii=False,separators=(',', ':')),encoding='utf-8')
     temp.replace(file)
 
-def prepare(input_path, root, vendor):
+def prepare(input_path, root, vendor, job_id=None):
+    if job_id is not None and (not isinstance(job_id, str) or not re.fullmatch(r'job-[a-f0-9]{32}', job_id)):
+        raise DocumentError('작업 ID가 잘못되었습니다.')
     suffix=input_path.suffix.lower()[1:]
     if suffix not in ('docx','pptx'):
         raise DocumentError('DOCX/PPTX 문서만 지원합니다.')
@@ -19,16 +23,21 @@ def prepare(input_path, root, vendor):
     manifest=extract(pkg)
     if not manifest['batches']:
         raise DocumentError('윤문 가능한 텍스트가 없습니다. 보호 구조만 있는 문서는 원본을 유지해 주세요.')
-    job=root/('job-'+uuid.uuid4().hex)
+    job=root/(job_id or 'job-'+uuid.uuid4().hex)
     job.mkdir(parents=True)
-    (job/('original.'+suffix)).write_bytes(pkg.raw)
-    save(job/'document.json',manifest)
-    state={'schemaVersion':2,'kind':'document','job':job.name,'format':suffix,'inputPath':str(input_path.resolve()),
-           'name':input_path.stem+'-humanized.'+suffix,'vendor':str(vendor.resolve()),'current':0,'attempt':1,
-           'sourceHash':pkg.hash,'manifestHash':digest((job/'document.json').read_bytes()),
-           'status':'active','accepted':{},'warnings':manifest['warnings'],'restored':0}
-    save(job/'job.json',state)
-    return next_batch(job,state,manifest)
+    try:
+        (job/('original.'+suffix)).write_bytes(pkg.raw)
+        save(job/'document.json',manifest)
+        state={'schemaVersion':2,'kind':'document','job':job.name,'format':suffix,'inputPath':str(input_path.resolve()),
+               'name':input_path.stem+'-humanized.'+suffix,'vendor':str(vendor.resolve()),'current':0,'attempt':1,
+               'sourceHash':pkg.hash,'manifestHash':digest((job/'document.json').read_bytes()),
+               'status':'active','accepted':{},'warnings':manifest['warnings'],'restored':0}
+        save(job/'job.json',state)
+        return next_batch(job,state,manifest)
+    except Exception:
+        if job.resolve().parent==root.resolve() and re.fullmatch(r'job-[a-f0-9]{32}',job.name):
+            shutil.rmtree(job)
+        raise
 
 def next_batch(job,state,manifest):
     base={'job':job.name,'kind':'document','format':state['format'],'name':state['name'],
@@ -108,7 +117,7 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
 
 def dispatch(args,root,vendor):
     if args.command=='prepare':
-        return prepare(Path(args.input),root,vendor)
+        return prepare(Path(args.input),root,vendor,getattr(args,'job_id',None))
     if not isinstance(args.job,str) or len(args.job)!=36 or not args.job.startswith('job-') or any(c not in '0123456789abcdef' for c in args.job[4:]):
         raise DocumentError('작업 ID가 잘못되었습니다.')
     job=(root/args.job).resolve()

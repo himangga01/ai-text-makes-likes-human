@@ -306,6 +306,7 @@ function refreshControls() {
   elements.rewriteControls.hidden = !showRewriteControls;
   elements.rewriteOptionList.querySelectorAll("input").forEach(input => { input.disabled = running || importing; });
   elements.fileButton.disabled = running || importing;
+  elements.fileInput.disabled = desktop || running || importing;
   elements.reset.disabled = running || importing || (!hasSource && !elements.result.value);
   elements.copy.disabled = !runCompleted || elements.result.value.length === 0;
   elements.download.hidden = !canDownload;
@@ -447,20 +448,25 @@ elements.source.addEventListener("input", () => {
 });
 
 elements.fileButton.addEventListener("click", async () => {
+  if (running || importing) return;
   if (!desktop) { elements.fileInput.click(); return; }
+  importing=true;refreshControls();
   try {
     const selected = await window.humanizeDesktop.openText();
     if(selected?.document) await loadOffice(selected.document);
-    else if (selected) await loadFile(new File([selected.bytes], selected.name));
+    else if (selected) {
+      // Transfer ownership synchronously to the common text import path.
+      importing=false;
+      await loadFile(new File([selected.bytes], selected.name));
+    }
   } catch (error) { setStatus("error", "파일 오류", error.message); }
+  finally {importing=false;refreshControls();}
 });
-elements.fileInput.addEventListener("change", () => loadFile(elements.fileInput.files?.[0]));
+elements.fileInput.addEventListener("change", () => {if(!desktop)void loadFile(elements.fileInput.files?.[0]);});
 async function loadFile(file) {
-  if (!file) return;
+  if (!file || running || importing) return;
   const previous = elements.source.value;
   importing=true;
-  clearCompletedResult();
-  clearResultDownload();
   refreshControls();
   try {
     if(isOfficeFile(file.name)) {

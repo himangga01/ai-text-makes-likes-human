@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from zipfile import ZipFile, ZIP_DEFLATED
 from types import SimpleNamespace
+from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'engine_runtime'))
@@ -15,6 +16,54 @@ from documents.workflow import prepare,dispatch
 FIXTURES=ROOT/'tests/fixtures/documents'
 
 class Documents(unittest.TestCase):
+    def test_prepare_write_failure_removes_its_unreported_job(self):
+        jobs=self.work/'failed-prepare'
+        with patch('documents.workflow.save',side_effect=OSError('write failed')):
+            with self.assertRaises(OSError):
+                prepare(FIXTURES/'mixed.docx',jobs,ROOT/'vendor/humanize-engine')
+        self.assertEqual(list(jobs.iterdir()),[])
+
+    def test_new_numbers_and_short_predicate_negation_retry_then_rollback(self):
+        cases=[('회사는 직원에게 교통비를 지급한다.','교통비를','월 10만원의 교통비를'),
+               ('회사는 직원에게 교통비를 안 지급한다.','안 지급한다','지급한다'),
+               ('회사는 직원에게 교통비를 지급한다.','지급한다','안 지급한다')]
+        for index,(source,before,after) in enumerate(cases):
+            with self.subTest(source=source,after=after):
+                def mutate(parts):
+                    parts['word/document.xml']=('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>'+source+'</w:t></w:r></w:p><w:sectPr/></w:body></w:document>').encode()
+                file=self.mutate('docx',mutate);jobs=self.work/f'case-{index}'
+                state=prepare(file,jobs,ROOT/'vendor/humanize-engine')
+                for expected in ('retry','rollback'):
+                    batch=json.loads(Path(state['inputPath']).read_text(encoding='utf-8'));block=batch['blocks'][0]
+                    response={'schemaVersion':2,'batchId':str(state['chunk']),'sourceHash':state['sourceHash'],'reviewedIds':[block['id']],
+                              'blocks':[{'id':block['id'],'sourceHash':block['sourceHash'],'edits':[{'before':before,'after':after}]}],'warnings':[]}
+                    response_path=Path(state['responsePath']);response_path.write_text(json.dumps(response,ensure_ascii=False),encoding='utf-8')
+                    state=dispatch(SimpleNamespace(command='accept',job=state['job'],chunk=state['chunk'],attempt=state['attempt'],source_hash=state['sourceHash'],response=str(response_path)),jobs,ROOT/'vendor/humanize-engine')
+                    self.assertEqual(state['decision'],expected)
+                output=self.work/f'guarded-{index}.docx'
+                dispatch(SimpleNamespace(command='finalize',job=state['job'],output=str(output)),jobs,ROOT/'vendor/humanize-engine')
+                self.assertEqual(extract(Package(output,'docx'))['blocks'][0]['text'],source)
+
+    def test_locative_an_is_not_short_predicate_negation(self):
+        def mutate(parts):
+            parts['word/document.xml']=('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>상자 안 자료를 정리한다.</w:t></w:r></w:p><w:sectPr/></w:body></w:document>').encode()
+        block=extract(Package(self.mutate('docx',mutate),'docx'))['blocks'][0]
+        self.assertEqual(apply_edits(block,[{'start':3,'end':4,'before':'안','after':'내부'}]),'상자 내부 자료를 정리한다.')
+    def test_visible_inline_controls_cannot_be_crossed_by_edits(self):
+        for control in ('noBreakHyphen', 'softHyphen', 'sym', 'ptab'):
+            with self.subTest(control=control):
+                def mutate(parts):
+                    parts['word/document.xml']=(
+                        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'
+                        '<w:p><w:r><w:t>팀은 풍부한 경험을 가지고 </w:t>'
+                        f'<w:{control}/><w:t>있다.</w:t></w:r></w:p>'
+                        '<w:p><w:r><w:t>이 방안은 강한 경쟁력을 가지고 있다.</w:t></w:r></w:p>'
+                        '<w:sectPr/></w:body></w:document>').encode()
+                pkg=Package(self.mutate('docx',mutate),'docx');manifest=extract(pkg)
+                block=next(b for b in manifest['blocks'] if b['text'].startswith('팀은'))
+                self.assertFalse(block['editable'])
+                output=self.work/(control+'.docx');export(pkg,manifest,{},output)
+                self.assertEqual(pkg.parts,Package(output,'docx').parts)
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
         self.work=Path(self.temp.name)

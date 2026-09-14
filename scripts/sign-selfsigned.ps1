@@ -15,6 +15,10 @@ $friendlyName = 'HumanizeKR local test code signing (self-signed)'
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'Build the portable EXE first' }
 if ((Test-Path -LiteralPath $output) -and -not $VerifyExisting -and -not $WhatIf) { throw "Output already exists; preserved: $output" }
 if ($VerifyExisting -and -not (Test-Path -LiteralPath $output)) { throw 'There is no signed copy to verify' }
+if ($VerifyExisting) {
+  . (Join-Path $PSScriptRoot 'signing-provenance.ps1')
+  Assert-SigningProvenance -MetadataPath $metadataFile -SourcePath $source -SignedPath $output
+}
 
 $sdkRoot = Join-Path ([Environment]::GetFolderPath('ProgramFilesX86')) 'Windows Kits\10\bin'
 $signTool = Get-ChildItem -LiteralPath $sdkRoot -Directory |
@@ -56,13 +60,20 @@ if (-not $certificate) {
     -NotBefore (Get-Date).AddMinutes(-5) -NotAfter (Get-Date).AddYears(2)
 }
 
+$signingStage = $null
+$signingTarget = $output
+$published = $false
+$signingComplete = $false
+try {
 $originalHash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant()
 if (-not $VerifyExisting) {
-  Copy-Item -LiteralPath $source -Destination $output
-  & $signTool sign /fd SHA256 /sha1 $certificate.Thumbprint /s My /d 'HumanizeKR - local test signature' $output
+  $signingStage = Join-Path $releaseRoot ('.humanize-signing-' + [guid]::NewGuid().ToString('N') + '.exe')
+  $signingTarget = $signingStage
+  Copy-Item -LiteralPath $source -Destination $signingTarget
+  & $signTool sign /fd SHA256 /sha1 $certificate.Thumbprint /s My /d 'HumanizeKR - local test signature' $signingTarget
   if ($LASTEXITCODE -ne 0) { throw 'SignTool signing failed; the original EXE is unchanged' }
 }
-$signature = Get-AuthenticodeSignature -LiteralPath $output
+$signature = Get-AuthenticodeSignature -LiteralPath $signingTarget
 if (-not $signature.SignerCertificate -or $signature.SignerCertificate.Thumbprint -ne $certificate.Thumbprint) {
   throw 'The output does not contain the expected signer certificate'
 }
@@ -72,7 +83,7 @@ if ($signature.Status -eq 'HashMismatch' -or $signature.SignatureType -ne 'Authe
 
 $previousPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-$verification = (& $signTool verify /pa /v $output 2>&1 | Out-String -Width 4096)
+$verification = (& $signTool verify /pa /v $signingTarget 2>&1 | Out-String -Width 4096)
 $verificationExit = $LASTEXITCODE
 $ErrorActionPreference = $previousPreference
 # Self-signed certificates are intentionally not installed as trusted roots.
@@ -91,7 +102,13 @@ if ((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToLowerInvariant(
   throw 'The original EXE changed during signing'
 }
 Export-Certificate -Cert $certificate -FilePath $certificateFile -Type CERT | Out-Null
-$hash = (Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash.ToLowerInvariant()
+$hash = (Get-FileHash -LiteralPath $signingTarget -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($signingStage) {
+  # Exclusive promotion: never put unsigned/unverified bytes at the final name.
+  [IO.File]::Move($signingStage, $output)
+  $published = $true
+  $signingStage = $null
+}
 $utf8 = [Text.UTF8Encoding]::new($false)
 [IO.File]::WriteAllText("$output.sha256", "$hash  $([IO.Path]::GetFileName($output))`n", $utf8)
 $metadata = [ordered]@{
@@ -113,4 +130,17 @@ $metadata = [ordered]@{
   signatureScope = 'Portable distribution EXE'
 }
 [IO.File]::WriteAllText($metadataFile, ($metadata | ConvertTo-Json), $utf8)
+$signingComplete = $true
 $metadata | ConvertTo-Json
+} finally {
+  if ($signingStage -and (Test-Path -LiteralPath $signingStage)) {
+    $resolvedStage = [IO.Path]::GetFullPath($signingStage)
+    if ([IO.Path]::GetDirectoryName($resolvedStage) -ne $releaseRoot -or [IO.Path]::GetFileName($resolvedStage) -notmatch '^\.humanize-signing-[a-f0-9]{32}\.exe$') { throw 'Invalid signing cleanup path' }
+    Remove-Item -LiteralPath $resolvedStage -Force
+  }
+  if ($published -and -not $signingComplete -and (Test-Path -LiteralPath $output)) {
+    if ((Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash -eq $hash) {
+      Remove-Item -LiteralPath $output -Force
+    }
+  }
+}

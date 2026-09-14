@@ -35,10 +35,15 @@ function concepts(text: string): string[] {
   }
   return [...new Set(terms)];
 }
-function risky(text: string): boolean {
+function hasProtectedMeaning(text: string): boolean {
+  if (/금지|불가|불허|허용|의무/u.test(text)) return true;
   if (/[0-9'"“”‘’「」『』]/u.test(text)) return true;
   if (/수\s*(?:있|없)|(?:해|하여|어|아)야|않|없|아니|가능|추정|판단|듯|것\s*같|것으로\s*보|(?<!가지)(?<!갖)고\s*있/u.test(text)) return true;
   if (/(?:^|\s)(?:안|못)\s|[가-힣]+면(?:\s|,)|경우|때문|조건|이후|이전|전까지|후에|따라서/u.test(text)) return true;
+  return false;
+}
+function risky(text: string): boolean {
+  if (hasProtectedMeaning(text)) return true;
   // Multiple explicit subjects can hide object/value swaps despite unchanged noun sets.
   const subjects = [...text.matchAll(/([가-힣A-Za-z]+)(?:은|는|이|가)(?=\s)/gu)].filter(match => !isAdnominalVerb(match[0]));
   return subjects.length > 1;
@@ -179,6 +184,9 @@ export function checkDirectTextFidelity(source: string, candidate: string): Fide
     const original = before[index]!, rewritten = after[index];
     if (!rewritten) continue;
     if (original.protected && original.text !== rewritten.text) violations++;
+    // Protection is bidirectional: a factual statement must not become a
+    // negative, obligation, possibility or condition during an ordinary rewrite.
+    if (!original.protected && hasProtectedMeaning(rewritten.text)) violations++;
     if (!preservesConcepts(original, rewritten)) violations++;
   }
   return { violations, protectedSentences: before.filter(sentence => sentence.protected).length };

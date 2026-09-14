@@ -291,6 +291,7 @@ def main() -> int:
     preparation.add_argument("--input", type=Path, required=True)
     preparation.add_argument("--input-kind")
     preparation.add_argument("--strength")
+    preparation.add_argument("--job-id")
     for name in ("next", "accept", "finalize", "cleanup"):
         command = sub.add_parser(name)
         command.add_argument("--job", required=True)
@@ -321,6 +322,8 @@ def main() -> int:
             print(json.dumps(dispatch(args, root, vendor), ensure_ascii=False))
             return 0
         if args.command == "prepare":
+            if args.job_id is not None:
+                raise ValueError("Explicit job IDs are supported for Office service jobs only")
             result = prepare(args.input, root, vendor, args.input_kind, args.strength)
         else:
             with transaction(root, args.job, verify_content=args.command != "cleanup") as (job, state, manifest):

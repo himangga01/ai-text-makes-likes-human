@@ -121,6 +121,16 @@ export function createApp(dependencies: AppDependencies): Express {
     next();
   });
 
+  // Browser-origin policy is shared by text and Office entry points. Native
+  // same-LAN clients that do not send Origin remain supported.
+  app.use('/api', (request, response, next) => {
+    const origin=request.headers.origin;
+    if (origin && origin!==`${request.protocol}://${request.headers.host}`) {
+      response.status(403).json({code:'ORIGIN_NOT_ALLOWED',message:'허용되지 않은 Origin입니다.'});return;
+    }
+    next();
+  });
+
   app.get("/api/health", async (_request, response) => {
     if (dependencies.refreshHealth) await dependencies.refreshHealth();
     const stats = queue.stats();
@@ -240,7 +250,7 @@ export function createApp(dependencies: AppDependencies): Express {
         workspace.path("01_input.txt"),
         {
           minFreeBytes: config.minFreeBytes,
-          signal: clientController.signal
+          signal: AbortSignal.any([clientController.signal, reservation.signal])
         }
       );
 
