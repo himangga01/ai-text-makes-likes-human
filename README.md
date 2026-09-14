@@ -73,7 +73,7 @@ TXT·MD·DOCX·PPTX는 파일 경로를 지정해 요청합니다. 예를 들어
 
 **파일 입력에는 강도 선택과 HTML 변경 비교를 적용하지 않습니다.** Word·PowerPoint는 서식과 구조를 보존하며 같은 형식의 새 파일로 저장합니다. 원본은 덮어쓰지 않습니다. 숫자·인용·조건 등 보호 대상과 검증 결과에 따라 일부 문장은 유지되거나 복원될 수 있으므로 결과와 안내를 함께 확인하세요.
 
-일반 윤문에는 `humanize-kr`를 사용합니다. `update-humanize-engine`은 오픈소스 엔진 갱신을 위한 개발용 관리 스킬입니다. 자세한 설치 안내는 [Windows 앱·스킬 안내](docs/desktop.md), 처리 절차는 [스킬 설명](skills/humanize-kr/SKILL.md)을 참고하세요.
+일반 윤문에는 `humanize-kr`를 사용합니다. `update-humanize-engine`은 오픈소스 엔진 갱신을 위한 개발용 관리 스킬입니다. 자세한 설치 안내는 [Windows 앱·스킬 안내](docs/desktop.md), 처리 절차는 [스킬 설명](skills/humanize-kr/SKILL.md)을 참고하세요. 두 스킬의 설치·호출·Gateway 명령·문제 해결을 정리한 영문 가이드는 [Skills Usage Guide](docs/skills-guide.md)에 있습니다.
 
 ## LAN 웹 포털: 처음 한 번만 설정하기
 
@@ -87,7 +87,7 @@ TXT·MD·DOCX·PPTX는 파일 경로를 지정해 요청합니다. 예를 들어
 변환 엔진은 화면에서 GPT와 Claude 중 선택할 수 있습니다.
 
 - **GPT** (기본): 기본값은 `gpt-5.6-sol`, reasoning effort `medium`이며 연결 설정에서 모델과 추론 수준을 선택할 수 있습니다.
-- **Claude**: 기본값은 `claude-opus-5`, effort `medium`이며 연결 설정에서 변경할 수 있습니다. 서버 PC에 Claude CLI 설치와 로그인이 필요합니다.
+- **Claude**: 기본값은 `claude-fable-5-1`, effort `high`이며 연결 설정에서 변경할 수 있습니다. 서버 PC에 Claude CLI 설치와 로그인이 필요합니다.
 
 Codex 로그인 확인:
 
