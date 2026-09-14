@@ -74,8 +74,8 @@ let resultGeneration = 0;
 let comparisonReady = false;
 let elapsedStarted;
 let elapsedInterval;
-let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh']}],claude:[{id:'claude-opus-5',label:'Claude Opus 5',efforts:['low','medium','high','xhigh','max']}]};
-let selections={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-opus-5',effort:'medium'}};
+let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh']}],claude:[{id:'claude-fable-5-1',label:'Claude Fable 5.1',efforts:['low','medium','high','xhigh','max']}]};
+let selections={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-fable-5-1',effort:'high'}};
 const bundledRewriteOptions = [
   { id: "normal", label: "보통", description: "원래 표현을 살려 어색한 부분을 다듬습니다." },
   { id: "medium", label: "중간", description: "어휘와 길어진 표현을 더 자연스럽게 정리합니다." },

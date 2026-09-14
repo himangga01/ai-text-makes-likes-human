@@ -1,8 +1,8 @@
 export const HUMANIZE_MODEL = "gpt-5.6-sol" as const;
 export const HUMANIZE_REASONING_EFFORT = "medium" as const;
 
-export const CLAUDE_MODEL = "claude-opus-5" as const;
-export const CLAUDE_REASONING_EFFORT = "medium" as const;
+export const CLAUDE_MODEL = "claude-fable-5-1" as const;
+export const CLAUDE_REASONING_EFFORT = "high" as const;
 
 export type EngineChoice = "codex" | "claude";
 
@@ -21,15 +21,15 @@ export const MODEL_OPTIONS = {
     { id: 'gpt-5.2', label: 'GPT-5.2', efforts: codexEfforts.slice(0, 4) }
   ],
   claude: [
-    { id: CLAUDE_MODEL, label: 'Claude Opus 5', efforts: claudeEfforts },
+    { id: CLAUDE_MODEL, label: 'Claude Fable 5.1', efforts: claudeEfforts },
     { id: 'claude-sonnet-5', label: 'Claude Sonnet 5', efforts: claudeEfforts },
-    { id: 'claude-fable-5-1', label: 'Claude Fable 5.1', efforts: claudeEfforts }
+    { id: 'claude-opus-5', label: 'Claude Opus 5', efforts: claudeEfforts }
   ]
 };
 
 export function parseModelSettings(engine: EngineChoice, model?: unknown, effort?: unknown): ModelSettings {
   const id = model === undefined ? (engine === 'codex' ? HUMANIZE_MODEL : CLAUDE_MODEL) : model;
-  const level = effort === undefined ? 'medium' : effort;
+  const level = effort === undefined ? (engine === 'codex' ? HUMANIZE_REASONING_EFFORT : CLAUDE_REASONING_EFFORT) : effort;
   const option = MODEL_OPTIONS[engine].find(item => item.id === id);
   if (!option || typeof level !== 'string' || !option.efforts.includes(level)) {
     throw new Error('선택한 CLI에서 지원하는 모델과 추론 레벨을 선택해 주세요.');
