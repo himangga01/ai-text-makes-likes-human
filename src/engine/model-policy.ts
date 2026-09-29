@@ -9,7 +9,8 @@ export type EngineChoice = "codex" | "claude";
 export interface ModelSettings { model: string; effort: string }
 const codexEfforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const claudeEfforts = ['low', 'medium', 'high', 'xhigh', 'max'];
-// Codex 0.157.1 model catalog and Claude Code 2.1.284 model configuration (2026-09-29).
+// Codex 0.159.0 model catalog and Claude Code 2.1.284 model configuration (2026-09-30).
+// GPT-5.5 is omitted on purpose: it retires 2026-10-14.
 // These are selectable configurations, not a promise of account model access.
 export const MODEL_OPTIONS = {
   codex: [
@@ -18,8 +19,7 @@ export const MODEL_OPTIONS = {
     { id: 'gpt-6-sol', label: 'GPT-6 Sol', efforts: codexEfforts },
     { id: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: codexEfforts.slice(0, 5) },
     { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra', efforts: codexEfforts },
-    { id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', efforts: codexEfforts.slice(0, 5) },
-    { id: 'gpt-5.5', label: 'GPT-5.5', efforts: codexEfforts.slice(0, 4) }
+    { id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', efforts: codexEfforts.slice(0, 5) }
   ],
   claude: [
     { id: CLAUDE_MODEL, label: 'Claude Fable 5.1', efforts: claudeEfforts },

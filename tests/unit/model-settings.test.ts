@@ -21,6 +21,7 @@ it('defaults remain unchanged and provider/model effort combinations are validat
   expect(parseModelSettings('codex','gpt-6-sol','ultra')).toEqual({model:'gpt-6-sol',effort:'ultra'});
   expect(()=>parseModelSettings('codex','gpt-6-luna','ultra')).toThrow();
   expect(()=>parseModelSettings('codex','gpt-5.2','low')).toThrow();
+  expect(()=>parseModelSettings('codex','gpt-5.5','low')).toThrow();
   expect(()=>parseModelSettings('codex',['gpt-6-astra'],'low')).toThrow();
 });
 for(const kind of ['codex','claude'] as const)it(`${kind} receives per-request selection without changing the next request default`,async()=>{
