@@ -9,12 +9,14 @@ export type EngineChoice = "codex" | "claude";
 export interface ModelSettings { model: string; effort: string }
 const codexEfforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const claudeEfforts = ['low', 'medium', 'high', 'xhigh', 'max'];
-// Codex 0.153.4 bundled catalog and installed Claude CLI --effort contract.
+// Codex 0.157.1 model catalog and Claude Code model configuration (2026-09-27).
 // These are selectable configurations, not a promise of account model access.
 export const MODEL_OPTIONS = {
   codex: [
     { id: HUMANIZE_MODEL, label: 'GPT-5.6 Sol', efforts: codexEfforts },
     { id: 'gpt-6-astra', label: 'GPT-6 Astra', efforts: codexEfforts },
+    { id: 'gpt-6-sol', label: 'GPT-6 Sol', efforts: codexEfforts },
+    { id: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: codexEfforts.slice(0, 5) },
     { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra', efforts: codexEfforts },
     { id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', efforts: codexEfforts.slice(0, 5) },
     { id: 'gpt-5.5', label: 'GPT-5.5', efforts: codexEfforts.slice(0, 4) },
@@ -22,6 +24,7 @@ export const MODEL_OPTIONS = {
   ],
   claude: [
     { id: CLAUDE_MODEL, label: 'Claude Fable 5.1', efforts: claudeEfforts },
+    { id: 'claude-opus-5-5', label: 'Claude Opus 5.5', efforts: claudeEfforts },
     { id: 'claude-sonnet-5', label: 'Claude Sonnet 5', efforts: claudeEfforts },
     { id: 'claude-opus-5', label: 'Claude Opus 5', efforts: claudeEfforts }
   ]
