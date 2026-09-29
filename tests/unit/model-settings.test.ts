@@ -16,6 +16,11 @@ it('defaults remain unchanged and provider/model effort combinations are validat
   expect(parseModelSettings('claude','claude-opus-5-5','max')).toEqual({model:'claude-opus-5-5',effort:'max'});
   expect(()=>parseModelSettings('claude','claude-opus-5-5','ultra')).toThrow();
   expect(()=>parseModelSettings('codex','claude-opus-5-5','high')).toThrow();
+  expect(parseModelSettings('claude','claude-sonnet-5-5','max')).toEqual({model:'claude-sonnet-5-5',effort:'max'});
+  expect(()=>parseModelSettings('claude','claude-sonnet-5-5','ultra')).toThrow();
+  expect(parseModelSettings('codex','gpt-6-sol','ultra')).toEqual({model:'gpt-6-sol',effort:'ultra'});
+  expect(()=>parseModelSettings('codex','gpt-6-luna','ultra')).toThrow();
+  expect(()=>parseModelSettings('codex','gpt-5.2','low')).toThrow();
   expect(()=>parseModelSettings('codex',['gpt-6-astra'],'low')).toThrow();
 });
 for(const kind of ['codex','claude'] as const)it(`${kind} receives per-request selection without changing the next request default`,async()=>{
@@ -41,6 +46,7 @@ it('retains distinct, correctly labelled Claude model choices',()=>{
   expect(MODEL_OPTIONS.claude.map(x=>[x.id,x.label])).toEqual([
     ['claude-fable-5-1','Claude Fable 5.1'],
     ['claude-opus-5-5','Claude Opus 5.5'],
+    ['claude-sonnet-5-5','Claude Sonnet 5.5'],
     ['claude-sonnet-5','Claude Sonnet 5'],
     ['claude-opus-5','Claude Opus 5']
   ]);
