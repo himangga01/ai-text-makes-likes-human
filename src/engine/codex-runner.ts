@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { CommandRunner } from "../process/command-runner.js";
-import { EngineError } from "./errors.js";
+import { EngineError, engineFailed, modelUnavailable } from "./errors.js";
 import {
   HUMANIZE_MODEL,
   HUMANIZE_REASONING_EFFORT
@@ -37,6 +37,39 @@ export interface CodexRunnerOptions {
 
 function invalid(message: string, cause?: unknown): EngineError {
   return new EngineError("ENGINE_OUTPUT_INVALID", false, message, { cause });
+}
+
+type ErrorLine = { status?: unknown; error?: { message?: unknown } };
+
+// Codex prints an API rejection as `ERROR: {"status":400,"error":{"message":...}}`
+// on stderr. Earlier lines can echo the prompt, so only the final ERROR line of a
+// failed run decides.
+function lastErrorLine(stderr: string): ErrorLine | undefined {
+  const lines = stderr.split(/\r?\n/).filter(line => /^\s*ERROR\b/.test(line) && line.includes("{"));
+  const line = lines.at(-1);
+  if (!line) return undefined;
+  try {
+    const value: unknown = JSON.parse(line.slice(line.indexOf("{")));
+    return typeof value === "object" && value !== null ? value as ErrorLine : undefined;
+  } catch { return undefined; }
+}
+
+// Only a model-specific 400/404 becomes MODEL_UNAVAILABLE.
+function modelRejection(exitCode: number, stderr: string): string | undefined {
+  if (exitCode === 0) return undefined;
+  const record = lastErrorLine(stderr);
+  const message = record?.error?.message;
+  if ((record?.status === 400 || record?.status === 404) && typeof message === "string" &&
+    /\bmodel\b/i.test(message) && /not supported|does not exist|not found|unknown|unsupported|not available/i.test(message)) {
+    return `status ${record.status}`;
+  }
+  return undefined;
+}
+
+// Only the exit code and the API status are logged, never CLI text.
+function failureReason(exitCode: number, stderr: string): string {
+  const status = lastErrorLine(stderr)?.status;
+  return typeof status === "number" ? `exit ${exitCode}, status ${status}` : `exit ${exitCode}`;
 }
 
 export function parseEngineResult(raw: string, label = "Codex"): CodexResult {
@@ -150,8 +183,10 @@ export class CodexRunner {
     if (command.termination === "aborted") {
       throw new EngineError("CLIENT_ABORTED", true, "Codex was cancelled");
     }
+    const rejection = modelRejection(command.exitCode, command.stderr);
+    if (rejection) throw modelUnavailable("Codex", rejection);
     if (command.exitCode !== 0) {
-      throw invalid("Codex exited without a valid result");
+      throw engineFailed("Codex", failureReason(command.exitCode, command.stderr));
     }
 
     try {

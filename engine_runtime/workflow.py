@@ -7,16 +7,24 @@ import io
 import json
 import math
 from pathlib import Path
+import re
 import sys
 
 DEFAULT_VENDOR = Path(__file__).resolve().parent.parent / "vendor/humanize-engine"
 
 try:
-    from .quantities import signed_quantities
+    from .quantities import fold_width, number_words, signed_quantities
 except ImportError:  # Executed as a standalone gateway script.
     # Windows embedded Python's ._pth isolation omits the script directory.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from quantities import signed_quantities
+    from quantities import fold_width, number_words, signed_quantities
+
+# 라틴 문자 단어(Apple, AI)와 한자열(李文學)은 고유명사·용어로 보고 개수까지 보존한다.
+_NAME_TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[.'’\-][A-Za-z0-9]+)*"
+                         r"|[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
+# 짝을 잃은 원문 문장의 바이그램이 이웃 결과 문장에 이 비율 미만으로 남으면
+# 병합이 아니라 내용 소실로 본다.
+MIN_DROPPED_COVERAGE = 0.5
 
 
 def modules(vendor: Path):
@@ -173,23 +181,80 @@ def warning_reasons(report: object, exit_code: int, stderr: str = "") -> dict:
     return {"version": 1, "codes": reasons}
 
 
-def verify(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR, attempt: int = 1) -> dict:
-    gate, checks, _, _ = modules(vendor)
+def dropped_sentences(source: str, output: str, checks, modality) -> int:
+    """Source sentences that lost their counterpart and whose content is not in a neighbour.
+
+    A merge keeps the absorbed sentence's words in the neighbouring output sentence;
+    a silent deletion does not. Sentence alignment is shared with the modality gate.
+    """
+    split = modality._m._split_sentences
+    before = [s.strip() for s in split(checks.strip_summary_block(source)) if s.strip()]
+    after = [s.strip() for s in split(checks.strip_summary_block(output)) if s.strip()]
+    pairs = modality.align(before, after)
+    dropped = 0
+    for index, (src, out) in enumerate(pairs):
+        if not src or out:
+            continue
+        grams = modality._bigrams(src)
+        # Parallel sentences share a template ("회사는 … 공장을 … 했다"); only the words
+        # this sentence does not share with its source neighbours show whether it survived.
+        shared = modality._bigrams(" ".join(
+            pairs[j][0] for j in (index - 1, index + 1) if 0 <= j < len(pairs) and pairs[j][0]))
+        own = grams - shared
+        if sum(own.values()) >= 2:
+            grams = own
+        total = sum(grams.values())
+        if not total:
+            continue
+        nearby = modality._bigrams(" ".join(
+            pairs[j][1] for j in (index - 1, index + 1) if 0 <= j < len(pairs)))
+        kept = sum(min(count, nearby[gram]) for gram, count in grams.items())
+        if kept / total < MIN_DROPPED_COVERAGE:
+            dropped += 1
+    return dropped
+
+
+def names(text: str, checks) -> set:
+    # A set, case-insensitively: casing fixes (Github → GitHub) and dropping a repeated
+    # mention keep the same names; replacing or removing the last mention does not.
+    return {token.casefold() for token in _NAME_TOKEN.findall(checks.strip_summary_block(text))}
+
+
+def verify(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR, attempt: int = 1,
+           context: Path | None = None) -> dict:
+    """``context`` is the whole document when ``before`` is one chunk of it.
+
+    Footnote markers sit in body chunks while definitions sit in the last one, so a
+    chunk gate needs the document's markers to agree with the full-document gate.
+    """
+    gate, checks, modality, _ = modules(vendor)
     source = before.read_text(encoding="utf-8")
     output = after.read_text(encoding="utf-8")
+    document = context.read_text(encoding="utf-8") if context is not None else None
+    # Numbers compare by value: full-width digits and number words ("세 배") count
+    # as the same values as their digit notation ("3배").
+    wide_source, wide_output = fold_width(source), fold_width(output)
+    word_source = {str(int(value)) for value, _ in number_words(wide_source)}
+    word_output = {str(int(value)) for value, _ in number_words(wide_output)}
     # Upstream treats some factual failures as advisory. The product must not
     # deliver a changed number/quote simply because the text-change rate is low.
-    hard = checks.check_numbers(source, output) + checks.check_quotes(source, output)
-    hard += checks.check_headings(source, output) + checks.check_footnotes(source, output)
+    hard = checks.check_quotes(source, output)
+    hard += checks.check_headings(source, output) + checks.check_footnotes(source, output, document)
     codes = sorted({failure.code for failure in hard})
+    if checks._number_values(wide_output) - checks._number_values(wide_source) - word_source:
+        codes.append("number_injected")
     if signed_quantities(source) != signed_quantities(output):
         codes.append("quantity_changed")
     if any(q not in output and checks._is_protected_quote(source, q)
            for q in checks.extract_quotes(source, min_len=1)):
         if "quote_altered" not in codes:
             codes.append("quote_altered")
-    if checks.dropped_numbers(source, output):
+    if set(checks.dropped_numbers(wide_source, wide_output)) - word_output:
         codes.append("number_dropped")
+    if names(source, checks) != names(output, checks):
+        codes.append("name_changed")
+    if dropped_sentences(source, output, checks, modality):
+        codes.append("sentence_dropped")
     stdout, stderr = io.StringIO(), io.StringIO()
     with redirect_stdout(stdout), redirect_stderr(stderr):
         code = gate.main(["--before", str(before), "--after", str(after), "--genre", "essay", "--json"])
@@ -237,9 +302,10 @@ def main() -> int:
     parser.add_argument("--after", type=Path, required=True)
     parser.add_argument("--vendor-root", type=Path, default=DEFAULT_VENDOR)
     parser.add_argument("--attempt", type=int, choices=(1, 2), default=1)
+    parser.add_argument("--context", type=Path, help="whole source document when --before is one chunk")
     args = parser.parse_args()
     try:
-        report = verify(args.before, args.after, args.vendor_root, args.attempt)
+        report = verify(args.before, args.after, args.vendor_root, args.attempt, args.context)
     except Exception:
         report = {"gate": {"exit_code": 3}, "hardFailures": [], "policy": "error"}
     print(json.dumps(report, ensure_ascii=False))

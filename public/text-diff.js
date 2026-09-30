@@ -1,6 +1,10 @@
 const lineBreakPattern = /[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+/gu;
-const wordSegmenter = new Intl.Segmenter(undefined, { granularity: "word" });
-const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+// Built lazily so browsers without Intl.Segmenter still load the page; they fall back to coarser tokens.
+const segmenters = {};
+function segmenter(granularity) {
+  if (!(granularity in segmenters)) segmenters[granularity] = typeof Intl.Segmenter === "function" ? new Intl.Segmenter(undefined, { granularity }) : null;
+  return segmenters[granularity];
+}
 const DEFAULT_MAX_OPERATIONS = 250_000;
 const DEFAULT_MAX_TIME_MS = 100;
 const DEFAULT_MAX_DISPLAY_NODES = 5_000;
@@ -40,11 +44,13 @@ function lines(text) {
 }
 
 function words(text) {
-  return Array.from(wordSegmenter.segment(text), item => item.segment);
+  const words = segmenter("word");
+  return words ? Array.from(words.segment(text), item => item.segment) : text.match(/\s+|[^\s]+/gu) ?? [];
 }
 
 function graphemes(text) {
-  return Array.from(graphemeSegmenter.segment(text), item => item.segment);
+  const graphemes = segmenter("grapheme");
+  return graphemes ? Array.from(graphemes.segment(text), item => item.segment) : Array.from(text);
 }
 
 function append(segments, type, text) {

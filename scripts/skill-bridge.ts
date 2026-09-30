@@ -1,8 +1,9 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { parseRewriteOptions, REWRITE_OPTIONS } from '../src/engine/rewrite-policy.js';
-import { sourceSentences, checkDirectTextFidelity, restoreProtectedSentences } from '../src/engine/direct-text-fidelity.js';
+import { sourceSentences, checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences } from '../src/engine/direct-text-fidelity.js';
 import { parseTextResult } from '../src/engine/text-edits.js';
+import { EngineError } from '../src/engine/errors.js';
 import { candidateReviewForRetry } from '../src/engine/candidate-review.js';
 import { buildHumanizePrompt } from '../src/engine/prompt-builder.js';
 import { diffText } from '../public/text-diff.js';
@@ -27,7 +28,15 @@ try {
       result = { sentences: sourceSentences(input.source), instructions: buildHumanizePrompt({ source: input.source,
         quickRules: input.quickRules, attempt: input.attempt, nonce, rewriteOptions: options, candidateReview: input.candidateReview }) }; break;
     }
-    case 'parse': result = parseTextResult(JSON.stringify(input.response), input.source, 'Host', options); break;
+    case 'parse':
+      // Invalid or ambiguous edits cost the attempt (retry, then rollback), as on the server.
+      try { result = parseTextResult(JSON.stringify(input.response), input.source, 'Host', options); }
+      catch (error) {
+        if (!(error instanceof EngineError) || error.publicCode !== 'ENGINE_OUTPUT_INVALID') throw error;
+        result = { invalid: true, reason: 'invalid-or-ambiguous-edits' };
+      }
+      break;
+    case 'structure': result = { violations: checkStructuralFidelity(input.source, input.candidate) }; break;
     case 'protect': result = options?.strength === 'very-strong' ? restoreProtectedSentences(input.source, input.candidate)
       : { rewrittenText: input.candidate, restoredProtectedSentences: 0 }; break;
     case 'check': result = checkDirectTextFidelity(input.source, input.candidate); break;

@@ -208,10 +208,11 @@ def sanitize(
         text, removed = _strip_joiners_outside_emoji(text)
         counts["invisible"] += removed
 
-    # 2) 한글 NFD → NFC
+    # 2) 한글 NFD → NFC. 분해된 한글 자모열만 결합한다 — 전체 NFC는 CJK 호환 한자
+    #    (樂/樂처럼 독음이 다른 코드포인트)와 Å·Ω 기호까지 다른 글자로 바꾼다.
     if normalize_unicode:
         counts["hangul_recomposed"] = len(DECOMPOSED_HANGUL.findall(text))
-        text = unicodedata.normalize("NFC", text)
+        text = DECOMPOSED_HANGUL.sub(lambda m: unicodedata.normalize("NFC", m.group(0)), text)
 
     # 3) 특수 공백 → 보통 공백
     if normalize_spaces:

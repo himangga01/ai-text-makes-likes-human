@@ -683,8 +683,38 @@ def change_rate(before: str, after: str, ignore_markup: bool = False) -> float:
         after = _strip_markup(after)
     if not before and not after:
         return 0.0
-    matcher = difflib.SequenceMatcher(None, before, after, autojunk=False)
-    return 1.0 - matcher.ratio()
+    if len(before) + len(after) <= _SEGMENTED_CHANGE_RATE_CHARS:
+        matcher = difflib.SequenceMatcher(None, before, after, autojunk=False)
+        return 1.0 - matcher.ratio()
+    return 1.0 - 2.0 * _segmented_matches(before, after) / (len(before) + len(after))
+
+
+# 문자 diff(autojunk=False)는 입력 길이의 제곱에 가깝게 느려진다 — 실측 9만 자 전체 문서
+# 검증 139초. 이 합계 길이를 넘으면 줄 단위로 짝지어 각 줄만 문자 비교한다. 윤문은
+# 줄(문단) 구조를 유지하므로 값은 전체 비교와 거의 같고, 청크 단위 입력은 그대로다.
+_SEGMENTED_CHANGE_RATE_CHARS = 20_000
+
+
+def _char_matches(a: str, b: str) -> int:
+    return sum(block.size for block in
+               difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks())
+
+
+def _segmented_matches(before: str, after: str) -> int:
+    a_lines, b_lines = before.split("\n"), after.split("\n")
+    if len(a_lines) == len(b_lines):
+        return sum(_char_matches(x, y) for x, y in zip(a_lines, b_lines)) + len(a_lines) - 1
+    matched = 0
+    lines = difflib.SequenceMatcher(None, a_lines, b_lines, autojunk=False)
+    for tag, i1, i2, j1, j2 in lines.get_opcodes():
+        if tag == "equal":
+            matched += sum(len(line) + 1 for line in a_lines[i1:i2])
+        elif tag == "replace":
+            if i2 - i1 == j2 - j1:
+                matched += sum(_char_matches(x, y) + 1 for x, y in zip(a_lines[i1:i2], b_lines[j1:j2]))
+            else:
+                matched += _char_matches("\n".join(a_lines[i1:i2]), "\n".join(b_lines[j1:j2]))
+    return min(matched, len(before), len(after))
 
 
 # ---------------------------------------------------------------------------

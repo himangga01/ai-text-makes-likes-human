@@ -11,9 +11,12 @@ export type PublicErrorCode =
   | "ENGINE_UNAVAILABLE"
   | "ENGINE_TIMEOUT"
   | "ENGINE_OUTPUT_INVALID"
+  | "ENGINE_FAILED"
   | "VALIDATION_FAILED"
   | "INSUFFICIENT_DISK"
   | "CLIENT_ABORTED"
+  | "MODEL_UNAVAILABLE"
+  | "SERVER_SHUTDOWN"
   | "INTERNAL_ERROR";
 
 export type TransformProgressEvent = {

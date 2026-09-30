@@ -7,6 +7,8 @@ import type { DocumentEngine, DocumentState } from './document-engine.js';
 export interface DocumentRecord {
   id: string; token: string; dir: string; input: string; original?: string; state?: DocumentState;
   output?: string; name?: string; busy: boolean; readers: number; expires: number; controller: AbortController;
+  // Set once removal is requested; a busy job finishing later must not revive the record.
+  deleted?: boolean;
 }
 export class ArtifactStore {
   readonly records = new Map<string,DocumentRecord>();
@@ -52,7 +54,7 @@ export class ArtifactStore {
   }
   get(id: string, token: string) {
     const r=this.records.get(id);
-    if(!r || !/^[a-f0-9]{64}$/.test(token) || !timingSafeEqual(Buffer.from(token),Buffer.from(r.token)) || (!r.busy&&r.expires<Date.now())) throw new Error('문서가 만료되었거나 접근 권한이 없습니다. 다시 선택해 주세요.');
+    if(!r || r.deleted || !/^[a-f0-9]{64}$/.test(token) || !timingSafeEqual(Buffer.from(token),Buffer.from(r.token)) || (!r.busy&&r.expires<Date.now())) throw new Error('문서가 만료되었거나 접근 권한이 없습니다. 다시 선택해 주세요.');
     r.expires=Date.now()+30*60000; return r;
   }
   inspect(record:DocumentRecord, name:string) {
@@ -87,6 +89,7 @@ export class ArtifactStore {
   }
   async remove(record:DocumentRecord) {
     if(this.records.get(record.id)!==record)return;
+    record.deleted=true;
     record.controller.abort();
     record.expires=0;
     if(record.busy||record.readers) {record.expires=0;return;}

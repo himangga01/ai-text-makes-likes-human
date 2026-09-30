@@ -12,7 +12,16 @@ PROTECTED = {'hyperlink', 'fldSimple', 'fldChar', 'instrText', 'fld', 'bookmarkS
              'footnoteReference', 'endnoteReference', 'AlternateContent', 'oMath', 'oMathPara',
              'noBreakHyphen', 'softHyphen', 'sym', 'ptab'}
 QUOTE = re.compile(r'"[^"\n]*"|“[^”\n]*”|‘[^’\n]*’|\x27[^\x27\n]*\x27|「[^」]*」|『[^』]*』')
-RISK = re.compile(r'\d|https?://|\b[A-Z][A-Za-z0-9_-]*\b|[가-힣]+(?:님|씨)(?=\s|[.,]|$)')
+# \b는 한글도 단어 문자로 보므로 "Apple과"의 A 앞뒤에 경계가 없다 — 라틴 문자 경계만 본다.
+RISK = re.compile(r'\d|https?://|(?<![A-Za-z0-9])[A-Z][A-Za-z0-9_-]*|[가-힣]+(?:님|씨)(?=\s|[.,]|$)'
+                  r'|[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]'
+                  r'|[가-힣]{2,4}\s?(?:대표|회장|사장|교수|장관|차관|의원|위원장|박사|기자|총리|대통령|시장|지사|원장|소장|감독|선수|작가|변호사|판사|검사)'
+                  r'(?=$|[\s,.은는이가을를의께도와과])')
+# 두 서식 run 사이에 이런 인라인 객체가 있으면 같은 서식이어도 편집 구간을 나눈다.
+# 합치면 치환 텍스트가 첫 run에 몰려 그림·주석 위치가 글자에 대해 이동한다.
+INLINE_OBJECTS = {'drawing', 'pict', 'object', 'commentReference', 'footnoteReference', 'endnoteReference',
+                  'AlternateContent', 'fldChar', 'sym', 'ptab', 'noBreakHyphen', 'softHyphen', 'ruby'}
+XML_ILLEGAL = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
 MODAL = re.compile(r'않|없|못|아니|금지|불가|해야|필요|수\s*있|판단|추정|보인다|가능|듯')
 SHORT_NEGATION = re.compile(r'(?<!\S)안(?=\s+[가-힣]+(?:다|요)(?=$|[\s.!?,]))')
 
@@ -62,9 +71,21 @@ def extract(pkg: Package):
                     kind=next((v for k,v in n.attrib.items() if k.endswith('}fldCharType')), '')
                     if kind=='begin':field_depth+=1
                     if kind=='end':field_depth=max(0,field_depth-1)
-            nodes = [n for n in para.iter() if local(n) in ('t','br','cr','tab') and ns(n) in W+A and _nearest(n, {'p'}) is para]
+            # Tab-stop definitions (w:tabs/w:tab, a:tabLst/a:tab) are layout, not text.
+            nodes = [n for n in para.iter() if local(n) in ('t','br','cr','tab') and ns(n) in W+A and _nearest(n, {'p'}) is para
+                     and not (local(n) == 'tab' and local(n.getparent()) in ('tabs', 'tabLst'))]
             if not any(local(n)=='t' for n in nodes):
                 continue
+            wanted, barriers, pending = set(map(id, nodes)), set(), False
+            for n in para.iter():
+                if _nearest(n, {'p'}) is not para and n is not para:
+                    continue
+                if local(n) in INLINE_OBJECTS:
+                    pending = True
+                elif id(n) in wanted and local(n) == 't':
+                    if pending:
+                        barriers.add(id(n))
+                    pending = False
             shape = _nearest(para, {'sp', 'graphicFrame'})
             shape_id = next((n.get('id') for n in shape.iter() if local(n) == 'cNvPr'), '') if shape is not None else ''
             location = f'슬라이드 {slide} · 도형 {shape_id or "표"} · 문단 {index}' if slide else f'문단 {index}'
@@ -72,7 +93,7 @@ def extract(pkg: Package):
             protected = protected or any(local(n) in PROTECTED for n in para.iterancestors())
             # Complex fields may span multiple paragraphs; preserve only that range.
             protected = protected or inside_field
-            runs, text, spans, controls = [], '', [], []
+            runs, text, spans, controls, ruby = [], '', [], [], []
             for node in nodes:
                 if local(node)!='t':
                     start=len(text);text+='\t' if local(node)=='tab' else '\n'
@@ -87,9 +108,11 @@ def extract(pkg: Package):
                 start = len(text)
                 text += node.text or ''
                 runs.append({'path': tree.getelementpath(node), 'start': start, 'end': len(text)})
+                if _nearest(node, {'ruby', 'p'}) is not None and local(_nearest(node, {'ruby', 'p'})) == 'ruby':
+                    ruby.append({'start': start, 'end': len(text)})  # reading and base stay paired
                 parent = run.getparent() if run is not None else node.getparent()
                 signature = digest(key) + tree.getpath(parent)
-                if spans and spans[-1]['style'] == signature:
+                if spans and spans[-1]['style'] == signature and id(node) not in barriers:
                     spans[-1]['end'] = len(text)
                 else:
                     spans.append({'start': start, 'end': len(text), 'style': signature})
@@ -98,7 +121,7 @@ def extract(pkg: Package):
             if shape is not None:
                 title = title or any(local(n) == 'ph' and n.get('type') in ('title', 'ctrTitle') for n in shape.iter())
             # Numeric/entity-bearing sentences are immutable so value-to-subject association survives.
-            protected_spans = controls[:]
+            protected_spans = controls[:] + ruby
             offset = 0
             for sentence in re.split(r'(?<=[.!?])(?=\s)', text):
                 if RISK.search(sentence):
@@ -171,6 +194,8 @@ def apply_edits(block, edits):
             raise DocumentError('편집 대상 원문이 일치하지 않습니다.')
         if any(c in edit['after'] for c in ('\n','\r','\t')) or any(ord(c)<32 for c in edit['after']):
             raise DocumentError('문단 구조를 바꾸는 편집은 허용하지 않습니다.')
+        if XML_ILLEGAL.search(edit['after']):
+            raise DocumentError('문서에 쓸 수 없는 문자가 포함된 편집입니다.')
         if not any(start>=s['start'] and end<=s['end'] for s in block['spans']):
             raise DocumentError('서식 경계를 넘는 편집입니다.')
         if any(start<p['end'] and end>p['start'] for p in block['protected']):

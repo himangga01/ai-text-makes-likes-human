@@ -7,13 +7,16 @@ describe('compact text reconstruction',()=>{
     expect(parse(source,[{before:'가지고 있다',after:'갖고 있다'}]).rewrittenText).toBe(source.replace('가지고 있다','갖고 있다'));
     expect(parse(source,[]).rewrittenText).toBe(source);
   });
-  it('rejects missing, repeated, overlapping and out-of-order anchors',()=>{
+  it('rejects missing, repeated and overlapping anchors',()=>{
     for(const [source,edits] of [
       ['가 나 가',[{before:'가',after:'다'}]],
       ['가나다',[{before:'없음',after:'다'}]],
       ['가나다',[{before:'가나',after:'다'},{before:'나다',after:'마'}]],
-      ['가나다',[{before:'다',after:'마'},{before:'가',after:'나'}]]
+      ['가나다',[{before:'나다',after:'마'},{before:'가나',after:'다'}]]
     ] as [string,unknown[]][])expect(()=>parse(source,edits)).toThrow();
+  });
+  it('applies disjoint anchors in source order whatever order they arrive in',()=>{
+    expect(parse('가나다',[{before:'다',after:'마'},{before:'가',after:'나'}]).rewrittenText).toBe('나나마');
   });
   it('allows unique surrounding context for repeated expressions',()=>{
     expect(parse('가는 가지고 있다. 나는 가지고 있다.',[{before:'나는 가지고 있다.',after:'나는 갖고 있다.'}]).rewrittenText).toBe('가는 가지고 있다. 나는 갖고 있다.');
@@ -25,12 +28,11 @@ describe('compact text reconstruction',()=>{
   });
 });
 
-it('normalizes the recorded Claude disjoint edit order only for explicit direct input',async()=>{
+it('normalizes the recorded Claude disjoint edit order for every input kind',async()=>{
  const {default:fixture}=await import('../fixtures/direct-live-quality.json');
  const raw=JSON.stringify(fixture.compact);
  const expected=fixture.compactSource.replace('과정에 있어서','과정에서').replace('제목 아래의 설명과 관련된 표현','제목 아래 설명의 표현').replace('초안의 구성과 관련된 의견','초안의 구성에 대한 의견');
- expect(parseTextResult(raw,fixture.compactSource,'Claude',{inputKind:'direct-text',strength:'normal'})).toEqual({rewrittenText:expected,warnings:[]});
- for(const options of [undefined,{inputKind:'text-file',strength:'normal'}] as const)expect(()=>parseTextResult(raw,fixture.compactSource,'Claude',options)).toThrow();
+ for(const options of [{inputKind:'direct-text',strength:'normal'},undefined,{inputKind:'text-file',strength:'normal'}] as const)expect(parseTextResult(raw,fixture.compactSource,'Claude',options)).toEqual({rewrittenText:expected,warnings:[]});
 });
 it.each([
  ['가 나 가',[{before:'가',after:'다'}]],

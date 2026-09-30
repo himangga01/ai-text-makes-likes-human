@@ -49,6 +49,8 @@ export function createDiffCopyHandlers({ root, changes, onStatus, getSelection }
 
   function classify() {
     const selection = readSelection();
+    // A hidden or empty comparison must not intercept copies of other page text.
+    if (changes.closest("[hidden]") || !changes.hasChildNodes()) return { kind: "none", selection };
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
       return { kind: "none", selection };
     }
@@ -133,7 +135,12 @@ function createStructure(container) {
   final.setAttribute("aria-label", "최종문");
   final.hidden = true;
 
-  root.append(hint, notice, changes, final);
+  // The hint overlays the top padding of the change list; keeping both in one positioned body
+  // lets the in-flow notice sit above them instead of under the hint.
+  const body = document.createElement("div");
+  body.className = "result-diff__body";
+  body.append(hint, changes);
+  root.append(notice, body, final);
   container.replaceChildren(root);
   return { root, notice, changes, final };
 }

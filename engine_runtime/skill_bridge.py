@@ -9,7 +9,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def invoke(operation, **payload):
+def _runtime():
     packaged = ROOT / "engine_runtime/skill-bridge.cjs"
     bridge = packaged if packaged.is_file() else ROOT / "build-resources/skill-bridge/skill-bridge.cjs"
     # Bundled runtime first; hosts and the portal server may pass their own Node via NODE_COMMAND.
@@ -17,6 +17,17 @@ def invoke(operation, **payload):
     configured = os.environ.get("NODE_COMMAND")
     executable = str(node) if node.is_file() else configured if configured and Path(configured).is_file() else \
         (None if packaged.is_file() and os.name == "nt" else shutil.which("node"))
+    return executable, bridge
+
+
+def available() -> bool:
+    """File jobs use the bridge's structural guard when Node and the bridge exist."""
+    executable, bridge = _runtime()
+    return bool(executable) and bridge.is_file()
+
+
+def invoke(operation, **payload):
+    executable, bridge = _runtime()
     if not executable or not bridge.is_file():
         raise ValueError("Direct text requires the bundled Node bridge (development: node scripts/build-skill-bridge.mjs; Node >=24.19.0)")
     with tempfile.TemporaryDirectory(prefix="humanize-bridge-") as temporary:

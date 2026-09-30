@@ -11,4 +11,15 @@ export function formatElapsed(milliseconds) {
   const minutes=Math.floor(seconds/60); const rest=String(seconds%60).padStart(2,'0');
   return minutes<60?`${String(minutes).padStart(2,'0')}:${rest}`:`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}:${rest}`;
 }
-export const effortLabels={low:'Low · 빠르게',medium:'Medium · 기본',high:'High · 깊게',xhigh:'Xhigh · 더 깊게',max:'Max · 최대',ultra:'Ultra · 최고'};
+export const effortLabels={low:'Low · 빠르게',medium:'Medium · 균형',high:'High · 깊게',xhigh:'Xhigh · 더 깊게',max:'Max · 최대',ultra:'Ultra · 최고'};
+export function effortLabel(level,defaultLevel){const label=effortLabels[level]??level;return level===defaultLevel?`${label} · 기본`:label;}
+// Electron prefixes errors thrown in main-process IPC handlers; users only need the message itself.
+export function displayMessage(message){return String(message??'').replace(/^Error invoking remote method '[^']+': (?:[A-Za-z]*Error: )?/,'');}
+// A saved model that left the list falls back to the engine default model and effort together.
+export function resolveModelSelection(options,saved,fallback){
+  const kept=options.find(x=>x.id===saved?.model);
+  const selected=kept??options.find(x=>x.id===fallback?.model)??options[0];
+  const wanted=kept?saved.effort:fallback?.effort;
+  const effort=selected.efforts.includes(wanted)?wanted:selected.efforts.includes(fallback?.effort)?fallback.effort:selected.efforts[0];
+  return {model:selected.id,effort,replaced:!kept&&typeof saved?.model==='string'?saved.model:undefined};
+}

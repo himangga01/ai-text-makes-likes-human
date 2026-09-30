@@ -91,8 +91,109 @@ function lineMarker(value: string): string | undefined {
   return value.match(/^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?)/u)?.[0];
 }
 
+// "...", "⋯" and "…" are one mark; respelling it must not change sentence counts.
+function normalizeEllipsis(value: string): string {
+  return value.replace(/\.{3}|⋯/gu, '…');
+}
+
 function lineSentenceCount(value: string): number {
-  return [...segmenter.segment(value)].filter(item => item.segment.trim()).length;
+  return [...segmenter.segment(normalizeEllipsis(value))].filter(item => item.segment.trim()).length;
+}
+
+/** Sentences for counting and comparison only; offsets refer to the normalized text. */
+function comparableSentences(value: string): SourceSentence[] {
+  return sourceSentences(normalizeEllipsis(value));
+}
+
+// Prompt delimiters carry a 32-hex nonce; echoing one means the model copied the envelope.
+const promptBoundary = /(?:BEGIN|END)_(?:SOURCE|CANDIDATE)_[0-9a-f]{32}/gu;
+
+function bigrams(text: string): Map<string, number> {
+  const characters = Array.from(text.replace(/\s+/gu, ''));
+  const counts = new Map<string, number>();
+  for (let index = 0; index + 1 < characters.length; index++) {
+    const key = characters[index]! + characters[index + 1]!;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function similarity(left: Map<string, number>, right: Map<string, number>): number {
+  let overlap = 0, total = 0;
+  for (const [key, count] of left) { overlap += Math.min(count, right.get(key) ?? 0); total += count; }
+  for (const count of right.values()) total += count;
+  return total ? 2 * overlap / total : 0;
+}
+
+/** Extra verbatim copies of a source sentence. A copy is an in-place rewrite
+ * only when an equally similar source sentence left the output (e.g. "가지고
+ * 있다" rewritten into an existing "가진다"); splits never copy a whole sentence. */
+function duplicatedSentences(before: SourceSentence[], after: SourceSentence[]): number {
+  const counts = (items: SourceSentence[]) => items.reduce((map, item) => map.set(item.text, (map.get(item.text) ?? 0) + 1), new Map<string, number>());
+  const sourceCounts = counts(before), outputCounts = counts(after);
+  const missing = [...sourceCounts].flatMap(([text, count]) => Array(Math.max(0, count - (outputCounts.get(text) ?? 0))).fill(bigrams(text)) as Map<string, number>[]);
+  let violations = 0;
+  for (const [text, count] of outputCounts) {
+    const extra = count - (sourceCounts.get(text) ?? 0);
+    if (extra <= 0 || !sourceCounts.has(text)) continue;
+    const grams = bigrams(text);
+    let explained = 0;
+    for (let index = 0; index < missing.length && explained < extra; index++) {
+      if (similarity(grams, missing[index]!) >= 0.5) { missing.splice(index--, 1); explained++; }
+    }
+    if (explained < extra) violations++;
+  }
+  return violations;
+}
+
+/** Direct text only: a slot now holds another source sentence verbatim and no
+ * longer resembles its own original. */
+function movedSentences(before: SourceSentence[], after: SourceSentence[]): number {
+  let violations = 0;
+  after.forEach((sentence, index) => {
+    const own = before[index];
+    if (sentence.text === own?.text || !before.some((other, otherIndex) => otherIndex !== index && other.text === sentence.text)) return;
+    if (!own || similarity(bigrams(sentence.text), bigrams(own.text)) < 0.5) violations++;
+  });
+  return violations;
+}
+
+/** Nearby rewritten sentences that clearly match a different source slot. The
+ * window and margins keep in-place rewrites of parallel sentences acceptable. */
+function reorderedSentences(before: SourceSentence[], after: SourceSentence[]): number {
+  const sourceGrams = before.map(sentence => bigrams(sentence.text));
+  let violations = 0;
+  after.forEach((sentence, index) => {
+    if (index >= before.length || sentence.text === before[index]!.text) return;
+    // A verbatim copy of a sentence that still stands in its own slot is an
+    // in-place rewrite into identical wording, not a reorder; duplicatedSentences judges it.
+    if (before.some((other, otherIndex) => otherIndex !== index && other.text === sentence.text && after[otherIndex]?.text === other.text)) return;
+    const grams = bigrams(sentence.text);
+    const own = similarity(grams, sourceGrams[index]!);
+    for (let other = Math.max(0, index - 3); other <= Math.min(before.length - 1, index + 3); other++) {
+      if (other === index) continue;
+      const score = similarity(grams, sourceGrams[other]!);
+      if (score >= 0.85 && score - own >= 0.2) { violations++; return; }
+    }
+  });
+  return violations;
+}
+
+/** Structure guard shared by every input kind: paragraph layout, Markdown
+ * markers, prompt echo and duplicated sentences. File inputs may split or merge
+ * sentences (the rulebook prescribes it); dropped content is the Python gate's. */
+export function checkStructuralFidelity(source: string, candidate: string): number {
+  let violations = 0;
+  const sourceLines = source.split('\n'), outputLines = candidate.split('\n');
+  if (sourceLines.length !== outputLines.length) violations++;
+  sourceLines.forEach((line, index) => {
+    const output = outputLines[index];
+    if (output === undefined) return;
+    if (Boolean(line.trim()) !== Boolean(output.trim())) violations++;
+    if (lineMarker(line) !== lineMarker(output)) violations++;
+  });
+  if ((candidate.match(promptBoundary)?.length ?? 0) > (source.match(promptBoundary)?.length ?? 0)) violations++;
+  return violations + duplicatedSentences(comparableSentences(source), comparableSentences(candidate));
 }
 
 export interface ProtectedSentenceRestoration {
@@ -165,21 +266,19 @@ export function restoreProtectedSentences(source: string, candidate: string): Pr
 }
 
 export function checkDirectTextFidelity(source: string, candidate: string): FidelityReport {
-  const before = sourceSentences(source), after = sourceSentences(candidate);
-  let violations = 0;
-  const sourceLines = source.split('\n'), outputLines = candidate.split('\n');
-  if (sourceLines.length !== outputLines.length) violations++;
-  sourceLines.forEach((line, index) => {
+  const before = comparableSentences(source), after = comparableSentences(candidate);
+  let violations = checkStructuralFidelity(source, candidate);
+  // Direct text forbids splitting and merging sentences, so counts must match.
+  const outputLines = candidate.split('\n');
+  source.split('\n').forEach((line, index) => {
     const output = outputLines[index];
     if (output === undefined) return;
-    if (Boolean(line.trim()) !== Boolean(output.trim())) violations++;
-    const marker = line.match(/^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?)/u)?.[0];
-    const other = output.match(/^\s*(?:#{1,6}\s|[-*+]\s|\d+[.)]\s|>\s?)/u)?.[0];
-    if (marker !== other || (/^\s*#{1,6}\s/u.test(line) && line !== output)) violations++;
-    const count = (value:string) => [...segmenter.segment(value)].filter(item => item.segment.trim()).length;
-    if (count(line) !== count(output)) violations++;
+    if (lineSentenceCount(line) !== lineSentenceCount(output)) violations++;
+    if (/^\s*#{1,6}\s/u.test(line) && line !== output) violations++;
   });
   if (before.length !== after.length) violations++;
+  violations += movedSentences(before, after);
+  violations += reorderedSentences(before, after);
   for (let index = 0; index < before.length; index++) {
     const original = before[index]!, rewritten = after[index];
     if (!rewritten) continue;

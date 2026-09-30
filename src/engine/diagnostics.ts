@@ -20,6 +20,7 @@ export interface TransformDiagnostics {
   skippedSentences?: number;
   fidelityGuardFailures?: number;
   rolledBackChunks?: number;
+  unusableModelOutputs?: number;
   protectedSentences?: number;
   restoredProtectedSentences?: number;
   fullSourceRollbacks?: number;

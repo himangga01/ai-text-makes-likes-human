@@ -1,3 +1,181 @@
+diff --git a/vendor/humanize-engine/scripts/checks.py b/vendor/humanize-engine/scripts/checks.py
+index f159dab..4cae5be 100644
+--- a/vendor/humanize-engine/scripts/checks.py
++++ b/vendor/humanize-engine/scripts/checks.py
+@@ -132,12 +132,46 @@ _HEADING_PREFIX = re.compile(
+ )
+ _PROSE_ENDING = re.compile(r"(?:다|요|음|함|까)\s*[.?!]$")
+ _DEF_LINE = re.compile(r"^\s*\d{1,3}\)\s")
++# 번호 목록 스타일. 번호가 이어지는(k, k+1) 같은 스타일 줄은 제목이 아니라 목록 항목이다.
++_LIST_STYLES = (re.compile(r"^(\d{1,2})\.\s+"), re.compile(r"^\((\d{1,2})\)\s*"))
++_TOC_TITLE = re.compile(r"^(?:#{1,6}\s*)?(?:목\s*차|차\s*례|contents|table of contents)\s*:?$", re.IGNORECASE)
++
++
++def _list_style(line: str) -> tuple[int, int] | None:
++    if line[:1].isspace():
++        return None  # 들여쓴 줄은 하위 항목이다
++    s = line.strip()
++    return next(((i, int(m.group(1))) for i, rx in enumerate(_LIST_STYLES) if (m := rx.match(s))), None)
++
++
++def _is_list_item(lines: list[str], index: int) -> bool:
++    """A numbered line is a list item when its number continues the nearest numbered line
++    of the same style above or below; blank and indented (nested) lines are skipped. A
++    numbered run right under a table-of-contents title is a list of headings."""
++    style = _list_style(lines[index])
++    if style is None:
++        return False
++    consecutive = False
++    for step in (-1, 1):
++        j = index + step
++        while 0 <= j < len(lines) and (not lines[j].strip() or lines[j][:1].isspace()):
++            j += step
++        other = _list_style(lines[j]) if 0 <= j < len(lines) else None
++        if other and other[0] == style[0] and other[1] == style[1] + step:
++            consecutive = True
++    if not consecutive:
++        return False
++    j = index
++    while j > 0 and (not lines[j - 1].strip() or lines[j - 1][:1].isspace() or _list_style(lines[j - 1])):
++        j -= 1
++    return not (j > 0 and _TOC_TITLE.match(lines[j - 1].strip()))
+ 
+ 
+ def extract_headings(text: str) -> list[tuple[str, str]]:
+     """Return [(heading_line, core_title_without_numbering), ...]."""
+     heads = []
+-    for line in text.splitlines():
++    lines = text.splitlines()
++    for index, line in enumerate(lines):
+         s = line.strip()
+         if not s or len(s) > 50:
+             continue
+@@ -145,6 +179,8 @@ def extract_headings(text: str) -> list[tuple[str, str]]:
+             continue
+         if not _HEADING_PREFIX.match(s):
+             continue
++        if _is_list_item(lines, index):
++            continue  # 번호가 이어지는 목록 항목("1. …\n\n2. …")은 제목이 아니다
+         if _PROSE_ENDING.search(s):  # short prose sentence, not a heading
+             continue
+         core = _HEADING_PREFIX.sub("", s).strip()
+@@ -178,7 +214,12 @@ def check_headings(original: str, output: str) -> list[Failure]:
+ # ("...증가했다.1)"). A space-preceded or line-leading "N) " is a footnote
+ # DEFINITION label, not an inline marker. '(3)' style headings are excluded
+ # by the '(' lookbehind; '(2024)' style years by the digit lookbehind.
+-_INLINE_MARKER = re.compile(r"(?<=\S)(?<![(\d])(\d{1,3})\)")
++# A hyphen or Latin letter before the digits is a version or model name ("GPT-4)"),
++# not a footnote marker.
++_INLINE_MARKER = re.compile(r"(?<=\S)(?<![(\dA-Za-z\-])(\d{1,3})\)")
++# A heading line after the definition block still leaves the block "trailing"
++# (definitions, then "## 부록").
++_BLOCK_HEADING = re.compile(r"^\s*(?:#{1,6}\s|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]+\.\s|제\d+[장절])")
+ _DEF_LABEL = re.compile(r"(?:^|(?<=\s))(\d{1,3})\)\s")
+ _NUM_TOKEN = re.compile(r"\d+(?:[.,]\d+)*")
+ 
+@@ -197,15 +238,39 @@ def extract_inline_markers(text: str) -> list[tuple[str, int]]:
+     return markers
+ 
+ 
+-def extract_defs(text: str) -> dict[str, str]:
++def _definition_lines(lines: list[str]) -> list[str]:
++    """Definition-style lines of every block that ends the text or ends at a heading."""
++    found: list[str] = []
++    index = 0
++    while index < len(lines):
++        if not _DEF_LINE.match(lines[index]):
++            index += 1
++            continue
++        end = index
++        while end < len(lines) and (not lines[end].strip() or _DEF_LINE.match(lines[end])):
++            end += 1
++        if end == len(lines) or _BLOCK_HEADING.match(lines[end]):
++            found.extend(line for line in lines[index:end] if _DEF_LINE.match(line))
++        index = end
++    return found
++
++
++def extract_defs(text: str, markers: set[str] | None = None) -> dict[str, str]:
+     """Return {footnote_number: normalized_definition_content}.
+ 
+     Handles both one-definition-per-line and (broken) merged lines, so the
+     content-identity check still works on merged-but-verbatim definitions.
++    ``markers`` adds inline markers found elsewhere in the document, for a chunk
++    that holds the definitions but not the body text that cites them.
+     """
+     defs: dict[str, str] = {}
+-    for line in text.splitlines():
+-        if not _DEF_LINE.match(line):
++    lines = text.splitlines()
++    # 각주 정의는 문서 끝(또는 제목 앞)의 정의 블록에만 있고 본문 각주 표시와 짝이 맞아야 한다.
++    # 본문의 "1) 항목" 목록을 정의로 보면 목록 윤문이 모두 footnote_def로 막혔다.
++    markers = {num for num, _ in extract_inline_markers(text)} | set(markers or ())
++    for line in _definition_lines(lines):
++        first = _DEF_LABEL.match(line.lstrip())
++        if first is None or first.group(1) not in markers:
+             continue
+         labels = [(m.start(), m.group(1)) for m in _DEF_LABEL.finditer(line)]
+         for i, (pos, num) in enumerate(labels):
+@@ -221,11 +286,14 @@ def _nearest_num_before(text: str, pos: int) -> str | None:
+     return nums[-1] if nums else None
+ 
+ 
+-def check_footnotes(original: str, output: str) -> list[Failure]:
++def check_footnotes(original: str, output: str, document: str | None = None) -> list[Failure]:
++    """``document`` is the whole source when ``original`` is one chunk of it."""
+     fails: list[Failure] = []
+     in_markers = extract_inline_markers(original)
+     out_markers = extract_inline_markers(output)
+-    if not in_markers and not extract_defs(original):
++    cited = {num for num, _ in extract_inline_markers(document)} if document else set()
++    in_defs = extract_defs(original, cited)
++    if not in_markers and not in_defs:
+         return fails  # original has no footnotes; nothing to protect
+ 
+     if len(out_markers) < len(in_markers):
+@@ -269,8 +337,7 @@ def check_footnotes(original: str, output: str) -> list[Failure]:
+                 f"(인접 수치 앵커 '{anchor}' → '{out_anchor}'): 인용 출처 변조 위험",
+             ))
+ 
+-    in_defs = extract_defs(original)
+-    out_defs = extract_defs(output)
++    out_defs = extract_defs(output, cited)
+     for num, content in in_defs.items():
+         if num not in out_defs:
+             fails.append(Failure(
+@@ -358,14 +425,26 @@ def check_numbers(original: str, output: str) -> list[Failure]:
+ MIN_QUOTE_LEN = 8
+ 
+ 
++_PARAGRAPH_SPLIT = re.compile(r"\n[ \t]*\n")
++
++
+ def extract_quotes(text: str, min_len: int = MIN_QUOTE_LEN) -> list[str]:
++    """문단 안에서 같은 종류의 여닫는 부호끼리만 짝짓는다.
++
++    문서 전체에서 짝을 지으면 “…"처럼 섞인 부호가 몇 문단 뒤의 ”와 맞물려
++    본문 전체가 인용으로 잡히고, 곧은 따옴표 하나(27" 모니터)가 문서 전체의
++    짝수 판정을 깨뜨려 진짜 인용의 보호가 사라졌다.
++    """
+     quotes: list[str] = []
+-    for op, cl in (("「", "」"), ("『", "』"), ("“", "”")):
+-        quotes += re.findall(re.escape(op) + r"([^" + cl + r"]+)" + re.escape(cl), text)
+-    # Straight double quotes: only if balanced.
+-    parts = text.split('"')
+-    if len(parts) % 2 == 1:
+-        quotes += parts[1::2]
++    for paragraph in _PARAGRAPH_SPLIT.split(text):
++        for op, cl in (("「", "」"), ("『", "』"), ("“", "”")):
++            quotes += re.findall(re.escape(op) + r"([^" + cl + r"]+)" + re.escape(cl), paragraph)
++        marks = [i for i, ch in enumerate(paragraph) if ch == '"']
++        if len(marks) % 2:
++            # 홀수면 숫자 바로 뒤의 "(인치·초 단위 표기)를 따옴표에서 뺀다.
++            marks = [i for i in marks if not (i > 0 and paragraph[i - 1].isdigit())]
++        if len(marks) % 2 == 0:
++            quotes += [paragraph[a + 1:b] for a, b in zip(marks[::2], marks[1::2])]
+     return [q for q in quotes if len(q.strip()) >= min_len]
+ 
+ 
 diff --git a/vendor/humanize-engine/scripts/prepare_monolith_input.py b/vendor/humanize-engine/scripts/prepare_monolith_input.py
 index b7ff6de..b067027 100644
 --- a/vendor/humanize-engine/scripts/prepare_monolith_input.py
@@ -109,10 +287,128 @@ index 6e32cc7..1d87af1 100644
      report = {
          "source_chars": len(text),
 diff --git a/vendor/humanize-engine/scripts/restore_modality.py b/vendor/humanize-engine/scripts/restore_modality.py
-index dc5e4a3..33a59e7 100644
+index dc5e4a3..6872021 100644
 --- a/vendor/humanize-engine/scripts/restore_modality.py
 +++ b/vendor/humanize-engine/scripts/restore_modality.py
-@@ -255,9 +255,9 @@ def main(argv: list[str] | None = None) -> int:
+@@ -93,31 +93,68 @@ def _sim(a: str, b: str) -> float:
+     return 2 * inter / (sum(A.values()) + sum(B.values()))
+ 
+ 
++# 전체 DP 셀 수 상한. 이보다 크면(장문 전체 문서 검증) 대각선 띠 안에서만 정렬한다.
++# 윤문은 문장 순서를 유지하므로 최적 경로는 대각선 근처에 있다 — 띠 밖을 버려도
++# 청크 단위 입력(상한 이하)의 결과는 이전과 같고, 9만 자 문서가 제곱 시간에 빠지지 않는다.
++_FULL_ALIGN_CELLS = 250_000
++_ALIGN_BAND = 64
++
++
+ def align(before: list[str], after: list[str]) -> list[tuple[str, str]]:
+     """Needleman-Wunsch 문장 정렬. 1:1 짝과 gap(삽입·삭제)만 낸다."""
+     n, m = len(before), len(after)
+     gap = -0.4
+-    score = [[0.0] * (m + 1) for _ in range(n + 1)]
+-    for i in range(1, n + 1):
+-        score[i][0] = score[i - 1][0] + gap
+-    for j in range(1, m + 1):
+-        score[0][j] = score[0][j - 1] + gap
+-    for i in range(1, n + 1):
+-        for j in range(1, m + 1):
+-            score[i][j] = max(
+-                score[i - 1][j - 1] + _sim(before[i - 1], after[j - 1]),
+-                score[i - 1][j] + gap,
+-                score[i][j - 1] + gap,
+-            )
++    neg = float("-inf")
++    grams_a = [_bigrams(s) for s in before]
++    grams_b = [_bigrams(s) for s in after]
++    size_a = [sum(c.values()) for c in grams_a]
++    size_b = [sum(c.values()) for c in grams_b]
++
++    def sim(i: int, j: int) -> float:  # == _sim(before[i], after[j]), 캐시한 바이그램 사용
++        small, large = grams_a[i], grams_b[j]
++        if not small or not large:
++            return 0.0
++        if len(small) > len(large):
++            small, large = large, small
++        inter = sum(min(v, large[k]) for k, v in small.items() if k in large)
++        return 2 * inter / (size_a[i] + size_b[j])
++
++    if n * m <= _FULL_ALIGN_CELLS:
++        bounds = [(0, m)] * (n + 1)
++    else:
++        width = _ALIGN_BAND + abs(n - m)
++        bounds = []
++        for i in range(n + 1):
++            center = round(i * m / n) if n else 0
++            bounds.append((max(0, center - width), min(m, center + width)))
++    rows: list[list[float]] = []
++
++    def get(i: int, j: int) -> float:
++        lo, hi = bounds[i]
++        return rows[i][j - lo] if lo <= j <= hi else neg
++
++    for i in range(n + 1):
++        lo, hi = bounds[i]
++        row = [neg] * (hi - lo + 1)
++        rows.append(row)
++        for j in range(lo, hi + 1):
++            if i == 0:
++                row[j - lo] = j * gap if j == 0 else get(0, j - 1) + gap
++            elif j == 0:
++                row[0] = get(i - 1, 0) + gap
++            else:
++                row[j - lo] = max(
++                    get(i - 1, j - 1) + sim(i - 1, j - 1),
++                    get(i - 1, j) + gap,
++                    row[j - lo - 1] + gap if j > lo else neg,
++                )
+     pairs: list[tuple[str, str]] = []
+     i, j = n, m
+     while i > 0 or j > 0:
+-        if i > 0 and j > 0 and abs(
+-            score[i][j] - (score[i - 1][j - 1] + _sim(before[i - 1], after[j - 1]))
+-        ) < 1e-9:
++        if i > 0 and j > 0 and abs(get(i, j) - (get(i - 1, j - 1) + sim(i - 1, j - 1))) < 1e-9:
+             pairs.append((before[i - 1], after[j - 1]))
+             i, j = i - 1, j - 1
+-        elif i > 0 and abs(score[i][j] - (score[i - 1][j] + gap)) < 1e-9:
++        elif i > 0 and abs(get(i, j) - (get(i - 1, j) + gap)) < 1e-9:
+             pairs.append((before[i - 1], ""))
+             i -= 1
+         else:
+@@ -213,6 +250,9 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
+     result = after
+     restored: list[dict] = []
+     skipped: list[dict] = []
++    source_sentences = [
++        s.strip() for s in _m._split_sentences(_checks.strip_summary_block(before)) if s.strip()
++    ]
+     for loss in losses:
+         # 유사도가 낮은 짝은 정렬 아티팩트일 수 있어 손대지 않는다. 다만 **보고는 남긴다** —
+         # 예전에는 조용히 탈락시켜, 진짜 손실이 어디로 갔는지 흔적조차 남지 않았다.
+@@ -241,7 +281,22 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
+                 }
+             )
+             continue
++        # 순서가 바뀐 윤문에서는 정렬이 서로 다른 원문 문장을 짝짓는다. 짝 문장이 다른
++        # 원문 문장과 더 닮았거나 되돌릴 원문 문장이 이미 결과에 있으면, 되돌리는 순간
++        # 한 명제가 사라지고 다른 명제가 두 번 나온다(실측: 상·하반기 문장 교환).
++        # 결과에 그대로 남아 있는 원문 문장은 이미 제 짝이 있으므로 비교에서 뺀다
++        # (병렬 문장 "서울의 매출은 … / 부산의 매출은 …"의 서법 복원이 막히지 않게).
++        own = _sim(loss["before"], loss["after"])
++        kept = {s.strip() for s in _m._split_sentences(result)}
++        if any(other != loss["before"] and other not in kept and _sim(other, loss["after"]) > own
++               for other in source_sentences):
++            skipped.append({**loss, "reason": "순서 변경 의심 — 다른 원문 문장과 더 가깝다"})
++            continue
+         replacement = _strip_restored_cliche(loss["before"], loss["after"])
++        present = {s.strip() for s in _m._split_sentences(result)}
++        if loss["before"] in present or replacement.strip() in present:
++            skipped.append({**loss, "reason": "복원하면 같은 문장이 중복된다"})
++            continue
+         result = result.replace(loss["after"], replacement, 1)
+         restored.append({**loss, "restored_as": replacement})
+     return result, restored, skipped
+@@ -255,9 +310,9 @@ def main(argv: list[str] | None = None) -> int:
      ap.add_argument("--json", action="store_true", help="보고를 JSON으로 stderr에 출력")
      args = ap.parse_args(argv)
  
@@ -124,7 +420,7 @@ index dc5e4a3..33a59e7 100644
          after = f.read()
  
      result, restored, skipped = restore(before, after)
-@@ -277,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
+@@ -277,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
              print(f"  (보류) {s['after'][:40]} — {s['reason']}", file=sys.stderr)
  
      if args.out:
@@ -133,11 +429,119 @@ index dc5e4a3..33a59e7 100644
              f.write(result)
      else:
          sys.stdout.write(result)
+diff --git a/vendor/humanize-engine/scripts/sanitize_text.py b/vendor/humanize-engine/scripts/sanitize_text.py
+index a370936..e19025a 100644
+--- a/vendor/humanize-engine/scripts/sanitize_text.py
++++ b/vendor/humanize-engine/scripts/sanitize_text.py
+@@ -208,10 +208,11 @@ def sanitize(
+         text, removed = _strip_joiners_outside_emoji(text)
+         counts["invisible"] += removed
+ 
+-    # 2) 한글 NFD → NFC
++    # 2) 한글 NFD → NFC. 분해된 한글 자모열만 결합한다 — 전체 NFC는 CJK 호환 한자
++    #    (樂/樂처럼 독음이 다른 코드포인트)와 Å·Ω 기호까지 다른 글자로 바꾼다.
+     if normalize_unicode:
+         counts["hangul_recomposed"] = len(DECOMPOSED_HANGUL.findall(text))
+-        text = unicodedata.normalize("NFC", text)
++        text = DECOMPOSED_HANGUL.sub(lambda m: unicodedata.normalize("NFC", m.group(0)), text)
+ 
+     # 3) 특수 공백 → 보통 공백
+     if normalize_spaces:
 diff --git a/vendor/humanize-engine/scripts/strip_injected_commas.py b/vendor/humanize-engine/scripts/strip_injected_commas.py
-index 1cbbd34..8f52d83 100644
+index 1cbbd34..aa7fb03 100644
 --- a/vendor/humanize-engine/scripts/strip_injected_commas.py
 +++ b/vendor/humanize-engine/scripts/strip_injected_commas.py
-@@ -105,15 +105,15 @@ def main(argv: list[str] | None = None) -> int:
+@@ -31,10 +31,21 @@ import sys
+ _CONN_COMMA_RE = re.compile(r"(고|며|지만|면서|는데|아서|어서|여서|해서|져서),(\s)")
+ 
+ # 따옴표 스팬 — 이 안의 쉼표는 발화 원문이므로 불가침.
+-_QUOTE_RE = re.compile(r"“[^”]*”|‘[^’]*’|\"[^\"]*\"|「[^」]*」|『[^』]*』")
++# 문장이 아니라 **전체 텍스트**에서 찾는다: 여러 문장에 걸친 인용은 문장별로 나누면
++# 여는 따옴표를 잃어 안쪽 쉼표가 지워진다. 문단(줄바꿈)은 넘지 않고, 숫자 뒤 "(인치)는 따옴표가 아니다.
++_QUOTE_RE = re.compile(r"“[^”\n]*”|‘[^’\n]*’|(?<!\d)\"[^\"\n]*\"|「[^」\n]*」|『[^』\n]*』")
+ 
+ _SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+")
+ 
++# 명사 나열("재고, 부채, 광고비")의 '고,'는 연결어미가 아니다. 이웃 항목이 쉼표로
++# 끝나는 단일 어절이고 '고'로 끝나지 않으면 나열로 본다("먹고, 자고,"는 연결어미 나열).
++_NEXT_ITEM_RE = re.compile(r"([^\s,.!?…]+),")
++_PREV_ITEM_RE = re.compile(r"([^\s,.!?…]+),\s*$")
++# '고'로 끝나는 명사끼리의 나열("재고, 창고, 광고비")은 이웃 규칙만으로는 동사 나열
++# ("먹고, 자고,")과 구별되지 않는다. 동사 활용형과 겹치지 않는 명사만 둔다
++# (사고·신고·입고·참고·보고는 '사다·신다·입다·참다·보다'의 활용형과 겹쳐 뺀다).
++_GO_NOUNS = ("재고", "창고", "광고", "최고", "경고", "원고", "잔고", "공고", "출고", "금고")
++
+ 
+ def _sentences(text: str) -> list[str]:
+     return [s for s in _SENT_SPLIT.split(text) if s.strip()]
+@@ -44,18 +55,35 @@ def _norm(s: str) -> str:
+     return re.sub(r"\s+", " ", s.strip())
+ 
+ 
+-def _strip_in_sentence(sent: str) -> tuple[str, int]:
+-    """한 문장에서 따옴표 밖 연결어미 쉼표를 제거. (결과, 제거 수) 반환."""
+-    spans = [m.span() for m in _QUOTE_RE.finditer(sent)]
++def _in_noun_list(sent: str, m: re.Match) -> bool:
++    if m.group(1) != "고":
++        return False
++    word_start = max(sent.rfind(" ", 0, m.start()), sent.rfind(",", 0, m.start())) + 1
++    if sent[word_start:m.start() + 1].endswith(_GO_NOUNS):
++        return True
++    following = _NEXT_ITEM_RE.match(sent, m.end())
++    if following and not following.group(1).endswith("고"):
++        return True
++    preceding = _PREV_ITEM_RE.search(sent[:word_start])
++    return bool(preceding and not preceding.group(1).endswith("고"))
++
++
++def _strip_in_sentence(sent: str, quote_spans: list[tuple[int, int]] | None = None,
++                       offset: int = 0) -> tuple[str, int]:
++    """한 문장에서 따옴표 밖 연결어미 쉼표를 제거. (결과, 제거 수) 반환.
++
++    quote_spans는 전체 텍스트 기준 따옴표 범위이며 offset은 이 문장의 시작 위치다.
++    """
++    spans = quote_spans if quote_spans is not None else [m.span() for m in _QUOTE_RE.finditer(sent)]
+ 
+     def in_quote(pos: int) -> bool:
+-        return any(a <= pos < b for a, b in spans)
++        return any(a <= offset + pos < b for a, b in spans)
+ 
+     removed = 0
+     out = []
+     last = 0
+     for m in _CONN_COMMA_RE.finditer(sent):
+-        if in_quote(m.start()):
++        if in_quote(m.start()) or _in_noun_list(sent, m):
+             continue
+         out.append(sent[last : m.start()])
+         out.append(m.group(1) + m.group(2))
+@@ -75,20 +103,24 @@ def strip_injected(before: str, after: str, all_sentences: bool = False) -> tupl
+     total_removed = 0
+     touched = 0
+     parts: list[str] = []
++    quote_spans = [m.span() for m in _QUOTE_RE.finditer(after)]
+     # 문장 단위로 처리하되 원문 화이트스페이스를 보존하기 위해 split 지점을 기억한다.
+     pieces = _SENT_SPLIT.split(after)
+     seps = _SENT_SPLIT.findall(after)
++    offset = 0
+     for i, piece in enumerate(pieces):
+         if piece.strip() and _norm(piece) not in originals:
+-            fixed, n = _strip_in_sentence(piece)
++            fixed, n = _strip_in_sentence(piece, quote_spans, offset)
+             if n:
+                 total_removed += n
+                 touched += 1
+             parts.append(fixed)
+         else:
+             parts.append(piece)
++        offset += len(piece)
+         if i < len(seps):
+             parts.append(seps[i])
++            offset += len(seps[i])
+     report = {"commas_removed": total_removed, "sentences_touched": touched}
+     return "".join(parts), report
+ 
+@@ -105,15 +137,15 @@ def main(argv: list[str] | None = None) -> int:
      )
      args = ap.parse_args(argv)
  
@@ -156,3 +560,48 @@ index 1cbbd34..8f52d83 100644
              f.write(fixed)
      else:
          sys.stdout.write(fixed)
+diff --git a/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py b/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py
+index dd6ca76..e8880b2 100644
+--- a/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py
++++ b/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py
+@@ -683,8 +683,38 @@ def change_rate(before: str, after: str, ignore_markup: bool = False) -> float:
+         after = _strip_markup(after)
+     if not before and not after:
+         return 0.0
+-    matcher = difflib.SequenceMatcher(None, before, after, autojunk=False)
+-    return 1.0 - matcher.ratio()
++    if len(before) + len(after) <= _SEGMENTED_CHANGE_RATE_CHARS:
++        matcher = difflib.SequenceMatcher(None, before, after, autojunk=False)
++        return 1.0 - matcher.ratio()
++    return 1.0 - 2.0 * _segmented_matches(before, after) / (len(before) + len(after))
++
++
++# 문자 diff(autojunk=False)는 입력 길이의 제곱에 가깝게 느려진다 — 실측 9만 자 전체 문서
++# 검증 139초. 이 합계 길이를 넘으면 줄 단위로 짝지어 각 줄만 문자 비교한다. 윤문은
++# 줄(문단) 구조를 유지하므로 값은 전체 비교와 거의 같고, 청크 단위 입력은 그대로다.
++_SEGMENTED_CHANGE_RATE_CHARS = 20_000
++
++
++def _char_matches(a: str, b: str) -> int:
++    return sum(block.size for block in
++               difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks())
++
++
++def _segmented_matches(before: str, after: str) -> int:
++    a_lines, b_lines = before.split("\n"), after.split("\n")
++    if len(a_lines) == len(b_lines):
++        return sum(_char_matches(x, y) for x, y in zip(a_lines, b_lines)) + len(a_lines) - 1
++    matched = 0
++    lines = difflib.SequenceMatcher(None, a_lines, b_lines, autojunk=False)
++    for tag, i1, i2, j1, j2 in lines.get_opcodes():
++        if tag == "equal":
++            matched += sum(len(line) + 1 for line in a_lines[i1:i2])
++        elif tag == "replace":
++            if i2 - i1 == j2 - j1:
++                matched += sum(_char_matches(x, y) + 1 for x, y in zip(a_lines[i1:i2], b_lines[j1:j2]))
++            else:
++                matched += _char_matches("\n".join(a_lines[i1:i2]), "\n".join(b_lines[j1:j2]))
++    return min(matched, len(before), len(after))
+ 
+ 
+ # ---------------------------------------------------------------------------

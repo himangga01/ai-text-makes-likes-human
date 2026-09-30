@@ -83,8 +83,7 @@ export async function createProductionRuntime(
         }),
         chunkConcurrency: config.chunkConcurrency,
         model: CLAUDE_MODEL,
-        reasoningEffort: CLAUDE_REASONING_EFFORT,
-        maxObservedCodexConcurrency: () => claudeSemaphore.maxObserved
+        reasoningEffort: CLAUDE_REASONING_EFFORT
       });
   return {
     refreshHealth,
@@ -92,8 +91,7 @@ export async function createProductionRuntime(
     engine: new HumanizeEngine({
       python,
       codex,
-      chunkConcurrency: config.chunkConcurrency,
-      maxObservedCodexConcurrency: () => codexSemaphore.maxObserved
+      chunkConcurrency: config.chunkConcurrency
     }),
     claudeEngine,
     queue: new TransformQueue({

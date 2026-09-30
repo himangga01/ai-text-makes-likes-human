@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { checkDirectTextFidelity, restoreProtectedSentences, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
+import { checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
 import { parseTextResult } from '../../src/engine/text-edits.js';
 it.each([
   ['공사 진행은 금지된다.', '공사 진행은 허용된다.'],
@@ -99,4 +99,42 @@ it('does not omit an additional substantive process when compressing a functiona
 });
 it('rejects a compound masquerading as the retained original process construction',()=>{
  expect(checkDirectTextFidelity('자료를 검토하는 과정에서 내용을 확인했다.','자료를 검토하는 과정에서평가 내용을 확인했다.').violations).toBeGreaterThan(0);
+});
+it('rejects sentences moved to another source position',()=>{
+ const source='먼저 학생들은 도서관에서 공부했다. 그다음 학생들은 도서관에서 잠을 잤다.\n';
+ expect(checkDirectTextFidelity(source,'그다음 학생들은 도서관에서 잠을 잤다. 먼저 학생들은 도서관에서 공부했다.\n').violations).toBeGreaterThan(0);
+ expect(checkDirectTextFidelity(source,'그다음 학생들은 도서관에서 잠을 잤다. 먼저 학생들은 도서관에서 공부를 했다.\n').violations).toBeGreaterThan(0);
+});
+it('accepts parallel sentences that are each rewritten in place',()=>{
+ expect(checkDirectTextFidelity('상반기에는 신규 채용 규모를 줄인다. 하반기에는 신규 채용 규모를 늘린다.\n','상반기에는 신규 채용의 규모를 줄인다. 하반기에는 신규 채용의 규모를 늘린다.\n').violations).toBe(0);
+});
+it('checks paragraph structure and duplicated sentences for every input kind',()=>{
+ const source='첫 문장이다. 둘째 문장이다.\n\n# 제목\n- 목록 항목이다.\n';
+ expect(checkStructuralFidelity(source,source.replace('첫 문장이다','처음 문장이다'))).toBe(0);
+ for(const candidate of [
+  source.replace('둘째 문장이다.','둘째 문장이다. 둘째 문장이다.'),
+  source.replace('\n\n','\n'),
+  source.replace('- 목록','목록'),
+  `BEGIN_SOURCE_${'f'.repeat(32)}\n${source}`
+ ])expect(checkStructuralFidelity(source,candidate)).toBeGreaterThan(0);
+});
+it('lets file inputs split, merge and respell punctuation, which the rulebook prescribes',()=>{
+ const source='이번 작업은 쉽지 않은 작업이었다 — 자료가 부족했기 때문이다. 그래도 끝냈다.\n';
+ expect(checkStructuralFidelity(source,source.replace(' — ','. '))).toBe(0);
+ expect(checkStructuralFidelity(source,source.replace('. 그래도',', 그래도'))).toBe(0);
+ expect(checkStructuralFidelity('기다렸다... 결국 왔다.\n','기다렸다… 결국 왔다.\n')).toBe(0);
+ // Drops are left to the Python sentence_dropped gate; verbatim copies are caught here.
+ expect(checkStructuralFidelity(source,source.replace('그래도 끝냈다.','그래도 끝냈다. 그래도 끝냈다.'))).toBeGreaterThan(0);
+});
+it('accepts an in-place rewrite that happens to equal another source sentence',()=>{
+ const source='이 결과는 중요한 의미를 가진다. 이 결과는 중요한 의미를 가지고 있다.\n';
+ const candidate='이 결과는 중요한 의미를 가진다. 이 결과는 중요한 의미를 가진다.\n';
+ expect(checkStructuralFidelity(source,candidate)).toBe(0);
+ expect(checkDirectTextFidelity(source,candidate).violations).toBe(0);
+});
+it('still counts sentences for direct text, ignoring the spelling of an ellipsis',()=>{
+ const source='첫 문장이다. 둘째 문장이다.\n';
+ expect(checkDirectTextFidelity(source,'첫 문장이다.\n').violations).toBeGreaterThan(0);
+ expect(checkDirectTextFidelity(source,'첫 문장이다, 둘째 문장이다.\n').violations).toBeGreaterThan(0);
+ expect(checkDirectTextFidelity('기다렸다... 결국 왔다.\n','기다렸다… 결국 왔다.\n').violations).toBe(0);
 });

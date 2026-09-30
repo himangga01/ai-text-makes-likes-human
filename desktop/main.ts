@@ -1,13 +1,13 @@
 import { defaultPreferences, loadPreferences, savePreferences, selectRewriteStrength } from './preferences.js';
 import { parseRewriteOptions } from '../src/engine/rewrite-policy.js';
 import { app, BrowserWindow, protocol, ipcMain, dialog, clipboard, utilityProcess, type UtilityProcess, type IpcMainInvokeEvent } from "electron";
-import { readFile, writeFile, mkdir, readdir, rm, copyFile } from "node:fs/promises";
-import { constants } from 'node:fs';
+import { readFile, writeFile, mkdir, readdir, rm } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { parseEngineChoice, type EngineChoice } from "../src/engine/model-policy.js";
 import { parseModelSettings, type ModelSettings } from '../src/engine/model-policy.js';
+import { sameFile, saveDocumentCopy } from './save-target.js';
 
 app.setName("HumanizeKR");
 if (process.env.HUMANIZE_USER_DATA) app.setPath("userData", path.resolve(process.env.HUMANIZE_USER_DATA));
@@ -24,6 +24,8 @@ let quitting = false;
 let mayQuit = false;
 let saving = Promise.resolve();
 const children = new Set<number>();
+// The TXT/MD file the current text came from; saving a result over it is refused.
+let textSource: string | undefined;
 const pending = new Map<string, { resolve(value: any): void; reject(reason: Error): void; timer?: NodeJS.Timeout }>();
 
 function stopChildren() {
@@ -127,8 +129,7 @@ function registerIpc() {
     try {
       const selected=await dialog.showSaveDialog(window!,{defaultPath:info.name,filters:[{name:'Office 문서',extensions:[info.format]}]});
       if(selected.canceled||!selected.filePath)return false;
-      if(path.resolve(selected.filePath)===info.original||path.extname(selected.filePath).toLowerCase()!=='.'+info.format)throw new Error('원본과 다른 새 파일 이름을 지정해 주세요.');
-      await copyFile(info.output,selected.filePath,constants.COPYFILE_EXCL);return true;
+      await saveDocumentCopy(info.output,selected.filePath,info.original,info.format);return true;
     } finally {await request('document-release',{leaseId:info.leaseId}).catch(()=>{});}
   });
   handle("cancel", () => { if (activeId) worker?.postMessage({ kind: "cancel", id: activeId }); });
@@ -136,15 +137,18 @@ function registerIpc() {
     if(activeId)throw new Error('변환 중입니다.');
     const selected = await dialog.showOpenDialog(window!, { properties: ["openFile"], filters: [{ name: "지원 문서", extensions: ["txt", "md", "docx", "pptx"] }] });
     const file = selected.filePaths[0]; if (selected.canceled || !file) return null;
-    if(/\.(docx|pptx)$/i.test(file))return {document:await request('document-import',{file})};
+    if(/\.(docx|pptx)$/i.test(file)){textSource=undefined;return {document:await request('document-import',{file})};}
     if (!/\.(txt|md)$/i.test(file)) throw new Error("TXT, MD, DOCX 또는 PPTX 파일을 선택해 주세요.");
-    return { name: path.basename(file), bytes: new Uint8Array(await readFile(file)) };
+    const bytes = new Uint8Array(await readFile(file));
+    textSource = path.resolve(file);
+    return { name: path.basename(file), bytes };
   });
   handle("save-text", async value => {
     const content = text(value?.text);
     const name = path.basename(text(value?.name)).replace(/[<>:"/\\|?*]/g, "-");
     const selected = await dialog.showSaveDialog(window!, { defaultPath: /\.(txt|md)$/i.test(name) ? name : "humanized.md", filters: [{ name: "Markdown", extensions: ["md"] }, { name: "텍스트", extensions: ["txt"] }] });
     if (selected.canceled || !selected.filePath) return false;
+    if (textSource && sameFile(selected.filePath, textSource)) throw new Error("원본과 다른 새 파일 이름을 지정해 주세요.");
     await writeFile(selected.filePath, content, "utf8"); return true;
   });
   handle("copy", value => clipboard.writeText(text(value)));

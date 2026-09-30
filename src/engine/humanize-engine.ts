@@ -1,6 +1,6 @@
 import { candidateReviewForRetry, type CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
-import { checkDirectTextFidelity, restoreProtectedSentences } from './direct-text-fidelity.js';
+import { checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences } from './direct-text-fidelity.js';
 import { readFile, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import type { EventSink } from "../contracts.js";
@@ -82,7 +82,6 @@ export interface HumanizeEngineOptions {
   model?: string;
   reasoningEffort?: string;
   now?: () => number;
-  maxObservedCodexConcurrency?: () => number;
 }
 
 interface ChunkTaskContext {
@@ -93,6 +92,7 @@ interface ChunkTaskContext {
   signal: AbortSignal;
   onWorkUnit(phase: "transform" | "verify"): void;
   onWarning(warning: HumanizeWarning): void;
+  trackModelCall<T>(task: () => Promise<T>): Promise<T>;
 }
 
 export interface ChunkTaskResult {
@@ -108,6 +108,8 @@ export interface ChunkTaskResult {
   protectedSentences: number;
   restoredProtectedSentences: number;
   candidateReviewRetries: number;
+  /** Attempts whose reply was malformed or ambiguous (0–2). */
+  unusableModelOutputs: number;
   gateCodes: GateCode[];
   timings: ChunkTiming;
 }
@@ -128,6 +130,29 @@ function codePointLength(value: string): number {
   return Array.from(value).length;
 }
 
+// Python str.strip() whitespace: reassemble_chunks.py re-attaches the source
+// chunk's outer whitespace, so every pre-assembly check must see the same shape.
+const pythonWhitespace = String.fromCodePoint(
+  0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x85, 0xa0, 0x1680,
+  0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200a,
+  0x2028, 0x2029, 0x202f, 0x205f, 0x3000
+);
+const leadingWhitespace = new RegExp(`^[${pythonWhitespace}]*`, "u");
+const trailingWhitespace = new RegExp(`[${pythonWhitespace}]*$`, "u");
+
+function alignOuterWhitespace(source: string, output: string): string {
+  const leading = source.match(leadingWhitespace)![0];
+  if (leading.length === source.length) return output;
+  const core = output.replace(leadingWhitespace, "").replace(trailingWhitespace, "");
+  return core ? leading + core + source.match(trailingWhitespace)![0] : output;
+}
+
+// Only a malformed or ambiguous reply from a successful run is the model's fault
+// for this chunk. Timeouts and CLI failures (login, usage limit, network) fail the job.
+function unusableModelOutput(error: unknown): boolean {
+  return error instanceof EngineError && error.publicCode === "ENGINE_OUTPUT_INVALID";
+}
+
 export class HumanizeEngine {
   private readonly python: PythonAdapter;
   private readonly codex: CodexAdapter;
@@ -135,7 +160,6 @@ export class HumanizeEngine {
   private readonly model: string;
   private readonly reasoningEffort: string;
   private readonly now: () => number;
-  private readonly maxObservedCodexConcurrency: () => number;
 
   constructor(options: HumanizeEngineOptions) {
     this.python = options.python;
@@ -144,8 +168,6 @@ export class HumanizeEngine {
     this.model = options.model ?? HUMANIZE_MODEL;
     this.reasoningEffort = options.reasoningEffort ?? HUMANIZE_REASONING_EFFORT;
     this.now = options.now ?? (() => performance.now());
-    this.maxObservedCodexConcurrency =
-      options.maxObservedCodexConcurrency ?? (() => 1);
   }
 
   private ensureActive(signal: AbortSignal): void {
@@ -170,14 +192,14 @@ export class HumanizeEngine {
     context.onWarning(warning);
   }
 
-  private collectCodexWarnings(
+  private collectModelWarnings(
     context: ChunkTaskContext,
     warnings: HumanizeWarning[],
     messages: string[]
   ): void {
     for (const message of messages) {
       this.recordChunkWarning(context, warnings, {
-        code: "CODEX_WARNING",
+        code: "MODEL_WARNING",
         message
       });
     }
@@ -258,6 +280,16 @@ export class HumanizeEngine {
             message: `${chunk.index}번 구간에서 문장 경계·사실 관계·핵심 개념 또는 서법 보존을 확인하지 못해 넓은 수정을 제한했습니다.`
           });
         }
+      } else {
+        // Files and legacy requests keep their editing policy but never lose,
+        // duplicate or move sentences, paragraphs or Markdown structure.
+        fidelityFailed = checkStructuralFidelity(sourceText, await readFile(rewrittenPath, 'utf8')) > 0;
+        if (fidelityFailed) {
+          this.recordChunkWarning(context, warnings, {
+            code: 'STRUCTURE_FIDELITY_RESTRICTED',
+            message: `${chunk.index}번 구간에서 문장·문단 구조 보존을 확인하지 못해 수정을 제한했습니다.`
+          });
+        }
       }
       if (report.restoredSentences > 0) {
         this.recordChunkWarning(context, warnings, {
@@ -267,44 +299,68 @@ export class HumanizeEngine {
       }
     };
 
-    const firstCodexStartedAt = this.now();
-    const first = await this.codex.transform(
-      chunkSourcePath,
-      context.workspace.path(`codex-${chunk.index}-attempt-1.json`),
-      1,
-      context.signal,
-      context.settings,
-      context.rewriteOptions
-    );
-    codexMs += this.now() - firstCodexStartedAt;
-    codexCalls += 1;
+    // A malformed or ambiguous reply costs this chunk an attempt, not the job:
+    // attempt 1 falls through to the retry, attempt 2 rolls back.
+    let unusableModelOutputs = 0;
+    const attemptTransform = async (attempt: 1 | 2, candidateReview?: CandidateReview): Promise<CodexResult | undefined> => {
+      const startedAt = this.now();
+      try {
+        return await context.trackModelCall(() => this.codex.transform(
+          chunkSourcePath,
+          context.workspace.path(`codex-${chunk.index}-attempt-${attempt}.json`),
+          attempt,
+          context.signal,
+          context.settings,
+          context.rewriteOptions,
+          candidateReview
+        ));
+      } catch (error) {
+        if (context.signal.aborted || !unusableModelOutput(error)) throw error;
+        unusableModelOutputs += 1;
+        this.recordChunkWarning(context, warnings, {
+          code: "MODEL_OUTPUT_UNUSABLE",
+          message: `${chunk.index}번 구간의 모델 응답 형식을 사용할 수 없습니다.`
+        });
+        return undefined;
+      } finally {
+        codexMs += this.now() - startedAt;
+        codexCalls += 1;
+      }
+    };
+    const acceptCandidate = async (result: CodexResult): Promise<void> => {
+      this.collectModelWarnings(context, warnings, result.warnings);
+      candidateFidelityIssues = result.fidelityIssues ?? 0;
+      await writeFile(rewrittenPath, alignOuterWhitespace(sourceText, result.rewrittenText), "utf8");
+      await restore();
+    };
+
+    const first = await attemptTransform(1);
     this.ensureActive(context.signal);
     context.onWorkUnit("transform");
-    this.collectCodexWarnings(context, warnings, first.warnings);
-    candidateFidelityIssues = first.fidelityIssues ?? 0;
-    await writeFile(rewrittenPath, first.rewrittenText, "utf8");
-    await restore();
-
-    const firstGateStartedAt = this.now();
-    let gate = await this.python.verify(
-      chunkSourcePath,
-      rewrittenPath,
-      context.signal
-    );
-    gateMs += this.now() - firstGateStartedAt;
-    gateCodes.push(...gate.gateCodes);
-    if (gate.status === "error") {
-      throw validation(`Chunk ${chunk.index} gate execution failed`);
+    let gate: GateResult | undefined;
+    if (first) {
+      await acceptCandidate(first);
+      const firstGateStartedAt = this.now();
+      gate = await this.python.verify(
+        chunkSourcePath,
+        rewrittenPath,
+        context.signal
+      );
+      gateMs += this.now() - firstGateStartedAt;
+      gateCodes.push(...gate.gateCodes);
+      if (gate.status === "error") {
+        throw validation(`Chunk ${chunk.index} gate execution failed`);
+      }
     }
 
-    if (fidelityFailed || gate.policy === "retry" || (!gate.policy && (gate.status === "warn" || gate.status === "abort"))) {
+    if (!gate || fidelityFailed || gate.policy === "retry" || (!gate.policy && (gate.status === "warn" || gate.status === "abort"))) {
       retries += 1;
       this.recordChunkWarning(context, warnings, {
         code: "CHUNK_RETRY",
         message: `${chunk.index}번 구간을 더 보수적으로 다시 다듬습니다.`
       });
 
-      const candidateReview = !fidelityFailed ? candidateReviewForRetry({
+      const candidateReview = gate && !fidelityFailed ? candidateReviewForRetry({
         source: sourceText, candidate: await readFile(rewrittenPath, 'utf8'),
         options: context.rewriteOptions, gate, parserIssues: candidateFidelityIssues, skippedSentences
       }) : undefined;
@@ -316,38 +372,26 @@ export class HumanizeEngine {
         });
       }
       this.ensureActive(context.signal);
-      const secondCodexStartedAt = this.now();
-      const second = await this.codex.transform(
-        chunkSourcePath,
-        context.workspace.path(`codex-${chunk.index}-attempt-2.json`),
-        2,
-        context.signal,
-        context.settings,
-        context.rewriteOptions,
-        candidateReview
-      );
-      codexMs += this.now() - secondCodexStartedAt;
-      codexCalls += 1;
+      const second = await attemptTransform(2, candidateReview);
       this.ensureActive(context.signal);
-      this.collectCodexWarnings(context, warnings, second.warnings);
-      candidateFidelityIssues = second.fidelityIssues ?? 0;
-      await writeFile(rewrittenPath, second.rewrittenText, "utf8");
-      await restore();
-
-      const secondGateStartedAt = this.now();
-      gate = await this.python.verify(
-        chunkSourcePath,
-        rewrittenPath,
-        context.signal,
-        2
-      );
-      gateMs += this.now() - secondGateStartedAt;
-      gateCodes.push(...gate.gateCodes);
-      if (gate.status === "error") {
-        throw validation(`Chunk ${chunk.index} retry gate execution failed`);
+      gate = undefined;
+      if (second) {
+        await acceptCandidate(second);
+        const secondGateStartedAt = this.now();
+        gate = await this.python.verify(
+          chunkSourcePath,
+          rewrittenPath,
+          context.signal,
+          2
+        );
+        gateMs += this.now() - secondGateStartedAt;
+        gateCodes.push(...gate.gateCodes);
+        if (gate.status === "error") {
+          throw validation(`Chunk ${chunk.index} retry gate execution failed`);
+        }
       }
-      if (fidelityFailed || gate.status === "abort") {
-        if (direct) rolledBackChunks++;
+      if (!gate || fidelityFailed || gate.status === "abort") {
+        rolledBackChunks++;
         await writeFile(rewrittenPath, sourceText, "utf8");
         this.recordChunkWarning(context, warnings, {
           code: "CHUNK_ROLLED_BACK",
@@ -371,6 +415,7 @@ export class HumanizeEngine {
       restoredSentences,
       removedCommas,
       skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences, restoredProtectedSentences, candidateReviewRetries,
+      unusableModelOutputs,
       gateCodes,
       timings: { codexMs, restoreMs, gateMs }
     };
@@ -430,6 +475,18 @@ export class HumanizeEngine {
       manifest.processingMode === "single" ? 1 : this.chunkConcurrency;
     let completedUnits = 0;
     const totalUnits = bodyChunks.length * 2;
+    // Per job: a shared permit pool's lifetime maximum would leak earlier jobs.
+    let activeModelCalls = 0;
+    let maxObservedCodexConcurrency = 0;
+    const trackModelCall = async <T>(task: () => Promise<T>): Promise<T> => {
+      activeModelCalls += 1;
+      maxObservedCodexConcurrency = Math.max(maxObservedCodexConcurrency, activeModelCalls);
+      try {
+        return await task();
+      } finally {
+        activeModelCalls -= 1;
+      }
+    };
     const chunkResults = await runChunkPool(
       bodyChunks.map((chunk, bodyIndex) => ({ chunk, bodyIndex })),
       concurrency,
@@ -442,6 +499,7 @@ export class HumanizeEngine {
           sourcePoints,
           workspace: request.workspace,
           signal,
+          trackModelCall,
           onWarning: warning =>
             request.onEvent({ type: "warning", ...warning }),
           onWorkUnit: phase => {
@@ -462,6 +520,11 @@ export class HumanizeEngine {
       }
     );
     warnings.push(...chunkResults.flatMap(result => result.warnings));
+    // Every chunk kept its source because no attempt produced a usable reply:
+    // that is a model failure, not a completed rewrite.
+    if (chunkResults.length > 0 && chunkResults.every(result => result.unusableModelOutputs >= 2)) {
+      throw new EngineError("ENGINE_OUTPUT_INVALID", false, "Every chunk returned unusable model output");
+    }
 
     this.ensureActive(request.signal);
     request.onEvent({
@@ -510,11 +573,12 @@ export class HumanizeEngine {
         conservativeRetries: chunkResults.reduce((sum, result) => sum + result.retries, 0),
         skippedSentences: chunkResults.reduce((sum, result) => sum + result.skippedSentences, 0),
         fidelityGuardFailures: chunkResults.reduce((sum, result) => sum + result.fidelityGuardFailures, 0) + fullFidelityFailures,
-        rolledBackChunks: chunkResults.reduce((sum, result) => sum + result.rolledBackChunks, 0),
         protectedSentences: chunkResults.reduce((sum, result) => sum + result.protectedSentences, 0),
         restoredProtectedSentences: chunkResults.reduce((sum, result) => sum + result.restoredProtectedSentences, 0),
         fullSourceRollbacks: fullFidelityFailures
       } : {}),
+      rolledBackChunks: chunkResults.reduce((sum, result) => sum + result.rolledBackChunks, 0),
+      unusableModelOutputs: chunkResults.reduce((sum, result) => sum + result.unusableModelOutputs, 0),
       model: request.settings?.model ?? this.model,
       reasoningEffort: request.settings?.effort ?? this.reasoningEffort,
       processingMode: manifest.processingMode,
@@ -541,10 +605,7 @@ export class HumanizeEngine {
         ...chunkResults.flatMap(result => result.gateCodes),
         ...fullGate.gateCodes
       ],
-      maxObservedCodexConcurrency: Math.min(
-        this.maxObservedCodexConcurrency(),
-        concurrency
-      ),
+      maxObservedCodexConcurrency,
       prepareMs,
       codexMs: chunkResults.reduce(
         (total, result) => total + result.timings.codexMs,

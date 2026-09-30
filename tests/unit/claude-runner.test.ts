@@ -133,17 +133,66 @@ describe("ClaudeRunner", () => {
     expect(fake.calls[0].stdin).toContain("재시도 1회");
   });
 
-  it("maps a nonzero exit to ENGINE_OUTPUT_INVALID", async () => {
+  it("maps a nonzero exit to ENGINE_FAILED", async () => {
     const { runner } = makeRunner([exited("", 1, "boom")]);
     await expect(
       runner.transform(inputPath, outputPath, 1, new AbortController().signal)
     ).rejects.toMatchObject({
-      publicCode: "ENGINE_OUTPUT_INVALID",
-      retryable: false
+      publicCode: "ENGINE_FAILED",
+      retryable: true
     });
   });
 
-  it("maps a CLI error envelope to ENGINE_OUTPUT_INVALID", async () => {
+  it("maps a login or usage-limit envelope to ENGINE_FAILED with a sanitized reason", async () => {
+    for (const result of [
+      exited(JSON.stringify({ type: "result", subtype: "success", is_error: true, result: "Invalid API key · Please run /login" }), 1),
+      exited(JSON.stringify({ type: "result", subtype: "success", is_error: true, result: "Claude AI usage limit reached|1760000000",
+        terminal_reason: "api_error", api_error_status: 429 }), 1),
+      exited(JSON.stringify({ type: "result", subtype: "success", is_error: true, result: "Invalid API key · Please run /login" }), 0)
+    ]) {
+      const { runner } = makeRunner([result]);
+      const failure = await runner.transform(inputPath, outputPath, 1, new AbortController().signal).catch(error => error);
+      expect(failure).toMatchObject({ publicCode: "ENGINE_FAILED", retryable: true });
+      expect(failure.message).not.toMatch(/API key|usage limit|login/i);
+    }
+  });
+
+  it("ignores the unrecognized-model warning on a successful run", async () => {
+    // Claude Code warns on stderr when its local catalog lacks the model, then still runs it.
+    const { runner } = makeRunner([exited(envelope({ rewrittenText: "이 문장은 자연스럽습니다.", warnings: [] }), 0,
+      '[claude-code:unrecognized_model] {"model":"claude-sonnet-5-5","query_source":"sdk"}\n')]);
+    await expect(runner.transform(inputPath, outputPath, 1, new AbortController().signal))
+      .resolves.toMatchObject({ rewrittenText: "이 문장은 자연스럽습니다." });
+  });
+
+  it("maps a rejected model to MODEL_UNAVAILABLE without echoing CLI text", async () => {
+    // Real Claude Code 2.1.284 output for a model it does not know.
+    const rejected = JSON.stringify({ type: "result", subtype: "success", is_error: true,
+      result: "There's an issue with the selected model (claude-sonnet-9-9). It may not exist or you may not have access to it.",
+      terminal_reason: "api_error", api_error_status: 404 });
+    for (const result of [
+      exited(rejected, 1, '[claude-code:unrecognized_model] {"model":"claude-sonnet-9-9"}'),
+      exited(rejected, 1, ""),
+      exited("", 1, '[claude-code:unrecognized_model] {"model":"claude-sonnet-9-9"}'),
+      exited(rejected, 0, "")
+    ]) {
+      const { runner } = makeRunner([result]);
+      const failure = await runner.transform(inputPath, outputPath, 1, new AbortController().signal).catch(error => error);
+      expect(failure).toMatchObject({ publicCode: "MODEL_UNAVAILABLE", retryable: false });
+      expect(failure.message).not.toContain("claude-sonnet-9-9");
+    }
+  });
+
+  it("maps other API errors to ENGINE_FAILED", async () => {
+    const { runner } = makeRunner([exited(JSON.stringify({ subtype: "success", is_error: true,
+      result: "API Error: 500 overloaded", terminal_reason: "api_error", api_error_status: 500 }), 1)]);
+    const failure = await runner.transform(inputPath, outputPath, 1, new AbortController().signal).catch(error => error);
+    expect(failure).toMatchObject({ publicCode: "ENGINE_FAILED" });
+    expect(failure.message).toContain("api_error_status 500");
+    expect(failure.message).not.toContain("overloaded");
+  });
+
+  it("maps a CLI error envelope to ENGINE_FAILED", async () => {
     const { runner } = makeRunner([
       exited(
         JSON.stringify({
@@ -155,7 +204,7 @@ describe("ClaudeRunner", () => {
     ]);
     await expect(
       runner.transform(inputPath, outputPath, 1, new AbortController().signal)
-    ).rejects.toMatchObject({ publicCode: "ENGINE_OUTPUT_INVALID" });
+    ).rejects.toMatchObject({ publicCode: "ENGINE_FAILED" });
   });
 
   it("rejects a result that violates the output contract", async () => {

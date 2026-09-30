@@ -50,6 +50,7 @@ export class DocumentEngine {
       '--workspace-root',this.root,'--vendor-root',this.config.vendorRoot,...args], cwd:this.config.projectRoot,
       timeoutMs:120000,signal,env:{...process.env,PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath}});
     if (result.termination==='aborted') throw new EngineError('CLIENT_ABORTED',true,'Cancelled');
+    if (result.termination==='timeout') throw new EngineError('ENGINE_TIMEOUT',true,'Document Python step timed out');
     if (result.exitCode!==0) {
       let message='문서를 처리하지 못했습니다. 파일 형식과 보호 설정을 확인해 주세요.';
       try { const error=JSON.parse(result.stdout); if(typeof error.message==='string') message=error.message; } catch {}

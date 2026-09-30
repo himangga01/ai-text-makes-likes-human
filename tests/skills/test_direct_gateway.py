@@ -85,6 +85,28 @@ class DirectGatewayTest(unittest.TestCase):
         self.call("finalize", "--job", state["job"], "--output", output, succeeds=False)
         self.assertFalse(output.exists())
 
+    def test_invalid_or_ambiguous_edits_retry_then_roll_back(self):
+        # R2-5.4: an unusable reply costs the attempt instead of an opaque bridge error.
+        self.input.write_text("회의는 오전에 열렸다. 회의는 오전에 열렸다고 적었다. 참석자들은 안건을 검토했다.\n", encoding="utf-8")
+        state = self.prepare("normal")
+        decisions = []
+        for edit in ({"before": "회의는 오전에", "after": "회의가 오전에"}, {"before": "없는 구절", "after": "x"}):
+            Path(state["responsePath"]).write_text(json.dumps({"rewrittenText": "", "edits": [edit], "warnings": []}, ensure_ascii=False), encoding="utf-8")
+            state = self.call("accept", "--job", state["job"], "--chunk", state["chunk"], "--attempt", state["attempt"],
+                              "--source-hash", state["sourceHash"], "--response", state["responsePath"])
+            decisions.append(state["decision"])
+        self.assertEqual(decisions, ["retry", "rollback"])
+        self.assertIn("MODEL_OUTPUT_UNUSABLE", " ".join(state["warnings"]))
+
+    def test_full_text_reply_without_outer_whitespace_is_accepted(self):
+        # R2-5.2: very-strong asks for full text; a reply without the chunk's trailing
+        # newlines must not fail the structural check.
+        source = "첫 문단은 그대로 둔다. 회의는 오전에 열렸다.\n\n둘째 문단도 그대로 둔다. 결과는 다음 주에 공유된다.\n"
+        self.input.write_text(source, encoding="utf-8")
+        state = self.prepare("very-strong")
+        state = self.accept(state, Path(state["inputPath"]).read_text(encoding="utf-8").strip())
+        self.assertEqual(state["decision"], "accept")
+
     def test_file_mode_rejects_comparison(self):
         state = self.finish(self.call("prepare", "--input", self.input))
         self.call("finalize", "--job", state["job"], "--output", self.root / "final.md",

@@ -7,6 +7,11 @@ export const CLAUDE_REASONING_EFFORT = "high" as const;
 export type EngineChoice = "codex" | "claude";
 
 export interface ModelSettings { model: string; effort: string }
+// Served with the options so clients fall back to the same defaults as the server.
+export const MODEL_DEFAULTS: Record<EngineChoice, ModelSettings> = {
+  codex: { model: HUMANIZE_MODEL, effort: HUMANIZE_REASONING_EFFORT },
+  claude: { model: CLAUDE_MODEL, effort: CLAUDE_REASONING_EFFORT }
+};
 const codexEfforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const claudeEfforts = ['low', 'medium', 'high', 'xhigh', 'max'];
 // Codex 0.159.0 model catalog and Claude Code 2.1.284 model configuration (2026-09-30).

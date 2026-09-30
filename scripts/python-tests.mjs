@@ -1,5 +1,4 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolvePythonCommand } from './python-command.mjs';
@@ -8,8 +7,9 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const suite = process.argv[2];
 if (!suite) { console.error('Usage: node scripts/python-tests.mjs <tests/documents|tests/skills>'); process.exit(2); }
 
-// Skill gateway tests exercise direct text through the Node bridge; build it once when missing.
-if (path.resolve(suite) === path.join(root, 'tests', 'skills') && !existsSync(path.join(root, 'build-resources/skill-bridge/skill-bridge.cjs'))) {
+// Skill gateway tests exercise the Node bridge, which bundles the shared TypeScript policy.
+// Rebuild it on every run (esbuild takes milliseconds) so tests never use a stale bundle.
+if (path.resolve(suite) === path.join(root, 'tests', 'skills')) {
   const { buildSkillBridge } = await import('./build-skill-bridge.mjs');
   await buildSkillBridge();
 }

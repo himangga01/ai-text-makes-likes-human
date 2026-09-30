@@ -8,6 +8,22 @@ import { ArtifactStore, type DocumentRecord } from './artifact-store.js';
 import type { AppDependencies } from '../app.js';
 import { NdjsonWriter } from '../transport/ndjson.js';
 import { parseModelSettings } from '../engine/model-policy.js';
+import { EngineError } from '../engine/errors.js';
+import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from '../transport/public-error.js';
+
+// Python and store errors are Korean user messages; anything else is internal text.
+function documentFailure(error:unknown) {
+  if(error instanceof EngineError) return {...publicEvent(error),retryable:false};
+  const message=error instanceof Error&&/[가-힣]/.test(error.message)?error.message:'문서 변환에 실패했습니다.';
+  // The record is removed after any failure, so the same document cannot be retried.
+  return {type:'error' as const,code:'VALIDATION_FAILED' as const,message,retryable:false};
+}
+
+// Refused before any job starts: the server keeps the document, and the client
+// keys on `code` (e.g. INVALID_MODEL_SETTINGS re-syncs the model list).
+class Rejection extends Error {
+  constructor(readonly status:number,readonly code:string,message:string){super(message);}
+}
 
 export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
   const engine=deps.documentEngine;
@@ -36,17 +52,22 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
     finally {request.removeListener('aborted',onDisconnect);response.removeListener('close',onDisconnect);}
   });
   app.post('/api/documents/:id/transform',async(request,response)=>{
-    let record; let reservation; let writer:NdjsonWriter|undefined; let finished=false; let owns=false;
+    let record; let reservation; let writer:NdjsonWriter|undefined; let finished=false; let owns=false; let clientClosed=false;
     let removeAbortListener:(()=>void)|undefined;
+    if(!deps.preflight.ready){response.status(503).json({code:'ENGINE_UNAVAILABLE',message:PUBLIC_MESSAGES.ENGINE_UNAVAILABLE});return;}
     try {
-      record=store.get(String(request.params.id),token(request));
-      if(record.busy||record.output||!record.state) throw new Error('진행 중이거나 완료한 문서입니다. 새로 선택해 주세요.');
+      if(deps.queue.isShuttingDown) throw new Rejection(503,'SERVER_SHUTDOWN',PUBLIC_MESSAGES.SERVER_SHUTDOWN);
+      try {record=store.get(String(request.params.id),token(request));}
+      catch(e){throw new Rejection(404,'DOCUMENT_NOT_FOUND',e instanceof Error?e.message:'문서를 찾을 수 없습니다.');}
+      if(record.busy||record.output||!record.state) throw new Rejection(409,'DOCUMENT_BUSY','진행 중이거나 완료한 문서입니다. 새로 선택해 주세요.');
       const choice=request.query.engine;
-      if(choice!=='claude'&&choice!=='codex') throw new Error('CLI를 선택해 주세요.');
-      const settings = parseModelSettings(choice,request.query.model,request.query.effort);
-      if(deps.preflight.providers&&!deps.preflight.providers[choice].ready) throw new Error('선택한 CLI의 설치·로그인 상태를 확인해 주세요.');
+      if(choice!=='claude'&&choice!=='codex') throw new Rejection(400,'INVALID_ENGINE','CLI를 선택해 주세요.');
+      let settings;
+      try {settings=parseModelSettings(choice,request.query.model,request.query.effort);}
+      catch(e){throw new Rejection(400,'INVALID_MODEL_SETTINGS',(e as Error).message);}
+      if(deps.preflight.providers&&!deps.preflight.providers[choice].ready) throw new Rejection(503,'ENGINE_UNAVAILABLE','선택한 CLI의 설치·로그인 상태를 확인해 주세요.');
       reservation=deps.queue.reserve(record.id);
-      if(!reservation) throw new Error('작업 대기열이 가득 찼습니다.');
+      if(!reservation) throw new Rejection(429,'QUEUE_FULL',PUBLIC_MESSAGES.QUEUE_FULL);
       record.busy=true;
       owns=true;
       const r=record;
@@ -57,10 +78,11 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       if(r.controller.signal.aborted)onAbort();
       response.setHeader('Content-Type','application/x-ndjson; charset=utf-8');response.setHeader('Cache-Control','no-store');
       response.flushHeaders();writer=new NdjsonWriter(response);
-      response.once('close',()=>{if(!finished)r.controller.abort();});
+      response.once('close',()=>{if(!finished){clientClosed=true;r.controller.abort();}});
       writer.write({type:'accepted',jobId:r.id,position:0});
       await reservation.submit(async signal=>{
         const result=await engine.transform(r.state!,choice,r.dir,AbortSignal.any([signal,r.controller.signal]),event=>writer!.write(event),settings);
+        if(r.deleted||r.controller.signal.aborted)throw new EngineError('CLIENT_ABORTED',true,'Document was closed during the transform');
         r.state=result.state;r.output=result.output;
         r.expires=Date.now()+30*60000;
         writer!.write({type:'document-result',artifactId:r.id,name:store.public(r).name,format:r.state.format,
@@ -69,9 +91,9 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       },position=>writer!.write({type:'queued',position}));
       finished=true;
     } catch(e) {
-      const message=e instanceof Error?e.message:'문서 변환에 실패했습니다.';
-      if(writer) writer.write({type:'error',code:'VALIDATION_FAILED',message,retryable:true});
-      else response.status(400).json({message});
+      if(writer) writer.write(documentFailure(shutdownAware(e,deps.queue.isShuttingDown,clientClosed)));
+      else if(e instanceof Rejection) response.status(e.status).json({code:e.code,message:e.message});
+      else response.status(400).json({code:'DOCUMENT_TRANSFORM_FAILED',message:e instanceof Error&&/[가-힣]/.test(e.message)?e.message:'문서 변환에 실패했습니다.'});
     } finally {
       removeAbortListener?.();
       reservation?.release();

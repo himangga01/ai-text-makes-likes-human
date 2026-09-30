@@ -6,10 +6,13 @@ import {ArtifactStore} from '../../src/documents/artifact-store.js';
 import {loadConfig} from '../../src/config.js';
 import {SpawnCommandRunner} from '../../src/process/command-runner.js';
 import {makeTestRoot,removeTestRoot} from '../helpers/test-root.js';
+import {documentPythonCommand} from '../helpers/python-command.js';
 
-it('cleans its own completed Python job despite an abandoned transaction marker',async()=>{
+// Office extraction runs in Python with lxml; PYTHON_COMMAND wins, and a bare interpreter skips.
+const officeIt=documentPythonCommand?it:it.skip;
+officeIt('cleans its own completed Python job despite an abandoned transaction marker',async()=>{
   const root=await makeTestRoot();
-  const engine=new DocumentEngine({...loadConfig({},process.cwd()),runtimeRoot:root},new SpawnCommandRunner());
+  const engine=new DocumentEngine({...loadConfig({},process.cwd()),runtimeRoot:root,pythonCommand:documentPythonCommand!},new SpawnCommandRunner());
   try {
     const state=await engine.prepare(path.resolve('tests/fixtures/documents/mixed.docx'));
     await writeFile(path.join(engine.root,state.job,'operation.lock'),'interrupted');
@@ -50,4 +53,12 @@ it('keeps output during a save lease and expires it only after release',async()=
     await expect(access(record.output)).resolves.toBeUndefined();
     await lease.release();await lease.release();expect(store.records.size).toBe(0);
   } finally {await store.close();await removeTestRoot(root);}
+});
+
+it('maps a Python step timeout to ENGINE_TIMEOUT instead of a file-format error',async()=>{
+  const root=await makeTestRoot();
+  const engine=new DocumentEngine({...loadConfig({},process.cwd()),runtimeRoot:root},{async run(){return {exitCode:-1,termination:'timeout' as const,stdout:'',stderr:''};}});
+  try {
+    await expect(engine.prepare('source.docx')).rejects.toMatchObject({publicCode:'ENGINE_TIMEOUT',retryable:true});
+  } finally {await removeTestRoot(root);}
 });

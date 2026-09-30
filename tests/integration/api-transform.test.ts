@@ -80,6 +80,60 @@ describe("POST /api/transform", () => {
     }
   });
 
+  it("reports a job cut off by server shutdown as SERVER_SHUTDOWN, not as the user's cancel", async () => {
+    const started = deferred<void>();
+    const test = await createTestApp({
+      transform: request => new Promise((_resolve, reject) => {
+        started.resolve();
+        request.signal.addEventListener("abort", () => reject(new EngineError("CLIENT_ABORTED", true, "Codex was cancelled")), { once: true });
+      })
+    });
+    try {
+      const response = fetch(`${test.baseUrl}/api/transform`, { method: "POST", headers: { "content-type": "text/plain" }, body: "원문입니다." });
+      await started.promise;
+      await test.queue.shutdown();
+      const events = parseNdjson(await (await response).text());
+      expect(events.at(-1)).toMatchObject({ type: "error", code: "SERVER_SHUTDOWN", retryable: true,
+        message: "서버가 재시작되어 변환이 중단되었습니다. 잠시 후 다시 시도해 주세요." });
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("answers a request that arrives during shutdown with SERVER_SHUTDOWN, not QUEUE_FULL", async () => {
+    const test = await createTestApp({ async transform() { throw new Error("must not run"); } });
+    try {
+      await test.queue.shutdown();
+      const response = await fetch(`${test.baseUrl}/api/transform`, { method: "POST", headers: { "content-type": "text/plain" }, body: "원문입니다." });
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({ code: "SERVER_SHUTDOWN", message: "서버가 재시작되어 변환이 중단되었습니다. 잠시 후 다시 시도해 주세요." });
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("explains a CLI process failure with ENGINE_FAILED", async () => {
+    const test = await createTestApp({ async transform() { throw new EngineError("ENGINE_FAILED", true, "Codex CLI failed (exit 1, status 429)"); } });
+    try {
+      const response = await fetch(`${test.baseUrl}/api/transform`, { method: "POST", headers: { "content-type": "text/plain" }, body: "원문입니다." });
+      expect(parseNdjson(await response.text()).at(-1)).toMatchObject({ type: "error", code: "ENGINE_FAILED", retryable: true,
+        message: "CLI 실행에 실패했습니다. 로그인 상태와 사용 한도를 확인한 뒤 다시 시도해 주세요." });
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("explains a rejected model with MODEL_UNAVAILABLE", async () => {
+    const test = await createTestApp({ async transform() { throw new EngineError("MODEL_UNAVAILABLE", false, "Claude rejected the selected model (api_error_status 404)"); } });
+    try {
+      const response = await fetch(`${test.baseUrl}/api/transform`, { method: "POST", headers: { "content-type": "text/plain" }, body: "원문입니다." });
+      expect(parseNdjson(await response.text()).at(-1)).toMatchObject({ type: "error", code: "MODEL_UNAVAILABLE", retryable: false,
+        message: expect.stringContaining("선택한 모델을 사용할 수 없습니다") });
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
   it.each(['strength=strong','inputKind=text-file&strength=strong','inputKind=direct-text&strength=maximum','inputKind=direct-text&strength=normal&strength=strong'])('rejects invalid rewrite options before queue reservation: %s',async query=>{
     const test=await createTestApp({transform:async()=>{throw new Error('must not run');}});
     try {

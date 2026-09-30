@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 
 export type CommandTermination = "exit" | "timeout" | "aborted";
 
@@ -23,14 +23,15 @@ export interface CommandRunner {
   run(request: CommandRequest): Promise<CommandResult>;
 }
 
-function terminateProcessTree(pid: number): void {
+function terminateProcessTree(pid: number, synchronous = false): void {
   if (process.platform === "win32") {
-    const killer = spawn("taskkill.exe", ["/PID", String(pid), "/T", "/F"], {
-      shell: false,
-      windowsHide: true,
-      stdio: "ignore"
-    });
-    killer.unref();
+    const args = ["/PID", String(pid), "/T", "/F"];
+    const options = { shell: false, windowsHide: true, stdio: "ignore" } as const;
+    if (synchronous) {
+      spawnSync("taskkill.exe", args, options);
+      return;
+    }
+    spawn("taskkill.exe", args, options).unref();
     return;
   }
 
@@ -43,6 +44,23 @@ function terminateProcessTree(pid: number): void {
       // The child already exited between the state check and termination.
     }
   }
+}
+
+// CLI children run detached in their own process groups, so they outlive a
+// server that crashes or is force-exited unless they are killed on exit.
+const liveProcesses = new Set<number>();
+let exitCleanupInstalled = false;
+
+export function killLiveProcesses(): void {
+  for (const pid of liveProcesses) terminateProcessTree(pid, true);
+  liveProcesses.clear();
+}
+
+export function killChildProcessesOnExit(): void {
+  if (exitCleanupInstalled) return;
+  exitCleanupInstalled = true;
+  // 'exit' also fires for an uncaught exception and for process.exit().
+  process.on("exit", killLiveProcesses);
 }
 
 export class SpawnCommandRunner implements CommandRunner {
@@ -68,8 +86,15 @@ export class SpawnCommandRunner implements CommandRunner {
         stdio: ["pipe", "pipe", "pipe"]
       });
 
-      if (child.pid !== undefined) this.onProcess?.(child.pid, true);
-      child.once("close", () => { if (child.pid !== undefined) this.onProcess?.(child.pid, false); });
+      if (child.pid !== undefined) {
+        liveProcesses.add(child.pid);
+        this.onProcess?.(child.pid, true);
+      }
+      child.once("close", () => {
+        if (child.pid === undefined) return;
+        liveProcesses.delete(child.pid);
+        this.onProcess?.(child.pid, false);
+      });
       let stdout = "";
       let stderr = "";
       let termination: CommandTermination = "exit";

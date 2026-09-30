@@ -212,6 +212,24 @@ describe("PythonEngine", () => {
     expect(runner.calls).toHaveLength(1);
   });
 
+  it("gives a chunk gate the whole prepared source as footnote context", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      await writeFile(path.join(runDir, "chunk_manifest.json"), JSON.stringify(manifestFixture()), "utf8");
+      await writeFile(path.join(runDir, "01_input.txt"), "원문", "utf8");
+      const runner = new FakeCommandRunner([exited(gateStdout(0), 0), exited(gateStdout(0), 0)]);
+      const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner });
+      await engine.verify(path.join(runDir, "chunk-1-source.txt"), path.join(runDir, "02_chunk_01_rewritten.txt"), new AbortController().signal);
+      const args = runner.calls[0]!.args;
+      expect(args[args.indexOf("--context") + 1]).toBe(path.join(runDir, "01_input.txt"));
+      // The full-document gate already compares the whole source.
+      await engine.verify(path.join(runDir, "01_input.txt"), path.join(runDir, "final.md"), new AbortController().signal);
+      expect(runner.calls[1]!.args).not.toContain("--context");
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
   it("rejects malformed gate stdout", async () => {
     const engine = new PythonEngine({
       pythonCommand: "python",

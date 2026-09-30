@@ -19,3 +19,15 @@ it('loads legacy/malformed saved strength as normal and round-trips a validated 
   expect(JSON.parse(await readFile(file,'utf8')).rewriteStrength).toBe('very-strong');
  } finally {await removeTestRoot(root);}
 });
+it('does not pin the current model defaults as a user choice when nothing was saved',async()=>{
+ const root=await makeTestRoot();const file=path.join(root,'settings.json');
+ try {
+  await writeFile(file,JSON.stringify({selectedEngine:'claude',models:{codex:{model:'gpt-6-sol',effort:'low'}}}));
+  const loaded=await preferences.loadPreferences(file);
+  expect(loaded.models).toEqual({codex:{model:'gpt-6-sol',effort:'low'}});
+  await preferences.selectRewriteStrength(loaded,'strong',()=>preferences.savePreferences(file,loaded));
+  expect(JSON.parse(await readFile(file,'utf8')).models).toEqual({codex:{model:'gpt-6-sol',effort:'low'}});
+  await writeFile(file,JSON.stringify({models:{claude:{model:'claude-opus-5-5'}}}));
+  expect((await preferences.loadPreferences(file)).models).toEqual({claude:{model:'claude-opus-5-5',effort:'high'}});
+ } finally {await removeTestRoot(root);}
+});

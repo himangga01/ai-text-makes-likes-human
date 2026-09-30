@@ -15,7 +15,7 @@ import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from workflow import DEFAULT_VENDOR, restore, verify, validate_response
-from skill_bridge import invoke as bridge, options as rewrite_options
+from skill_bridge import available as bridge_available, invoke as bridge, options as rewrite_options
 
 DEFAULT_ROOT = Path(tempfile.gettempdir()) / "humanize-kr-skills"
 
@@ -48,6 +48,15 @@ def script(vendor: Path, name: str, *args: str):
     )
     if result.returncode:
         raise ValueError(f"Humanize {name} failed ({result.returncode})")
+
+
+def align_outer_whitespace(source: str, output: str) -> str:
+    """Re-attach the source chunk's outer whitespace (str.strip semantics), as the
+    reassembler does, so a reply that dropped a trailing newline passes every check."""
+    core = output.strip()
+    if not core or not source.strip():
+        return output
+    return source[:len(source) - len(source.lstrip())] + core + source[len(source.rstrip()):]
 
 
 def decode_input(data: bytes) -> str:
@@ -178,31 +187,46 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     raw = json.loads(response_path.read_text(encoding="utf-8-sig"))
     response = bridge("parse", **options, source=source, response=raw) if direct else validate_response(raw)
     output = safe_leaf(job, chunk["rewritten_file"])
-    output.write_text(response["rewrittenText"].replace("\r\n", "\n").replace("\r", "\n"), encoding="utf-8", newline="")
     vendor = Path(state["vendor"])
-    protected = {"restoredProtectedSentences": 0}
-    if direct:
-        protected = bridge("protect", **options, source=source, candidate=output.read_text(encoding="utf-8"))
-        output.write_text(protected["rewrittenText"], encoding="utf-8", newline="")
-    report = restore(before, output, vendor)
+    report = {"restoredSentences": 0, "skippedSentences": 0, "removedCommas": 0}
     failed = False
-    if direct:
-        report["restoredProtectedSentences"] = protected["restoredProtectedSentences"]
-        check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"))
-        failed = response.get("fidelityIssues", 0) > 0 or report["skippedSentences"] > 0 or check["violations"] > 0
-        if protected["restoredProtectedSentences"]:
-            state["warnings"].append(f"DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED: {chunk_id}번 구간 보호 문장 {protected['restoredProtectedSentences']}개를 원문으로 복원했습니다.")
-        if failed:
-            state["warnings"].append(f"DIRECT_TEXT_FIDELITY_RESTRICTED: {chunk_id}번 구간의 문장·사실·개념 보존 또는 복원을 확인하지 못했습니다.")
-    if report["restoredSentences"]:
-        state["warnings"].append(f"{chunk_id}번 구간의 {report['restoredSentences']}개 문장을 원문으로 복원했습니다.")
-    # Host warnings can contain raw source text. Direct jobs persist only a count.
-    if direct and response["warnings"]:
-        state["warnings"].append(f"HOST_REVIEW_WARNING: {len(response['warnings'])}개 보존 충돌 사유가 보고되었습니다.")
-    elif not direct:
-        state["warnings"].extend(response["warnings"])
-    gate = verify(before, output, vendor, attempt)
-    action = gate["policy"]
+    gate = None
+    if response.get("invalid"):
+        # An unusable reply (missing or ambiguous edit anchors) costs this attempt, as on the server.
+        state["warnings"].append(f"MODEL_OUTPUT_UNUSABLE: {chunk_id}번 구간의 응답 편집을 적용할 수 없습니다(기준 문구가 없거나 여러 번 나옵니다).")
+        failed = True
+    else:
+        text = align_outer_whitespace(source, response["rewrittenText"].replace("\r\n", "\n").replace("\r", "\n"))
+        output.write_text(text, encoding="utf-8", newline="")
+        protected = {"restoredProtectedSentences": 0}
+        if direct:
+            protected = bridge("protect", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+            output.write_text(protected["rewrittenText"], encoding="utf-8", newline="")
+        report = restore(before, output, vendor)
+        if direct:
+            report["restoredProtectedSentences"] = protected["restoredProtectedSentences"]
+            check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+            failed = response.get("fidelityIssues", 0) > 0 or report["skippedSentences"] > 0 or check["violations"] > 0
+            if protected["restoredProtectedSentences"]:
+                state["warnings"].append(f"DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED: {chunk_id}번 구간 보호 문장 {protected['restoredProtectedSentences']}개를 원문으로 복원했습니다.")
+            if failed:
+                state["warnings"].append(f"DIRECT_TEXT_FIDELITY_RESTRICTED: {chunk_id}번 구간의 문장·사실·개념 보존 또는 복원을 확인하지 못했습니다.")
+        elif bridge_available():
+            # Files and legacy jobs never lose, duplicate or move paragraphs or Markdown structure.
+            structure = bridge("structure", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+            failed = structure["violations"] > 0
+            if failed:
+                state["warnings"].append(f"STRUCTURE_FIDELITY_RESTRICTED: {chunk_id}번 구간에서 문장·문단 구조 보존을 확인하지 못해 수정을 제한했습니다.")
+        if report["restoredSentences"]:
+            state["warnings"].append(f"{chunk_id}번 구간의 {report['restoredSentences']}개 문장을 원문으로 복원했습니다.")
+        # Host warnings can contain raw source text. Direct jobs persist only a count.
+        if direct and response["warnings"]:
+            state["warnings"].append(f"HOST_REVIEW_WARNING: {len(response['warnings'])}개 보존 충돌 사유가 보고되었습니다.")
+        elif not direct:
+            state["warnings"].extend(response["warnings"])
+        # The whole source gives a chunk the document's footnote markers.
+        gate = verify(before, output, vendor, attempt, safe_leaf(job, manifest["source_file"]))
+    action = gate["policy"] if gate else "retry"
     if action == "error":
         raise ValueError("Validation could not run")
     if failed:

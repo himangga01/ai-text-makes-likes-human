@@ -221,8 +221,11 @@ it('never promotes a candidate with a failed direct fidelity check even if Pytho
 it.each(['codex','claude'] as const)('rejects %s retry edit anchors that exist only in the suggested candidate',async kind=>{
  const {default:fixture}=await import('../fixtures/direct-live-quality.json');
  let attempts=0;
- await expect(run(fixture.source,(_s,attempt)=>{attempts=attempt;return attempt===1?fixture.candidate:{rewrittenText:'',edits:[{before:'별도의 항목을 두어 검토 기록을 구분했다',after:'별도의 항목으로 검토 기록을 구분했다'}],warnings:[]};},kind)).rejects.toMatchObject({publicCode:'ENGINE_OUTPUT_INVALID'});
+ const {output,result}=await run(fixture.source,(_s,attempt)=>{attempts=attempt;return attempt===1?fixture.candidate:{rewrittenText:'',edits:[{before:'별도의 항목을 두어 검토 기록을 구분했다',after:'별도의 항목으로 검토 기록을 구분했다'}],warnings:[]};},kind);
  expect(attempts).toBe(2);
+ // The candidate-only anchor is never applied; the chunk keeps its source instead of failing the job.
+ expect(output).toBe(fixture.source);
+ expect(result.warnings.map(warning=>warning.code)).toEqual(expect.arrayContaining(['MODEL_OUTPUT_UNUSABLE','CHUNK_ROLLED_BACK']));
 },30000);
 it.each(['before','during'] as const)('honors cancellation %s the candidate-review model call',async timing=>{
  const {default:fixture}=await import('../fixtures/direct-live-quality.json');

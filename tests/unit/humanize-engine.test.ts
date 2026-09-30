@@ -426,8 +426,7 @@ describe("HumanizeEngine", () => {
           [ok(), ok(), ok(), ok(), ok()]
         ),
         codex,
-        chunkConcurrency: 2,
-        maxObservedCodexConcurrency: () => codex.maxActive
+        chunkConcurrency: 2
       });
 
       const resultPromise = engine.transform({
@@ -454,6 +453,42 @@ describe("HumanizeEngine", () => {
     } finally {
       await test.workspace.cleanup();
       await removeTestRoot(test.outer);
+    }
+  });
+
+  it("reports codex concurrency observed within each job", async () => {
+    const first = await setup("AAABBB");
+    const second = await setup("CCC");
+    try {
+      const pythons = [
+        new FakePython(manifest([body(1, 0, 3), body(2, 3, 6)], 6, "chunked"), [ok(), ok(), ok()]),
+        new FakePython(manifest([body(1, 0, 3)], 3, "chunked"), [ok(), ok()])
+      ];
+      let current = pythons[0]!;
+      const python: PythonAdapter = {
+        prepare: async () => { current = pythons.shift()!; return current.prepare(); },
+        restore: (before, after) => current.restore(before, after),
+        verify: () => current.verify(),
+        reassemble: runDir => current.reassemble(runDir)
+      };
+      const codex = new DeferredCodex(["AAA", "BBB", "CCC"]);
+      const engine = new HumanizeEngine({ python, codex, chunkConcurrency: 2 });
+
+      const firstRun = engine.transform({ jobId: "job-1", workspace: first.workspace, signal: new AbortController().signal, onEvent: () => undefined });
+      await Promise.all([codex.started("AAA"), codex.started("BBB")]);
+      codex.resolve("AAA", "111");
+      codex.resolve("BBB", "222");
+      expect((await firstRun).diagnostics.maxObservedCodexConcurrency).toBe(2);
+
+      const secondRun = engine.transform({ jobId: "job-1", workspace: second.workspace, signal: new AbortController().signal, onEvent: () => undefined });
+      await codex.started("CCC");
+      codex.resolve("CCC", "333");
+      expect((await secondRun).diagnostics.maxObservedCodexConcurrency).toBe(1);
+    } finally {
+      await first.workspace.cleanup();
+      await second.workspace.cleanup();
+      await removeTestRoot(first.outer);
+      await removeTestRoot(second.outer);
     }
   });
 
@@ -558,12 +593,12 @@ describe("HumanizeEngine", () => {
       codex.resolve("AAA", "111", ["chunk one warning"]);
       const result = await resultPromise;
       expect(warningEvents).toEqual([
-        { code: "CODEX_WARNING", message: "chunk two warning" },
-        { code: "CODEX_WARNING", message: "chunk one warning" }
+        { code: "MODEL_WARNING", message: "chunk two warning" },
+        { code: "MODEL_WARNING", message: "chunk one warning" }
       ]);
       expect(result.warnings).toEqual([
-        { code: "CODEX_WARNING", message: "chunk one warning" },
-        { code: "CODEX_WARNING", message: "chunk two warning" }
+        { code: "MODEL_WARNING", message: "chunk one warning" },
+        { code: "MODEL_WARNING", message: "chunk two warning" }
       ]);
     } finally {
       await test.workspace.cleanup();
@@ -587,8 +622,7 @@ describe("HumanizeEngine", () => {
           [ok(), ok(), ok(), ok(), ok()]
         ),
         codex,
-        chunkConcurrency: 2,
-        maxObservedCodexConcurrency: () => 2
+        chunkConcurrency: 2
       });
 
       const resultPromise = engine.transform({
@@ -625,8 +659,9 @@ describe("HumanizeEngine", () => {
     const firstObservedAbort = deferred<void>();
     const firstMaySettle = deferred<void>();
     const allActiveSettled = deferred<void>();
+    // Unusable model output is recovered per chunk; an unavailable engine still fails the job.
     const failure = new EngineError(
-      "ENGINE_OUTPUT_INVALID",
+      "ENGINE_UNAVAILABLE",
       false,
       "chunk two failed"
     );
@@ -808,7 +843,7 @@ describe("HumanizeEngine", () => {
         "progress:sanitize",
         "progress:chunk",
         "progress:transform",
-        "warning:CODEX_WARNING",
+        "warning:MODEL_WARNING",
         "warning:CHUNK_RETRY"
       ]);
     } finally {
@@ -866,7 +901,7 @@ describe("HumanizeEngine", () => {
         "progress:sanitize",
         "progress:chunk",
         "progress:transform",
-        "warning:CODEX_WARNING",
+        "warning:MODEL_WARNING",
         "warning:CHUNK_RETRY"
       ]);
     } finally {

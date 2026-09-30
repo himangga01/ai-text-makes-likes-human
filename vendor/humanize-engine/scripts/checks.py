@@ -132,12 +132,46 @@ _HEADING_PREFIX = re.compile(
 )
 _PROSE_ENDING = re.compile(r"(?:다|요|음|함|까)\s*[.?!]$")
 _DEF_LINE = re.compile(r"^\s*\d{1,3}\)\s")
+# 번호 목록 스타일. 번호가 이어지는(k, k+1) 같은 스타일 줄은 제목이 아니라 목록 항목이다.
+_LIST_STYLES = (re.compile(r"^(\d{1,2})\.\s+"), re.compile(r"^\((\d{1,2})\)\s*"))
+_TOC_TITLE = re.compile(r"^(?:#{1,6}\s*)?(?:목\s*차|차\s*례|contents|table of contents)\s*:?$", re.IGNORECASE)
+
+
+def _list_style(line: str) -> tuple[int, int] | None:
+    if line[:1].isspace():
+        return None  # 들여쓴 줄은 하위 항목이다
+    s = line.strip()
+    return next(((i, int(m.group(1))) for i, rx in enumerate(_LIST_STYLES) if (m := rx.match(s))), None)
+
+
+def _is_list_item(lines: list[str], index: int) -> bool:
+    """A numbered line is a list item when its number continues the nearest numbered line
+    of the same style above or below; blank and indented (nested) lines are skipped. A
+    numbered run right under a table-of-contents title is a list of headings."""
+    style = _list_style(lines[index])
+    if style is None:
+        return False
+    consecutive = False
+    for step in (-1, 1):
+        j = index + step
+        while 0 <= j < len(lines) and (not lines[j].strip() or lines[j][:1].isspace()):
+            j += step
+        other = _list_style(lines[j]) if 0 <= j < len(lines) else None
+        if other and other[0] == style[0] and other[1] == style[1] + step:
+            consecutive = True
+    if not consecutive:
+        return False
+    j = index
+    while j > 0 and (not lines[j - 1].strip() or lines[j - 1][:1].isspace() or _list_style(lines[j - 1])):
+        j -= 1
+    return not (j > 0 and _TOC_TITLE.match(lines[j - 1].strip()))
 
 
 def extract_headings(text: str) -> list[tuple[str, str]]:
     """Return [(heading_line, core_title_without_numbering), ...]."""
     heads = []
-    for line in text.splitlines():
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
         s = line.strip()
         if not s or len(s) > 50:
             continue
@@ -145,6 +179,8 @@ def extract_headings(text: str) -> list[tuple[str, str]]:
             continue
         if not _HEADING_PREFIX.match(s):
             continue
+        if _is_list_item(lines, index):
+            continue  # 번호가 이어지는 목록 항목("1. …\n\n2. …")은 제목이 아니다
         if _PROSE_ENDING.search(s):  # short prose sentence, not a heading
             continue
         core = _HEADING_PREFIX.sub("", s).strip()
@@ -178,7 +214,12 @@ def check_headings(original: str, output: str) -> list[Failure]:
 # ("...증가했다.1)"). A space-preceded or line-leading "N) " is a footnote
 # DEFINITION label, not an inline marker. '(3)' style headings are excluded
 # by the '(' lookbehind; '(2024)' style years by the digit lookbehind.
-_INLINE_MARKER = re.compile(r"(?<=\S)(?<![(\d])(\d{1,3})\)")
+# A hyphen or Latin letter before the digits is a version or model name ("GPT-4)"),
+# not a footnote marker.
+_INLINE_MARKER = re.compile(r"(?<=\S)(?<![(\dA-Za-z\-])(\d{1,3})\)")
+# A heading line after the definition block still leaves the block "trailing"
+# (definitions, then "## 부록").
+_BLOCK_HEADING = re.compile(r"^\s*(?:#{1,6}\s|[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ]+\.\s|제\d+[장절])")
 _DEF_LABEL = re.compile(r"(?:^|(?<=\s))(\d{1,3})\)\s")
 _NUM_TOKEN = re.compile(r"\d+(?:[.,]\d+)*")
 
@@ -197,15 +238,39 @@ def extract_inline_markers(text: str) -> list[tuple[str, int]]:
     return markers
 
 
-def extract_defs(text: str) -> dict[str, str]:
+def _definition_lines(lines: list[str]) -> list[str]:
+    """Definition-style lines of every block that ends the text or ends at a heading."""
+    found: list[str] = []
+    index = 0
+    while index < len(lines):
+        if not _DEF_LINE.match(lines[index]):
+            index += 1
+            continue
+        end = index
+        while end < len(lines) and (not lines[end].strip() or _DEF_LINE.match(lines[end])):
+            end += 1
+        if end == len(lines) or _BLOCK_HEADING.match(lines[end]):
+            found.extend(line for line in lines[index:end] if _DEF_LINE.match(line))
+        index = end
+    return found
+
+
+def extract_defs(text: str, markers: set[str] | None = None) -> dict[str, str]:
     """Return {footnote_number: normalized_definition_content}.
 
     Handles both one-definition-per-line and (broken) merged lines, so the
     content-identity check still works on merged-but-verbatim definitions.
+    ``markers`` adds inline markers found elsewhere in the document, for a chunk
+    that holds the definitions but not the body text that cites them.
     """
     defs: dict[str, str] = {}
-    for line in text.splitlines():
-        if not _DEF_LINE.match(line):
+    lines = text.splitlines()
+    # 각주 정의는 문서 끝(또는 제목 앞)의 정의 블록에만 있고 본문 각주 표시와 짝이 맞아야 한다.
+    # 본문의 "1) 항목" 목록을 정의로 보면 목록 윤문이 모두 footnote_def로 막혔다.
+    markers = {num for num, _ in extract_inline_markers(text)} | set(markers or ())
+    for line in _definition_lines(lines):
+        first = _DEF_LABEL.match(line.lstrip())
+        if first is None or first.group(1) not in markers:
             continue
         labels = [(m.start(), m.group(1)) for m in _DEF_LABEL.finditer(line)]
         for i, (pos, num) in enumerate(labels):
@@ -221,11 +286,14 @@ def _nearest_num_before(text: str, pos: int) -> str | None:
     return nums[-1] if nums else None
 
 
-def check_footnotes(original: str, output: str) -> list[Failure]:
+def check_footnotes(original: str, output: str, document: str | None = None) -> list[Failure]:
+    """``document`` is the whole source when ``original`` is one chunk of it."""
     fails: list[Failure] = []
     in_markers = extract_inline_markers(original)
     out_markers = extract_inline_markers(output)
-    if not in_markers and not extract_defs(original):
+    cited = {num for num, _ in extract_inline_markers(document)} if document else set()
+    in_defs = extract_defs(original, cited)
+    if not in_markers and not in_defs:
         return fails  # original has no footnotes; nothing to protect
 
     if len(out_markers) < len(in_markers):
@@ -269,8 +337,7 @@ def check_footnotes(original: str, output: str) -> list[Failure]:
                 f"(인접 수치 앵커 '{anchor}' → '{out_anchor}'): 인용 출처 변조 위험",
             ))
 
-    in_defs = extract_defs(original)
-    out_defs = extract_defs(output)
+    out_defs = extract_defs(output, cited)
     for num, content in in_defs.items():
         if num not in out_defs:
             fails.append(Failure(
@@ -358,14 +425,26 @@ def check_numbers(original: str, output: str) -> list[Failure]:
 MIN_QUOTE_LEN = 8
 
 
+_PARAGRAPH_SPLIT = re.compile(r"\n[ \t]*\n")
+
+
 def extract_quotes(text: str, min_len: int = MIN_QUOTE_LEN) -> list[str]:
+    """문단 안에서 같은 종류의 여닫는 부호끼리만 짝짓는다.
+
+    문서 전체에서 짝을 지으면 “…"처럼 섞인 부호가 몇 문단 뒤의 ”와 맞물려
+    본문 전체가 인용으로 잡히고, 곧은 따옴표 하나(27" 모니터)가 문서 전체의
+    짝수 판정을 깨뜨려 진짜 인용의 보호가 사라졌다.
+    """
     quotes: list[str] = []
-    for op, cl in (("「", "」"), ("『", "』"), ("“", "”")):
-        quotes += re.findall(re.escape(op) + r"([^" + cl + r"]+)" + re.escape(cl), text)
-    # Straight double quotes: only if balanced.
-    parts = text.split('"')
-    if len(parts) % 2 == 1:
-        quotes += parts[1::2]
+    for paragraph in _PARAGRAPH_SPLIT.split(text):
+        for op, cl in (("「", "」"), ("『", "』"), ("“", "”")):
+            quotes += re.findall(re.escape(op) + r"([^" + cl + r"]+)" + re.escape(cl), paragraph)
+        marks = [i for i, ch in enumerate(paragraph) if ch == '"']
+        if len(marks) % 2:
+            # 홀수면 숫자 바로 뒤의 "(인치·초 단위 표기)를 따옴표에서 뺀다.
+            marks = [i for i in marks if not (i > 0 and paragraph[i - 1].isdigit())]
+        if len(marks) % 2 == 0:
+            quotes += [paragraph[a + 1:b] for a, b in zip(marks[::2], marks[1::2])]
     return [q for q in quotes if len(q.strip()) >= min_len]
 
 

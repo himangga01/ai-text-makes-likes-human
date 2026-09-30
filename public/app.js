@@ -1,5 +1,6 @@
 import {
   getMarkdownDownloadName,
+  getTextDownloadName,
   readTextFile,
   TextFileError
 } from "./text-file.js";
@@ -7,7 +8,7 @@ import { progressForEvent } from "./progress.js";
 import { desktop, health, transform } from "./transport.js";
 import { createResultDiff } from "./result-diff.js";
 import { isOfficeFile, importDocument, closeDocument, transformDocument, saveDocument } from './document-file.js';
-import { connectionState, formatElapsed, effortLabels } from './connection-settings.js';
+import { connectionState, displayMessage, formatElapsed, effortLabel, resolveModelSelection } from './connection-settings.js';
 
 const elements = {
   shell: document.querySelector("#editor-shell"),
@@ -62,6 +63,9 @@ let activeDownloadName;
 let resultDownloadName;
 let lastProgress = 0;
 let runCompleted = false;
+let jobAccepted = false;
+// Errors that mean the engine or server changed state; the connection panel should re-check.
+const healthRecheckCodes = new Set(["INVALID_MODEL_SETTINGS", "SERVER_SHUTDOWN", "ENGINE_UNAVAILABLE", "ENGINE_FAILED", "MODEL_UNAVAILABLE", "NETWORK_ERROR"]);
 let officeDocument;
 let documentResult;
 let importing = false;
@@ -74,8 +78,20 @@ let resultGeneration = 0;
 let comparisonReady = false;
 let elapsedStarted;
 let elapsedInterval;
-let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh']}],claude:[{id:'claude-fable-5-1',label:'Claude Fable 5.1',efforts:['low','medium','high','xhigh','max']}]};
-let selections={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-fable-5-1',effort:'high'}};
+const fallbackModelDefaults={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-fable-5-1',effort:'high'}};
+let modelDefaults=fallbackModelDefaults;
+let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh','max','ultra']}],claude:[{id:'claude-fable-5-1',label:'Claude Fable 5.1',efforts:['low','medium','high','xhigh','max']}]};
+// Only explicit choices (storage, desktop preferences, the selects) are saved; everything else
+// resolves against the server's modelDefaults so a default change reaches users who never chose.
+let savedModels={};
+let selections={};
+const copyLabel=elements.copy.textContent;
+let copyReset;
+let statusShown;
+let healthStatus;
+let healthRun;
+let healthRequested=false;
+let healthOptionsKey;
 const bundledRewriteOptions = [
   { id: "normal", label: "보통", description: "원래 표현을 살려 어색한 부분을 다듬습니다." },
   { id: "medium", label: "중간", description: "어휘와 길어진 표현을 더 자연스럽게 정리합니다." },
@@ -84,9 +100,11 @@ const bundledRewriteOptions = [
 ];
 let rewriteOptions = bundledRewriteOptions;
 let rewriteStrength = "normal";
-try {const saved=JSON.parse(localStorage.getItem('humanize-model-settings')??'null');if(saved&&typeof saved==='object')for(const kind of ['codex','claude'])if(saved[kind])selections[kind]=saved[kind];}catch{}
+// Blocked site data makes every localStorage access throw; settings then last for this page only.
+const storage={get(key){try{return localStorage.getItem(key);}catch{return null;}},set(key,value){try{localStorage.setItem(key,value);}catch{}}};
+try {const saved=JSON.parse(storage.get('humanize-model-settings')??'null');if(saved&&typeof saved==='object')for(const kind of ['codex','claude'])if(saved[kind])savedModels[kind]=saved[kind];}catch{}
 if (!desktop) {
-  const savedStrength = localStorage.getItem("humanize-rewrite-strength");
+  const savedStrength = storage.get("humanize-rewrite-strength");
   if (bundledRewriteOptions.some(option => option.id === savedStrength)) rewriteStrength = savedStrength;
 }
 
@@ -138,7 +156,7 @@ async function handleRewriteStrengthChange(event) {
   rewriteStrength = event.target.value;
   try {
     if (desktop) await window.humanizeDesktop.selectRewriteStrength(rewriteStrength);
-    else localStorage.setItem("humanize-rewrite-strength", rewriteStrength);
+    else storage.set("humanize-rewrite-strength", rewriteStrength);
   } catch (error) {
     rewriteStrength = previous;
     renderRewriteOptions();
@@ -147,15 +165,18 @@ async function handleRewriteStrengthChange(event) {
   refreshControls();
 }
 
+// Returns the saved model id when it was no longer offered and got replaced.
 function renderModelControls(kind) {
   const model=document.querySelector(`#${kind}-model`);const effort=document.querySelector(`#${kind}-effort`);
-  const options=modelOptions[kind];
-  const selected=options.find(x=>x.id===selections[kind]?.model)??options[0];
-  const level=selected.efforts.includes(selections[kind]?.effort)?selections[kind].effort:'medium';
-  model.replaceChildren(...options.map(x=>new Option(x.label,x.id,false,x.id===selected.id)));
-  effort.replaceChildren(...selected.efforts.map(x=>new Option(effortLabels[x]??x,x,false,x===level)));
+  const options=modelOptions[kind];const fallback=modelDefaults[kind];
+  const next=resolveModelSelection(options,savedModels[kind],fallback);
+  model.replaceChildren(...options.map(x=>new Option(x.label,x.id,false,x.id===next.model)));
+  effort.replaceChildren(...options.find(x=>x.id===next.model).efforts.map(x=>new Option(effortLabel(x,fallback?.effort),x,false,x===next.effort)));
   selections[kind]={model:model.value,effort:effort.value};
+  if(next.replaced)delete savedModels[kind];
+  return next.replaced;
 }
+function persistModels() { if (!desktop) storage.set('humanize-model-settings',JSON.stringify(savedModels)); }
 function setConnection(kind, provider, failed=false) {
   const value=failed?{state:'error',icon:'×',label:'연결 확인 실패'}:connectionState(provider);
   const badge=document.querySelector(`#${kind}-connection`);badge.dataset.state=value.state;
@@ -195,7 +216,35 @@ function setStatus(kind, label, message) {
   elements.status.dataset.state = kind;
   elements.statusChip.className = `status-chip status-${kind}`;
   elements.statusChip.textContent = label;
+  message = displayMessage(message);
   elements.statusMessage.textContent = message;
+  statusShown = { kind, label, message };
+}
+
+function showIdleStatus() {
+  const hasSource = Boolean(elements.source.value.trim());
+  setStatus(
+    hasSource ? "ready" : "idle",
+    hasSource ? "입력 완료" : "준비",
+    hasSource ? "변환 버튼을 눌러 문체를 다듬어 보세요." : "원문을 입력하면 변환 버튼이 활성화됩니다."
+  );
+}
+
+// A health failure remembers what it covered so a later recovery can put that status back.
+function showHealthError(label, message) {
+  // Keep the covered status only while this error is still on screen; a newer status replaces it.
+  const previous = healthStatus && statusShown === healthStatus.shown ? healthStatus.previous : statusShown;
+  setStatus("error", label, message);
+  healthStatus = { shown: statusShown, previous };
+}
+
+function clearHealthError() {
+  if (!healthStatus) return;
+  const { shown, previous } = healthStatus;
+  healthStatus = undefined;
+  if (statusShown !== shown) return;
+  if (previous) setStatus(previous.kind, previous.label, previous.message);
+  else showIdleStatus();
 }
 
 function clearResultDownload() {
@@ -221,6 +270,8 @@ function setResultMode(nextMode, focusFinal = false) {
 }
 
 function clearCompletedResult() {
+  clearTimeout(copyReset);
+  elements.copy.textContent = copyLabel;
   resultGeneration += 1;
   comparisonReady = false;
   finalText = "";
@@ -335,6 +386,7 @@ function handleEvent(event) {
       if (activeRun) activeRun.streamedText = event.preview;
       break;
     case "accepted":
+      jobAccepted = true;
       setStatus("processing", "접수", "변환 작업을 준비하고 있습니다.");
       setStep(1);
       break;
@@ -388,7 +440,7 @@ async function startTransform() {
   activeDownloadName =
     sourceFile?.format === "markdown"
       ? getMarkdownDownloadName(sourceFile.fileName)
-      : desktop ? (sourceFile?.fileName?.replace(/\.txt$/i, "") || "humanized") + ".txt" : undefined;
+      : desktop ? getTextDownloadName(sourceFile?.fileName) : undefined;
   const inputKind = officeDocument ? undefined : sourceFile ? "text-file" : "direct-text";
   const sourceSnapshot = normalizeLineEndings(elements.source.value);
   const strength = inputKind === "direct-text" ? rewriteStrength : inputKind === "text-file" ? "normal" : undefined;
@@ -403,20 +455,32 @@ async function startTransform() {
   setStatus("processing", "접수 중", desktop ? "선택한 CLI로 변환을 준비합니다." : "서버에 원문을 안전하게 전달하고 있습니다.");
   setStep(1);
   applyProgress({ type: "accepted" });
+  let recheckHealth = false;
+  jobAccepted = false;
   try {
     const settings={...selections[selectedEngine()]};
     if(officeDocument)await transformDocument(officeDocument,selectedEngine(),controller.signal,handleEvent,settings);
     else await transform(sourceSnapshot, selectedEngine(), controller.signal, handleEvent,settings,{inputKind,strength});
     if (!runCompleted) throw new Error("완료 응답을 받지 못했습니다. 다시 시도해 주세요.");
   } catch (error) {
-    if(officeDocument){documentFailed=true;documentResult=undefined;void closeDocument(officeDocument);}
-    clearCompletedResult();
-    if (controller.signal.aborted) {
-      setStatus("warning", "취소됨", "변환을 취소했습니다. 원문은 그대로 남아 있습니다.");
-    } else {
-      setStatus("error", "오류", error?.message || "처리 중 오류가 발생했습니다. 다시 시도해 주세요.");
+    // A cancel click or stream failure after "done" must not discard (or delete) the finished result.
+    if (!runCompleted) {
+      // The server removes a document only once it accepted (or lost) the job; a rejection
+      // before that keeps it usable, so it is neither closed nor needs selecting again.
+      const documentGone = Boolean(officeDocument) && (jobAccepted || controller.signal.aborted);
+      if(documentGone){documentFailed=true;documentResult=undefined;void closeDocument(officeDocument);}
+      clearCompletedResult();
+      recheckHealth = healthRecheckCodes.has(error?.code);
+      if (controller.signal.aborted) {
+        setStatus("warning", "취소됨", documentGone ? "변환을 취소했습니다. 다시 변환하려면 문서를 다시 선택해 주세요." : "변환을 취소했습니다. 원문은 그대로 남아 있습니다.");
+      } else if (error?.code === "INVALID_MODEL_SETTINGS") {
+        setStatus("error", "모델 확인", `${error.message} 모델 목록을 새로 불러왔으니 모델을 확인한 뒤 다시 시도해 주세요.`);
+      } else {
+        const message = error?.message || "처리 중 오류가 발생했습니다. 다시 시도해 주세요.";
+        setStatus("error", "오류", documentGone ? `${message} 다시 변환하려면 문서를 다시 선택해 주세요.` : message);
+      }
+      elements.progressPanel.hidden = false;
     }
-    elements.progressPanel.hidden = false;
   } finally {
     stopElapsed();
     controller = undefined;
@@ -426,6 +490,7 @@ async function startTransform() {
     setRunning(false);
     showResultState();
   }
+  if (recheckHealth) void checkHealth();
 }
 
 elements.source.addEventListener("input", () => {
@@ -436,15 +501,7 @@ elements.source.addEventListener("input", () => {
   clearResultDownload();
   if (!running) resetProgress();
   refreshControls();
-  if (!running) {
-    setStatus(
-      elements.source.value.trim() ? "ready" : "idle",
-      elements.source.value.trim() ? "입력 완료" : "준비",
-      elements.source.value.trim()
-        ? "변환 버튼을 눌러 문체를 다듬어 보세요."
-        : "원문을 입력하면 변환 버튼이 활성화됩니다."
-    );
-  }
+  if (!running) showIdleStatus();
 });
 
 elements.fileButton.addEventListener("click", async () => {
@@ -565,10 +622,10 @@ async function copyResultText() {
 elements.copy.addEventListener("click", async () => {
   try {
     await copyResultText();
-    const old = elements.copy.textContent;
+    clearTimeout(copyReset);
     elements.copy.textContent = "복사됨";
-    setTimeout(() => {
-      elements.copy.textContent = old;
+    copyReset = setTimeout(() => {
+      elements.copy.textContent = copyLabel;
     }, 1200);
   } catch {
     setStatus("error", "복사 오류", "결과를 선택해 직접 복사해 주세요.");
@@ -596,17 +653,40 @@ elements.download.addEventListener("click", async () => {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 });
 
-async function checkHealth() {
-  if(checkingHealth||running)return;
-  checkingHealth=true;
-  for(const kind of ['codex','claude'])setConnection(kind);
-  refreshControls();
+const engineNames = { codex: "Codex", claude: "Claude Code" };
+
+// Background (silent) polls neither lock the editor nor reset the badges. A request made while a
+// check is in flight runs one more full check afterwards instead of being dropped.
+function checkHealth(silent = false) {
+  if (running) return Promise.resolve();
+  if (healthRun) { if (!silent) healthRequested = true; return healthRun; }
+  healthRun = (async () => {
+    let quiet = silent;
+    do { healthRequested = false; await probeHealth(quiet); quiet = false; } while (healthRequested && !running);
+  })().finally(() => { healthRun = undefined; });
+  return healthRun;
+}
+
+async function probeHealth(silent) {
+  if (!silent) {
+    checkingHealth=true;
+    for(const kind of ['codex','claude'])setConnection(kind);
+    refreshControls();
+  }
   try {
     const body = await health();
-    if(body.modelOptions)modelOptions=body.modelOptions;
-    renderRewriteOptions(body.rewriteOptions);
+    const replaced=[];
+    // Re-rendering closes an open dropdown and moves focus, so silent polls only do it on change.
+    const optionsKey=JSON.stringify([body.modelOptions,body.modelDefaults,body.rewriteOptions]);
+    if (!silent || optionsKey !== healthOptionsKey) {
+      healthOptionsKey=optionsKey;
+      if(body.modelOptions)modelOptions=body.modelOptions;
+      if(body.modelDefaults?.codex&&body.modelDefaults?.claude)modelDefaults=body.modelDefaults;
+      renderRewriteOptions(body.rewriteOptions);
+      for(const kind of ['codex','claude']){const old=renderModelControls(kind);if(old)replaced.push(old);}
+      if(replaced.length)persistModels();
+    }
     for(const kind of ['codex','claude']) {
-      renderModelControls(kind);
       const provider=body.providers?.[kind]??{ready:body.status==='ready'&&(kind==='codex'||body.claudeAvailable===true),installed:body.status==='ready',authenticated:body.status==='ready'&&(kind==='codex'||body.claudeAvailable===true),message:body.message};
       setConnection(kind,provider);
     }
@@ -619,16 +699,29 @@ async function checkHealth() {
     }
     applyClaudeAvailability();
     if (!engineReady) {
-      setStatus("error", "엔진 점검", body.message || "서버의 변환 엔진을 사용할 수 없습니다.");
+      showHealthError("엔진 점검", body.message || "서버의 변환 엔진을 사용할 수 없습니다.");
+    } else {
+      clearHealthError();
+      const from=selectedEngine();
+      const other=elements.engineInputs.find(input=>input.value!==from&&(input.value==='claude'?claudeAvailable:codexAvailable));
+      if(!silent&&!selectedReady()&&other&&!running){
+        // A restored or previously chosen engine went away: switch instead of leaving Transform dead.
+        // Background polls never switch; one transient failure must not change the user's engine.
+        other.checked=true;
+        setStatus('warning','엔진 변경',`${engineNames[from]}를 사용할 수 없어 ${engineNames[other.value]}로 바꿨습니다.`);
+      } else if(replaced.length) {
+        setStatus('warning','모델 변경',`저장된 모델(${replaced.join(', ')})을 더 이상 사용할 수 없어 기본 모델로 바꿨습니다.`);
+      }
     }
   } catch {
     for(const kind of ['codex','claude'])setConnection(kind,undefined,true);
     document.querySelector('#connection-checked').textContent='연결 점검 실패';
     engineReady = false; codexAvailable = false; claudeAvailable = false;
-    setStatus("error", "연결 오류", "엔진 상태를 확인하지 못했습니다.");
+    showHealthError("연결 오류", "엔진 상태를 확인하지 못했습니다.");
+  } finally {
+    checkingHealth=false;
+    refreshControls();
   }
-  checkingHealth=false;
-  refreshControls();
 }
 
 showResultState();
@@ -643,11 +736,11 @@ for (const input of elements.engineInputs) input.addEventListener("change", () =
   if (desktop) window.humanizeDesktop.selectEngine(selectedEngine()).catch(error => setStatus("error", "설정 오류", error.message));
 });
 async function initialize() {
-  document.querySelector('#refresh-health').addEventListener('click',checkHealth);
+  document.querySelector('#refresh-health').addEventListener('click',()=>void checkHealth());
   for(const kind of ['codex','claude'])for(const type of ['model','effort'])document.querySelector(`#${kind}-${type}`).addEventListener('change',async()=>{
-    selections[kind]={model:document.querySelector(`#${kind}-model`).value,effort:document.querySelector(`#${kind}-effort`).value};
-    renderModelControls(kind);
-    try {if(desktop)await window.humanizeDesktop.selectModel({engine:kind,...selections[kind]});else localStorage.setItem('humanize-model-settings',JSON.stringify(selections));}
+    savedModels[kind]={model:document.querySelector(`#${kind}-model`).value,effort:document.querySelector(`#${kind}-effort`).value};
+    renderModelControls(kind);savedModels[kind]={...selections[kind]};
+    try {if(desktop)await window.humanizeDesktop.selectModel({engine:kind,...selections[kind]});else persistModels();}
     catch(error){setStatus('error','설정 저장 오류',error.message);}
   });
   if (desktop) {
@@ -661,7 +754,7 @@ async function initialize() {
     elements.download.textContent = "결과 저장";
     try {
       const preferences = await window.humanizeDesktop.preferences();
-      if(preferences.models)for(const kind of ['codex','claude'])if(preferences.models[kind])selections[kind]=preferences.models[kind];
+      if(preferences.models)for(const kind of ['codex','claude'])if(preferences.models[kind])savedModels[kind]=preferences.models[kind];
       if (rewriteOptions.some(option => option.id === preferences.rewriteStrength)) {
         rewriteStrength = preferences.rewriteStrength;
         renderRewriteOptions();
@@ -679,6 +772,8 @@ async function initialize() {
     });
   }
   await checkHealth();
-  setInterval(()=>{if(!document.hidden&&!running)void checkHealth();},60000);
+  setInterval(()=>{if(!document.hidden&&!running)void checkHealth(true);},60000);
+  // A tab left hidden skips polls; re-sync the model list as soon as it is shown again.
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!running)void checkHealth(true);});
 }
 initialize();

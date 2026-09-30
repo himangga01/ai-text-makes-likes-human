@@ -93,31 +93,68 @@ def _sim(a: str, b: str) -> float:
     return 2 * inter / (sum(A.values()) + sum(B.values()))
 
 
+# 전체 DP 셀 수 상한. 이보다 크면(장문 전체 문서 검증) 대각선 띠 안에서만 정렬한다.
+# 윤문은 문장 순서를 유지하므로 최적 경로는 대각선 근처에 있다 — 띠 밖을 버려도
+# 청크 단위 입력(상한 이하)의 결과는 이전과 같고, 9만 자 문서가 제곱 시간에 빠지지 않는다.
+_FULL_ALIGN_CELLS = 250_000
+_ALIGN_BAND = 64
+
+
 def align(before: list[str], after: list[str]) -> list[tuple[str, str]]:
     """Needleman-Wunsch 문장 정렬. 1:1 짝과 gap(삽입·삭제)만 낸다."""
     n, m = len(before), len(after)
     gap = -0.4
-    score = [[0.0] * (m + 1) for _ in range(n + 1)]
-    for i in range(1, n + 1):
-        score[i][0] = score[i - 1][0] + gap
-    for j in range(1, m + 1):
-        score[0][j] = score[0][j - 1] + gap
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            score[i][j] = max(
-                score[i - 1][j - 1] + _sim(before[i - 1], after[j - 1]),
-                score[i - 1][j] + gap,
-                score[i][j - 1] + gap,
-            )
+    neg = float("-inf")
+    grams_a = [_bigrams(s) for s in before]
+    grams_b = [_bigrams(s) for s in after]
+    size_a = [sum(c.values()) for c in grams_a]
+    size_b = [sum(c.values()) for c in grams_b]
+
+    def sim(i: int, j: int) -> float:  # == _sim(before[i], after[j]), 캐시한 바이그램 사용
+        small, large = grams_a[i], grams_b[j]
+        if not small or not large:
+            return 0.0
+        if len(small) > len(large):
+            small, large = large, small
+        inter = sum(min(v, large[k]) for k, v in small.items() if k in large)
+        return 2 * inter / (size_a[i] + size_b[j])
+
+    if n * m <= _FULL_ALIGN_CELLS:
+        bounds = [(0, m)] * (n + 1)
+    else:
+        width = _ALIGN_BAND + abs(n - m)
+        bounds = []
+        for i in range(n + 1):
+            center = round(i * m / n) if n else 0
+            bounds.append((max(0, center - width), min(m, center + width)))
+    rows: list[list[float]] = []
+
+    def get(i: int, j: int) -> float:
+        lo, hi = bounds[i]
+        return rows[i][j - lo] if lo <= j <= hi else neg
+
+    for i in range(n + 1):
+        lo, hi = bounds[i]
+        row = [neg] * (hi - lo + 1)
+        rows.append(row)
+        for j in range(lo, hi + 1):
+            if i == 0:
+                row[j - lo] = j * gap if j == 0 else get(0, j - 1) + gap
+            elif j == 0:
+                row[0] = get(i - 1, 0) + gap
+            else:
+                row[j - lo] = max(
+                    get(i - 1, j - 1) + sim(i - 1, j - 1),
+                    get(i - 1, j) + gap,
+                    row[j - lo - 1] + gap if j > lo else neg,
+                )
     pairs: list[tuple[str, str]] = []
     i, j = n, m
     while i > 0 or j > 0:
-        if i > 0 and j > 0 and abs(
-            score[i][j] - (score[i - 1][j - 1] + _sim(before[i - 1], after[j - 1]))
-        ) < 1e-9:
+        if i > 0 and j > 0 and abs(get(i, j) - (get(i - 1, j - 1) + sim(i - 1, j - 1))) < 1e-9:
             pairs.append((before[i - 1], after[j - 1]))
             i, j = i - 1, j - 1
-        elif i > 0 and abs(score[i][j] - (score[i - 1][j] + gap)) < 1e-9:
+        elif i > 0 and abs(get(i, j) - (get(i - 1, j) + gap)) < 1e-9:
             pairs.append((before[i - 1], ""))
             i -= 1
         else:
@@ -213,6 +250,9 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
     result = after
     restored: list[dict] = []
     skipped: list[dict] = []
+    source_sentences = [
+        s.strip() for s in _m._split_sentences(_checks.strip_summary_block(before)) if s.strip()
+    ]
     for loss in losses:
         # 유사도가 낮은 짝은 정렬 아티팩트일 수 있어 손대지 않는다. 다만 **보고는 남긴다** —
         # 예전에는 조용히 탈락시켜, 진짜 손실이 어디로 갔는지 흔적조차 남지 않았다.
@@ -241,7 +281,22 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
                 }
             )
             continue
+        # 순서가 바뀐 윤문에서는 정렬이 서로 다른 원문 문장을 짝짓는다. 짝 문장이 다른
+        # 원문 문장과 더 닮았거나 되돌릴 원문 문장이 이미 결과에 있으면, 되돌리는 순간
+        # 한 명제가 사라지고 다른 명제가 두 번 나온다(실측: 상·하반기 문장 교환).
+        # 결과에 그대로 남아 있는 원문 문장은 이미 제 짝이 있으므로 비교에서 뺀다
+        # (병렬 문장 "서울의 매출은 … / 부산의 매출은 …"의 서법 복원이 막히지 않게).
+        own = _sim(loss["before"], loss["after"])
+        kept = {s.strip() for s in _m._split_sentences(result)}
+        if any(other != loss["before"] and other not in kept and _sim(other, loss["after"]) > own
+               for other in source_sentences):
+            skipped.append({**loss, "reason": "순서 변경 의심 — 다른 원문 문장과 더 가깝다"})
+            continue
         replacement = _strip_restored_cliche(loss["before"], loss["after"])
+        present = {s.strip() for s in _m._split_sentences(result)}
+        if loss["before"] in present or replacement.strip() in present:
+            skipped.append({**loss, "reason": "복원하면 같은 문장이 중복된다"})
+            continue
         result = result.replace(loss["after"], replacement, 1)
         restored.append({**loss, "restored_as": replacement})
     return result, restored, skipped

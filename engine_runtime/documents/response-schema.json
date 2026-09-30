@@ -5,7 +5,7 @@
     "schemaVersion": {"type": "integer", "enum": [2]},
     "reviewedIds": {"type": "array", "items": {"type": "string"}},
     "batchId": {"type": "string"}, "sourceHash": {"type": "string"},
-    "warnings": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "maxItems": 20, "items": {"type": "string", "maxLength": 300}},
     "blocks": {"type": "array", "items": {
       "type": "object", "additionalProperties": false, "required": ["id", "sourceHash", "edits"],
       "properties": {"id": {"type": "string"}, "sourceHash": {"type": "string"}, "edits": {

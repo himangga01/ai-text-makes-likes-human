@@ -19,7 +19,9 @@ export async function loadPreferences(file: string): Promise<Preferences> {
     preferences.selectedEngine = parseEngineChoice(saved?.selectedEngine) ?? 'codex';
     try { preferences.rewriteStrength = parseRewriteStrength(saved?.rewriteStrength); } catch { /* Legacy or malformed saved value. */ }
     for (const kind of ['codex','claude'] as const) {
-      try { preferences.models[kind] = parseModelSettings(kind,saved?.models?.[kind]?.model,saved?.models?.[kind]?.effort); } catch { /* Invalid selection defaults on use. */ }
+      // Only a model the user saved is restored; an absent entry must keep following future defaults.
+      const model=saved?.models?.[kind]?.model;
+      if (model !== undefined) try { preferences.models[kind] = parseModelSettings(kind,model,saved.models[kind].effort); } catch { /* Invalid selection defaults on use. */ }
       if (typeof saved?.commands?.[kind] === 'string') preferences.commands[kind] = saved.commands[kind];
     }
   } catch { /* First run or malformed JSON. */ }

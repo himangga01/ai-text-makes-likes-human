@@ -198,6 +198,8 @@ button {
 
 .editor-shell {
   overflow: hidden;
+  /* clip keeps the rounded corners without becoming a scroll container, so the phone action zone can stick. */
+  overflow: clip;
   border: 1px solid rgba(220, 225, 235, 0.9);
   border-radius: var(--radius-xl);
   background: var(--surface);
@@ -409,7 +411,8 @@ textarea:focus {
   box-shadow: 0 1px 3px rgba(31, 38, 51, 0.14);
 }
 
-.result-diff {
+.result-diff,
+.result-diff__body {
   position: relative;
 }
 

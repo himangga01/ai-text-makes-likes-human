@@ -5,5 +5,5 @@ test('fresh browser preserves the local Claude default and distinct model labels
   await page.goto('/');
   await expect(page.locator('#claude-model')).toHaveValue('claude-fable-5-1');
   await expect(page.locator('#claude-effort')).toHaveValue('high');
-  await expect(page.locator('#claude-model option')).toHaveText(['Claude Fable 5.1','Claude Sonnet 5','Claude Opus 5']);
+  await expect(page.locator('#claude-model option')).toHaveText(['Claude Fable 5.1','Claude Opus 5.5','Claude Sonnet 5.5','Claude Sonnet 5','Claude Opus 5']);
 });

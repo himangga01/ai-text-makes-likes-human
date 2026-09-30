@@ -39,6 +39,7 @@ describe("GET /api/health", () => {
       expect(await response.json()).toEqual({
         rewriteOptions: expect.arrayContaining([{id:'very-strong',label:'매우 강하게',description:expect.any(String)}]),
         modelOptions: MODEL_OPTIONS,
+        modelDefaults: { codex: { model: 'gpt-5.6-sol', effort: 'medium' }, claude: { model: 'claude-fable-5-1', effort: 'high' } },
         checkedAt: expect.any(String),
         documentsAvailable: false,
         status: "ready",
@@ -100,6 +101,7 @@ describe("GET /api/health", () => {
       expect(body).toEqual({
         rewriteOptions: expect.arrayContaining([{id:'very-strong',label:'매우 강하게',description:expect.any(String)}]),
         modelOptions: MODEL_OPTIONS,
+        modelDefaults: { codex: { model: 'gpt-5.6-sol', effort: 'medium' }, claude: { model: 'claude-fable-5-1', effort: 'high' } },
         checkedAt: expect.any(String),
         status: "degraded",
         pid: process.pid,

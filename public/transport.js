@@ -1,5 +1,15 @@
 export const desktop = Boolean(window.humanizeDesktop);
 
+const NETWORK_MESSAGE = "서버에 연결하지 못했습니다. 네트워크와 서버 상태를 확인해 주세요.";
+// fetch and stream reads reject with a browser-specific English TypeError when the connection fails.
+export function networkError(error) {
+  if (error?.name !== "TypeError") return error;
+  return Object.assign(new Error(NETWORK_MESSAGE), { code: "NETWORK_ERROR", cause: error });
+}
+export async function request(url, options) {
+  try { return await fetch(url, options); } catch (error) { throw networkError(error); }
+}
+
 export async function health() {
   if (desktop) return window.humanizeDesktop.health();
   const response = await fetch("/api/health", { cache: "no-store" });
@@ -31,19 +41,19 @@ export async function transform(text, engine, signal, onEvent, settings, rewrite
     return;
   }
   const query=new URLSearchParams({engine,...(settings?{model:settings.model,effort:settings.effort}:{}),...(rewriteOptions??{})});
-  const response = await fetch(`/api/transform?${query}`, {
+  const response = await request(`/api/transform?${query}`, {
     method: "POST", headers: { "content-type": "text/plain; charset=utf-8" }, body: text, signal
   });
   if (!response.ok || !response.body) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.message || "변환 요청을 시작하지 못했습니다.");
+    throw Object.assign(new Error(body.message || "변환 요청을 시작하지 못했습니다."), { code: body.code });
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   try {
     while (true) {
-      const { done, value } = await reader.read();
+      const { done, value } = await reader.read().catch(error => { throw networkError(error); });
       buffer += decoder.decode(value, { stream: !done });
       const lines = buffer.split("\n"); buffer = lines.pop() ?? "";
       for (const line of lines) if (line.trim()) onEvent(JSON.parse(line));

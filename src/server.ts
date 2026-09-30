@@ -5,8 +5,9 @@ import type { Server } from "node:http";
 import { createApp, createProductionRuntime } from "./app.js";
 import { loadConfig } from "./config.js";
 import { listLanUrls } from "./network/lan-addresses.js";
-import { SpawnCommandRunner } from "./process/command-runner.js";
+import { SpawnCommandRunner, killChildProcessesOnExit, killLiveProcesses } from "./process/command-runner.js";
 import { acquireServerLock } from "./runtime/server-lock.js";
+import { createShutdownSignalHandler } from "./runtime/shutdown-signal.js";
 
 const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -28,6 +29,7 @@ async function closeServer(server: Server): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  killChildProcessesOnExit();
   const config = loadConfig(process.env, projectRoot);
   const serverLock = await acquireServerLock(path.dirname(config.runtimeRoot));
   process.once("exit", () => serverLock.releaseSync());
@@ -73,8 +75,16 @@ async function main(): Promise<void> {
       process.exit(1);
     }
   };
-  process.once("SIGINT", shutdown);
-  process.once("SIGTERM", shutdown);
+  // A deliberate second signal means the operator will not wait for the graceful path.
+  const onSignal = createShutdownSignalHandler({
+    graceful: () => void shutdown(),
+    force: () => {
+      killLiveProcesses();
+      process.exit(1);
+    }
+  });
+  process.on("SIGINT", onSignal);
+  process.on("SIGTERM", onSignal);
 }
 
 main().catch(error => {

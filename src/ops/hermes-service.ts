@@ -381,12 +381,6 @@ export class HermesServiceSupervisor {
     while (true) {
       try {
         await mkdir(this.controlLockPath, { mode: 0o700 });
-        await writeFile(
-          path.join(this.controlLockPath, "owner.json"),
-          `${JSON.stringify({ pid: process.pid, createdAt: Date.now() })}\n`,
-          { encoding: "utf8", mode: 0o600 }
-        );
-        break;
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
         if (await this.controlLockIsStale()) {
@@ -397,7 +391,23 @@ export class HermesServiceSupervisor {
           throw new Error("Timed out waiting for the Hermes service control lock");
         }
         await this.platform.sleep(25);
+        continue;
       }
+      // Publish the owner atomically; a failed write must not leave an ownerless lock.
+      const ownerPath = path.join(this.controlLockPath, "owner.json");
+      const temporaryPath = `${ownerPath}.${process.pid}.tmp`;
+      try {
+        await writeFile(
+          temporaryPath,
+          `${JSON.stringify({ pid: process.pid, createdAt: Date.now() })}\n`,
+          { encoding: "utf8", mode: 0o600 }
+        );
+        await rename(temporaryPath, ownerPath);
+      } catch (error) {
+        await rm(this.controlLockPath, { recursive: true, force: true });
+        throw error;
+      }
+      break;
     }
 
     try {
@@ -432,7 +442,9 @@ export class HermesServiceSupervisor {
         return (error as NodeJS.ErrnoException).code !== "EPERM";
       }
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
+      // The lock is at least 5 s old here, so a missing or truncated owner
+      // file belongs to an owner that died between mkdir and the write.
+      if ((error as NodeJS.ErrnoException).code === "ENOENT" || error instanceof SyntaxError) return true;
       throw error;
     }
   }
@@ -453,6 +465,18 @@ export class HermesServiceSupervisor {
   }
 }
 
+// Rows of `ps -A -o pid=,ppid=,pgid=` to kill targets for `parent`'s children:
+// a child leading its own (detached) process group is killed as a group.
+export function childProcessTargets(psOutput: string, parent: number): number[] {
+  const targets = new Set<number>();
+  for (const line of psOutput.split(/\r?\n/)) {
+    const [pid, ppid, pgid] = line.trim().split(/\s+/).map(Number);
+    if (!Number.isInteger(pid) || pid! <= 0 || ppid !== parent || pid === parent) continue;
+    targets.add(pgid === pid ? -pid! : pid!);
+  }
+  return [...targets];
+}
+
 export interface NodeServicePlatformOptions {
   readonly projectRoot: string;
   readonly port: number;
@@ -462,6 +486,14 @@ export interface NodeServicePlatformOptions {
   readonly claudeCommand: string;
   readonly stdoutLogPath: string;
   readonly stderrLogPath: string;
+}
+
+// HUMANIZE_RUNTIME_ROOT is for test instances; the managed server must use the
+// runtime directory (and server.lock) this supervisor inspects.
+export function serviceEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const { HUMANIZE_RUNTIME_ROOT: testRuntimeRoot, ...inherited } = env;
+  void testRuntimeRoot;
+  return inherited;
 }
 
 export class NodeServicePlatform implements ServicePlatform {
@@ -507,7 +539,7 @@ export class NodeServicePlatform implements ServicePlatform {
         shell: false,
         stdio: ["ignore", stdoutFd, stderrFd],
         env: {
-          ...process.env,
+          ...serviceEnvironment(process.env),
           HOST: "0.0.0.0",
           PORT: String(this.options.port),
           PYTHON_COMMAND: this.options.pythonCommand,
@@ -544,6 +576,9 @@ export class NodeServicePlatform implements ServicePlatform {
 
     const processGroup = await this.getProcessGroup(pid);
     if ((await this.getProcessIdentity(pid)) !== identity) return;
+    // The server's CLI children run in their own process groups; a SIGKILL of
+    // the server skips its exit cleanup, so kill those groups first.
+    await this.killChildProcesses(pid);
     if (processGroup === pid) {
       process.kill(-pid, "SIGKILL");
     } else {
@@ -593,6 +628,22 @@ export class NodeServicePlatform implements ServicePlatform {
 
   sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async killChildProcesses(parent: number): Promise<void> {
+    let stdout: string;
+    try {
+      ({ stdout } = await execFileAsync("/bin/ps", ["-A", "-o", "pid=,ppid=,pgid="]));
+    } catch {
+      return;
+    }
+    for (const target of childProcessTargets(stdout, parent)) {
+      try {
+        process.kill(target, "SIGKILL");
+      } catch {
+        // The child exited after the process listing.
+      }
+    }
   }
 
   private async getProcessGroup(pid: number): Promise<number | null> {

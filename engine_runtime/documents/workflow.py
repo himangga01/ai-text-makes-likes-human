@@ -43,21 +43,23 @@ def next_batch(job,state,manifest):
     base={'job':job.name,'kind':'document','format':state['format'],'name':state['name'],
           'sourceHash':state['sourceHash'],'warnings':state['warnings'], 'sourceChars':manifest['sourceChars'],
           'totalChunks':len(manifest['batches']),'editableBlocks':sum(b['editable'] for b in manifest['blocks']),
-          'preservedBlocks':sum(not b['editable'] for b in manifest['blocks']), 'slides':manifest['slides'],
-          'preview':'\n\n'.join(f"[{b['location']}]\n" + (apply_edits(b,state['accepted'][b['id']]) if state['status']=='done' and state['accepted'].get(b['id']) else b['text']) for b in manifest['blocks'])}
+          'preservedBlocks':sum(not b['editable'] for b in manifest['blocks']), 'slides':manifest['slides']}
+    # The preview can be ~100k chars; it goes last so a host that truncates long
+    # output still sees the status and paths first.
+    preview={'preview':'\n\n'.join(f"[{b['location']}]\n" + (apply_edits(b,state['accepted'][b['id']]) if state['status']=='done' and state['accepted'].get(b['id']) else b['text']) for b in manifest['blocks'])}
     if state['status']=='done':
-        return {**base,'status':'done','outputPath':state['outputPath'],'restoredBlocks':state['restored']}
+        return {'status':'done','outputPath':state['outputPath'],'restoredBlocks':state['restored'],**base,**preview}
     if state['current']>=len(manifest['batches']):
-        return {**base,'status':'ready-to-finalize'}
+        return {'status':'ready-to-finalize',**base,**preview}
     ids=manifest['batches'][state['current']]
     batch={'schemaVersion':1,'batchId':str(state['current']+1),'sourceHash':state['sourceHash'],
            'blocks':[public_block(b) for b in manifest['blocks'] if b['id'] in ids]}
     file=job/f"batch-{state['current']+1}.json"
     save(file,batch)
-    return {**base,'status':'rewrite','chunk':state['current']+1,'attempt':state['attempt'],
+    return {'status':'rewrite','chunk':state['current']+1,'attempt':state['attempt'],
             'inputPath':str(file),'responsePath':str(job/f"response-{state['current']+1}-{state['attempt']}.json"),
             'schemaPath':str(Path(__file__).parent/'response-schema.json'),
-            'rulesPath':str(Path(state['vendor'])/'skills/humanize-korean/references/quick-rules.md')}
+            'rulesPath':str(Path(state['vendor'])/'skills/humanize-korean/references/quick-rules.md'),**base,**preview}
 
 def accept(job,state,manifest,chunk,attempt,source_hash,response):
     if state['status']!='active' or chunk!=state['current']+1 or attempt!=state['attempt'] or source_hash!=state['sourceHash']:
@@ -85,8 +87,10 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
     if not valid_ids:
         raise DocumentError('검토 ID가 누락·중복되었거나 순서가 다릅니다.')
     warnings=value.get('warnings')
-    if not isinstance(warnings,list) or len(warnings)>20 or any(not isinstance(w,str) or len(w)>300 for w in warnings):
+    if not isinstance(warnings,list) or any(not isinstance(w,str) for w in warnings):
         raise DocumentError('경고 응답 형식이 잘못되었습니다.')
+    # Warnings are advisory: clip an over-long reply (schema: 20 items, 300 chars) instead of failing the job.
+    warnings=[w[:300] for w in warnings[:20]]
     by_id={b['id']:b for b in manifest['blocks']}
     pending={id:[] for id in ids if id not in item_ids}; failures=[]
     for item in items:

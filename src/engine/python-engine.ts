@@ -304,12 +304,29 @@ export class PythonEngine {
     }
   }
 
+  // A chunk gate sees the whole prepared source too: footnote markers live in body
+  // chunks while their definitions sit in the last one, and the chunk verdict must
+  // agree with the full-document gate. The prepared source sits next to the chunks.
+  private async documentContext(beforePath: string): Promise<string | undefined> {
+    const dir = path.dirname(path.resolve(beforePath));
+    try {
+      const manifest = JSON.parse(await readFile(path.join(dir, "chunk_manifest.json"), "utf8")) as unknown;
+      const source = path.join(dir, safeLeaf(record(manifest, "manifest").source_file, "source_file"));
+      if (source === path.resolve(beforePath)) return undefined;
+      await readFile(source);
+      return source;
+    } catch {
+      return undefined;
+    }
+  }
+
   async verify(
     beforePath: string,
     afterPath: string,
     signal: AbortSignal,
     attempt: 1 | 2 = 1
   ): Promise<GateResult> {
+    const context = await this.documentContext(beforePath);
     const result = await this.run(
       [
         path.resolve(this.vendorRoot, "../../engine_runtime/workflow.py"),
@@ -319,7 +336,7 @@ export class PythonEngine {
         path.resolve(beforePath),
         "--after",
         path.resolve(afterPath),
-
+        ...(context ? ["--context", context] : [])
       ],
       path.dirname(beforePath),
       signal

@@ -5,7 +5,6 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import express, { type Express } from "express";
 import type { AppConfig } from "./config.js";
-import type { TransformEvent } from "./contracts.js";
 import { EngineError } from "./engine/errors.js";
 import {
   parseEngineChoice
@@ -20,10 +19,11 @@ export { createProductionRuntime, type ProductionRuntime } from "./runtime/creat
 import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
 import { NdjsonWriter } from "./transport/ndjson.js";
+import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from "./transport/public-error.js";
 import { streamRequestBody } from "./transport/request-body.js";
 import { mountDocumentRoutes } from './documents/routes.js';
 import type { DocumentEngine } from './documents/document-engine.js';
-import { MODEL_OPTIONS, parseModelSettings, type ModelSettings } from './engine/model-policy.js';
+import { MODEL_DEFAULTS, MODEL_OPTIONS, parseModelSettings, type ModelSettings } from './engine/model-policy.js';
 
 export interface AppLogger {
   info(value: Record<string, unknown>): void;
@@ -50,36 +50,6 @@ const defaultLogger: AppLogger = {
   info: value => console.log(JSON.stringify(value)),
   error: value => console.error(JSON.stringify(value))
 };
-
-const PUBLIC_MESSAGES = {
-  EMPTY_INPUT: "원본 문구를 입력해 주세요.",
-  QUEUE_FULL: "현재 3건이 처리 중입니다. 잠시 후 다시 시도해 주세요.",
-  ENGINE_UNAVAILABLE: "서버의 변환 엔진을 사용할 수 없습니다.",
-  ENGINE_TIMEOUT: "한 구간의 처리 시간이 초과되었습니다.",
-  ENGINE_OUTPUT_INVALID: "변환 결과 형식을 확인하지 못했습니다.",
-  VALIDATION_FAILED: "내용 보존 검증을 통과하지 못했습니다.",
-  INSUFFICIENT_DISK: "서버 저장 공간이 부족합니다.",
-  CLIENT_ABORTED: "변환을 취소했습니다.",
-  INTERNAL_ERROR: "처리 중 오류가 발생했습니다. 다시 시도해 주세요."
-} as const;
-
-function publicEvent(error: unknown): TransformEvent {
-  if (error instanceof EngineError) {
-    return {
-      type: "error",
-      code: error.publicCode,
-      message: PUBLIC_MESSAGES[error.publicCode],
-      retryable: error.retryable
-    };
-  }
-  return {
-    type: "error",
-    code: "INTERNAL_ERROR",
-    message: PUBLIC_MESSAGES.INTERNAL_ERROR,
-    retryable: false
-  };
-}
-
 
 async function streamResult(
   writer: NdjsonWriter,
@@ -140,7 +110,8 @@ export function createApp(dependencies: AppDependencies): Express {
         status: "degraded",
         providers: preflight.providers,
         rewriteOptions: REWRITE_OPTIONS,
-      modelOptions: MODEL_OPTIONS,
+        modelOptions: MODEL_OPTIONS,
+        modelDefaults: MODEL_DEFAULTS,
         checkedAt: new Date().toISOString(),
         pid: process.pid,
         errorCode: preflight.errorCode ?? "ENGINE_UNAVAILABLE",
@@ -155,6 +126,7 @@ export function createApp(dependencies: AppDependencies): Express {
       documentsAvailable: dependencies.documentEngine ? await dependencies.documentEngine.health() : false,
       rewriteOptions: REWRITE_OPTIONS,
       modelOptions: MODEL_OPTIONS,
+      modelDefaults: MODEL_DEFAULTS,
       checkedAt: new Date().toISOString(),
       status: "ready",
       pid: process.pid,
@@ -212,6 +184,11 @@ export function createApp(dependencies: AppDependencies): Express {
     try { rewriteOptions = parseRewriteOptions(request.query.inputKind, request.query.strength); }
     catch (error) { response.status(400).json({code:'INVALID_REWRITE_OPTIONS',message:(error as Error).message}); return; }
 
+    // A keep-alive client can still reach a closing server; it must not read QUEUE_FULL.
+    if (queue.isShuttingDown) {
+      response.status(503).json({ code: "SERVER_SHUTDOWN", message: PUBLIC_MESSAGES.SERVER_SHUTDOWN });
+      return;
+    }
     const jobId = randomUUID();
     const reservation = queue.reserve(jobId);
     if (!reservation) {
@@ -290,7 +267,8 @@ export function createApp(dependencies: AppDependencies): Express {
         },
         position => writer.write({ type: "queued", position })
       );
-    } catch (error) {
+    } catch (caught) {
+      const error = shutdownAware(caught, queue.isShuttingDown, clientController.signal.aborted);
       const event = publicEvent(error);
       writer.write(event);
       logger.error({

@@ -13,8 +13,10 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  childProcessTargets,
   HermesServiceSupervisor,
   NodeServicePlatform,
+  serviceEnvironment,
   type ServiceHealth,
   type ServicePlatform
 } from "../../src/ops/hermes-service.js";
@@ -222,6 +224,21 @@ describe("HermesServiceSupervisor", () => {
     });
   });
 
+  it.each(["", '{"pid":'])("reclaims an old control lock whose owner file is unparsable (%j)", async owner => {
+    const runtimeRoot = await makeRuntimeRoot();
+    const controlLock = path.join(runtimeRoot, "hermes-service-control.lock");
+    await mkdir(controlLock);
+    await writeFile(path.join(controlLock, "owner.json"), owner, "utf8");
+    const old = new Date(Date.now() - 10_000);
+    await utimes(controlLock, old, old);
+    const supervisor = new HermesServiceSupervisor(
+      { runtimeRoot, lockTimeoutMs: 50 },
+      new FakeServicePlatform(runtimeRoot)
+    );
+
+    await expect(supervisor.status()).resolves.toMatchObject({ outcome: "unhealthy" });
+  });
+
   it("restarts only after three consecutive failed health checks", async () => {
     const runtimeRoot = await makeRuntimeRoot();
     const platform = new FakeServicePlatform(runtimeRoot);
@@ -314,6 +331,21 @@ describe("HermesServiceSupervisor", () => {
 });
 
 describe("NodeServicePlatform", () => {
+  it("targets the process groups of the server's children before a forced stop", () => {
+    const ps = [
+      "  100     1   100", // the server itself
+      "  201   100   201", // detached CLI child leading its own group
+      "  202   100   100", // child left in the server's group
+      "  301   201   201", // grandchild, covered by its parent's group
+      "  400     1   400"  // unrelated process
+    ].join("\n");
+    expect(childProcessTargets(ps, 100)).toEqual([-201, 202]);
+  });
+
+  it("does not pass a test runtime root to the managed server", () => {
+    expect(serviceEnvironment({ HUMANIZE_RUNTIME_ROOT: "/tmp/test", PATH: "/bin" })).toEqual({ PATH: "/bin" });
+  });
+
   it("does not accept a relative server command from another working directory", async () => {
     const expectedRuntimeRoot = await makeRuntimeRoot();
     const otherRuntimeRoot = await makeRuntimeRoot();

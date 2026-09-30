@@ -216,6 +216,49 @@ describe("CodexRunner", () => {
     }
   });
 
+  it("maps a rejected model to MODEL_UNAVAILABLE without echoing CLI text", async () => {
+    // Real Codex 0.159.0 stderr for a model the ChatGPT login cannot use.
+    const stderr = 'ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The \'gpt-5.2\' model is not supported when using Codex with a ChatGPT account."}}\n';
+    const test = await fixture({ run: async () => ({ exitCode: 1, stdout: "", stderr, termination: "exit" as const }) });
+    try {
+      const failure = await test.codex.transform(test.inputPath, test.outputPath, 1, new AbortController().signal).catch(error => error);
+      expect(failure).toMatchObject({ publicCode: "MODEL_UNAVAILABLE", retryable: false });
+      expect(failure.message).not.toContain("gpt-5.2");
+    } finally {
+      await removeTestRoot(test.root);
+    }
+  });
+
+  it("maps other CLI failures to ENGINE_FAILED without echoing CLI text", async () => {
+    for (const stderr of [
+      'ERROR: {"type":"error","status":400,"error":{"type":"invalid_request_error","message":"Input is too long."}}\n',
+      'ERROR: {"type":"error","status":429,"error":{"message":"Rate limit reached"}}\n',
+      // An earlier echoed model error does not decide the outcome; the last ERROR line does.
+      'ERROR: {"status":400,"error":{"message":"The model does not exist"}}\nERROR: {"status":401,"error":{"message":"Unauthorized"}}\n'
+    ]) {
+      const test = await fixture({ run: async () => ({ exitCode: 1, stdout: "", stderr, termination: "exit" as const }) });
+      try {
+        const failure = await test.codex.transform(test.inputPath, test.outputPath, 1, new AbortController().signal).catch(error => error);
+        expect(failure).toMatchObject({ publicCode: "ENGINE_FAILED", retryable: true });
+        expect(failure.message).not.toMatch(/Rate limit|Unauthorized|too long/);
+      } finally {
+        await removeTestRoot(test.root);
+      }
+    }
+  });
+
+  it("ignores an echoed model error on a successful run", async () => {
+    const stderr = 'user\n회사 "ERROR: {\\"status\\":400,\\"error\\":{\\"message\\":\\"The model is not supported\\"}}"\nERROR: {"status":400,"error":{"message":"The model is not supported"}}\n';
+    const test = await fixture(new OutputRunner(JSON.stringify({ rewrittenText: "다듬은 문장입니다.", warnings: [] }),
+      { exitCode: 0, stdout: "", stderr, termination: "exit" }));
+    try {
+      await expect(test.codex.transform(test.inputPath, test.outputPath, 1, new AbortController().signal))
+        .resolves.toMatchObject({ rewrittenText: "다듬은 문장입니다." });
+    } finally {
+      await removeTestRoot(test.root);
+    }
+  });
+
   it("rejects malformed final JSON", async () => {
     const test = await fixture(new OutputRunner("not-json"));
     try {

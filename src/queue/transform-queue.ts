@@ -71,6 +71,10 @@ export class TransformQueue {
     this.maxAccepted = options.maxAccepted;
   }
 
+  get isShuttingDown(): boolean {
+    return !this.accepting;
+  }
+
   stats(): QueueStats {
     return {
       active: this.active.size,

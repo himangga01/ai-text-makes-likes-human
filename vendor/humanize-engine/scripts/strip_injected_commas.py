@@ -31,9 +31,20 @@ import sys
 _CONN_COMMA_RE = re.compile(r"(고|며|지만|면서|는데|아서|어서|여서|해서|져서),(\s)")
 
 # 따옴표 스팬 — 이 안의 쉼표는 발화 원문이므로 불가침.
-_QUOTE_RE = re.compile(r"“[^”]*”|‘[^’]*’|\"[^\"]*\"|「[^」]*」|『[^』]*』")
+# 문장이 아니라 **전체 텍스트**에서 찾는다: 여러 문장에 걸친 인용은 문장별로 나누면
+# 여는 따옴표를 잃어 안쪽 쉼표가 지워진다. 문단(줄바꿈)은 넘지 않고, 숫자 뒤 "(인치)는 따옴표가 아니다.
+_QUOTE_RE = re.compile(r"“[^”\n]*”|‘[^’\n]*’|(?<!\d)\"[^\"\n]*\"|「[^」\n]*」|『[^』\n]*』")
 
 _SENT_SPLIT = re.compile(r"(?<=[.!?…])\s+")
+
+# 명사 나열("재고, 부채, 광고비")의 '고,'는 연결어미가 아니다. 이웃 항목이 쉼표로
+# 끝나는 단일 어절이고 '고'로 끝나지 않으면 나열로 본다("먹고, 자고,"는 연결어미 나열).
+_NEXT_ITEM_RE = re.compile(r"([^\s,.!?…]+),")
+_PREV_ITEM_RE = re.compile(r"([^\s,.!?…]+),\s*$")
+# '고'로 끝나는 명사끼리의 나열("재고, 창고, 광고비")은 이웃 규칙만으로는 동사 나열
+# ("먹고, 자고,")과 구별되지 않는다. 동사 활용형과 겹치지 않는 명사만 둔다
+# (사고·신고·입고·참고·보고는 '사다·신다·입다·참다·보다'의 활용형과 겹쳐 뺀다).
+_GO_NOUNS = ("재고", "창고", "광고", "최고", "경고", "원고", "잔고", "공고", "출고", "금고")
 
 
 def _sentences(text: str) -> list[str]:
@@ -44,18 +55,35 @@ def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", s.strip())
 
 
-def _strip_in_sentence(sent: str) -> tuple[str, int]:
-    """한 문장에서 따옴표 밖 연결어미 쉼표를 제거. (결과, 제거 수) 반환."""
-    spans = [m.span() for m in _QUOTE_RE.finditer(sent)]
+def _in_noun_list(sent: str, m: re.Match) -> bool:
+    if m.group(1) != "고":
+        return False
+    word_start = max(sent.rfind(" ", 0, m.start()), sent.rfind(",", 0, m.start())) + 1
+    if sent[word_start:m.start() + 1].endswith(_GO_NOUNS):
+        return True
+    following = _NEXT_ITEM_RE.match(sent, m.end())
+    if following and not following.group(1).endswith("고"):
+        return True
+    preceding = _PREV_ITEM_RE.search(sent[:word_start])
+    return bool(preceding and not preceding.group(1).endswith("고"))
+
+
+def _strip_in_sentence(sent: str, quote_spans: list[tuple[int, int]] | None = None,
+                       offset: int = 0) -> tuple[str, int]:
+    """한 문장에서 따옴표 밖 연결어미 쉼표를 제거. (결과, 제거 수) 반환.
+
+    quote_spans는 전체 텍스트 기준 따옴표 범위이며 offset은 이 문장의 시작 위치다.
+    """
+    spans = quote_spans if quote_spans is not None else [m.span() for m in _QUOTE_RE.finditer(sent)]
 
     def in_quote(pos: int) -> bool:
-        return any(a <= pos < b for a, b in spans)
+        return any(a <= offset + pos < b for a, b in spans)
 
     removed = 0
     out = []
     last = 0
     for m in _CONN_COMMA_RE.finditer(sent):
-        if in_quote(m.start()):
+        if in_quote(m.start()) or _in_noun_list(sent, m):
             continue
         out.append(sent[last : m.start()])
         out.append(m.group(1) + m.group(2))
@@ -75,20 +103,24 @@ def strip_injected(before: str, after: str, all_sentences: bool = False) -> tupl
     total_removed = 0
     touched = 0
     parts: list[str] = []
+    quote_spans = [m.span() for m in _QUOTE_RE.finditer(after)]
     # 문장 단위로 처리하되 원문 화이트스페이스를 보존하기 위해 split 지점을 기억한다.
     pieces = _SENT_SPLIT.split(after)
     seps = _SENT_SPLIT.findall(after)
+    offset = 0
     for i, piece in enumerate(pieces):
         if piece.strip() and _norm(piece) not in originals:
-            fixed, n = _strip_in_sentence(piece)
+            fixed, n = _strip_in_sentence(piece, quote_spans, offset)
             if n:
                 total_removed += n
                 touched += 1
             parts.append(fixed)
         else:
             parts.append(piece)
+        offset += len(piece)
         if i < len(seps):
             parts.append(seps[i])
+            offset += len(seps[i])
     report = {"commas_removed": total_removed, "sentences_touched": touched}
     return "".join(parts), report
 

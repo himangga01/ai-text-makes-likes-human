@@ -30,7 +30,9 @@ export function parseTextResult(raw: string, source: string, label = 'CLI', opti
     if (at < 0 || source.indexOf(edit.before, at + 1) !== -1) return fail();
     intervals.push({ at, before: edit.before, after: edit.after });
   }
-  if (sentences) intervals.sort((left, right) => left.at - right.at);
+  // Unique anchors fix each edit's position, so arrival order carries no meaning;
+  // overlaps are still rejected below.
+  intervals.sort((left, right) => left.at - right.at);
   let cursor = 0;
   const pieces: string[] = [];
   for (const edit of intervals) {

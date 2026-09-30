@@ -1,4 +1,5 @@
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, readFile, utimes, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { acquireServerLock } from "../../src/runtime/server-lock.js";
@@ -58,6 +59,69 @@ describe("acquireServerLock", () => {
       const lock = await acquireServerLock(runtimeRoot);
       await Promise.all([lock.release(), lock.release()]);
       await expect(access(path.join(runtimeRoot, "server.lock"))).rejects.toThrow();
+    } finally {
+      await removeTestRoot(root);
+    }
+  });
+
+  it("treats a lock from before the last boot as stale even when its PID was reused", async () => {
+    const root = await makeTestRoot();
+    const beforeBoot = new Date(Date.now() - os.uptime() * 1000 - 3_600_000);
+    try {
+      // process.pid is alive: after a reboot an unrelated process can own the old PID.
+      await writeFile(path.join(root, "server.lock"), `${process.pid}\n`, "utf8");
+      await utimes(path.join(root, "server.lock"), beforeBoot, beforeBoot);
+      await mkdir(path.join(root, "server.lock.reclaim"));
+      await utimes(path.join(root, "server.lock.reclaim"), beforeBoot, beforeBoot);
+      const lock = await acquireServerLock(root);
+      await lock.release();
+      // A lock written during this boot with a live PID still means a running server.
+      await writeFile(path.join(root, "server.lock"), `${process.pid}\n`, "utf8");
+      await expect(acquireServerLock(root)).rejects.toThrow("Portal server is already running");
+    } finally {
+      await removeTestRoot(root);
+    }
+  });
+
+  it("records the boot identity and reclaims a lock from another boot at once", async () => {
+    const root = await makeTestRoot();
+    try {
+      const first = await acquireServerLock(root, { bootId: () => "boot-a" });
+      expect(await readFile(path.join(root, "server.lock"), "utf8")).toBe(`${process.pid}\nboot-a\n`);
+      await first.release();
+      // A reboot moments after the lock was written: the PID is live again, but the boot differs.
+      await writeFile(path.join(root, "server.lock"), `${process.pid}\nboot-a\n`, "utf8");
+      const second = await acquireServerLock(root, { bootId: () => "boot-b" });
+      await second.release();
+    } finally {
+      await removeTestRoot(root);
+    }
+  });
+
+  it("trusts a matching boot identity over the lock's age", async () => {
+    const root = await makeTestRoot();
+    const beforeBoot = new Date(Date.now() - os.uptime() * 1000 - 3_600_000);
+    try {
+      // A forward clock step can make a live lock look older than the boot.
+      await writeFile(path.join(root, "server.lock"), `${process.pid}\nboot-a\n`, "utf8");
+      await utimes(path.join(root, "server.lock"), beforeBoot, beforeBoot);
+      await expect(acquireServerLock(root, { bootId: () => "boot-a" })).rejects.toThrow("Portal server is already running");
+      // Without a readable current boot identity the old pid + age rules apply.
+      await writeFile(path.join(root, "server.lock"), `${process.pid}\nboot-a\n`, "utf8");
+      await expect(acquireServerLock(root, { bootId: () => undefined })).rejects.toThrow("Portal server is already running");
+    } finally {
+      await removeTestRoot(root);
+    }
+  });
+
+  it("reads this machine's boot identity where the platform exposes one", async () => {
+    const root = await makeTestRoot();
+    try {
+      const lock = await acquireServerLock(root);
+      const lines = (await readFile(path.join(root, "server.lock"), "utf8")).split("\n");
+      expect(lines[0]).toBe(String(process.pid));
+      if (process.platform === "darwin" || process.platform === "linux") expect(lines[1]).toMatch(/^[0-9A-Fa-f-]{32,}$/);
+      await lock.release();
     } finally {
       await removeTestRoot(root);
     }

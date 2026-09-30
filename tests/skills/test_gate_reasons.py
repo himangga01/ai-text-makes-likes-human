@@ -57,9 +57,10 @@ class GateReasonTest(unittest.TestCase):
     def test_real_30_50_boundaries_keep_existing_gate_policy(self):
         with tempfile.TemporaryDirectory() as directory:
             before, after = Path(directory)/'before.txt', Path(directory)/'after.txt'
-            before.write_text('a' * 100, encoding='utf-8')
+            # Hangul placeholders: changed Latin words are a separate name_changed hard failure.
+            before.write_text('가' * 100, encoding='utf-8')
             for changed in (29, 30, 49, 50):
-                after.write_text('a' * (100-changed) + 'b' * changed, encoding='utf-8')
+                after.write_text('가' * (100-changed) + '나' * changed, encoding='utf-8')
                 first = workflow.verify(before, after)
                 second = workflow.verify(before, after, attempt=2)
                 with self.subTest(changed=changed):
