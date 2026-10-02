@@ -1009,3 +1009,8 @@ progress::-webkit-progress-value {
 }
 .desktop-app .privacy-note { margin-top: 16px; }
 .desktop-app .portal-footer { padding-top: 8px; padding-bottom: 12px; }
+
+#source-count.is-over {
+  color: var(--danger);
+  font-weight: 700;
+}

@@ -18,6 +18,7 @@ async function probe(overrides:Record<string,any>={}) {
     '../src/engine/errors.js':{EngineError:class extends Error{}},
     '../src/transport/public-error.js':{PUBLIC_MESSAGES:{}},
     '../src/engine/model-policy.js':{parseEngineChoice:()=> 'codex',MODEL_OPTIONS:[]},
+    '../src/engine/input-limits.js':{INPUT_LIMITS:{},MAX_INPUT_CHARS:100000,inputChars:(text:string)=>Array.from(text).length},
     'node:path':path,'../src/documents/artifact-store.js':{ArtifactStore:class{}},
     ...overrides,
   };

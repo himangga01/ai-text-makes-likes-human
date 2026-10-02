@@ -7,6 +7,7 @@ export type TransformPhase =
 
 export type PublicErrorCode =
   | "EMPTY_INPUT"
+  | "INPUT_TOO_LARGE"
   | "QUEUE_FULL"
   | "ENGINE_UNAVAILABLE"
   | "ENGINE_TIMEOUT"

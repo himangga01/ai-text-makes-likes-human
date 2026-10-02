@@ -11,6 +11,7 @@ export interface StreamRequestOptions {
   signal: AbortSignal;
   getFreeBytes?: (directory: string) => Promise<number>;
   checkEveryBytes?: number;
+  maxChars?: number;
 }
 
 export interface StreamRequestResult {
@@ -124,6 +125,10 @@ export async function streamRequestBody(
       const decoded = decoder.decode(chunk, { stream: true });
       chars += Array.from(decoded).length;
       hasNonWhitespace ||= /\S/u.test(decoded);
+      // Stop reading as soon as the input cannot fit; the rest is never stored.
+      if (options.maxChars !== undefined && chars > options.maxChars) {
+        throw new EngineError("INPUT_TOO_LARGE", false, "Input exceeds the character limit");
+      }
 
       if (bytes >= nextDiskCheck) {
         if ((await getFreeBytes(directory)) < options.minFreeBytes) {
@@ -141,6 +146,9 @@ export async function streamRequestBody(
     const finalDecoded = decoder.decode();
     chars += Array.from(finalDecoded).length;
     hasNonWhitespace ||= /\S/u.test(finalDecoded);
+    if (options.maxChars !== undefined && chars > options.maxChars) {
+      throw new EngineError("INPUT_TOO_LARGE", false, "Input exceeds the character limit");
+    }
 
     await handle.close();
     handle = undefined;

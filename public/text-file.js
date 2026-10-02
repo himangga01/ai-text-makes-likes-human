@@ -63,7 +63,14 @@ export function getTextDownloadName(fileName) {
   return baseName ? `${baseName}-humanized.txt` : "humanized.txt";
 }
 
-export async function readTextFile(file) {
+// Same values as src/engine/input-limits.ts; the server's health payload overrides them.
+export const DEFAULT_INPUT_LIMITS = { maxInputChars: 100_000, maxTextFileBytes: 1024 * 1024 };
+
+export function inputLimitMessage(limits = DEFAULT_INPUT_LIMITS) {
+  return `원문은 ${limits.maxInputChars.toLocaleString("ko-KR")}자 이하만 변환할 수 있습니다. 나눠서 변환해 주세요.`;
+}
+
+export async function readTextFile(file, limits = DEFAULT_INPUT_LIMITS) {
   const format = file instanceof File ? formatFromFileName(file.name) : null;
   if (!format) {
     throw new TextFileError(
@@ -71,6 +78,14 @@ export async function readTextFile(file) {
       "TXT 또는 MD 파일만 불러올 수 있습니다."
     );
   }
+  // Checked before reading: a huge file would otherwise freeze the page while it loads.
+  if (file.size > limits.maxTextFileBytes) {
+    const mebibytes = (limits.maxTextFileBytes / 1024 ** 2).toLocaleString("ko-KR");
+    throw new TextFileError("TEXT_FILE_TOO_LARGE", `TXT·MD 파일은 ${mebibytes} MiB 이하만 불러올 수 있습니다.`);
+  }
   const decoded = decodeTextBytes(await file.arrayBuffer());
+  if (Array.from(decoded.text.replace(/\r\n?/g, "\n")).length > limits.maxInputChars) {
+    throw new TextFileError("TEXT_TOO_LONG", inputLimitMessage(limits));
+  }
   return { ...decoded, fileName: file.name, format };
 }

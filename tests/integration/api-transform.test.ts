@@ -112,6 +112,24 @@ describe("POST /api/transform", () => {
     }
   });
 
+  it("refuses input above 100,000 characters without running the engine", async () => {
+    let ran = false;
+    const test = await createTestApp({ async transform() { ran = true; throw new Error("must not run"); } });
+    try {
+      const message = "원문은 100,000자 이하만 변환할 수 있습니다. 나눠서 변환해 주세요.";
+      // A body that cannot fit (over 4 bytes per character) is refused before it is read.
+      const tooBig = await fetch(`${test.baseUrl}/api/transform`, { method: "POST", headers: { "content-type": "text/plain" }, body: "a".repeat(400_001) });
+      expect(tooBig.status).toBe(413);
+      expect(await tooBig.json()).toEqual({ code: "INPUT_TOO_LARGE", message });
+      // 100,001 Hangul syllables are 300,003 bytes, so the character count decides while streaming.
+      const tooLong = await fetch(`${test.baseUrl}/api/transform`, { method: "POST", headers: { "content-type": "text/plain" }, body: "가".repeat(100_001) });
+      expect(parseNdjson(await tooLong.text()).at(-1)).toMatchObject({ type: "error", code: "INPUT_TOO_LARGE", retryable: false, message });
+      expect(ran).toBe(false);
+    } finally {
+      await removeTestRoot(test.outer);
+    }
+  });
+
   it("explains a CLI process failure with ENGINE_FAILED", async () => {
     const test = await createTestApp({ async transform() { throw new EngineError("ENGINE_FAILED", true, "Codex CLI failed (exit 1, status 429)"); } });
     try {

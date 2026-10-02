@@ -11,6 +11,7 @@ import type { TransformEvent } from "../src/contracts.js";
 import path from "node:path";
 import { ArtifactStore } from '../src/documents/artifact-store.js';
 import { MODEL_DEFAULTS, MODEL_OPTIONS, type ModelSettings } from '../src/engine/model-policy.js';
+import { INPUT_LIMITS, MAX_INPUT_CHARS, inputChars } from '../src/engine/input-limits.js';
 
 const port = (process as typeof process & { parentPort: { on(name: string, listener: (message: { data: any }) => void): void; postMessage(data: unknown): void } }).parentPort;
 const root = process.env.HUMANIZE_RESOURCE_ROOT!;
@@ -75,6 +76,7 @@ async function transform(id: string, input: { text: string; engine: string; comm
     const rewriteOptions = parseRewriteOptions(input.inputKind,input.strength);
     const engineChoice = parseEngineChoice(input.engine);
     if (!engineChoice || typeof input.text !== "string" || !input.text.trim()) throw new EngineError("EMPTY_INPUT", false, "Empty input");
+    if (inputChars(input.text) > MAX_INPUT_CHARS) throw new EngineError("INPUT_TOO_LARGE", false, "Input exceeds the character limit");
     event(id, { type: "accepted", jobId: id, position: 0 });
     const services = await runtime(input.commands);
     if (signal.aborted) throw new EngineError("CLIENT_ABORTED", true, "Cancelled");
@@ -123,7 +125,7 @@ port.on("message", ({ data }) => {
       const services = await runtime(data.commands);
       respond({ status: services.preflight.ready ? "ready" : "degraded", ...services.preflight,
         rewriteOptions: REWRITE_OPTIONS,
-        modelOptions: MODEL_OPTIONS, modelDefaults: MODEL_DEFAULTS, checkedAt:new Date().toISOString(),
+        modelOptions: MODEL_OPTIONS, modelDefaults: MODEL_DEFAULTS, inputLimits: INPUT_LIMITS, checkedAt:new Date().toISOString(),
         documentsAvailable: await services.documentEngine.health(),
         claudeAvailable: Boolean(services.claudeEngine), activeJobs: active ? 1 : 0, queuedJobs: 0 });
       return;

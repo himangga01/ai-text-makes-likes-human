@@ -21,6 +21,7 @@ import { TransformQueue } from "./queue/transform-queue.js";
 import { NdjsonWriter } from "./transport/ndjson.js";
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from "./transport/public-error.js";
 import { streamRequestBody } from "./transport/request-body.js";
+import { INPUT_LIMITS, MAX_INPUT_BYTES, MAX_INPUT_CHARS } from "./engine/input-limits.js";
 import { mountDocumentRoutes } from './documents/routes.js';
 import type { DocumentEngine } from './documents/document-engine.js';
 import { MODEL_DEFAULTS, MODEL_OPTIONS, parseModelSettings, type ModelSettings } from './engine/model-policy.js';
@@ -112,6 +113,7 @@ export function createApp(dependencies: AppDependencies): Express {
         rewriteOptions: REWRITE_OPTIONS,
         modelOptions: MODEL_OPTIONS,
         modelDefaults: MODEL_DEFAULTS,
+        inputLimits: INPUT_LIMITS,
         checkedAt: new Date().toISOString(),
         pid: process.pid,
         errorCode: preflight.errorCode ?? "ENGINE_UNAVAILABLE",
@@ -127,6 +129,7 @@ export function createApp(dependencies: AppDependencies): Express {
       rewriteOptions: REWRITE_OPTIONS,
       modelOptions: MODEL_OPTIONS,
       modelDefaults: MODEL_DEFAULTS,
+      inputLimits: INPUT_LIMITS,
       checkedAt: new Date().toISOString(),
       status: "ready",
       pid: process.pid,
@@ -153,6 +156,11 @@ export function createApp(dependencies: AppDependencies): Express {
         code: "INVALID_CONTENT_TYPE",
         message: "텍스트 형식만 처리할 수 있습니다."
       });
+      return;
+    }
+    // A body too large to fit the character limit is refused before it is read.
+    if (Number(request.headers["content-length"]) > MAX_INPUT_BYTES) {
+      response.status(413).json({ code: "INPUT_TOO_LARGE", message: PUBLIC_MESSAGES.INPUT_TOO_LARGE });
       return;
     }
 
@@ -227,6 +235,7 @@ export function createApp(dependencies: AppDependencies): Express {
         workspace.path("01_input.txt"),
         {
           minFreeBytes: config.minFreeBytes,
+          maxChars: MAX_INPUT_CHARS,
           signal: AbortSignal.any([clientController.signal, reservation.signal])
         }
       );

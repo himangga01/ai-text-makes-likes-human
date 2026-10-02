@@ -2,7 +2,9 @@ import {
   getMarkdownDownloadName,
   getTextDownloadName,
   readTextFile,
-  TextFileError
+  TextFileError,
+  DEFAULT_INPUT_LIMITS,
+  inputLimitMessage
 } from "./text-file.js";
 import { progressForEvent } from "./progress.js";
 import { desktop, health, transform } from "./transport.js";
@@ -80,6 +82,7 @@ let elapsedStarted;
 let elapsedInterval;
 const fallbackModelDefaults={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-fable-5-1',effort:'high'}};
 let modelDefaults=fallbackModelDefaults;
+let inputLimits=DEFAULT_INPUT_LIMITS;
 let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh','max','ultra']}],claude:[{id:'claude-fable-5-1',label:'Claude Fable 5.1',efforts:['low','medium','high','xhigh','max']}]};
 // Only explicit choices (storage, desktop preferences, the selects) are saved; everything else
 // resolves against the server's modelDefaults so a default change reaches users who never chose.
@@ -221,8 +224,11 @@ function setStatus(kind, label, message) {
   statusShown = { kind, label, message };
 }
 
+function overInputLimit() { return countCharacters(elements.source.value) > inputLimits.maxInputChars; }
+
 function showIdleStatus() {
   const hasSource = Boolean(elements.source.value.trim());
+  if (overInputLimit()) { setStatus("warning", "글자 수 초과", inputLimitMessage(inputLimits)); return; }
   setStatus(
     hasSource ? "ready" : "idle",
     hasSource ? "입력 완료" : "준비",
@@ -344,8 +350,12 @@ function refreshControls() {
   const hasSource = elements.source.value.trim().length > 0;
   const canDownload = Boolean(resultDownloadName && finalText);
   const showRewriteControls = directTextInput();
-  elements.sourceCount.textContent = `${countCharacters(elements.source.value).toLocaleString("ko-KR")}자`;
-  elements.transform.disabled = !engineReady || !selectedReady() || !hasSource || running || importing || checkingHealth || documentFailed || Boolean(documentResult);
+  const sourceChars = countCharacters(elements.source.value), overLimit = sourceChars > inputLimits.maxInputChars;
+  elements.sourceCount.textContent = overLimit
+    ? `${sourceChars.toLocaleString("ko-KR")} / ${inputLimits.maxInputChars.toLocaleString("ko-KR")}자`
+    : `${sourceChars.toLocaleString("ko-KR")}자`;
+  elements.sourceCount.classList.toggle("is-over", overLimit);
+  elements.transform.disabled = !engineReady || !selectedReady() || !hasSource || overLimit || running || importing || checkingHealth || documentFailed || Boolean(documentResult);
   elements.engineInputs.forEach(input => {
     input.disabled =
       running || (input.value === "claude" ? !claudeAvailable : !codexAvailable);
@@ -435,7 +445,7 @@ function handleEvent(event) {
 
 
 async function startTransform() {
-  if (running || elements.source.value.trim().length === 0) return;
+  if (running || elements.source.value.trim().length === 0 || overInputLimit()) return;
   controller = new AbortController();
   activeDownloadName =
     sourceFile?.format === "markdown"
@@ -530,7 +540,7 @@ async function loadFile(file) {
       setStatus('processing','문서 읽기','문서 구조와 윤문할 텍스트를 확인합니다.');
       await loadOffice(await importDocument(file));return;
     }
-    const loaded = await readTextFile(file);
+    const loaded = await readTextFile(file, inputLimits);
     await closeDocument(officeDocument);officeDocument=undefined;documentResult=undefined;documentFailed=false;
     elements.source.value = loaded.text;
     clearCompletedResult(); clearWarnings(); showResultState();
@@ -675,6 +685,8 @@ async function probeHealth(silent) {
   }
   try {
     const body = await health();
+    const limits=body.inputLimits;
+    if(Number.isInteger(limits?.maxInputChars)&&Number.isInteger(limits?.maxTextFileBytes))inputLimits=limits;
     const replaced=[];
     // Re-rendering closes an open dropdown and moves focus, so silent polls only do it on change.
     const optionsKey=JSON.stringify([body.modelOptions,body.modelDefaults,body.rewriteOptions]);

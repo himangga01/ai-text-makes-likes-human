@@ -3,6 +3,7 @@ import { EngineError } from "../engine/errors.js";
 
 export const PUBLIC_MESSAGES: Record<PublicErrorCode, string> = {
   EMPTY_INPUT: "원본 문구를 입력해 주세요.",
+  INPUT_TOO_LARGE: "원문은 100,000자 이하만 변환할 수 있습니다. 나눠서 변환해 주세요.",
   QUEUE_FULL: "현재 3건이 처리 중입니다. 잠시 후 다시 시도해 주세요.",
   ENGINE_UNAVAILABLE: "서버의 변환 엔진을 사용할 수 없습니다.",
   ENGINE_TIMEOUT: "한 구간의 처리 시간이 초과되었습니다.",

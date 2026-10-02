@@ -6,6 +6,18 @@ import { streamRequestBody } from "../../src/transport/request-body.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
 
 describe("streamRequestBody", () => {
+  it('stops reading and removes the partial file once the input exceeds the character limit', async () => {
+    const root=await makeTestRoot(), destination=path.join(root,'large.txt');
+    try {
+      const body=Readable.from(['가'.repeat(6),'나'.repeat(6)]);
+      await expect(streamRequestBody(body,destination,{minFreeBytes:1,maxChars:10,signal:new AbortController().signal,getFreeBytes:async()=>1000}))
+        .rejects.toMatchObject({publicCode:'INPUT_TOO_LARGE'});
+      await expect(readFile(destination,'utf8')).rejects.toThrow();
+      const exact=await streamRequestBody(Readable.from(['가'.repeat(10)]),path.join(root,'exact.txt'),{minFreeBytes:1,maxChars:10,signal:new AbortController().signal,getFreeBytes:async()=>1000});
+      expect(exact.chars).toBe(10);
+    } finally {await removeTestRoot(root);}
+  });
+
   it('never removes a destination it did not create', async () => {
     const root=await makeTestRoot(), destination=path.join(root,'existing.txt');
     try {

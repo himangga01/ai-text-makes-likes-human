@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   decodeTextBytes,
   getMarkdownDownloadName,
-  readTextFile
+  readTextFile,
+  DEFAULT_INPUT_LIMITS
 } from "../../public/text-file.js";
+import { INPUT_LIMITS } from "../../src/engine/input-limits.js";
 
 describe("text file decoding", () => {
   it("removes a UTF-8 BOM", () => {
@@ -66,5 +68,26 @@ describe("text file decoding", () => {
     await expect(readTextFile(file)).rejects.toMatchObject({
       code: "INVALID_TEXT_FILE"
     });
+  });
+});
+
+describe("text file limits", () => {
+  it("refuses a file above the size limit before reading it", async () => {
+    let read = false;
+    const file = new File(["가나다"], "big.txt");
+    Object.defineProperty(file, "arrayBuffer", { value: async () => { read = true; return new ArrayBuffer(0); } });
+    await expect(readTextFile(file, { maxInputChars: 100, maxTextFileBytes: 4 }))
+      .rejects.toMatchObject({ code: "TEXT_FILE_TOO_LARGE", message: expect.stringContaining("MiB 이하만 불러올 수 있습니다") });
+    expect(read).toBe(false);
+  });
+
+  it("refuses text above the character limit and accepts text at it", async () => {
+    await expect(readTextFile(new File(["가".repeat(11)], "long.md"), { maxInputChars: 10, maxTextFileBytes: 1024 }))
+      .rejects.toMatchObject({ code: "TEXT_TOO_LONG", message: expect.stringContaining("10자 이하") });
+    await expect(readTextFile(new File(["가".repeat(10)], "ok.md"), { maxInputChars: 10, maxTextFileBytes: 1024 })).resolves.toMatchObject({ text: "가".repeat(10) });
+  });
+
+  it("defaults to the same limits as the server", () => {
+    expect(DEFAULT_INPUT_LIMITS).toEqual(INPUT_LIMITS);
   });
 });

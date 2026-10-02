@@ -1,13 +1,14 @@
 import { defaultPreferences, loadPreferences, savePreferences, selectRewriteStrength } from './preferences.js';
 import { parseRewriteOptions } from '../src/engine/rewrite-policy.js';
 import { app, BrowserWindow, protocol, ipcMain, dialog, clipboard, utilityProcess, type UtilityProcess, type IpcMainInvokeEvent } from "electron";
-import { readFile, writeFile, mkdir, readdir, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir, rm, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { parseEngineChoice, type EngineChoice } from "../src/engine/model-policy.js";
 import { parseModelSettings, type ModelSettings } from '../src/engine/model-policy.js';
 import { sameFile, saveDocumentCopy } from './save-target.js';
+import { MAX_TEXT_FILE_BYTES } from '../src/engine/input-limits.js';
 
 app.setName("HumanizeKR");
 if (process.env.HUMANIZE_USER_DATA) app.setPath("userData", path.resolve(process.env.HUMANIZE_USER_DATA));
@@ -139,6 +140,8 @@ function registerIpc() {
     const file = selected.filePaths[0]; if (selected.canceled || !file) return null;
     if(/\.(docx|pptx)$/i.test(file)){textSource=undefined;return {document:await request('document-import',{file})};}
     if (!/\.(txt|md)$/i.test(file)) throw new Error("TXT, MD, DOCX 또는 PPTX 파일을 선택해 주세요.");
+    // Refuse before reading: the renderer would otherwise receive the whole file.
+    if ((await stat(file)).size > MAX_TEXT_FILE_BYTES) throw new Error("TXT·MD 파일은 1 MiB 이하만 불러올 수 있습니다.");
     const bytes = new Uint8Array(await readFile(file));
     textSource = path.resolve(file);
     return { name: path.basename(file), bytes };
