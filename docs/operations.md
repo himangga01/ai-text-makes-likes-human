@@ -1,5 +1,7 @@
 # 포털 운영 점검표
 
+현재 소스 기준: 2026-10-02, `d9df30e`(앱 `0.4.0`). 이 문서의 명령은 운영 절차이며 이번 문서 갱신에서 실행한 명령이 아닙니다. 현재 코드의 구조·제약은 [코드 분석](code-analysis.md), 서비스 범위는 [서비스 분석](service-analysis.md)을 참고합니다.
+
 ## 운영 원칙
 
 - 서비스 주소: `http://localhost:7882`, LAN은 서버 콘솔에 표시된 주소
@@ -7,18 +9,23 @@
 - 방화벽 범위: Windows Private 프로필, TCP 7882
 - 동시 접수: 3건
 - 실행 중인 변환 작업: 1건
-- 자동 라우팅: 기본 활성화. 15,000자 이하의 `light`·`standard` 문서는 단일 호출, `heavy`·15,000자 초과·안전하게 판정할 수 없는 문서는 청킹
+- 위 접수 수에는 일반 텍스트 업로드 예약·대기·실행 중 변환이 포함됨. Office 업로드·파싱은 별도의 최대 3개 문서 보관소를 사용하고, 변환할 때 같은 실행 큐를 사용함. 완료한 Office 결과도 만료·삭제 전까지 보관 자리를 점유함
+- 텍스트 자동 라우팅: 기본 활성화. 15,000자 이하의 `light`·`standard` 문서는 본문 1개 구간, `heavy`·15,000자 초과·안전하게 판정할 수 없는 문서는 청킹. 단일 구간도 검증 결과에 따라 선택한 CLI를 한 번 더 호출할 수 있음
 - 청크 동시 Codex 실행: 기본 1개. `CODEX_CHUNK_CONCURRENCY=2`를 명시한 실험에서만 최대 2개
 - 변환 모델 기본값: GPT는 `gpt-5.6-sol`, reasoning effort `medium`; Claude는 `claude-fable-5-1`, effort `high`. 연결 설정에서 바꿀 수 있으며 `/api/health`의 `modelDefaults`로 제공
 - 모델 거부: CLI가 선택한 모델을 알지 못하거나 계정에 권한이 없으면 `MODEL_UNAVAILABLE`로 안내하고 재시도하지 않음
 - CLI 실행 실패: 로그인 만료·사용 한도·네트워크 오류 등으로 CLI가 실패하면 `ENGINE_FAILED`로 작업을 중단하고 재시도할 수 있음을 알림. 원문을 결과로 돌려주지 않음. 로그에는 종료 코드와 CLI 상태 값만 남김
 - 시간 초과(`ENGINE_TIMEOUT`)는 작업을 중단함. 형식이 잘못된 모델 응답만 해당 구간을 재시도한 뒤 원문으로 되돌리며, 모든 구간의 응답이 쓸 수 없으면 `ENGINE_OUTPUT_INVALID`로 중단함
-- 입력 크기: 직접 입력·TXT·MD는 100,000자 이하(`src/engine/input-limits.ts`). 초과하면 `INPUT_TOO_LARGE`로 거절하며, 본문이 400,000바이트를 넘으면 받기 전에 `413`, 그 이하는 받는 도중 100,000자를 넘는 순간 중단함. TXT·MD 파일은 1 MiB를 넘으면 브라우저와 데스크톱 앱이 읽기 전에 거절함. 한도는 `/api/health`의 `inputLimits`로도 제공함
+- 입력 크기: 웹·앱의 직접 입력·TXT·MD는 LF 정규화 후 Unicode code point 기준 100,000자 이하(`src/engine/input-limits.ts`). `Content-Length`가 400,000바이트를 넘으면 받기 전에 `413 INPUT_TOO_LARGE`, 그 밖의 요청은 받는 도중 정규화한 글자 수가 100,000자를 넘으면 스트림 오류로 중단함. TXT·MD 파일은 1 MiB를 넘으면 브라우저와 앱이 읽기 전에 거절함. `/api/health`의 `inputLimits`로 제공하며 호스트 세션의 스킬 TXT·MD에는 이 제한을 적용하지 않음
 - 서버 종료로 끊긴 변환은 사용자 취소(`CLIENT_ABORTED`)가 아닌 `SERVER_SHUTDOWN`으로 알림. 종료 중에 들어온 새 요청도 `503 SERVER_SHUTDOWN`으로 거절함
-- 본문 저장: 없음
+- 본문 이력·본문 로그: 없음. 처리 중 원문·중간 결과는 임시 파일로 사용함. 일반 텍스트는 완료·실패·취소 후 정리하고 Office는 마지막 사용 후 30분까지 보관함. 활성 작업과 읽기 임대 중에는 정리를 미룸
 - 허용 로그: job ID, 글자 수, 청크 수, 처리 시간, 결과 코드, 서법 복원·쉼표 제거 건수
 - 게이트 직전 후처리: `restore_modality.py`와 `strip_injected_commas.py`를 청크마다 실행. `--all` 격상은 진단 단계가 없으므로 사용하지 않음
 - 줄바꿈: 수신 단계에서 CR·CRLF를 LF로 통일
+- 준비 상태: Python 3.11+와 엔진 라벨 2.3.2가 준비되고 Codex 또는 Claude 중 하나가 설치·로그인돼 있으면 ready. Office 지원은 별도로 `lxml` import를 확인하며 `documentsAvailable`로 표시함
+- 상태 갱신: `/api/health`는 3초 캐시·진행 중 조회 공유를 사용해 재점검함. 보이는 유휴 화면은 60초마다 조회하고 수동 점검·화면 복귀·관련 오류 때도 다시 조회함. 모델별 계정 권한은 실제 실행으로만 확인됨
+- 상태 수치의 범위: `activeJobs`·`queuedJobs`에는 일반 텍스트 업로드 예약과 Office 보관·파싱·다운로드가 표시되지 않음. 두 값이 0이어도 모든 작업이 끝났다는 뜻은 아님
+- 접근 범위: 소켓의 로컬·사설 IP 및 제공된 Origin을 확인함. 사용자 로그인·TLS·Host 허용 목록은 없으며 같은 와이파이 여부를 직접 확인하지 않음
 
 ## macOS 서버 운영
 
@@ -59,14 +66,14 @@ codex login status
 cmd.exe /c setup-portal.cmd --check
 ```
 
-요구 버전은 Node.js 24.19+, Python 3.11+, Codex CLI 0.149+입니다. 로그인 상태가 아니면 `codex login` 후 다시 확인합니다.
+선언된 요구 버전은 Node.js 24.19+, Python 3.11+이며 Codex를 사용하면 CLI 0.149+가 필요합니다. 서버 preflight는 Node 최소 버전을 강제하지 않으므로 운영자가 선언된 버전을 맞춥니다. Windows `setup-portal.cmd --check`는 Codex 설치·로그인을 필수로 확인하지만 서버 런타임은 Claude만 준비돼 있어도 사용할 수 있습니다. Claude 점검에는 `claude --version`, `claude auth status`를 사용하고 로그인은 `claude auth login`으로 진행합니다. 런타임은 Claude 모델별 최소 CLI 버전을 강제하지 않습니다.
 
 ## 정상 시작 확인
 
 1. `start-portal.cmd` 실행
 2. 콘솔에 localhost와 LAN URL이 출력되는지 확인
 3. `http://localhost:7882/api/health`가 `status: ready`를 반환하는지 확인
-4. `runtime/jobs`에 `.gitkeep` 외 파일이 없는지 확인
+4. `runtime/jobs`의 일반 텍스트 작업 폴더와 Office 보관소·Python 작업 폴더를 구분해 확인. Office는 완료 후에도 만료 전까지 남을 수 있으며 빈 관리 폴더가 있는 것만으로 정리 실패라고 판단하지 않음
 
 ```powershell
 Get-ChildItem .\runtime\jobs -Force
@@ -149,8 +156,10 @@ portal patch가 재적용됐는지 확인합니다. 패치는 `prepare_monolith_
 | `heavy`·15,000자 초과·판정 불가 | 여러 청크 사용, 기본값에서 한 번에 1개씩 처리 |
 | UTF-8/BOM UTF-16/CP949 TXT·MD | 왼쪽 입력만 채워지고 버튼 전 요청 0건 |
 | MD 변환 완료 | 원본 파일명 기반 `-humanized.md` 다운로드와 내용 일치 |
-| TXT·MD 아닌 파일 | 기존 입력 유지와 한글 오류 표시 |
-| 실행 중 취소 | Codex 프로세스와 job 폴더 제거 |
+| DOCX·PPTX 선택 | 구조·위치별 미리보기와 윤문/보존 구간 표시; 선택 시 업로드·파싱, 변환 버튼 전 모델 호출 없음 |
+| DOCX·PPTX 변환 완료 | 입력과 같은 형식의 새 결과 다운로드; 만료 전 재다운로드 가능 |
+| 미지원 DOC·PPT·PDF·HWP 등 | 기존 입력 유지와 한글 오류 표시 |
+| 실행 중 취소 | 선택한 CLI의 프로세스와 관련 임시 작업 정리 |
 | 브라우저 강제 종료 | 활성 작업 취소와 job 폴더 제거 |
 | 서버 종료 | 7882 포트 종료와 jobs 폴더 비움 |
 
@@ -166,7 +175,7 @@ npm.cmd run test:live
 git status --short
 ```
 
-모든 명령이 성공하고 `runtime/jobs`에 `.gitkeep`만 있을 때 운영 준비가 완료됩니다.
+실제로 실행한 명령과 결과를 기록합니다. 일반 텍스트 임시 작업은 정리돼야 하지만 Office 결과는 만료 전까지 남을 수 있으므로 보관 정책과 구분합니다. 빌드·준비 상태 확인만으로 실제 모델 품질·계정 권한·전체 배포물의 동일성을 입증하지 않습니다.
 
 ## 선택적 성능 벤치마크와 롤백
 

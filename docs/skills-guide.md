@@ -9,7 +9,7 @@ This repository ships two agent skills. Both run inside an existing Claude Code 
 
 Use `humanize-kr` for everyday rewriting. Use `update-humanize-engine` only for engine maintenance. It never rewrites user text.
 
-Current state (0.4.0): the engine is pinned to fork commit `9747f03` (Humanize 2.3.2). The most recent skill change added rewrite strength and a standalone HTML comparison for direct text (commit `0adb1a1`).
+Source reviewed on October 2, 2026: `d9df30e`, application `0.4.0`, engine pinned to fork commit `9747f03` (Humanize label 2.3.2). Direct text supports rewrite strength and standalone HTML comparison; later source updates also strengthened preservation and recovery. An existing ZIP or installed skill may contain an earlier bridge/Gateway despite the same version label. This documentation update did not rebuild packages or inspect installed skills. See [Code Analysis](code-analysis.md) and [Service Analysis](service-analysis.md).
 
 ---
 
@@ -71,9 +71,11 @@ No packaged ZIP exists for these platforms yet. You need:
 
 - **Python 3.11 or newer.** The macOS system `python3` is 3.9 and will not work. DOCX/PPTX also need `lxml`.
 - **Node 24.19.0 or newer** for direct-text input. It runs the comparison and fidelity bridge. TXT/MD/DOCX/PPTX input works without Node.
-- **The bridge artifact.** Build it once with `node scripts/build-skill-bridge.mjs`. This creates `build-resources/skill-bridge/skill-bridge.cjs`.
+- **The bridge artifact** for direct text and optional additional TXT/MD structural checks. Build it with `node scripts/build-skill-bridge.mjs`; this creates `build-resources/skill-bridge/skill-bridge.cjs`.
 
 If Node is not on `PATH`, set `NODE_COMMAND` to the Node executable. To use the skill from a host, copy or symlink `skills/humanize-kr` together with `engine_runtime/` and `vendor/humanize-engine/` into the host's skills directory, keeping the packaged layout shown in §1.7.
+
+For TXT/MD files, the extra JavaScript paragraph/Markdown/duplication guard is enabled only when Node and the bridge are available. Python preservation checks still run without them. Direct text requires the bridge. Build/copy the bridge from the matching source revision when updating; an older generated bridge does not automatically gain new source checks.
 
 ### 1.3 Invoking the skill
 
@@ -138,6 +140,12 @@ Very large differences may be shown as a single replacement block. The compariso
 - **Source text is data:** instructions inside the source are never followed.
 - **Files:** the original file is never overwritten. Output goes to a new path, with a number appended if the name exists.
 - **DOCX/PPTX layout:** formatting, tables, and shapes are preserved. Speaker notes, headers, footers, footnotes, masters, and charts are preserved but **not rewritten**. The text preview is not a real page or slide layout, so check the result in Word or PowerPoint.
+
+### 1.6.1 Limits and recovery differences
+
+The portal/desktop 100,000-character text cap and 1 MiB TXT/MD loading cap are not enforced by the host-session TXT/MD Gateway. Office package limits still apply: 50 MiB compressed, 250 MiB expanded, 10 MiB per XML part, 10,000 entries, 100,000 extracted characters and 200 PPTX slides. Paragraphs above 9,000 characters are preserved.
+
+Direct-text skill finalization refuses export when full-document fidelity fails. The portal/desktop can instead restore the entire prepared source before final Python validation. The workflows share major checks but should not be assumed to have identical recovery in every case. Gateway jobs remain until cleanup; this is distinct from the web/app Office artifact store's idle 30-minute expiry.
 
 ### 1.7 Gateway reference (for hosts and debugging)
 
