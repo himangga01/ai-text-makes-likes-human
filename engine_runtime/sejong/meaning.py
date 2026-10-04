@@ -272,8 +272,65 @@ def _v1_codes(before: str, after: str) -> List[Tuple[str, str]]:
     return out
 
 
+# WP-10 integration fix: the deterministic FIX repairs of the norm layer must be invisible to this family
+# (verify(x, base(x)) == [], DESIGN 3.9), but the v1 guards read the bound noun 수 only when it is spaced
+# (할수 없다 -> 할 수 없다 looked like a new CAN_NEG and a lost negation) and read 안 되요 -> 안 돼요 as a
+# polarity change. Both sides are therefore compared after norms.fix_text, the very function repair step 1
+# applies (N01, N02, N04, CTA-SP1/SP2; outside protected spans): a difference made only of those fixes
+# disappears, and every other difference is still seen. Only sentences that differ pay for it.
+def _normalised(text: str) -> str:
+    from . import norms                     # late: norms -> diagnose -> protect imports are heavier
+    fixed, _applied = norms.fix_text(text)
+    return fixed
+
+
+# WP-10 integration fix, same reason: SSJ-A04 (FIX/request) asks the writer to turn a double passive into the
+# single passive (보고되어집니다 -> 보고됩니다), and the v1 role guard reads 되어 as passive but not 됩니다, so the
+# rule's own repair was a participant_role_changed. Both sides are compared with the closed A04 list
+# (data/double_passive.json "fix") collapsed to the single passive: stem + 지/진/질/집 -> base verb (+ ㄴ/ㄹ/ㅂ),
+# stem + 져/졌 -> stem (+ ㅆ). Only those six stems are touched, on both sides alike.
+_SINGLE = {"되어": "되", "보여": "보이", "쓰여": "쓰이", "나뉘어": "나뉘", "읽혀": "읽히", "불려": "불리"}
+
+
+def _with_final(syllable: str, jong: int) -> str:
+    code = ord(syllable) - 0xAC00
+    return chr(ord(syllable) + jong) if 0 <= code < 11172 and code % 28 == 0 else syllable
+
+
+def _double_passive_re() -> "re.Pattern":
+    global _DOUBLE_RE
+    if _DOUBLE_RE is None:
+        import json
+        from pathlib import Path
+        data = json.loads((Path(__file__).resolve().parent / "data" / "double_passive.json").read_text(encoding="utf-8"))
+        stems = [stem for stem in data["fix"] if stem in _SINGLE]
+        _DOUBLE_RE = re.compile("(" + "|".join(sorted(stems, key=len, reverse=True)) + ")(지|진|질|집|져|졌)")
+    return _DOUBLE_RE
+
+
+_DOUBLE_RE: Optional["re.Pattern"] = None
+
+
+def _single_passive(text: str) -> str:
+    if "지" not in text and "진" not in text and "질" not in text and "집" not in text and "져" not in text \
+            and "졌" not in text:
+        return text
+
+    def collapse(m: "re.Match") -> str:
+        stem, ending = m.group(1), m.group(2)
+        base = _SINGLE[stem]
+        if ending == "지":
+            return base
+        if ending in ("진", "질", "집"):
+            return base[:-1] + _with_final(base[-1], {"진": 4, "질": 8, "집": 17}[ending])
+        return stem if ending == "져" else stem[:-1] + _with_final(stem[-1], 20)
+    return _double_passive_re().sub(collapse, text)
+
+
 def codes(source: str, candidate: str) -> List[Tuple[str, str]]:
     """(code, detail) for one pair of texts, without the identical-text shortcut of compare()."""
+    if source != candidate:
+        source, candidate = _single_passive(_normalised(source)), _single_passive(_normalised(candidate))
     found = _v1_codes(source, candidate)
     detail = _aspect_changed(aspect(source), aspect(candidate))
     if detail:

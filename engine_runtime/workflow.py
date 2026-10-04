@@ -6,6 +6,7 @@ from contextlib import redirect_stdout, redirect_stderr
 import io
 import json
 import math
+import os
 from pathlib import Path
 import re
 import sys
@@ -339,6 +340,22 @@ def validate_response(value: object) -> dict:
     return value
 
 
+def verify_v2(args: argparse.Namespace) -> int:
+    """SUPER_SEJONG_ENGINE=v2: the same CLI and gate JSON contract, computed by Super Sejong Engine v2
+    (engine_runtime/sejong/verify.verify_document). Imported only here, so the legacy path never loads
+    the v2 package; --vendor-root is not used."""
+    try:
+        try:
+            from .sejong.verify import verify_document
+        except ImportError:  # executed as a standalone gateway script
+            from sejong.verify import verify_document
+        report = verify_document(args.before, args.after, context=args.context, attempt=args.attempt)
+    except Exception:
+        report = {"gate": {"exit_code": 3}, "hardFailures": [], "policy": "error"}
+    print(json.dumps(report, ensure_ascii=False))
+    return report["gate"]["exit_code"]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--before", type=Path, required=True)
@@ -347,6 +364,8 @@ def main() -> int:
     parser.add_argument("--attempt", type=int, choices=(1, 2), default=1)
     parser.add_argument("--context", type=Path, help="whole source document when --before is one chunk")
     args = parser.parse_args()
+    if os.environ.get("SUPER_SEJONG_ENGINE", "").strip().lower() == "v2":
+        return verify_v2(args)
     try:
         report = verify(args.before, args.after, args.vendor_root, args.attempt, args.context)
     except Exception:
