@@ -202,12 +202,21 @@ class Features:
 # spaced after an attributive ㄹ ending; 할수록 and 할수밖에 are left alone.
 _RIEUL_FINAL = ''.join(chr(0xAC00 + i * 28 + 8) for i in range(19 * 21))
 _ATTACHED_SU = re.compile('([' + _RIEUL_FINAL + r'])수(?=(?:가|는|도)?\s*(?:있|없))')
+# Same for 안 + 되다: attached 안되요/안돼요 read as no negation (or as a prohibition) while the spaced
+# 안 돼요 read as a short negation, and the stems 되/돼 differed. 안 is spaced and 되요/됬 (always
+# misspellings of 돼요/됐) are read as spelled correctly, on both sides.
+_ATTACHED_AN = re.compile(r'(?<![가-힣])안(?=[되돼됐됩될된])')
+
+
+def _spacing_normal(text: str) -> str:
+    text = _ATTACHED_AN.sub('안 ', _ATTACHED_SU.sub(r'\1 수', text))
+    return text.replace('되요', '돼요').replace('됬', '됐')
 
 
 @lru_cache(maxsize=8192)
 def features(text: str) -> Features:
     f = Features()
-    work = _IDIOMS.sub(_blank, _ATTACHED_SU.sub(r'\1 수', text))
+    work = _IDIOMS.sub(_blank, _spacing_normal(text))
     ev: list = []
 
     def add_bound(m):
