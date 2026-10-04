@@ -505,6 +505,112 @@ _GANEUNG_MAKE = r"(?:을|를)\s가능하게\s(?:만들|한|하|해|했)"
 _LIST_AND = r"(?<![가-힣A-Za-z])[가-힣A-Za-z]{1,20}(?:[와과])?,\s[가-힣A-Za-z ]{1,15},\s그리고\s[가-힣A-Za-z]{1,20}"
 _SIKIDA = r"(?:소개|설득|입금|주차|접수|전달|완화|충족|확장|자동화|취소|금지|해소|분리|연결|대입|진행|개선|단축|접목)\s?시(?:키|켜|킨|킬|켰|킴)"
 
+# ---- calque requests (WP-8b) ---------------------------------------------------------------------
+# Closed patterns from the lead's first real-model run (genre general): the writer was never asked to fix
+# "넓은 공간을 가지고 있어서", "배송 준비중에 있습니다", "주문 건에 대해서 안내드립니다". A request span licenses
+# every word it overlaps for meaning.drops (content_dropped), so each span starts at the frame word (가지고 있,
+# 중에 있 or 있 after an attached 준비중에, 대해서) and never overlaps the noun; 으로부터 is written inside the noun's
+# eojeol and cannot avoid it (the repair keeps the noun). Hand-checked precision, hit rates and genre scope
+# are in the WP-8b report; NIKL 한눈에 알아보는 공공언어 바로 쓰기 (개정판, 2022; PDF pp. 42, 44, 54, 98, 100)
+# calls ~에 대하여, ~를 ~ 중에 있다 and 으로부터 translation-style or unnatural (the possession calque is not in it).
+#
+# TR-GAJIDA: an abstract noun object of 가지다/갖다 ("N을 가지고 있다" -> "N이 있다/N이 넓다"). Closed noun list:
+# the lead's ten nouns plus the abstract nouns that occurred as such objects in the WP-8b corpora; natural
+# collocations (관심·시간·자신감·기회·책임감·꿈·생각·의견·경험) are not in it. 가지고 without 있다 is the instrument
+# reading (이 기능을 가지고 만든다) and never matches; negation (가지고 있지 않다) and legal text (권한을 가진다 in
+# a statute) are skipped.
+_GAJI_NOUNS = sorted(set("""
+공간 기능 특징 장점 단점 의미 역할 능력 권한 효과
+특성 강점 약점 이점 의의 성능 가치 매력 한계 공통점 문제점 잠재력 영향력 기술력
+""".split()), key=lambda w: (-len(w), w))
+_GAJI_ADVERB = r"(?:(?:많이|모두|이미|여전히|충분히|동시에|각각|분명히|확실히|두루|고루)\s)?"
+_GAJI = re.compile(r"(?<![가-힣])[가-힣]{0,4}?(?:" + "|".join(_GAJI_NOUNS) + r")(?:들)?[을를]\s" + _GAJI_ADVERB +
+                   r"(가지고\s?있|갖고\s?있|가진|가지는|가집니|가지며|가졌|갖는|갖습니)")
+_GAJI_NEGATED = re.compile(r"[가-힣]{0,6}?지\s*(?:않|못)")
+# A quoted gloss: "'전하다'라는 의미를 가진 텔" reads best as "~라는 뜻의", not "~라는 의미가 있는" (2/2 FP in the check).
+_GAJI_GLOSS = re.compile(r"(?:라는|이란)\s(?:의미|의의)[를을]\s(?:가진|가지는|갖는)")
+
+
+def _gajida(s: str) -> List[Hit]:
+    if _LEGAL.search(s):
+        return []
+    out: List[Hit] = []
+    for m in _GAJI.finditer(s):
+        if _GAJI_NEGATED.match(s, m.end()) or _GAJI_GLOSS.search(s, max(0, m.start(1) - 12), m.end(1)):
+            continue
+        out.append((m.start(1), m.end(1), None))
+    return out
+
+
+# TR-JUNGE_ITDA: "N 중에 있다" after a verbal noun (진행 중에 있습니다, 준비중에 있으며) -> "N 중이다 / N하고 있다"
+# (NIKL 2022 PDF p. 44: '~를 ~ 중에 있다'는 부자연스러우므로 '~를 ~하고 있다'). Predicate forms only: the adnominal
+# 회의 중에 있었던 일 ("what happened during the meeting") is a time adverbial, not the calque; honorific 계시다
+# is left alone (회의 중에 계십니다 -> 회의 중이십니다 would touch the honorific lock).
+_JUNG_NOUNS = sorted(set(_VERBAL_NOUNS) | set("""
+추진 건립 개발 공사 수행 계획 분양 협상 수사 제작 시공 조성 구축 집행 심의 협력 추적 편집 촬영 리모델링 복구 공모 기획
+""".split()), key=lambda w: (-len(w), w))
+_JUNG = re.compile(r"(?<![가-힣])[가-힣]{0,3}?(?:" + "|".join(_JUNG_NOUNS) + r")\s?(중에\s?(있(?:습니|었습니|다|어요|었어요|"
+                   r"어|었다|으며|었으며|고|었고|음|으나|는데|었는데|지만|으니)))")
+
+
+def _junge(s: str) -> List[Hit]:
+    out: List[Hit] = []
+    for m in _JUNG.finditer(s):
+        attached = "가" <= s[m.start(1) - 1] <= "힣"          # 준비중에: the eojeol holds the noun
+        out.append((m.start(2) if attached else m.start(1), m.end(1), None))
+    return out
+
+
+# TR-DAEHAE: "N에 대해(서) + 안내/설명/논의 … + 하다/드리다" where the verbal noun takes N as its object
+# ("주문 건에 대해서 안내드립니다" -> "주문 건을 안내드립니다"). The verbal noun must follow directly (with an
+# optional 을/를 and at most one manner adverb: 자세히 설명드리겠습니다): "N에 대해 X를 설명하다" already has an
+# object and keeps 대해. Topic 대해서는 never matches. Verbs whose object reading changes the sense stay out
+# (이야기·얘기·말씀·토론·답변·질문·교육: 질문들에 대해 답변했다 -> *질문들을 답변했다; 17/40 in the WP-8b check).
+_DAEHAE_VN = "안내|설명|논의|언급|소개|공지|검토|조사|분석|강조"
+_DAEHAE_ADVERB = (r"(?:(?:자세히|간단히|간략히|다시|먼저|충분히|구체적으로|자세하게|상세히|추가로|따로|직접|미리|"
+                  r"다음과\s같이)\s)?")
+_DAEHAE = re.compile(r"[가-힣](에\s?대(?:해서?|하여))\s+" + _DAEHAE_ADVERB + r"(?:" + _DAEHAE_VN + r")(?:을|를)?\s?"
+                     r"(?:하|해|했|합|한|할|함|드리|드립|드려|드릴|드렸|드린|드림)")
+# Pronouns that refer to a person: 그에 대해 설명했다 -> 그를 설명했다 changes the sense.
+_DAEHAE_PERSON = re.compile(r"(?:^|[^가-힣])(?:그|그녀|그들|그분|저|나|너|당신|우리|저희|자신|본인)$")
+
+
+def _daehae(s: str) -> List[Hit]:
+    if _LEGAL.search(s):
+        return []                        # 제3조에 대하여 심사한다: the statute's wording
+    out: List[Hit] = []
+    for m in _DAEHAE.finditer(s):
+        if _DAEHAE_PERSON.search(s, max(0, m.start(1) - 6), m.start(1)):
+            continue
+        start = m.start(1) + (m.group(1).index("대"))      # 대해서, not the 에 of the noun's eojeol
+        out.append((start, m.end(1), None))
+    return out
+
+
+# TR-ROBUTEO: "N(으)로부터" with a person source and a receiving verb (고객으로부터 문의를 받았습니다 ->
+# 고객에게서/고객한테서 문의를 받았습니다). 님 nouns are left alone (부모님으로부터 -> 부모님께 changes the
+# honorific-noun count the voice family locks), and so are separation verbs (위협으로부터 보호하다, 부모로부터
+# 독립하다), whose 로부터 is not "from a giver".
+_ROBUTEO_PERSON = sorted(set("""
+고객 회원 사용자 이용자 소비자 구매자 판매자 시민 주민 국민 학생 학부모 부모 친구 동료 선배 후배 상사 부하 직원 팀장 관계자
+담당자 전문가 의사 교수 지인 가족 이웃 독자 시청자 손님 아이 아이들 엄마 아빠 어머니 아버지 남편 아내 언니 오빠 형 누나 동생
+""".split()), key=lambda w: (-len(w), w))
+_ROBUTEO = re.compile(r"(?<![가-힣])(?:" + "|".join(_ROBUTEO_PERSON) + r")(?:들)?(으로부터|로부터)(?![가-힣])")
+_ROBUTEO_RECEIVE = re.compile(r"받|들었|들은|듣|들어|전해|전달|연락|문의|요청|제안|부탁|초대|소식|편지|메일|메시지|선물|칭찬|"
+                              r"비판|항의|지적|추천|배우|배운|배웠|얻|빌|물려|건네")
+_ROBUTEO_SEPARATE = re.compile(r"자유|벗어|보호|지키|지켜|멀어|멀리|독립|분리|해방|격리|차단|탈피|떨어|도망|도피|숨")
+
+
+def _robuteo(s: str) -> List[Hit]:
+    out: List[Hit] = []
+    for m in _ROBUTEO.finditer(s):
+        rest = s[m.end():m.end() + 24]
+        if _ROBUTEO_SEPARATE.search(rest) or not _ROBUTEO_RECEIVE.search(rest):
+            continue
+        out.append((m.start(1), m.end(1), None))
+    return out
+
+
 # ---- v1 style rules kept as SUGGEST (port of src/engine/super-sejong.ts) -----------------------
 _PROCESS = r"하는\s+과정에서"
 # v1 frames plus 에게 있어(서) (T3 A_EGE_ISSEO), which has no locative reading when nothing stands between.
@@ -702,6 +808,10 @@ _RULE_LIST: Tuple[Rule, ...] = (
     _r("SSJ-LV3", "SUGGEST", "request", ALL, _light_verb(_LV3)),
     _r("SSJ-LV4", "SUGGEST", "request", ALL, _light_verb(_LV4)),
     _r("CONNECTOR_RUN", "SUGGEST", "request", ALL, _connector_run, scope="document"),
+    _r("TR-GAJIDA", "SUGGEST", "request", ALL, _gajida),
+    _r("TR-JUNGE_ITDA", "SUGGEST", "request", ALL, _junge),
+    _r("TR-DAEHAE", "SUGGEST", "request", ALL, _daehae),
+    _r("TR-ROBUTEO", "SUGGEST", "request", ALL, _robuteo),
     # SUGGEST in some genres, LEAVE elsewhere
     _r("TR-GAJANG_HANA", "SUGGEST", "request", TRANSLATIONESE, _rx(_GAJANG_HANA)),
     _r("TR-PILYO_RO", "SUGGEST", "request", TRANSLATIONESE, _rx(_PILYO_RO)),
