@@ -21,7 +21,8 @@ export interface ClaudeRunnerOptions {
   resultParser?: typeof parseEngineResult;
   claudeCommand: string;
   schemaPath: string;
-  quickRulesPath: string;
+  /** Legacy rulebook sent by transform(); runPrompt (Super Sejong v2) sends none and does not need it. */
+  quickRulesPath?: string;
   timeoutMs: number;
   runner: CommandRunner;
   permitPool: CodexPermitPool;
@@ -95,34 +96,41 @@ function extractResultText(stdout: string): string {
 export class ClaudeRunner {
   private readonly options: ClaudeRunnerOptions;
   private quickRulesPromise: Promise<string> | undefined;
-  private schemaPromise: Promise<string> | undefined;
+  /** Inline schema text per schema file: the legacy output schema and the v2 response schema. */
+  private readonly schemaPromises = new Map<string, Promise<string>>();
 
   constructor(options: ClaudeRunnerOptions) {
     this.options = {
       ...options,
       schemaPath: path.resolve(options.schemaPath),
-      quickRulesPath: path.resolve(options.quickRulesPath)
+      ...(options.quickRulesPath === undefined ? {} : { quickRulesPath: path.resolve(options.quickRulesPath) })
     };
   }
 
   private quickRules(): Promise<string> {
-    this.quickRulesPromise ??= readFile(this.options.quickRulesPath, "utf8");
+    const rulesPath = this.options.quickRulesPath;
+    if (rulesPath === undefined) return Promise.reject(new Error("The legacy prompt needs quickRulesPath"));
+    this.quickRulesPromise ??= readFile(rulesPath, "utf8");
     return this.quickRulesPromise;
   }
 
-  private schema(): Promise<string> {
-    this.schemaPromise ??= readFile(this.options.schemaPath, "utf8").then(
-      raw => {
-        // Claude CLI의 스키마 검증기는 $schema 선언(draft 2020-12)을 거부한다.
-        const { $schema, ...schema } = JSON.parse(raw) as Record<
-          string,
-          unknown
-        >;
-        void $schema;
-        return JSON.stringify(schema);
-      }
-    );
-    return this.schemaPromise;
+  private schema(schemaPath: string = this.options.schemaPath): Promise<string> {
+    let loaded = this.schemaPromises.get(schemaPath);
+    if (!loaded) {
+      loaded = readFile(schemaPath, "utf8").then(
+        raw => {
+          // Claude CLI의 스키마 검증기는 $schema 선언(draft 2020-12)을 거부한다.
+          const { $schema, ...schema } = JSON.parse(raw) as Record<
+            string,
+            unknown
+          >;
+          void $schema;
+          return JSON.stringify(schema);
+        }
+      );
+      this.schemaPromises.set(schemaPath, loaded);
+    }
+    return loaded;
   }
 
   async transform(
@@ -154,6 +162,38 @@ export class ClaudeRunner {
     const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
 
     await rm(resultPath, { force: true });
+    const raw = await this.exec(prompt, schema, path.dirname(sourcePath), signal, selection);
+    const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude', options);
+    await writeFile(resultPath, JSON.stringify(result), "utf8");
+    return result;
+  }
+
+  /** Super Sejong v2 (DESIGN 4.3, 5.2 SejongWriter): sends a ready prompt with the given output schema and
+   * returns the structured reply unparsed (also written to outputPath); the caller validates it
+   * (sejong/response.ts). No rulebook is read. */
+  async runPrompt(
+    prompt: string,
+    schemaPath: string,
+    outputPath: string,
+    signal: AbortSignal,
+    settings?: ModelSettings
+  ): Promise<string> {
+    const selection = parseModelSettings('claude', settings?.model, settings?.effort);
+    const resultPath = path.resolve(outputPath);
+    const schema = await this.schema(path.resolve(schemaPath));
+    await rm(resultPath, { force: true });
+    const raw = await this.exec(prompt, schema, path.dirname(resultPath), signal, selection);
+    await writeFile(resultPath, raw, "utf8");
+    return raw;
+  }
+
+  private async exec(
+    prompt: string,
+    schema: string,
+    cwd: string,
+    signal: AbortSignal,
+    selection: ModelSettings
+  ): Promise<string> {
     const command = await this.options.permitPool.run(signal, () =>
       this.options.runner.run({
         command: this.options.claudeCommand,
@@ -173,7 +213,7 @@ export class ClaudeRunner {
           "--json-schema",
           schema
         ],
-        cwd: path.dirname(sourcePath),
+        cwd,
         stdin: prompt,
         timeoutMs: this.options.timeoutMs,
         signal,
@@ -196,9 +236,6 @@ export class ClaudeRunner {
       throw engineFailed("Claude", failureReason(command.exitCode, command.stdout));
     }
 
-    const raw = extractResultText(command.stdout);
-    const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude', options);
-    await writeFile(resultPath, JSON.stringify(result), "utf8");
-    return result;
+    return extractResultText(command.stdout);
   }
 }

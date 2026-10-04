@@ -33,6 +33,23 @@ export interface TransformDiagnostics {
   protectedSentences?: number;
   restoredProtectedSentences?: number;
   fullSourceRollbacks?: number;
+  /* Super Sejong v2 only (DESIGN 5.2): codes and counts, never text. The legacy engine leaves them unset. */
+  /** Engine that produced the delivered text. */
+  engine?: "legacy" | "v2";
+  /** Body chunks whose plan needed no writer call (SEJONG_NO_EDIT_NEEDED). */
+  chunksWithoutModelCall?: number;
+  /** Plan requests by tier; REVIEW counts the writer's open-review nominations. */
+  planRequests?: Record<"FIX" | "SUGGEST" | "REVIEW", number>;
+  /** Final request outcomes: FIXED, UNTOUCHED, STILL_PRESENT, LOST, DECLINED. */
+  requestStatus?: Record<string, number>;
+  /** Sentences put back to their base text, by verification family (seam reverts count as flow). */
+  revertedSentences?: Record<string, number>;
+  collateralReverts?: number;
+  voiceGrafts?: number;
+  cmcRestored?: number;
+  normFixes?: number;
+  /** Sentences sent to the targeted retry. */
+  sentenceRetries?: number;
   model: string;
   reasoningEffort: string;
   processingMode: ProcessingMode;

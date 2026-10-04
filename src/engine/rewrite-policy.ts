@@ -1,10 +1,28 @@
-﻿export const REWRITE_OPTIONS = [
+﻿import { selectEngine, type SejongEngineName } from './sejong/config.js';
+
+export const LEGACY_REWRITE_OPTIONS = [
   { id: 'normal', label: '보통', description: '원래 표현을 살려 어색한 부분을 다듬습니다.' },
   { id: 'medium', label: '중간', description: '어휘와 길어진 표현을 더 자연스럽게 정리합니다.' },
   { id: 'strong', label: '강하게', description: '문장 구조와 반복 표현까지 적극적으로 바꿉니다.' },
   { id: 'very-strong', label: '매우 강하게', description: '뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다.' }
 ] as const;
-export type RewriteStrength = typeof REWRITE_OPTIONS[number]['id'];
+// Super Sejong v2 meaning of the same four strengths (DESIGN 3.4, lead decision 9.2a item 2: medium gets the
+// open review; CLR-LONG may split from medium up; full-text replies only at very-strong). Strength never relaxes a
+// guard, so every description keeps 말투 and meaning.
+export const SEJONG_REWRITE_OPTIONS = [
+  { id: 'normal', label: '보통', description: '맞춤법 오류와 확실히 어색한 표현만 고칩니다. 고칠 곳이 없으면 원문을 그대로 둡니다.' },
+  { id: 'medium', label: '중간', description: '어색한 표현과 지나치게 긴 문장까지 고치고, 규칙으로 찾지 못한 어색한 문장도 몇 개 골라 고칩니다. 문장마다 말투와 뜻은 그대로 둡니다.' },
+  { id: 'strong', label: '강하게', description: '중간과 같은 범위를 고칩니다. 문장마다 말투와 뜻은 그대로 둡니다.' },
+  { id: 'very-strong', label: '매우 강하게', description: '강하게와 같은 범위를 고치되, 문장 단위로 답하기 어려우면 글 전체를 한 번에 고쳐 답할 수 있습니다. 문장마다 말투와 뜻은 그대로 둡니다.' }
+] as const;
+export type RewriteStrength = typeof LEGACY_REWRITE_OPTIONS[number]['id'];
+
+/** Option list served to clients: the v2 descriptions only when v2 produces the delivered text. */
+export function rewriteOptionChoices(engine: SejongEngineName = selectEngine()): typeof LEGACY_REWRITE_OPTIONS | typeof SEJONG_REWRITE_OPTIONS {
+  return engine === 'v2' ? SEJONG_REWRITE_OPTIONS : LEGACY_REWRITE_OPTIONS;
+}
+/** Chosen once at start-up, like the engine itself (src/runtime/create-runtime.ts). Ids never differ. */
+export const REWRITE_OPTIONS = rewriteOptionChoices();
 export interface RewriteOptions { inputKind: 'direct-text' | 'text-file'; strength: RewriteStrength }
 
 export function parseRewriteStrength(value: unknown): RewriteStrength {

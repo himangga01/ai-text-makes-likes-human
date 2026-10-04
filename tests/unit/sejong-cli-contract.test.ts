@@ -44,7 +44,8 @@ describe('v2 CLI output against the TypeScript contract', () => {
   it('parses the manifest with its sejong block', () => {
     const manifest = parseSejongManifest(contract.manifest);
     expect(manifest.processingMode).toBe('single');
-    expect(manifest.sejong).toEqual({ version: 1, genre: 'blog', seams: [] });
+    expect(manifest.sejong).toEqual({ version: 1, genre: 'blog', seams: [],
+      plans: [{ chunk: 1, file: 'plan-01.json', needsModel: true }], options: { inputKind: 'direct-text', strength: 'medium' } });
   });
 
   it('builds the attempt-1 prompt from the plan and accepts a reply for it', () => {

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { selectEngine, type SejongEngineName } from "./engine/sejong/config.js";
 
 export interface AppConfig {
   readonly projectRoot: string;
@@ -10,6 +11,10 @@ export interface AppConfig {
   readonly minFreeBytes: number;
   readonly runtimeRoot: string;
   readonly vendorRoot: string;
+  /** Super Sejong Engine v2 package (engine_runtime/sejong): ENGINE_VERSION, schemas, data. */
+  readonly engineRoot: string;
+  /** SUPER_SEJONG_ENGINE: which engine produces the delivered text; anything but `v2` is legacy. */
+  readonly engine: SejongEngineName;
   readonly codexCommand: string;
   readonly claudeCommand: string;
   readonly pythonCommand: string;
@@ -45,6 +50,8 @@ export function loadConfig(
       ? path.resolve(env.HUMANIZE_RUNTIME_ROOT, "jobs")
       : path.join(projectRoot, "runtime", "jobs"),
     vendorRoot: path.join(projectRoot, "vendor", "humanize-engine"),
+    engineRoot: path.join(projectRoot, "engine_runtime", "sejong"),
+    engine: selectEngine(env),
     codexCommand: env.CODEX_COMMAND ?? "codex",
     claudeCommand: env.CLAUDE_COMMAND ?? "claude",
     // macOS and Linux ship python3 without a python alias; Windows installs python.

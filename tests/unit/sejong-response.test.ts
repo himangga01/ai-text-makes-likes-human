@@ -103,24 +103,32 @@ describe('readSejongReply rejections', () => {
     expect(reason(reply([r('S9')]), plan)).toBe('unknown_id');
     expect(reason(reply([r('R1'), r('R1')]), plan)).toBe('duplicate_id');
     expect(reason(reply([r('S1'), r('S1')]), plan)).toBe('duplicate_id');
-    // S2 carries request R1: naming it twice is one sentence edited twice.
+    // S2 carries request R1: naming it twice is one sentence edited twice (apply.py duplicate_sentence).
     expect(reason(reply([r('R1'), r('S2')]), plan)).toBe('duplicate_target');
-    expect(reason(reply([r('S2')]), plan)).toBe('duplicate_target');
+    // Alone, an S id of a requested sentence stands for that request, as apply.py reads it.
+    const alone = readSejongReply(reply([r('S2')]), plan);
+    expect(alone).toMatchObject({ ok: true, value: { targets: { S2: 'S2' }, rejected: [] } });
   });
 
-  it('rejects S ids when the open review is off and beyond the plan maximum', () => {
+  it('refuses S ids when the open review is off and rejects nominations beyond the plan maximum one by one', () => {
     expect(reason(reply([r('S1')]), closed())).toBe('review_disabled');
     expect(reason(reply([r('S1'), r('S3'), r('S4')]), blog())).toBe('ok');
-    expect(reason(reply([r('S1'), r('S3'), r('S4'), r('S5')]), blog())).toBe('review_limit');
+    const over = readSejongReply(reply([r('S1'), r('S3'), r('S4'), r('S5')]), blog());
+    expect(over.ok && over.value.rejected).toEqual([{ id: 'S5', sentence: 'S5', code: 'open_review_limit' }]);
+    expect(over.ok && over.value.usable.map(item => item.id)).toEqual(['S1', 'S3', 'S4']);
+    // apply.py rejects the same excess itself, so the reply reaches the check step whole.
+    expect(over.ok && over.value.forward.replacements).toHaveLength(4);
     const one = blog();
     one.openReview.maxSentences = 1;
     expect(reason(reply([r('R1'), r('S1')]), one)).toBe('ok');
-    expect(reason(reply([r('S1'), r('S3')]), one)).toBe('review_limit');
+    const second = readSejongReply(reply([r('S1'), r('S3')]), one);
+    expect(second.ok && second.value.rejected.map(item => [item.id, item.code])).toEqual([['S3', 'open_review_limit']]);
   });
 
   it('allows rewrittenText only when the plan allows full text, alone, on attempt 1', () => {
     expect(reason(reply([], '전체 결과'), blog())).toBe('full_text_not_allowed');
-    expect(reason(reply([], ' '), blog())).toBe('full_text_not_allowed');
+    // A blank rewrittenText is no full text, as apply.py reads it (rewrittenText.strip()).
+    expect(reason(reply([], ' '), blog())).toBe('ok');
     const full = blog();
     full.options.allowFullText = true;
     expect(reason(reply([], '전체 결과'), full)).toBe('ok');
@@ -129,12 +137,17 @@ describe('readSejongReply rejections', () => {
     expect(reason(reply([], '전체 결과'), full, retry)).toBe('full_text_not_allowed');
   });
 
-  it('accepts on attempt 2 only the ids of the retry list', () => {
+  it('forwards on attempt 2 only the ids of the retry list', () => {
     const plan = blog();
     const retry: RetryRequest[] = [{ id: 'S1', sentence: 'S1', violations: [{ code: 'collateral_edit', detail: '' }] }];
     expect(reason(reply([r('S1')]), plan, retry)).toBe('ok');
-    expect(reason(reply([r('R1')]), plan, retry)).toBe('unknown_id');
-    expect(reason(reply([r('S3')]), plan, retry)).toBe('review_disabled');
+    // A plan id off the retry list is dropped by itself; the retry may touch only the failed requests (3.5).
+    const extra = readSejongReply(reply([r('S1'), r('R1'), r('S3')]), plan, { retry });
+    expect(extra.ok && extra.value.rejected.map(item => [item.id, item.code])).toEqual([['R1', 'not_in_retry'], ['S3', 'not_in_retry']]);
+    expect(extra.ok && extra.value.forward.replacements.map(item => item.id)).toEqual(['S1']);
+    expect(extra.ok && extra.value.response.replacements).toHaveLength(3);
+    expect(reason(reply([r('R9')]), plan, retry)).toBe('unknown_id');
+    expect(reason(reply([r('S3')]), closed(), retry)).toBe('review_disabled');
     const requestRetry: RetryRequest[] = [{ id: 'R1', sentence: 'S2', violations: [{ code: 'voice_level', detail: '' }] }];
     expect(reason(reply([r('R1')]), plan, requestRetry)).toBe('ok');
     expect(reason(reply([]), plan, requestRetry)).toBe('ok');

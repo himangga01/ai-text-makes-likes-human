@@ -6,7 +6,7 @@
  * plus the cross-reference checks a schema cannot express. Exit codes map to the legacy gate contract:
  * check/verify 0-3 = gate.exit_code with the legacy decision table, 3 = execution error.
  * Error messages name steps, JSON paths and keywords only, never document text.
- * Nothing imports this module yet: the legacy engine stays the default.
+ * Used by SejongEngine (engine.ts) when SUPER_SEJONG_ENGINE=v2; the legacy engine stays the default.
  */
 import { open, stat } from 'node:fs/promises';
 import path from 'node:path';
@@ -70,9 +70,27 @@ export interface CheckArgs {
 }
 
 export interface SejongSeam { chunk: number; prev: [number, number]; next: [number, number] }
+/** One plan written by `prepare --analyse` (manifest.sejong.plans[]). */
+export interface SejongPlanEntry { chunk: number; file: string; needsModel: boolean }
 export interface SejongManifest extends ChunkManifest {
-  /** Optional v2 block (DESIGN 3.12 Manifest). */
-  sejong?: { version: 1; genre: SejongGenre; seams: SejongSeam[] };
+  /** Optional v2 block (DESIGN 3.12 Manifest); plans and options only after `prepare --analyse`. */
+  sejong?: {
+    version: 1; genre: SejongGenre; seams: SejongSeam[];
+    plans?: SejongPlanEntry[];
+    options?: { inputKind: RewriteOptions['inputKind']; strength: RewriteStrength };
+  };
+}
+
+/** What `finalize` reports besides the reassembled text (03_reassembly_report.json), codes and counts only. */
+export interface FinalizeReport {
+  /** CHUNK_ROLLED_BACK (length ratio) and DIRECT_TEXT_DOCUMENT_ROLLED_BACK (document floor). */
+  warningCodes: string[];
+  rolledBackChunks: number[];
+  seamReverts: number;
+  seamCodes: string[];
+  floorCodes: string[];
+  documentRolledBack: boolean;
+  changeRate: number;
 }
 
 /* ---------- JSON Schema subset: the keywords of engine_runtime/sejong/io.py, nothing else ---------- */
@@ -402,8 +420,63 @@ export function parseSejongManifest(value: unknown): SejongManifest {
       return { chunk, prev: range(seam.prev, `sejong.seams[${offset}].prev`), next: range(seam.next, `sejong.seams[${offset}].next`) };
     });
     manifest.sejong = { version: 1, genre: block.genre as SejongGenre, seams };
+    if (block.plans !== undefined) {
+      if (!Array.isArray(block.plans)) throw invalid('sejong.plans must be an array');
+      const body = new Set(chunks.filter(chunk => !chunk.passthrough).map(chunk => chunk.index));
+      const plans = block.plans.map((raw, offset): SejongPlanEntry => {
+        const entry = record(raw, `sejong.plans[${offset}]`);
+        const chunk = integer(entry.chunk, `sejong.plans[${offset}].chunk`);
+        if (!body.delete(chunk)) throw invalid(`sejong.plans[${offset}].chunk is not a body chunk without a plan`);
+        return { chunk, file: safeLeaf(entry.file, `sejong.plans[${offset}].file`),
+          needsModel: flag(entry.needsModel, `sejong.plans[${offset}].needsModel`) };
+      });
+      if (body.size) throw invalid('sejong.plans must name one plan per body chunk');
+      manifest.sejong.plans = plans;
+    }
+    if (block.options !== undefined) {
+      const options = record(block.options, 'sejong.options');
+      if (options.inputKind !== 'direct-text' && options.inputKind !== 'text-file') throw invalid('sejong.options.inputKind is unknown');
+      if (!['normal', 'medium', 'strong', 'very-strong'].includes(options.strength as string)) {
+        throw invalid('sejong.options.strength is unknown');
+      }
+      manifest.sejong.options = { inputKind: options.inputKind, strength: options.strength as RewriteStrength };
+    }
   }
   return manifest;
+}
+
+const CODE_LIST_LIMIT = 100;
+function codes(value: unknown, label: string, pattern: RegExp): string[] {
+  if (!Array.isArray(value) || value.length > CODE_LIST_LIMIT || value.some(item => typeof item !== 'string' || !pattern.test(item))) {
+    throw invalid(`${label} must be a bounded code list`);
+  }
+  return value as string[];
+}
+
+/** The reassembly report of `finalize` (sejong_cli.finalize): codes and counts only. */
+export function parseFinalizeReport(value: unknown): FinalizeReport {
+  const root = record(value, 'reassembly report');
+  const block = record(root.sejong, 'reassembly report.sejong');
+  if (integer(block.version, 'reassembly report.sejong.version') !== 1) throw invalid('Unsupported reassembly report block');
+  const rolled = root.rolledBackChunks ?? root.rolled_back_chunks ?? [];
+  if (!Array.isArray(rolled)) throw invalid('rolledBackChunks must be an array');
+  const changeRate = block.changeRate;
+  if (typeof changeRate !== 'number' || !Number.isFinite(changeRate) || changeRate < 0) throw invalid('changeRate must be a nonnegative number');
+  return {
+    warningCodes: codes(root.warning_codes ?? [], 'warning_codes', /^[A-Z][A-Z0-9_]{0,63}$/u),
+    rolledBackChunks: rolled.map((item, offset) => integer(item, `rolledBackChunks[${offset}]`)),
+    seamReverts: integer(block.seamReverts, 'reassembly report.sejong.seamReverts'),
+    seamCodes: codes(block.seamCodes, 'reassembly report.sejong.seamCodes', /^[a-z_]{1,60}$/u),
+    floorCodes: codes(block.floorCodes, 'reassembly report.sejong.floorCodes', /^[a-z_]{1,60}$/u),
+    documentRolledBack: flag(block.documentRolledBack, 'reassembly report.sejong.documentRolledBack'),
+    changeRate
+  };
+}
+
+/** The chunk, total and options a plan must carry (checked by analyse and readPlan). */
+export interface PlanExpectation extends AnalyseOptions {
+  chunkIndex: number;
+  chunkTotal: number;
 }
 
 /** The last line-starting JSON object in CLI output, as python-engine.ts reads the legacy gate report. */
@@ -437,6 +510,11 @@ export class SejongPython {
 
   get cliPath(): string {
     return path.join(this.engineRoot, SEJONG_CLI);
+  }
+
+  /** engine_runtime/sejong: ENGINE_VERSION, schemas and data of the Python package (src/config.ts engineRoot). */
+  get packageRoot(): string {
+    return path.join(this.engineRoot, 'sejong');
   }
 
   private schema(name: 'plan' | 'check'): Promise<JsonSchema> {
@@ -523,12 +601,17 @@ export class SejongPython {
       '--out', out
     ], path.dirname(source), signal);
     this.requireSuccess('analyse', result);
-    const data = await this.readJson(out, 'plan');
+    return this.readPlan(out, args);
+  }
+
+  /** Reads and validates a plan file (one `prepare --analyse` wrote, or analyse's --out) for the expected chunk. */
+  async readPlan(file: string, expect: PlanExpectation): Promise<Plan> {
+    const data = await this.readJson(path.resolve(file), 'plan');
     const problems = planProblems(data, await this.schema('plan'));
     if (problems.length) throw invalid(`Sejong plan is invalid: ${problems.slice(0, 3).join('; ')}`);
     const plan = data as Plan;
-    if (plan.schema !== PLAN_SCHEMA || plan.chunk.index !== args.chunkIndex || plan.chunk.total !== args.chunkTotal ||
-        plan.options.inputKind !== args.inputKind || plan.options.strength !== args.strength || plan.options.genre !== args.genre) {
+    if (plan.schema !== PLAN_SCHEMA || plan.chunk.index !== expect.chunkIndex || plan.chunk.total !== expect.chunkTotal ||
+        plan.options.inputKind !== expect.inputKind || plan.options.strength !== expect.strength || plan.options.genre !== expect.genre) {
       throw invalid('Sejong plan does not match the requested chunk and options');
     }
     return plan;
@@ -608,5 +691,10 @@ export class SejongPython {
       throw invalid('Reassembled output is missing', error);
     }
     return output;
+  }
+
+  /** The report finalize wrote next to the reassembled text. */
+  async readFinalizeReport(runDir: string): Promise<FinalizeReport> {
+    return parseFinalizeReport(await this.readJson(path.join(path.resolve(runDir), '03_reassembly_report.json'), 'reassembly report'));
   }
 }
