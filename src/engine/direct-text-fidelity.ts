@@ -115,8 +115,45 @@ function argumentOrderPreserved(original: string, rewritten: string): boolean {
  * obligation/condition markers by class. With several explicit subjects its nouns must also keep their order,
  * because values and roles can swap between subjects without any marker changing. */
 export function preservesProtectedElements(original: string, rewritten: string): boolean {
-  if (protectedElements(original) !== protectedElements(rewritten)) return false;
+  if (protectedElements(original) !== protectedElements(rewritten) || !preservesVoice(original, rewritten)) return false;
   return explicitSubjects(original).length < 2 || argumentOrderPreserved(original, rewritten);
+}
+// Voice lock (owner decision: every sentence keeps its own 말투 and honorifics). A minimal port of the Super
+// Sejong v2 voice gate: speech level of the final ending, honorific -시- count, question/request/propositive mood,
+// stance ending, humble verbs and CMC marks. On the v2 pair set it flags 2/64 preserving pairs (both real -시-
+// losses) and catches 49/64 drifts; sentence splits, merges and quote changes are caught by the other guards.
+const quotedSpan = /“[^”]*”|"[^"]*"|‘[^’]*’|'[^']*'|「[^」]*」|『[^』]*』/gu;
+function sentenceEnd(text: string): string {
+  return text.replace(quotedSpan, ' ').trim().replace(/[\s"”’')\]」』.!?。…~^ㅋㅎㅠㅜ]+$/u, '');
+}
+function speechLevel(text: string): string | undefined {
+  const end = sentenceEnd(text);
+  if (!end) return undefined;
+  if (/(?:니다|니까|십시오|시오|십시다|합시다|읍시다|옵니다)$/u.test(end)) return 'hapsyo';
+  if (/(?:요|죠)$/u.test(end) && !/(?:필요|중요|수요|주요)$/u.test(end)) return 'haeyo';
+  if (/(?:다|까|냐|구나|자|라)$/u.test(end)) return 'haera';
+  return undefined;
+}
+const honorificNoun = /(?:[출대자당통혁최확과정갱경헌배송수발전]신|신청|신고|신규|신뢰|신속|마시|마셨|마셔|가르치|실시|제시|표시|개시|무시|지시|명시|게시|감시|전시|동시|당시|즉시|수시|역시|다시|혹시|서울시|도시|시시|교시|응시|착시|중시|간주시)(?=[는가도를의에]|\s|$)/gu;
+const honorificSi = /(?<=[가-힣])(?:시(?=[는고면며기지어겠었다]|$)|셨|셔|세요|십|신(?=\s|$|가|건|데|지|다))|계시|계셔|계세|계십|계신|드시|드셔|주무시|께서/gu;
+function honorifics(text: string): number {
+  return text.replace(quotedSpan, ' ').replace(/[^가-힣\s]+/gu, ' ').replace(honorificNoun, ' ').match(honorificSi)?.length ?? 0;
+}
+function voiceSignature(text: string): string {
+  const question = /\?\s*["”’)]*\s*$/u.test(text.replace(quotedSpan, ' ').trim());
+  const end = sentenceEnd(text);
+  const request = !question && /(?:세요|십시오|주세요|마세요|바랍니다|부탁드립니다|해라|하라|보세요|주십시오)$/u.test(end);
+  const propositive = /(?:자|십시다|합시다|읍시다)$/u.test(end);
+  const stance = end.match(/(?:더라고요?|거든요?|잖아요?|네요|군요|답니다|랍니다|지요|죠)$/u)?.[0]?.replace(/요$/u, '') ?? '';
+  const humble = text.match(/드리|드립|드려|드렸|여쭈|여쭙|여쭤|뵙|뵈|뵐|모시|모셔/gu)?.length ?? 0;
+  const marks = (text.match(/[ㅋㅎㅠㅜ]+|\^\^|~/gu) ?? []).join('');
+  return [honorifics(text), question, request, propositive, stance, humble, marks].join('|');
+}
+/** The rewritten sentence keeps the source sentence's speech level, honorifics, mood, stance and marks. */
+export function preservesVoice(original: string, rewritten: string): boolean {
+  const before = speechLevel(original), after = speechLevel(rewritten);
+  if (before && after && before !== after) return false;
+  return voiceSignature(original) === voiceSignature(rewritten);
 }
 export function sourceSentences(source: string): SourceSentence[] {
   const result: SourceSentence[] = [];
@@ -367,6 +404,7 @@ export function checkDirectTextFidelity(source: string, candidate: string): Fide
     // negative, obligation, possibility or condition during an ordinary rewrite.
     if (!original.protected && hasProtectedMeaning(rewritten.text)) violations++;
     if (!preservesConcepts(original, rewritten)) violations++;
+    if (original.text !== rewritten.text && !preservesVoice(original.text, rewritten.text)) violations++;
   }
   return { violations, protectedSentences: before.filter(sentence => sentence.protected).length };
 }

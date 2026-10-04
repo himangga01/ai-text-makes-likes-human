@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
+import { checkDirectTextFidelity, checkStructuralFidelity, preservesVoice, restoreProtectedSentences, sourceSentences } from '../../src/engine/direct-text-fidelity.js';
 import { parseTextResult } from '../../src/engine/text-edits.js';
 it.each([
   ['공사 진행은 금지된다.', '공사 진행은 허용된다.'],
@@ -156,4 +156,25 @@ it.each([
  const source=original+' 마지막 문장은 그대로다.\n', candidate=changed+' 마지막 문장은 그대로다.\n';
  expect(checkDirectTextFidelity(source,candidate).violations).toBeGreaterThan(0);
  expect(restoreProtectedSentences(source,candidate).rewrittenText).toBe(source);
+});
+
+it.each([
+ ['honorific -시- dropped','궁금하신 점이 있으시면 사무소로 문의해 주세요.','궁금한 점이 있으시면 사무소로 문의해 주세요.'],
+ ['해요체 request to 합쇼체','서류는 사무소로 보내 주세요.','서류는 사무소로 보내 주시기 바랍니다.'],
+ ['request weakened','계약 전에 꼭 확인하세요.','계약 전에 꼭 확인하시는 것이 좋아요.'],
+ ['question to statement','실적이 없어도 신청할 수 있을까요?','실적이 없어도 신청할 수 있어요.'],
+ ['합쇼체 to 해라체','등록 요건은 업종마다 다릅니다.','등록 요건은 업종마다 다르다.'],
+ ['stance ending flattened','작년에 규정이 바뀌었더라고요.','작년에 규정이 바뀌었어요.'],
+ ['humble verb dropped','필요한 서류는 상담할 때 안내해 드리겠습니다.','필요한 서류는 상담할 때 안내하겠습니다.'],
+ ['CMC mark dropped','이 카페는 디저트가 정말 맛있어요 ㅎㅎ','이 카페는 디저트가 정말 맛있어요.']
+])('rejects a voice change: %s',(_label,original,changed)=>{
+ expect(preservesVoice(original,changed)).toBe(false);
+ expect(checkDirectTextFidelity(original+' 끝이다.\n',changed+' 끝이다.\n').violations).toBeGreaterThan(0);
+});
+it.each([
+ ['합쇼체 rewording','신청서를 제출하기 전에 서류의 유효기간을 반드시 확인하는 것이 필요합니다.','신청서를 내기 전에 서류의 유효기간을 반드시 확인해야 합니다.'],
+ ['해요체 CTA rewording','궁금하신 점이 있으시다면 언제든지 편하게 문의해 주세요.','궁금하신 점이 있으시면 언제든 편하게 문의해 주세요.'],
+ ['question kept','그렇다면 매출액 기준은 어떻게 판단하는 것일까요?','그렇다면 매출액 기준은 어떻게 판단할까요?']
+])('keeps a voice-preserving rewrite: %s',(_label,original,changed)=>{
+ expect(preservesVoice(original,changed)).toBe(true);
 });
