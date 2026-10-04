@@ -9,6 +9,7 @@ import { CodexRunner } from "../engine/codex-runner.js";
 import { ClaudeRunner } from "../engine/claude-runner.js";
 import { CodexSemaphore } from "../engine/codex-semaphore.js";
 import { CLAUDE_MODEL, CLAUDE_REASONING_EFFORT } from "../engine/model-policy.js";
+import { SejongPython } from "../engine/sejong/python-adapter.js";
 import { TransformQueue } from "../queue/transform-queue.js";
 import { resolveCli } from "./cli-path.js";
 import { DocumentEngine } from '../documents/document-engine.js';
@@ -56,6 +57,8 @@ export async function createProductionRuntime(
     "references",
     "quick-rules.md"
   );
+  // Inert unless SUPER_SEJONG_V2_SHADOW=1: the legacy engines then look at each job through v2 on the side (no model call).
+  const v2Shadow = new SejongPython({ pythonCommand: config.pythonCommand, engineRoot: path.join(config.projectRoot, "engine_runtime"), runner });
   const codexSemaphore = new CodexSemaphore(2);
   const codex = new CodexRunner({
     codexCommand: config.codexCommand,
@@ -83,7 +86,8 @@ export async function createProductionRuntime(
         }),
         chunkConcurrency: config.chunkConcurrency,
         model: CLAUDE_MODEL,
-        reasoningEffort: CLAUDE_REASONING_EFFORT
+        reasoningEffort: CLAUDE_REASONING_EFFORT,
+        v2Shadow
       });
   return {
     refreshHealth,
@@ -91,7 +95,8 @@ export async function createProductionRuntime(
     engine: new HumanizeEngine({
       python,
       codex,
-      chunkConcurrency: config.chunkConcurrency
+      chunkConcurrency: config.chunkConcurrency,
+      v2Shadow
     }),
     claudeEngine,
     queue: new TransformQueue({

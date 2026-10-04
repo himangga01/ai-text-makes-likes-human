@@ -33,6 +33,8 @@ export interface TransformDiagnostics {
   protectedSentences?: number;
   restoredProtectedSentences?: number;
   fullSourceRollbacks?: number;
+  /** Legacy shadow mode only (SUPER_SEJONG_V2_SHADOW=1): fixed keys and integer counts of what Super Sejong v2 would have done on the side. Never text. */
+  v2ShadowCounts?: Record<string, number>;
   model: string;
   reasoningEffort: string;
   processingMode: ProcessingMode;

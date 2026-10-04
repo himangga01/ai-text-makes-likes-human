@@ -437,7 +437,10 @@ class FlagsTable(unittest.TestCase):
 # version file, and legacy stays the default. WP-14: preflight checks the ENGINE_VERSION of the selected engine.
 # WP-10: sejong_cli.py is the v2 CLI itself; workflow.py imports sejong.verify only inside verify_v2(), which
 # runs when SUPER_SEJONG_ENGINE=v2 (test_sejong_pipeline.WorkflowDispatch pins both branches).
-WIRED = {"src/process/preflight.ts", "engine_runtime/sejong_cli.py", "engine_runtime/workflow.py"}
+# WP-17: humanize-engine.ts holds the legacy shadow hook (inert unless SUPER_SEJONG_V2_SHADOW=1; it only reads
+# the delivered text) and create-runtime.ts hands it the v2 adapter (tests/unit/sejong-shadow-*.test.ts pin the hook).
+WIRED = {"src/process/preflight.ts", "engine_runtime/sejong_cli.py", "engine_runtime/workflow.py",
+         "src/engine/humanize-engine.ts", "src/runtime/create-runtime.ts"}
 
 
 class NoRuntimeWiring(unittest.TestCase):
