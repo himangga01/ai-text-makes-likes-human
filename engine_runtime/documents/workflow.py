@@ -7,6 +7,7 @@ from pathlib import Path
 import uuid
 from .package import Package, DocumentError, digest
 from .model import extract, apply_edits, export, public_block, resolve_edits
+from .model import sejong_v2, sejong_flags, sejong_engine, sejong_block_plan, sejong_nominations, sejong_review_limit, sejong_profile
 
 def save(file, value):
     temp=file.with_suffix('.tmp')
@@ -32,12 +33,59 @@ def prepare(input_path, root, vendor, job_id=None):
                'name':input_path.stem+'-humanized.'+suffix,'vendor':str(vendor.resolve()),'current':0,'attempt':1,
                'sourceHash':pkg.hash,'manifestHash':digest((job/'document.json').read_bytes()),
                'status':'active','accepted':{},'warnings':manifest['warnings'],'restored':0}
+        if sejong_v2():
+            state['engine']=sejong_engine()  # id+version; a later change of engine or version fails the job
         save(job/'job.json',state)
         return next_batch(job,state,manifest)
     except Exception:
         if job.resolve().parent==root.resolve() and re.fullmatch(r'job-[a-f0-9]{32}',job.name):
             shutil.rmtree(job)
         raise
+
+def v2_batch(job,state,manifest):
+    """Super Sejong v2 view of the current batch: one compact plan per block, only the blocks the writer is
+    asked about, and the retry data on attempt 2.
+
+    A block is asked about when its plan has a request or an open review can nominate one of its sentences
+    (SUPER_SEJONG_OPEN_REVIEW). When no block of a batch is, the batch is accepted unchanged without a model
+    call and the next one is looked at (DESIGN 3.4: an empty plan makes no call); `state['current']` moves
+    and job.json is saved. Attempt 2 asks only the blocks the first answer failed, with their rejection
+    (`state['retry']`); the edits of the blocks that passed wait in `state['carry']`.
+    `state['active']` records which block ids this answer must review. Returns None when no batch is left,
+    else (ids, blocks for the batch file, the batch's `sejong` object)."""
+    flags=sejong_flags()
+    by_id={b['id']:b for b in manifest['blocks']}
+    changed=False
+    result=None
+    while state['current']<len(manifest['batches']):
+        all_ids=manifest['batches'][state['current']]
+        retry=state.get('retry') if state['attempt']==2 else None
+        wanted=[i for i in all_ids if i in retry] if retry else all_ids
+        plans={i:sejong_block_plan(by_id[i],flags) for i in wanted}
+        ids=wanted if retry else [i for i in wanted if plans[i]['needsModel']]
+        if ids:
+            # The open review covers every asked block on attempt 1; on the retry only blocks without a request
+            # (their failed edit was a nomination), because the retry adds no new requests.
+            nominable=sum(plans[i]['nominable'] for i in ids if not retry or not plans[i]['requests'])
+            cap=sejong_review_limit(nominable) if nominable else 0
+            asked={i:[r['sentence'] for r in plans[i]['requests']] for i in ids}   # the sentences the writer is told to fix
+            active={'chunk':state['current']+1,'attempt':state['attempt'],'ids':ids,'review':cap,'asked':asked}
+            if state.get('active')!=active:
+                state['active']=active;changed=True
+            sejong={'version':1,'engine':state.get('engine') or sejong_engine(),'genre':'document','attempt':state['attempt'],
+                    'review':{'enabled':cap>0,'maxSentences':cap}}
+            if retry:
+                sejong['retry']=[{'block':i,'message':retry[i]['message'],'violations':retry[i]['violations']} for i in ids]
+            else:
+                sejong['profile']=sejong_profile([by_id[i]['text'] for i in ids])
+            result=(ids,[{**public_block(by_id[i]),'plan':{'requests':plans[i]['requests']}} for i in ids],sejong)
+            break
+        state['current']+=1;state['attempt']=1;state.pop('active',None);changed=True
+    if result is None and state.pop('active',None) is not None:
+        changed=True
+    if changed:
+        save(job/'job.json',state)
+    return result
 
 def next_batch(job,state,manifest):
     output_chars = manifest['sourceChars'] + sum(
@@ -54,8 +102,18 @@ def next_batch(job,state,manifest):
     preview={'preview':'\n\n'.join(f"[{b['location']}]\n" + (apply_edits(b,state['accepted'][b['id']]) if state['status']=='done' and state['accepted'].get(b['id']) else b['text']) for b in manifest['blocks'])}
     if state['status']=='done':
         return {'status':'done','outputPath':state['outputPath'],'restoredBlocks':state['restored'],**base,**preview}
+    plan=v2_batch(job,state,manifest) if sejong_v2() else None
     if state['current']>=len(manifest['batches']):
         return {'status':'ready-to-finalize',**base,**preview}
+    if plan:
+        ids,blocks,sejong=plan
+        batch={'schemaVersion':1,'batchId':str(state['current']+1),'sourceHash':state['sourceHash'],'blocks':blocks,'sejong':sejong}
+        file=job/f"batch-{state['current']+1}.json"
+        save(file,batch)
+        # v2 sends no rulebook: there is no rulesPath, the plan travels in the batch itself.
+        return {'status':'rewrite','chunk':state['current']+1,'attempt':state['attempt'],
+                'inputPath':str(file),'responsePath':str(job/f"response-{state['current']+1}-{state['attempt']}.json"),
+                'schemaPath':str(Path(__file__).parent/'response-schema.json'),**base,**preview}
     ids=manifest['batches'][state['current']]
     batch={'schemaVersion':1,'batchId':str(state['current']+1),'sourceHash':state['sourceHash'],
            'blocks':[public_block(b) for b in manifest['blocks'] if b['id'] in ids]}
@@ -72,7 +130,15 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
     if response.stat().st_size>2*1024**2:
         raise DocumentError('모델 응답이 너무 큽니다.')
     value=json.loads(response.read_text(encoding='utf-8-sig'))
-    ids=manifest['batches'][state['current']]
+    v2=sejong_v2()
+    if v2:
+        # v2 asks only the blocks that need the writer (and, on attempt 2, only the failed ones): v2_batch recorded which.
+        active=state.get('active')
+        if not isinstance(active,dict) or active.get('chunk')!=chunk or active.get('attempt')!=attempt:
+            raise DocumentError('다른 작업 또는 이전 시도의 응답입니다.')
+        ids=active['ids']
+    else:
+        ids=manifest['batches'][state['current']]
     if not isinstance(value,dict):
         raise DocumentError('문서 응답 형식이 잘못되었습니다.')
     version=value.get('schemaVersion')
@@ -97,7 +163,8 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
     # Model text is untrusted document content and must not become a public warning.
     warnings=['모델이 검토 주의 사항을 제시했습니다. 원문과 결과를 확인해 주세요.'] if warnings else []
     by_id={b['id']:b for b in manifest['blocks']}
-    pending={id:[] for id in ids if id not in item_ids}; failures=[]
+    pending={id:[] for id in ids if id not in item_ids}; failures=[]; named={}; dropped=[]
+    budget=active['review'] if v2 else 0
     for item in items:
         block=by_id[item['id']]
         if item.get('sourceHash')!=block['sourceHash']:
@@ -105,14 +172,37 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
         try:
             edits=resolve_edits(block,item.get('edits')) if version==2 else item.get('edits')
             apply_edits(block,edits)
+            if v2 and edits:
+                # v2: only the requested sentences may change, plus at most `review` others when the plan allows
+                # an open review. The excess is dropped in reply order, without a retry (as in the chunk path).
+                nominated=len(sejong_nominations(block,edits,active['asked'].get(block['id'],())))
+                if nominated>budget:
+                    dropped.append((block,'열린 검토 한도를 넘어 요청하지 않은 문장을 수정했습니다' if active['review'] else '요청하지 않은 문장을 수정했습니다'))
+                    edits=[]
+                else:
+                    budget-=nominated
             pending[block['id']]=edits
         except DocumentError as exc:
             failures.append((block,str(exc)))
+            named[block['id']]=exc
+    for reason in dict.fromkeys(r for _,r in dropped):
+        same=[b for b,r in dropped if r==reason]
+        state['restored']+=len(same)
+        # one notice per reason, so a long document does not flood the review list
+        state['warnings'].append(f"{same[0]['location']}{' 등 %d개 블록' % len(same) if len(same)>1 else ''}: 원문을 유지했습니다 ({reason})")
     if failures and attempt==1:
         state['attempt']=2
         state['warnings'] += [f"{b['location']}: 편집 검증 후 재시도합니다 ({reason})" for b,reason in failures]
+        if v2:
+            # Only the failed blocks go back to the writer, each with its named violations; the blocks that
+            # passed keep their verified edits.
+            state['carry']={i:e for i,e in pending.items() if e}
+            state['retry']={b['id']:{'message':reason,'violations':list(getattr(named[b['id']],'violations',[]))} for b,reason in failures}
         decision='retry'
     else:
+        if v2:
+            state['accepted'].update(state.pop('carry',{}))
+            state.pop('retry',None); state.pop('active',None)
         state['accepted'].update(pending)
         for b,reason in failures:
             state['accepted'][b['id']]=[]
@@ -144,6 +234,8 @@ def dispatch(args,root,vendor):
         raw=job/('original.'+state['format'])
         if digest(raw.read_bytes())!=state['sourceHash'] or digest((job/'document.json').read_bytes())!=state['manifestHash']:
             raise DocumentError('원본 또는 문서 manifest가 변경되었습니다.')
+        if bool(state.get('engine'))!=sejong_v2() or (state.get('engine') and state['engine']!=sejong_engine()):
+            raise DocumentError('작업을 시작한 윤문 엔진과 현재 설정이 다릅니다. 문서를 다시 선택해 주세요.')
         manifest=json.loads((job/'document.json').read_text(encoding='utf-8'))
         if args.command=='next':
             return next_batch(job,state,manifest)
