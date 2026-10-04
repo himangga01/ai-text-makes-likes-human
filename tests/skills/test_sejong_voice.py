@@ -443,3 +443,13 @@ class PerformanceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SpacingFixesAreVoiceNeutral(unittest.TestCase):
+    def test_bound_noun_spacing_does_not_change_the_honorific_count(self):
+        from sejong.voice_gate import compare_texts
+        for before, after in (("신청하실수 있습니다.", "신청하실 수 있습니다."), ("방문하실때 연락 주세요.", "방문하실 때 연락 주세요."),
+                              ("말씀하신것을 확인했습니다.", "말씀하신 것을 확인했습니다."), ("확인해주세요.", "확인해 주세요.")):
+            with self.subTest(before=before):
+                self.assertEqual(compare_texts(before, after), [])
+        self.assertTrue(compare_texts("신청하실 수 있습니다.", "신청할 수 있습니다."))

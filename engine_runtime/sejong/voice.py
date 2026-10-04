@@ -98,8 +98,9 @@ _TIME_GGE = frozenset("달날말일월초순시년")                            
 _OPEN_SYLLABLE = "".join(chr(0xAC00 + 28 * k) for k in range(399))
 _SI_ANY = re.compile(
     r"(?<=[" + _OPEN_SYLLABLE + r"])(?:시(?=[는고면며기지어겠었다니네오죠라나던든잖거길게]|$)|셨|셔(?=[서야요도라])"
-    r"|세요|십(?=[니시])|신(?=\s|$|[가건데지다대걸게겐])|실(?=[게께래걸테텐]|까(?!지))"
-    r"|실(?=\s+(?:(?:수|것|분|줄|리|뿐|만큼|텐데|때|경우|예정|계획|곳)(?:[이가은는을를도만에의]|에는|에도|들)?(?![가-힣])"
+    r"|세요|십(?=[니시])|신(?=\s|$|[가건데지다대걸게겐]|것)|실(?=[게께래걸테텐]|까(?!지))"
+    # \s* (not \s+): the deterministic spacing fix 하실수 → 하실 수 must not look like an added -시-.
+    r"|실(?=\s*(?:(?:수|것|분|줄|리|뿐|만큼|텐데|때|경우|예정|계획|곳)(?:[이가은는을를도만에의]|에는|에도|들)?(?![가-힣])"
     r"|거|건|겁)))"
     r"|" + _HON["si_lexical"])
 _PERSONA = {key: re.compile(rx) for key, rx in LEX["persona"].items()}
@@ -381,6 +382,10 @@ def _hon_si_final(masked: str) -> bool:
     tail = words[-1]
     if len(words) >= 2 and re.match(r"(?:것|거|건|겁|게|겐|싶|있|않|없|같)", words[-1]):
         tail = words[-2] + " " + words[-1]
+        # A spaced bound noun ("하실 수 있습니다") belongs to the same complex as the glued "하실수 있습니다",
+        # so the deterministic spacing fix cannot move -시- out of the final predicate.
+        if len(words) >= 3 and re.fullmatch(r"(?:수|것|줄|리|뿐|때|적|바|데)(?:[가는를을도만]|밖에)?", words[-2]):
+            tail = words[-3] + " " + tail
     return si_count(tail) > 0
 
 
