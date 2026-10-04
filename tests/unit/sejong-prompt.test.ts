@@ -219,6 +219,37 @@ describe('buildSejongPrompt, attempt 2', () => {
     expect(violationKo({ code: 'voice_level', detail: 'HAEYO->NONE' })).toBe('말투가 해요체에서 종결 없음으로 바뀌었다(voice_level).');
     expect(violationKo({ code: 'cta_dropped', detail: 'C1' })).toBe('행동 요청(CTA)이 사라졌다(cta_dropped).');
   });
+
+  // Every code the v2 check can put on a retry entry (DESIGN 3.6, 3.8, WP-10 apply/check, WP-10b meaning codes).
+  const RETRY_CODES = [
+    'empty_output', 'quote_altered', 'heading_lost', 'heading_absorbed', 'footnote_count', 'footnote_numbers', 'footnote_def',
+    'footnote_anchor', 'number_injected', 'number_dropped', 'quantity_changed', 'name_changed', 'sentence_dropped',
+    'protected_span_changed', 'josa_mismatch',
+    'polarity_changed', 'modality_changed', 'lexical_polarity_changed', 'participant_role_changed', 'aspect_changed',
+    'partial_negation_changed', 'content_dropped', 'temporal_order_changed',
+    'voice_level', 'voice_mood', 'voice_hon_si_dropped', 'voice_hon_si_added', 'voice_quote_level', 'voice_split_level',
+    'voice_merge_across_levels', 'voice_merge_lost_mood', 'voice_merge_lost_hon_si', 'voice_inserted_level', 'voice_stance',
+    'voice_persona_swap', 'voice_persona_dropped', 'voice_persona_added', 'voice_humble_dropped', 'voice_humble_added',
+    'voice_hon_noun_changed', 'voice_emoticon_dropped', 'voice_emoticon_added', 'voice_colloquial_changed',
+    'voice_discourse_dropped', 'voice_colloquial_added', 'voice_hon_si_elsewhere', 'voice_written_upshift',
+    'cta_dropped', 'cta_invented', 'cta_force_weakened', 'cta_force_strengthened', 'cta_polarity_flipped', 'cta_action_changed',
+    'cta_action_count_changed', 'cta_condition_changed', 'cta_deadline_changed', 'cta_channel_changed', 'cta_benefit_dropped',
+    'cta_object_changed', 'cta_action_replaced', 'cta_moved', 'cta_to_deontic', 'cta_from_deontic', 'cta_offer_dropped',
+    'flow_transition_added', 'flow_contrast_changed', 'flow_paragraph_count_changed', 'flow_order_changed', 'flow_duplicate',
+    'flow_context_leak', 'flow_seam_connective_changed', 'flow_sentence_added',
+    'clarity_longer_sentence', 'clarity_bare_demonstrative_added', 'clarity_agentless_oblig_added', 'clarity_acronym_gloss_dropped',
+    'clarity_number_marker_changed', 'clarity_list_structure_changed', 'norm_introduced', 'tell_introduced', 'change_rate_runaway',
+    'collateral_edit', 'model_output_unusable', 'replacement_newline', 'replacement_length_ratio', 'replacement_split',
+    'replacement_boundary', 'replacement_merge', 'replacement_frozen_unit', 'open_review_limit', 'unstable_decision'
+  ];
+
+  it('words every retry code in Korean, without the generic fallback', () => {
+    for (const code of RETRY_CODES) expect(violationKo({ code, detail: '' }), code).not.toMatch(/^검증에 걸렸다/u);
+    expect(new Set(RETRY_CODES.map(code => violationKo({ code, detail: '' }).replace(`(${code}).`, ''))).size).toBe(RETRY_CODES.length);
+    expect(violationKo({ code: 'replacement_boundary', detail: 'boundary' })).toBe('문장 끝이 사라져 다음 문장과 이어졌다(replacement_boundary).');
+    expect(violationKo({ code: 'content_dropped', detail: '2', keep: '함께, 미리' })).toBe('원문에 있던 내용어가 빠졌다(content_dropped). 빠진 말: 「함께, 미리」.');
+    expect(violationKo({ code: 'temporal_order_changed', detail: '' })).toBe('전후·시간 순서가 바뀌었다(temporal_order_changed).');
+  });
 });
 
 describe('buildSejongPrompt guards', () => {

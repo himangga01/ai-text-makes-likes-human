@@ -31,7 +31,8 @@ export interface CodexRunnerOptions {
   resultParser?: typeof parseEngineResult;
   codexCommand: string;
   schemaPath: string;
-  quickRulesPath: string;
+  /** Legacy rulebook sent by transform(); runPrompt (Super Sejong v2) sends none and does not need it. */
+  quickRulesPath?: string;
   timeoutMs: number;
   runner: CommandRunner;
   permitPool: CodexPermitPool;
@@ -114,12 +115,14 @@ export class CodexRunner {
     this.options = {
       ...options,
       schemaPath: path.resolve(options.schemaPath),
-      quickRulesPath: path.resolve(options.quickRulesPath)
+      ...(options.quickRulesPath === undefined ? {} : { quickRulesPath: path.resolve(options.quickRulesPath) })
     };
   }
 
   private quickRules(): Promise<string> {
-    this.quickRulesPromise ??= readFile(this.options.quickRulesPath, "utf8");
+    const rulesPath = this.options.quickRulesPath;
+    if (rulesPath === undefined) return Promise.reject(new Error("The legacy prompt needs quickRulesPath"));
+    this.quickRulesPromise ??= readFile(rulesPath, "utf8");
     return this.quickRulesPromise;
   }
 
@@ -150,6 +153,43 @@ export class CodexRunner {
     }
     const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
 
+    await this.exec(prompt, this.options.schemaPath, resultPath, signal, selection);
+
+    try {
+      const raw = await readFile(resultPath, "utf8");
+      return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex', options);
+    } catch (error) {
+      if (error instanceof EngineError) throw error;
+      throw invalid("Codex result file is missing", error);
+    }
+  }
+
+  /** Super Sejong v2 (DESIGN 4.3, 5.2 SejongWriter): sends a ready prompt with the given output schema and
+   * returns the final message unparsed; the caller validates it (sejong/response.ts). No rulebook is read. */
+  async runPrompt(
+    prompt: string,
+    schemaPath: string,
+    outputPath: string,
+    signal: AbortSignal,
+    settings?: ModelSettings
+  ): Promise<string> {
+    const selection = parseModelSettings('codex', settings?.model, settings?.effort);
+    const resultPath = path.resolve(outputPath);
+    await this.exec(prompt, path.resolve(schemaPath), resultPath, signal, selection);
+    try {
+      return await readFile(resultPath, "utf8");
+    } catch (error) {
+      throw invalid("Codex result file is missing", error);
+    }
+  }
+
+  private async exec(
+    prompt: string,
+    schemaPath: string,
+    resultPath: string,
+    signal: AbortSignal,
+    selection: ModelSettings
+  ): Promise<void> {
     await rm(resultPath, { force: true });
     const isolatedCwd = await mkdtemp(path.join(os.tmpdir(), "humanize-codex-"));
     let command;
@@ -180,7 +220,7 @@ export class CodexRunner {
           "--sandbox",
           "read-only",
           "--output-schema",
-          this.options.schemaPath,
+          schemaPath,
           "--output-last-message",
           resultPath,
           "-"
@@ -209,14 +249,6 @@ export class CodexRunner {
     if (rejection) throw modelUnavailable("Codex", rejection);
     if (command.exitCode !== 0) {
       throw engineFailed("Codex", failureReason(command.exitCode, command.stderr));
-    }
-
-    try {
-      const raw = await readFile(resultPath, "utf8");
-      return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex', options);
-    } catch (error) {
-      if (error instanceof EngineError) throw error;
-      throw invalid("Codex result file is missing", error);
     }
   }
 }

@@ -1,13 +1,18 @@
 /** Super Sejong Engine v2 writer-reply parser (DESIGN.md 3.5 output schema, 3.6 whole-response rules).
  * The reply must match response-schema.json exactly (hand-coded here, pinned to the file by
- * tests/unit/sejong-response.test.ts). On top of the schema:
- * - every id names a request of the plan (or of the retry list on attempt 2); no id twice;
- * - `S…` ids only when the plan enables the open review, never for a requested sentence, at most
- *   plan.openReview.maxSentences of them;
- * - `rewrittenText` non-empty only when plan.options.allowFullText, on attempt 1, with no replacements.
+ * tests/unit/sejong-response.test.ts). The whole-reply rules are the ones engine_runtime/sejong/apply.py
+ * applies, so this side and the Python check never disagree on whether a reply is usable:
+ * - every R id names a request of the plan; an S id names a plan sentence and needs the open review
+ *   (an S id of a requested sentence stands for that request); no id twice, no sentence twice;
+ * - `rewrittenText` non-blank only when plan.options.allowFullText, on attempt 1, with no replacements.
  * Any of these makes the whole reply unusable (MODEL_OUTPUT_UNUSABLE, which counts as the attempt).
- * A newline inside one replacement's text rejects that replacement only (3.6: status `rejected`,
- * eligible for retry); the reply stays usable. Error messages carry codes and ids, never reply text.
+ * Per-replacement problems reject that replacement only (3.6) and the reply stays usable:
+ * - a newline in the text (replacement_newline, eligible for retry; Python rejects it the same way);
+ * - open-review nominations beyond plan.openReview.maxSentences, in reply order (open_review_limit; Python
+ *   rejects the same ones);
+ * - on attempt 2, an id of the plan that is not on the retry list (not_in_retry): the retry may touch only
+ *   the failed requests (3.5), so `forward` drops it before the reply reaches the check step.
+ * Error messages carry codes and ids, never reply text.
  */
 import { EngineError } from '../errors.js';
 import type { Plan, RetryRequest, SejongReplacement, SejongResponse } from './types.js';
@@ -23,7 +28,7 @@ export const MAX_REPLY_CHARS = 2_000_000;
 export const MODEL_OUTPUT_UNUSABLE = 'MODEL_OUTPUT_UNUSABLE';
 export type UnusableReason =
   | 'too_large' | 'not_json' | 'schema' | 'unknown_id' | 'duplicate_id' | 'duplicate_target'
-  | 'review_disabled' | 'review_limit' | 'full_text_not_allowed' | 'full_text_with_replacements';
+  | 'review_disabled' | 'full_text_not_allowed' | 'full_text_with_replacements';
 
 export class SejongOutputError extends EngineError {
   readonly code = MODEL_OUTPUT_UNUSABLE;
@@ -36,12 +41,14 @@ export class SejongOutputError extends EngineError {
 export interface RejectedReplacement {
   id: string;
   sentence: string;
-  code: 'replacement_newline';
+  code: 'replacement_newline' | 'open_review_limit' | 'not_in_retry';
 }
 
 export interface ParsedSejongReply {
-  /** The schema-valid reply, unchanged (what the Python check receives). */
+  /** The schema-valid reply, unchanged. */
   response: SejongResponse;
+  /** What the Python check receives: the reply without the not_in_retry replacements. */
+  forward: SejongResponse;
   /** Replacements that passed every check this parser can make, in reply order. */
   usable: SejongReplacement[];
   /** Replacements rejected one by one (3.6); the Python apply step rejects them the same way. */
@@ -123,26 +130,21 @@ export function readSejongReply(raw: string, plan: Plan, options: ParseReplyOpti
 
   const retry = options.retry;
   const sentences = new Set(plan.sentences.map(sentence => sentence.id));
-  const allowed = new Map<string, string>(retry
-    ? retry.map(entry => [entry.id, entry.sentence])
-    : plan.requests.map(request => [request.id, request.sentence]));
+  const requestSentence = new Map(plan.requests.map(request => [request.id, request.sentence]));
   const requested = new Set(plan.requests.map(request => request.sentence));
-  const reviewOn = !retry && plan.openReview.enabled;
+  const retryIds = retry ? new Set(retry.map(entry => entry.id)) : undefined;
   const seen = new Set<string>();
   const targeted = new Set<string>();
   const targets: Record<string, string> = {};
-  let nominated = 0;
 
   for (const [index, item] of response.replacements.entries()) {
     const at = `$.replacements[${index}].id`;
     if (seen.has(item.id)) return fail('duplicate_id', at);
     seen.add(item.id);
-    let sentence = allowed.get(item.id);
+    let sentence = requestSentence.get(item.id);
     if (sentence === undefined) {
       if (!item.id.startsWith('S') || !sentences.has(item.id)) return fail('unknown_id', at);
-      if (!reviewOn) return fail('review_disabled', at);
-      if (requested.has(item.id)) return fail('duplicate_target', at);
-      if (++nominated > plan.openReview.maxSentences) return fail('review_limit', at);
+      if (!plan.openReview.enabled) return fail('review_disabled', at);
       sentence = item.id;
     }
     if (targeted.has(sentence)) return fail('duplicate_target', at);
@@ -150,18 +152,38 @@ export function readSejongReply(raw: string, plan: Plan, options: ParseReplyOpti
     targets[item.id] = sentence;
   }
 
-  if (response.rewrittenText.length > 0) {
+  if (response.rewrittenText.trim().length > 0) {
     if (retry || !plan.options.allowFullText) return fail('full_text_not_allowed', '$.rewrittenText');
     if (response.replacements.length > 0) return fail('full_text_with_replacements', '$.rewrittenText');
   }
 
+  // Open-review budget of attempt 1. At attempt 2 only retried nominations come back, and they fitted the
+  // budget at attempt 1 already (a retried sentence went back to its base text, so it holds no slot).
+  let budget = plan.openReview.maxSentences;
+  const retriedSentences = new Set((retry ?? []).map(entry => entry.sentence));
   const usable: SejongReplacement[] = [];
   const rejected: RejectedReplacement[] = [];
+  const forwarded: SejongReplacement[] = [];
   for (const item of response.replacements) {
-    if (LINE_BREAK.test(item.text)) rejected.push({ id: item.id, sentence: targets[item.id]!, code: 'replacement_newline' });
+    const sentence = targets[item.id]!;
+    // An S id of a requested sentence stands for its request, so it may answer that request's retry entry.
+    if (retryIds && !retryIds.has(item.id) && !(requested.has(sentence) && retriedSentences.has(sentence))) {
+      rejected.push({ id: item.id, sentence, code: 'not_in_retry' });
+      continue;
+    }
+    forwarded.push(item);
+    if (!requested.has(sentence) && !retry) {
+      if (budget <= 0) {
+        rejected.push({ id: item.id, sentence, code: 'open_review_limit' });
+        continue;
+      }
+      budget -= 1;
+    }
+    if (LINE_BREAK.test(item.text)) rejected.push({ id: item.id, sentence, code: 'replacement_newline' });
     else usable.push(item);
   }
-  return { ok: true, value: { response, usable, rejected, targets } };
+  const forward = forwarded.length === response.replacements.length ? response : { ...response, replacements: forwarded };
+  return { ok: true, value: { response, forward, usable, rejected, targets } };
 }
 
 /** DESIGN 5.2 signature: the validated reply, or a thrown SejongOutputError (ENGINE_OUTPUT_INVALID).

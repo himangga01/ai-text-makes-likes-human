@@ -3,7 +3,7 @@
  * the requested sentences, the requests themselves and the source as read-only data. Every block that
  * carries document text (requests, sentence list, seam context, source) sits inside its own
  * nonce-delimited boundary, as the legacy prompt-builder.ts does for the source.
- * Nothing imports this module yet: the legacy engine stays the default.
+ * Used by SejongEngine (engine.ts) when SUPER_SEJONG_ENGINE=v2; the legacy engine stays the default.
  */
 import { createHash } from 'node:crypto';
 import {
@@ -211,6 +211,7 @@ const VIOLATION_KO: Record<string, string> = {
   polarity_changed: '긍정·부정이 바뀌었다', modality_changed: '가능·의무·추측 표현이 바뀌었다',
   lexical_polarity_changed: '뜻이 반대인 낱말로 바뀌었다', participant_role_changed: '행위 주체나 대상이 바뀌었다',
   aspect_changed: '진행·완료의 상(-고 있-·-어 있-)이 바뀌었다', partial_negation_changed: '부분 부정의 범위가 바뀌었다',
+  content_dropped: '원문에 있던 내용어가 빠졌다', temporal_order_changed: '전후·시간 순서가 바뀌었다',
   voice_level: '말투가 바뀌었다', voice_mood: '문장 유형이 바뀌었다', voice_hon_si_dropped: "'-시-'가 빠졌다",
   voice_hon_si_added: "원문에 없던 '-시-'가 들어갔다", voice_hon_si_elsewhere: "'-시-'의 자리가 바뀌었다",
   voice_quote_level: '인용 안의 말투가 바뀌었다', voice_split_level: '나눈 문장의 말투가 원문과 다르다',
@@ -218,7 +219,8 @@ const VIOLATION_KO: Record<string, string> = {
   voice_merge_lost_hon_si: "문장을 합치며 '-시-'가 사라졌다", voice_inserted_level: '새로 들어간 문장의 말투가 다르다',
   voice_stance: '종결 어미의 결이 바뀌었다', voice_persona_swap: '화자 표현(저·나·저희·우리)이 바뀌었다',
   voice_persona_dropped: '화자 표현(저·저희)이 빠졌다', voice_persona_added: '원문에 없던 화자 표현이 들어갔다',
-  voice_humble_dropped: '드리다 같은 겸양 표현이 빠졌다', voice_emoticon_dropped: 'ㅋㅋ·^^ 같은 표기가 빠졌다',
+  voice_humble_dropped: '드리다 같은 겸양 표현이 빠졌다', voice_humble_added: '원문에 없던 겸양 표현이 들어갔다',
+  voice_hon_noun_changed: '고객님 같은 높임 호칭이 바뀌었다', voice_emoticon_dropped: 'ㅋㅋ·^^ 같은 표기가 빠졌다',
   voice_emoticon_added: '원문에 없던 ㅋㅋ·^^ 같은 표기가 들어갔다', voice_colloquial_changed: '할께 같은 표기가 바뀌었다',
   voice_colloquial_added: '원문에 없던 구어 표기가 들어갔다', voice_discourse_dropped: '사실·뭐·진짜 같은 담화 표지가 빠졌다',
   voice_written_upshift: '구어 표현이 문어로 바뀌었다',
@@ -240,7 +242,10 @@ const VIOLATION_KO: Record<string, string> = {
   norm_introduced: '맞춤법·띄어쓰기 오류가 새로 생겼다', tell_introduced: '상투적인 표현이 새로 늘었다',
   change_rate_runaway: '원문이 지나치게 많이 바뀌었다',
   collateral_edit: '요청 밖 문장이 바뀌었다', replacement_newline: '결과에 줄바꿈이 들어갔다',
-  replacement_length_ratio: '결과 길이가 원문 문장과 너무 다르다', model_output_unusable: '답의 형식을 쓸 수 없었다'
+  replacement_length_ratio: '결과 길이가 원문 문장과 너무 다르다', model_output_unusable: '답의 형식을 쓸 수 없었다',
+  replacement_split: '나누지 말아야 할 문장이 나뉘었다', replacement_boundary: '문장 끝이 사라져 다음 문장과 이어졌다',
+  replacement_merge: '다른 문장과 합쳐졌다', replacement_frozen_unit: '고칠 수 없는 문장(제목 등)을 골랐다',
+  open_review_limit: '열린 검토로 고를 수 있는 문장 수를 넘었다', unstable_decision: '고친 결과가 검증에서 안정되지 않았다'
 };
 
 /** One violation in Korean, e.g. `말투가 합쇼체에서 해요체로 바뀌었다(voice_level). 종결 「없습니다.」 형태를 유지하라.`
@@ -255,8 +260,10 @@ export function violationKo(violation: SejongViolation): string {
   if (levels) phrase = `말투가 ${levels[0]}에서 ${ro(levels[1])} 바뀌었다`;
   else if (moods) phrase = `문장 유형이 ${moods[0]}에서 ${ro(moods[1])} 바뀌었다`;
   else if (modality) phrase = `${phrase}: ${modality[0]} → ${modality[1]}`;
-  const keep = typeof violation.keep === 'string' && violation.keep.trim()
-    ? ` ${code.startsWith('voice_') ? '종결 ' : ''}「${violation.keep}」 형태를 유지하라.` : '';
+  const kept = typeof violation.keep === 'string' && violation.keep.trim() ? violation.keep : '';
+  const keep = !kept ? ''
+    : code === 'content_dropped' ? ` 빠진 말: 「${kept}」.`
+      : ` ${code.startsWith('voice_') ? '종결 ' : ''}「${kept}」 형태를 유지하라.`;
   return `${phrase}(${code}).${keep}`;
 }
 
