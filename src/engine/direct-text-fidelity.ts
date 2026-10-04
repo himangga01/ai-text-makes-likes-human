@@ -1,7 +1,9 @@
 /** Deterministic, conservative protection; this is not a semantic equivalence model. */
 export interface SourceSentence { start: number; end: number; text: string; protected: boolean; concepts: string[] }
 const segmenter = new Intl.Segmenter('ko', { granularity: 'sentence' });
-const functionalNouns = new Set(['것','이것','그것','저것','수','중','등','점','경우','작업','수행','방식','부분','측면','통해','대해']);
+const functionalNouns = new Set(['것','이것','그것','저것','수','중','등','점','경우','작업','수행','방식','부분','측면','통해','대해',
+  // Light nouns of 하다/되다 constructions; dropping them is the usual fix ("진행이 가능하다" → "할 수 있다").
+  '진행','실시','시행']);
 // Match the complete remainder of a token, never just a particle-like prefix
 // in a new compound such as 문제의식 or 자료가치. Unknown forms fail closed.
 const conceptSuffixes = new Set([
@@ -15,7 +17,8 @@ const conceptSuffixes = new Set([
   '로부터', '로부터는', '로부터도', '으로부터', '으로부터는', '으로부터도',
   // The same noun used as a 하다/되다 verb keeps the concept ("인정이 됩니다" → "인정됩니다").
   '합니다', '했습니다', '하였습니다', '됩니다', '됐습니다', '되었습니다', '하였다', '되었다',
-  '하는', '되는', '한', '된'
+  '하는', '되는', '한', '된', '할', '될', '하면', '되면', '해야', '돼야', '되어야', '하여야', '하므로', '되므로',
+  '하여', '되어', '해', '돼', '하기', '되기', '함', '됨'
 ]);
 // Used only to prove that a changed protected sentence still occupies its
 // original slot before literal restoration. This does not widen the ordinary
@@ -54,32 +57,66 @@ function risky(text: string): boolean {
 // The elements that make a sentence protected. A protected sentence may be rephrased only when all of them
 // survive unchanged. Freezing whole sentences kept about 72% of the owner's blog sentences from any edit;
 // meaning beyond these markers is still checked by the Python gate (negation, modality, roles, numbers).
-const protectedElementPatterns = [
-  /금지|불가|불허|허용|의무/gu,
-  /[0-9]+(?:[.,:][0-9]+)*/gu,
-  /['"“”‘’「」『』]/gu,
-  /수\s*(?:있|없)|(?:해|하여|어|아)야|않|없|아니|가능|추정|판단|듯|것\s*같|것으로\s*보|(?<!가지)(?<!갖)고\s*있/gu,
-  /(?:^|\s)(?:안|못)(?=\s)|(?<=[가-힣])면(?=\s|,)|경우|때문|조건|이후|이전|전까지|후에|따라서/gu
+// Markers are compared by meaning class, not wording: "진행이 가능하며" → "할 수 있으며" keeps a possibility and
+// "누락되는 경우에는" → "누락되면" keeps a condition. Earlier patterns win, and matched text is blanked so
+// "불가능" counts once as impossibility.
+const markerClasses: Array<[RegExp, string]> = [
+  [/불가능|수\s*없|불가/gu, 'CANNOT'],
+  [/금지|불허/gu, 'FORBID'],
+  [/허용/gu, 'ALLOW'],
+  [/의무|(?:해|하여|어|아|여)야/gu, 'MUST'],
+  [/수\s*있|가능/gu, 'CAN'],
+  [/추정|판단|듯|것\s*같|것으로\s*보/gu, 'HEDGE'],
+  [/않|아니|없|(?:^|\s)(?:안|못)(?=\s)/gu, 'NEG'],
+  [/(?<=[가-힣])면(?=\s|,)|경우|조건/gu, 'COND'],
+  [/때문|따라서/gu, 'CAUSE'],
+  [/이후|이전|전까지|후에/gu, 'ORDER'],
+  [/(?<!가지)(?<!갖)고\s*있/gu, 'PROG']
 ];
 function protectedElements(text: string): string {
+  let rest = text;
   const markers: string[] = [];
-  for (const pattern of protectedElementPatterns.filter((_, index) => index !== 1)) {
-    for (const match of text.matchAll(pattern)) markers.push(match[0].replace(/\s+/gu, ''));
+  for (const [pattern, label] of markerClasses) {
+    rest = rest.replace(pattern, match => { markers.push(label); return ' '.repeat(match.length); });
   }
-  // Numbers keep their order: swapping two values ("12건 … 20건" → "20건 … 12건") changes the facts.
-  const numbers = [...text.matchAll(protectedElementPatterns[1]!)].map(match => match[0]);
-  return `${markers.sort().join('|')}#${numbers.join('|')}`;
+  // Numbers and quotation marks keep their order: swapping two values ("12건 … 20건") changes the facts.
+  const numbers = text.match(/[0-9]+(?:[.,:][0-9]+)*/gu) ?? [];
+  const quotes = text.match(/['"“”‘’「」『』]/gu) ?? [];
+  return `${markers.sort().join('|')}#${numbers.join('|')}#${quotes.join('')}`;
 }
 function explicitSubjects(text: string): string[] {
   // "N이 되다/아니다" marks a complement, not a second subject ("인정이 됩니다", "문제가 아닙니다").
   return [...text.matchAll(/([가-힣A-Za-z]+)(?:은|는|이|가)(?=\s)(?!\s+(?:[되돼됩됐될된]|아니|아닙|아닌))/gu)]
     .filter(match => !isAdnominalVerb(match[0])).map(match => match[0]);
 }
+function argumentNouns(text: string): string[] {
+  const nouns: string[] = [];
+  for (const token of text.match(/[가-힣A-Za-z0-9]+/gu) ?? []) {
+    if (isAdnominalVerb(token)) continue;
+    const noun = token.match(/^([가-힣A-Za-z0-9]+?)(?:에게|에서|으로|은|는|이|가|을|를|에|로|와|과|의)$/u)?.[1];
+    if (noun && !functionalNouns.has(noun)) nouns.push(noun);
+  }
+  return nouns;
+}
+/** Nouns that still appear in the rewrite keep their relative order, so no two participants or values swapped. */
+function argumentOrderPreserved(original: string, rewritten: string): boolean {
+  const tokens = rewritten.match(/[가-힣A-Za-z0-9]+/gu) ?? [];
+  let last = -1;
+  for (const noun of argumentNouns(original)) {
+    const position = tokens.findIndex(token => token.startsWith(noun));
+    if (position < 0) continue;
+    const next = tokens.findIndex((token, index) => index > last && token.startsWith(noun));
+    if (next < 0) return false;
+    last = next;
+  }
+  return true;
+}
 /** A rewritten protected sentence must keep its numbers (in order), quotation marks and possibility/negation/
- * obligation/condition markers. A sentence with several explicit subjects stays verbatim: values and roles can
- * swap between its subjects without any marker changing. */
+ * obligation/condition markers by class. With several explicit subjects its nouns must also keep their order,
+ * because values and roles can swap between subjects without any marker changing. */
 export function preservesProtectedElements(original: string, rewritten: string): boolean {
-  return explicitSubjects(original).length < 2 && protectedElements(original) === protectedElements(rewritten);
+  if (protectedElements(original) !== protectedElements(rewritten)) return false;
+  return explicitSubjects(original).length < 2 || argumentOrderPreserved(original, rewritten);
 }
 export function sourceSentences(source: string): SourceSentence[] {
   const result: SourceSentence[] = [];
@@ -107,10 +144,20 @@ function permitsFunctionalProcessOmission(source: string, candidate: string): bo
   return matches.every(match => tokens.includes(`${match[1]}하면서`) || tokens.includes(`${match[1]}하며`) || retained.includes(match[1]));
 }
 
+// The noun used as a 하다/되다/받다 verb ("요청이 이루어질" → "요청받을") keeps the concept; a new compound
+// noun ("문제의식", "자료가치") does not, because its remainder starts with another syllable.
+const verbalStem = /^(하|한|할|함|합|해|했|되|된|될|됨|됩|돼|됐|받)(.*)$/u;
+const verbalTails = new Set(['', '다', '니다', '습니다', '는', '은', '을', '고', '며', '면', '서', '어', '아', '여', '야', '도',
+  '지', '기', '게', '요', '어요', '아요', '었다', '았다', '었고', '았고', '었습니다', '았습니다', '는지', '는데', '으면', '으며',
+  '므로', '니까', '지만', '면서', '도록', '려면', '어서', '아서', '여서', '던', '었던', '았던', '는다']);
+function isVerbalRealization(remainder: string): boolean {
+  const match = remainder.match(verbalStem);
+  return Boolean(match && verbalTails.has(match[2]!));
+}
 function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, suffixes = conceptSuffixes): boolean {
   const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
   return original.concepts.every(term => (term === '과정' && permitsFunctionalProcessOmission(original.text, rewritten.text)) || tokens.some(token =>
-    token.startsWith(term) && suffixes.has(token.slice(term.length))
+    token.startsWith(term) && (suffixes.has(token.slice(term.length)) || isVerbalRealization(token.slice(term.length)))
   ));
 }
 

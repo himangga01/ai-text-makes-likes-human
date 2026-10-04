@@ -112,16 +112,17 @@ class DirectGatewayTest(unittest.TestCase):
         self.call("finalize", "--job", state["job"], "--output", self.root / "final.md",
                   "--comparison-output", self.root / "compare.html", succeeds=False)
 
-    def test_very_strong_restores_protected_then_preserves_valid_edits(self):
+    def test_very_strong_keeps_valid_edits_including_a_protected_sentence_whose_elements_survive(self):
         source = "이번 검토에서 중요한 것은 자료의 정확성이다. 담당자는 자료의 정리 작업을 수행한다.\n\n이 방안은 강한 경쟁력을 가지고 있다. 운영 과정에 있어서 검토 기록은 중요한 역할을 수행한다.\n\n회의에서는 초안과 관련된 내용을 논의했다. 작성자는 검토 의견을 반영하는 작업을 진행했다.\n\n자료의 구분이 이루어지고 기록의 정리가 진행된다. 문서의 핵심은 검토 결과를 명확하게 전달하는 것이다.\n"
         candidate = "이번 검토에서는 자료의 정확성이 중요하다. 담당자는 자료를 정리한다.\n\n이 방안은 경쟁력이 강하다. 운영 과정에서 검토 기록의 역할은 중요하다.\n\n회의에서는 초안에 관한 내용을 논의했다. 작성자는 검토 의견을 반영했다.\n\n자료를 구분하고 기록을 정리한다. 검토 결과를 명확하게 전달하는 것이 문서의 핵심이다.\n"
         self.input.write_text(source, encoding="utf-8")
         state = self.accept(self.prepare("very-strong"), candidate)
-        self.assertEqual(state["restoration"]["restoredProtectedSentences"], 1)
+        # "자료의 구분이 이루어지고 기록의 정리가 진행된다" keeps its nouns in order and has no protected marker to lose.
+        self.assertEqual(state["restoration"]["restoredProtectedSentences"], 0)
         self.assertEqual(state["status"], "ready-to-finalize")
-        output = self.root / "restored.md"
+        output = self.root / "accepted.md"
         self.call("finalize", "--job", state["job"], "--output", output)
-        self.assertEqual(output.read_text(encoding="utf-8"), candidate.replace("자료를 구분하고 기록을 정리한다.", "자료의 구분이 이루어지고 기록의 정리가 진행된다."))
+        self.assertEqual(output.read_text(encoding="utf-8"), candidate)
 
     def test_real_p1_only_candidate_is_accepted_without_review(self):
         # P1 alone is advisory: the gateway accepts the candidate instead of asking for a candidate review.
