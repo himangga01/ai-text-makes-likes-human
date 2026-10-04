@@ -65,10 +65,12 @@ class NewAxes(unittest.TestCase):
                 self.assertFalse(found & NEW_AXES - {code}, found)
 
     def test_design_examples(self):
-        # DESIGN 8.2 WP-5: 읽고 있다 -> 읽는다 flagged; 읽고 있다 -> 읽는 중이다 accepted.
-        flagged = meaning.compare("그는 책을 읽고 있다.", "그는 책을 읽는다.")
+        # DESIGN 8.2 WP-5 flagged 읽고 있다 -> 읽는다; WP-10b (lead item A) makes progressive -> simple non-past
+        # neutral and keeps progressive -> past/future flagged. 읽고 있다 -> 읽는 중이다 stays accepted.
+        self.assertEqual(meaning.compare("그는 책을 읽고 있다.", "그는 책을 읽는다."), [])
+        flagged = meaning.compare("그는 책을 읽고 있다.", "그는 책을 읽었다.")
         self.assertEqual([v.code for v in flagged], ["aspect_changed"])
-        self.assertEqual((flagged[0].family, flagged[0].severity, flagged[0].detail), ("meaning", "hard", "PROG:1->0"))
+        self.assertEqual((flagged[0].family, flagged[0].severity, flagged[0].detail), ("meaning", "hard", "PROG:1->PAST"))
         self.assertEqual(meaning.compare("그는 책을 읽고 있다.", "그는 책을 읽는 중이다."), [])
         # "모든 …는 것은 아니다" must stay partial.
         self.assertIn("partial_negation_changed",
@@ -78,7 +80,7 @@ class NewAxes(unittest.TestCase):
 
     def test_violation_shape_and_sentence_ids(self):
         src = T.segment("첫 문장은 그대로다. 그는 책을 읽고 있다.")
-        out = T.segment("첫 문장은 그대로다. 그는 책을 읽는다.")
+        out = T.segment("첫 문장은 그대로다. 그는 책을 읽었다.")
         found = meaning.check(src, out)
         self.assertEqual([(v.code, v.sentence) for v in found], [("aspect_changed", "S2")])
         for v in found:

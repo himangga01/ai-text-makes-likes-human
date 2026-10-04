@@ -284,6 +284,12 @@ _I_NOUNS = ("외톨이", "놀이", "토박이", "고양이", "원숭이", "어�
 _I_SUFFIX = re.compile(r"(?:쟁|뱅|둥|박|잡|받|돌|순|퉁|붙|맞|벌|걸)이$")
 
 
+@lru_cache(maxsize=None)
+def _n04_ieoss() -> "re.Pattern":
+    """The closed noun + 이였 entry of misspellings.json (WP-10b): its hits are N04 fixes, not N05 requests."""
+    return next(rx for entry_id, rx, _replace in misspellings("error") if entry_id == "ieoss_closed")
+
+
 def _n05(s: str) -> List[Hit]:
     out: List[Hit] = []
     for m in _N05.finditer(s):
@@ -295,6 +301,8 @@ def _n05(s: str) -> List[Hit]:
         word = s[start:m.start() + 2]                   # the eojeol up to and including 이
         if word.endswith(_I_NOUNS) or _I_SUFFIX.search(word):
             continue
+        if m.group(2) == "였" and _n04_ieoss().match(s, start):
+            continue                                    # the closed SSJ-N04 entry fixes it deterministically
         out.append((m.start() + 1, m.end(), "이었" if m.group(2) == "였" else "이에요"))
     return out
 
@@ -379,9 +387,16 @@ def _a05(s: str) -> List[Hit]:
 
 # ---- SSJ-A06 negative-polarity adverb without negation [T3 §3] ------------------------------
 _NEG = re.compile(r"아닙|아님|어려|힘든|힘듭|힘들|드뭅|않|(?<![가-힣])안\s?[가-힣]|(?<![가-힣])안(?=[\s.])|못|없|아니|아닌|아냐|아녜|"
-                  r"말(?:고|라|아|자|것)|모르|모른|몰라|몰랐|불가능|어렵|싫|금물|드물|쉽지|는커녕|\?|뿐이|만\s|밖에")
-_A06 = re.compile(r"(?<![가-힣])(결코|좀처럼|차마|전혀)(?![가-힣])")
+                  r"말(?:고|라|아|자|것)|모르|모른|몰라|몰랐|불가능|어렵|싫|금물|드물|쉽지|는커녕|\?|뿐이|만\s|밖에|"
+                  r"금지|금합|금한|금하|엄금|사절|불가")
+# WP-10b: 별로, 도저히 and 일절 joined the closed list (seed AGREE items SSB-044/185 별로, SSB-049 도저히,
+# SSB-190 일절: each gold fix adds the negation, so the request's polarity licence applies). 거의 stays out:
+# "거의 다", "거의 모든", "거의 매일" are ordinary positive uses. 일절 with a particle (애국가 일절을) is the
+# noun 一節 and never matches, because a Hangul syllable may not follow; prohibition (반입 일절 금지, 사절)
+# counts as the negation. 별로 followed by a word of filling or shining is the noun 별 + 로 (별로 가득한 하늘).
+_A06 = re.compile(r"(?<![가-힣])(결코|좀처럼|차마|전혀|별로|도저히|일절)(?![가-힣])")
 _JEONHYEO_OK = re.compile(r"\s*(?:다르|다른|달라|달랐|달리|다릅|새롭|새로운|딴|반대|예상\s?밖|의외|생소|낯설|무관|별개|엉뚱|상반)")
+_BYEOLRO_STAR = re.compile(r"\s*(?:가득|빛나|빛난|반짝|뒤덮|수놓|장식|꾸미|꾸민|꾸며)")
 
 
 def _a06(s: str) -> List[Hit]:
@@ -389,6 +404,8 @@ def _a06(s: str) -> List[Hit]:
     for m in _A06.finditer(s):
         rest = s[m.end():]
         if m.group(1) == "전혀" and _JEONHYEO_OK.match(rest):
+            continue
+        if m.group(1) == "별로" and _BYEOLRO_STAR.match(rest):
             continue
         if not _NEG.search(rest):
             out.append((m.start(), m.end(), None))

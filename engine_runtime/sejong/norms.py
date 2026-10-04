@@ -11,8 +11,9 @@ Guarantees, each pinned by tests/skills/test_sejong_diagnose.py:
                   side is outside its pattern)
   voice-neutral   no fix changes a sentence's level, mood, -시- (final or embedded), humble form or
                   persona (OD 4): fixes touch spacing, one stem syllable or a closed spelling, never an
-                  ending's level or an honorific; forms whose spelling the voice regex reads differently
-                  (뵈요 -> 봬요) are kept out of the list on purpose
+                  ending's level or an honorific; a form whose spelling the voice regex reads differently
+                  is kept out of the list until voice reads both spellings alike (뵈요 -> 봬요 and
+                  뵜 -> 뵀 joined in WP-10b, once voice_lexicon.json listed 봬/뵀/뵜 as humble)
   protected       a finding that touches a freeze or keep-token span is never applied
 
 introduced(src, out) is the "norms" verification family of 3.8: norm_introduced (hard) when the

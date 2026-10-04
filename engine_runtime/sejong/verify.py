@@ -21,7 +21,8 @@ from sentence ids) and skips identical pairs, so verify(x, x) costs one segmenta
   runaway   change_rate >= RUNAWAY on the whole chunk or document                 always enforced
 
 A violation of a family in mode "off" is dropped, one in "shadow" is reported in shadowFailures only, and
-one in "enforce" (hard or soft) is acted on. Families whose mode is off are not computed at all.
+one in "enforce" (hard or soft) is acted on. A code in config.SHADOW_CODES (content_dropped) is shadow even
+when its family enforces. Families whose mode is off are not computed at all.
 
 Gate JSON (verify_document, the `verify` CLI and workflow.py under SUPER_SEJONG_ENGINE=v2): exactly the
 legacy keys gate.exit_code, hardFailures, warningReasons {version: 1, codes}, policy, shadowFailures
@@ -107,7 +108,8 @@ def mode_of(flags: C.Flags, violation: Violation) -> str:
     if family in ("flow", "clarity"):
         return FL.violation_mode(flags, violation)
     if family in C.OVERRIDABLE:
-        return C.family_mode(flags, family)
+        mode = C.family_mode(flags, family)
+        return "shadow" if mode == "enforce" and violation.code in C.SHADOW_CODES else mode
     return "enforce"                       # floor, runaway and the check step's own codes
 
 

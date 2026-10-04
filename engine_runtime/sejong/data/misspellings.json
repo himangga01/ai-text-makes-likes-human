@@ -3,7 +3,6 @@
  "version": 1,
  "about": "Closed, hand-written misspelling list of SSJ-N04 (class error, FIX/deterministic, OD 3 and lead decision 9.2a item 1) and SSJ-N04c (class colloquial, the 할께 family: LEAVE unless SUPER_SEJONG_FIX_COLLOQUIAL=1, OD 2). pattern is a Python regex applied outside freeze spans; {RIEUL} expands to every Hangul syllable with final ㄹ. replace is a re template. examples are [wrong, fixed] pairs and exclusions are strings that must not match; tests/skills/test_sejong_diagnose.py checks both for every entry. norm cites the article or dictionary entry the correction follows; no dictionary text is copied. New entries need a native-editor review before they are added (T9 D1).",
  "excluded_on_purpose": {
-  "뵈요→봬요": "the voice regex of T2 knows 뵈 but not 봬 as a humble form; enabling it would flip humble",
   "설레임→설렘": "collides with a product name",
   "구지→굳이": "collides with place names (구지면, 구지봉)",
   "바램→바람": "빛바램/색 바램 are valid nouns of 바래다; SUGGEST at most, like 바래요 (CTA-BARAE)",
@@ -134,6 +133,97 @@
    ],
    "exclusions": [
     "됐습니다"
+   ]
+  },
+  {
+   "id": "bwaeyo",
+   "class": "error",
+   "wrong": "뵈요",
+   "right": "봬요",
+   "pattern": "뵈요",
+   "replace": "봬요",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ): 뵈- + -어요 → 봬요, 뵈- + -었- → 뵀",
+   "examples": [
+    [
+     "그날 뵈요!",
+     "그날 봬요!"
+    ],
+    [
+     "내일 학교에서 뵈요.",
+     "내일 학교에서 봬요."
+    ]
+   ],
+   "exclusions": [
+    "뵈어요",
+    "뵙겠습니다",
+    "봬요",
+    "뵐게요"
+   ],
+   "note": "The humble form stays humble: voice_lexicon.json lists 봬/뵀/뵌/뵜 next to 뵈/뵙/뵐 (WP-10b), so the fix keeps level, mood and the humble count (OD 4)."
+  },
+  {
+   "id": "bwaeseo",
+   "class": "error",
+   "wrong": "뵈서",
+   "right": "봬서",
+   "pattern": "뵈서(?=[\\s.,!?…~)]|요|$)",
+   "replace": "봬서",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ): 뵈- + -어요 → 봬요, 뵈- + -었- → 뵀",
+   "examples": [
+    [
+     "직접 뵈서 반가웠습니다.",
+     "직접 봬서 반가웠습니다."
+    ]
+   ],
+   "exclusions": [
+    "뵈어서",
+    "봬서"
+   ]
+  },
+  {
+   "id": "bwaeya",
+   "class": "error",
+   "wrong": "뵈야",
+   "right": "봬야",
+   "pattern": "뵈야(?=[\\s.,!?…~)]|지|겠|만|죠|요|$)",
+   "replace": "봬야",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ): 뵈- + -어요 → 봬요, 뵈- + -었- → 뵀",
+   "examples": [
+    [
+     "한번 뵈야 합니다.",
+     "한번 봬야 합니다."
+    ],
+    [
+     "조만간 뵈야죠.",
+     "조만간 봬야죠."
+    ]
+   ],
+   "exclusions": [
+    "뵈어야",
+    "봬야"
+   ]
+  },
+  {
+   "id": "bwaess",
+   "class": "error",
+   "wrong": "뵜",
+   "right": "뵀",
+   "pattern": "뵜",
+   "replace": "뵀",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ): 뵈- + -어요 → 봬요, 뵈- + -었- → 뵀",
+   "examples": [
+    [
+     "어제 뵜어요.",
+     "어제 뵀어요."
+    ],
+    [
+     "처음 뵜을 때 긴장했습니다.",
+     "처음 뵀을 때 긴장했습니다."
+    ]
+   ],
+   "exclusions": [
+    "뵈었어요",
+    "뵀어요"
    ]
   },
   {
@@ -356,6 +446,37 @@
    "exclusions": [
     "아니었다"
    ]
+  },
+  {
+   "id": "ieoss_closed",
+   "class": "error",
+   "wrong": "(받침 있는 명사)+이였",
+   "right": "이었",
+   "pattern": "(?<![가-힣])(편|것|적|중|뿐|때문|사람|학생|처음|생각|마음|시간|사실|기분|덕분|경험|수준|상황|순간|결과)이였",
+   "replace": "\\1이었",
+   "norm": "이다의 과거형 '이었-'(받침 있는 말 뒤에서는 '였'으로 줄지 않음; SSJ-N05와 같은 규칙, 표준국어대사전 -이다)",
+   "examples": [
+    [
+     "진짜 맛있었는데 가격이 좀 비싼 편이였어.",
+     "진짜 맛있었는데 가격이 좀 비싼 편이었어."
+    ],
+    [
+     "그때 저는 학생이였다.",
+     "그때 저는 학생이었다."
+    ],
+    [
+     "처음이였어요.",
+     "처음이었어요."
+    ]
+   ],
+   "exclusions": [
+    "외톨이였던",
+    "고양이였다",
+    "친구이였다",
+    "남편이였다",
+    "편이었어"
+   ],
+   "note": "Closed list of whole nouns (preceded by a non-Hangul character) whose noun + 이 is not itself a word, so the 외톨이였던 / 고양이였다 trap of T3 (regex 24/30) cannot arise; every other consonant-final case stays the SSJ-N05 request, and a vowel-final noun (친구이였다) is left to N05 as well (WP-10b, lead item C)."
   },
   {
    "id": "adverb_i",

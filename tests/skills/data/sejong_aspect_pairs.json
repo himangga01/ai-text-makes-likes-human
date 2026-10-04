@@ -5,17 +5,17 @@
    "axis": "aspect",
    "source": "그는 지금 책을 읽고 있다.",
    "rewrite": "그는 지금 책을 읽는다.",
-   "label": "change",
-   "expect": "flag",
-   "note": "E-2 rewrite: progressive lost (DESIGN 8.2 WP-5)"
+   "label": "preserve",
+   "expect": "pass",
+   "note": "E-2 rewrite: progressive lost (DESIGN 8.2 WP-5); WP-10b (lead item A): progressive -> simple non-past is neutral (the non-past covers ongoing meaning)"
   },
   {
    "axis": "aspect",
    "source": "정부는 새 제도를 검토하고 있습니다.",
    "rewrite": "정부는 새 제도를 검토합니다.",
-   "label": "change",
-   "expect": "flag",
-   "note": "progressive lost"
+   "label": "preserve",
+   "expect": "pass",
+   "note": "progressive lost; WP-10b (lead item A): progressive -> simple non-past is neutral (the non-past covers ongoing meaning)"
   },
   {
    "axis": "aspect",
@@ -29,17 +29,17 @@
    "axis": "aspect",
    "source": "아이들이 운동장에서 놀고 있어요.",
    "rewrite": "아이들이 운동장에서 놀아요.",
-   "label": "change",
-   "expect": "flag",
-   "note": "progressive lost, 해요체"
+   "label": "preserve",
+   "expect": "pass",
+   "note": "progressive lost, 해요체; WP-10b (lead item A): progressive -> simple non-past is neutral (the non-past covers ongoing meaning)"
   },
   {
    "axis": "aspect",
    "source": "선생님께서 회의를 하고 계십니다.",
    "rewrite": "선생님께서 회의를 하십니다.",
-   "label": "change",
-   "expect": "flag",
-   "note": "honorific progressive -고 계시- lost"
+   "label": "preserve",
+   "expect": "pass",
+   "note": "honorific progressive -고 계시- lost; WP-10b (lead item A): progressive -> simple non-past is neutral (the non-past covers ongoing meaning)"
   },
   {
    "axis": "aspect",
@@ -61,9 +61,9 @@
    "axis": "aspect",
    "source": "지금 자료를 정리하는 중이에요.",
    "rewrite": "지금 자료를 정리해요.",
-   "label": "change",
-   "expect": "flag",
-   "note": "-는 중 lost"
+   "label": "preserve",
+   "expect": "pass",
+   "note": "-는 중 lost; WP-10b (lead item A): progressive -> simple non-past is neutral (the non-past covers ongoing meaning)"
   },
   {
    "axis": "aspect",
@@ -376,6 +376,46 @@
    "label": "preserve",
    "expect": "pass",
    "note": "반드시 is modality, not a universal"
+  },
+  {
+   "axis": "aspect",
+   "source": "이 제품은 사용자에게 편리함을 제공하는 역할을 하고 있습니다.",
+   "rewrite": "이 제품은 사용자에게 편리함을 줍니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "WP-10b lead item A: progressive + role frame -> simple non-past"
+  },
+  {
+   "axis": "aspect",
+   "source": "저희 매장은 오전 10시부터 오후 9시까지 영업을 진행하고 있습니다.",
+   "rewrite": "저희 매장은 오전 10시부터 오후 9시까지 영업합니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "WP-10b lead item A: progressive + light verb -> simple non-past"
+  },
+  {
+   "axis": "aspect",
+   "source": "그는 지금 책을 읽고 있다.",
+   "rewrite": "그는 지금 책을 읽었다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "WP-10b: progressive -> past"
+  },
+  {
+   "axis": "aspect",
+   "source": "물가가 계속 오르고 있다.",
+   "rewrite": "물가가 계속 오를 것이다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "WP-10b: progressive -> future"
+  },
+  {
+   "axis": "aspect",
+   "source": "정부는 새 제도를 검토하고 있습니다.",
+   "rewrite": "정부는 새 제도를 검토하겠습니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "WP-10b: progressive -> future -겠-"
   }
  ]
 }
