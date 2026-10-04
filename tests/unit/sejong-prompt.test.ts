@@ -226,7 +226,7 @@ describe('buildSejongPrompt, attempt 2', () => {
     'footnote_anchor', 'number_injected', 'number_dropped', 'quantity_changed', 'name_changed', 'weekday_changed', 'sentence_dropped',
     'protected_span_changed', 'josa_mismatch',
     'polarity_changed', 'modality_changed', 'lexical_polarity_changed', 'participant_role_changed', 'aspect_changed',
-    'partial_negation_changed', 'content_dropped', 'temporal_order_changed', 'condition_dropped',
+    'partial_negation_changed', 'content_dropped', 'temporal_order_changed', 'condition_dropped', 'key_word_dropped',
     'voice_level', 'voice_mood', 'voice_hon_si_dropped', 'voice_hon_si_added', 'voice_quote_level', 'voice_split_level',
     'voice_merge_across_levels', 'voice_merge_lost_mood', 'voice_merge_lost_hon_si', 'voice_inserted_level', 'voice_stance',
     'voice_persona_swap', 'voice_persona_dropped', 'voice_persona_added', 'voice_humble_dropped', 'voice_humble_added',

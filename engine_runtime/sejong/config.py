@@ -29,10 +29,12 @@ from typing import Dict, List, Mapping, Optional, Tuple
 
 OVERRIDABLE = ("meaning", "voice", "cta", "flow", "clarity", "norms", "nli")
 # Codes that stay in shadow while their family enforces (the flow family keeps its own list in flow.py).
-# content_dropped (meaning, WP-10b): 14 of the 374 seed gold replacements (3.7%) would be blocked, all of them
-# redundancy deletions outside data/redundancy.json or restructurings that drop a word on purpose, so it is
-# measured in shadowFailures until the false-block rate on gold is at most 1% (WP-10b report).
-SHADOW_CODES = ("content_dropped",)
+# content_dropped (meaning, WP-10b): 14/374 seed gold replacements blocked (3.7%). WP-10d licensed the missing
+# redundancy pairs, the light head noun of "N 작업을 진행하다", support verbs (결정을 내리다), postpositional verbs
+# (에 대해서) and a purpose noun carried by 위해: 0/374 on gold. It still stays in shadow, because constructed
+# fluency edits outside the seed (결론적으로 말하자면 -> 결론적으로, 매진을 기록했다 -> 매진되었다) drop words on
+# purpose; the drops that matter are enforced as key_word_dropped (meaning.py). Promote it from real shadow counts.
+SHADOW_CODES: Tuple[str, ...] = ("content_dropped",)
 ALWAYS_ENFORCED = ("floor", "runaway")
 FAMILY_MODES = ("enforce", "shadow", "off")
 _CHOICES = {

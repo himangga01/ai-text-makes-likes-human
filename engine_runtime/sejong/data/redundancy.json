@@ -84,7 +84,7 @@
   },
   {
    "id": "RD_saeroun_sinjepum",
-   "pattern": "새로운 ?신(제품|상품|기록|입|설|간|인|곡|제도)",
+   "pattern": "(?:새로운|새로 (?:출시된|나온|개발된|선보인)) ?신(제품|상품|기록|입|설|간|인|곡|제도)",
    "suggestions": [
     "신~"
    ],
@@ -572,6 +572,45 @@
    ],
    "confidence": "low",
    "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gachi_donghaeng",
+   "pattern": "(?:같이|함께) ?동행",
+   "suggestions": [
+    "동행",
+    "함께 가"
+   ],
+   "confidence": "medium",
+   "source_url": "author knowledge (lead, 2026-10-04; seed SSB-066); needs native review"
+  },
+  {
+   "id": "RD_seodulleo_geuphi",
+   "pattern": "서둘러 ?급히|급히 ?서둘러",
+   "suggestions": [
+    "서둘러",
+    "급히"
+   ],
+   "confidence": "medium",
+   "source_url": "author knowledge (lead, 2026-10-04; seed SSB-157); needs native review"
+  },
+  {
+   "id": "RD_mili_yeyak",
+   "pattern": "미리 ?예약",
+   "suggestions": [
+    "예약"
+   ],
+   "confidence": "medium",
+   "source_url": "author knowledge (lead, 2026-10-04; 예약 = 미리 약속함, like RD_mili_yego); needs native review"
+  },
+  {
+   "id": "RD_geujeya_biroso",
+   "pattern": "그제야 ?비로소|비로소 ?그제야",
+   "suggestions": [
+    "그제야",
+    "비로소"
+   ],
+   "confidence": "medium",
+   "source_url": "author knowledge (lead, 2026-10-04; seed SSB-189); needs native review"
   }
  ]
 }

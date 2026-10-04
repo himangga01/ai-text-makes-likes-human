@@ -19,7 +19,7 @@ from sejong import verify as VF  # noqa: E402
 DATA = Path(__file__).resolve().parent / "data"
 BENCH = ROOT / "docs" / "research" / "super-sejong" / "v2" / "benchmark"
 FLAGS = config.Flags.from_env({})
-NEW = {"content_dropped", "condition_dropped", "temporal_order_changed"}
+NEW = {"content_dropped", "condition_dropped", "temporal_order_changed", "key_word_dropped"}
 
 # Pure deletions of content words (and two name substitutions): content_dropped (or condition_dropped) must fire.
 DROPS = [
@@ -43,6 +43,11 @@ DROPS = [
     ("강남역 2번 출구에서 기다리겠습니다.", "역삼역 2번 출구에서 기다리겠습니다."),
     ("시립도서관 2층 열람실은 평일에만 엽니다.", "도서관 열람실은 엽니다."),
     ("택배는 경비실에 맡겨 주세요.", "택배는 맡겨 주세요."),
+    # WP-10d: the light head noun is licensed only after a bare noun (정리 작업), not on its own
+    ("이번 달에 작업을 진행하였습니다.", "이번 달에 진행하였습니다."),
+    ("주말에 활동을 했어요.", "주말에 했어요."),
+    # ... but not when the marker goes too
+    ("이 사업의 목적은 주민을 돕기 위해 시작되었습니다.", "이 사업은 시작되었습니다."),
 ]
 # Accepted miss, kept visible: 동시에 reads as verb-like (시 is an ending syllable), and its stem 도 occurs.
 KNOWN_MISSES = [("강의는 온라인으로도 동시에 진행됩니다.", "강의는 온라인으로도 진행됩니다.")]
@@ -71,6 +76,16 @@ KEEPS = [
     ("이용자 수가 늘었다.", "사용자 수가 늘었다."),
     ("그는 질문에 대답하지 않았다.", "그는 질문에 답하지 않았다."),
     ("이 서류는 본인이 직접 제출하지 않으면 접수되지 않습니다.", "이 서류는 본인이 직접 내야 접수됩니다."),
+    # WP-10d: redundancy pairs added to data/redundancy.json and the light head noun of N 작업을 진행하다
+    ("이번에 새로 출시된 신제품을 소개합니다.", "이번에 신제품을 소개합니다."),
+    ("어제는 어머니와 같이 동행하여 병원에 다녀왔습니다.", "어제는 어머니와 동행하여 병원에 다녀왔습니다."),
+    ("서둘러 급히 신청해 주세요.", "서둘러 신청해 주세요."),
+    ("그제야 비로소 알게 되었다.", "그제야 알게 되었다."),
+    ("이번 달 초에 사진 자료 정리 작업을 진행하였습니다.", "이번 달 초에 사진 자료 정리하였습니다."),
+    ("내부 검토 업무를 진행합니다.", "내부 검토를 진행합니다."),
+    # WP-10d: a purpose or cause noun said twice may go while its marker stays (subject-predicate repair)
+    ("이 사업의 목적은 지역 주민의 접근성을 높이기 위해 추진되었습니다.", "이 사업은 지역 주민의 접근성을 높이기 위해 추진되었습니다."),
+    ("그가 늦은 이유는 차가 막혔기 때문입니다.", "그가 늦은 것은 차가 막혔기 때문입니다."),
 ]
 
 
@@ -108,13 +123,37 @@ class ContentDropped(unittest.TestCase):
         self.assertIn("content_dropped", codes("미리 공지된 대로 합니다.", "공지된 대로 합니다."))
 
     def test_shadow_until_promoted(self):
-        source, candidate = DROPS[0]
+        # WP-10d: 0/374 gold false blocks, but constructed fluency edits still drop words on purpose, so
+        # content_dropped stays in shadow; the key-word subset below is what gets enforced.
+        source, candidate = "새로 산 운동화가 생각보다 훨씬 편했어요.", "운동화가 편했어요."
         result = gate(source, candidate)
         self.assertEqual((result["gate"]["exit_code"], result["hardFailures"]), (0, []))
         self.assertIn("content_dropped", result["shadowFailures"])
         self.assertIn("content_dropped", config.SHADOW_CODES)
         enforced, shadow = VF.classify(FLAGS, meaning.compare(source, candidate))
         self.assertEqual(([v.code for v in enforced], [v.code for v in shadow]), ([], ["content_dropped"]))
+
+    def test_key_words_are_enforced(self):
+        for source, candidate, keep in [
+                ("함께 읽을 책은 미리 공지됩니다.", "읽을 책은 공지됩니다.", "함께, 미리"),
+                ("서울시청 앞에서 만나요.", "부산시청 앞에서 만나요.", "서울시청"),
+                ("이 강의는 무료로 들을 수 있어요.", "이 강의는 들을 수 있어요.", "무료"),
+                ("신청서는 반드시 본인이 직접 작성해야 합니다.", "신청서는 반드시 작성해야 합니다.", "본인, 직접")]:
+            with self.subTest(source=source):
+                enforced, shadow = VF.classify(FLAGS, meaning.compare(source, candidate))
+                key = [v for v in enforced if v.code == "key_word_dropped"]
+                self.assertEqual([(v.severity, v.keep) for v in key], [("soft", keep)])
+                self.assertEqual([v.code for v in shadow], ["content_dropped"])
+        # a key word said another way is not dropped
+        self.assertNotIn("key_word_dropped", codes("함께 해 주셔서 감사합니다.", "함께해 주셔서 감사합니다."))
+        self.assertNotIn("key_word_dropped", codes("내일 오전 중에 연락드리겠습니다.", "내일 오전에 연락드리겠습니다."))
+
+    def test_discourse_frames_are_not_conditions(self):
+        for source, candidate in [("결론적으로 말하자면 이 계획은 실현 가능성이 낮다.", "결론적으로 이 계획은 실현 가능성이 낮다."),
+                                  ("솔직히 말하면 저도 잘 모르겠어요.", "솔직히 저도 잘 모르겠어요.")]:
+            with self.subTest(source=source):
+                self.assertNotIn("condition_dropped", codes(source, candidate))
+        self.assertIn("condition_dropped", codes("회원이면 무료로 이용할 수 있어요.", "무료로 이용할 수 있어요."))
 
     def test_identical_and_deterministic_fixes_are_clean(self):
         for text in ("그날 뵈요!", "안 되요?", "할수 있습니다.", "가격이 좀 비싼 편이였어."):
@@ -229,8 +268,9 @@ class Measurements(unittest.TestCase):
                     for code in codes(a.text, b.text) & set(hits):
                         hits[code] += 1
         self.assertGreater(pairs, 100)
-        # six redundancy deletions outside data/redundancy.json and restructurings (WP-10b report)
-        self.assertLessEqual(hits["content_dropped"], 6)
+        # WP-10b measured six (redundancy deletions outside data/redundancy.json, restructurings); WP-10d licensed
+        # them (redundancy pairs, the light head noun of N 작업을 진행하다, a purpose noun carried by 위해)
+        self.assertEqual(hits["content_dropped"], 0)
         self.assertEqual((hits["condition_dropped"], hits["temporal_order_changed"]), (0, 0))
 
 
