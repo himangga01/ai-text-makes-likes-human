@@ -273,6 +273,9 @@ class OwnerDecisionTests(unittest.TestCase):
         self.assertEqual([v.code for v in check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 것 같아ㅎㅎ")],
                          ["voice_written_upshift"])
         self.assertEqual([v.code for v in check("비가 올 거 같아요.", "비가 올 것 같아요.")], ["voice_written_upshift"])
+        # the retry is told which spoken form to keep (not the sentence's final 같아)
+        self.assertEqual([v.keep for v in check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 것 같아ㅎㅎ")],
+                         ["거 같아"])
         self.assertEqual(check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 거 같아ㅎㅎ"), [])
         # in 합쇼체 and 해라체 것 같다 is the expected form
         self.assertEqual(check("내일은 비가 올거 같습니다.", "내일은 비가 올 것 같습니다."), [])
