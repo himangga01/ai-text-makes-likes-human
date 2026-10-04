@@ -123,8 +123,9 @@ _AXIS_RE = _compile_axes()
 _DOUBLE_NEG_OBLIG = re.compile(r'지\s*않으면\s*안\s*(?:된|됩|돼|되)|지\s*않을\s*수(?:가)?\s*없')
 _KNOW_NOT = re.compile(r'(?<![가-힣])알지\s*못(?=하|했|해|합|한)')
 _PROHIBIT = re.compile(r'(?:해서는|하면|하여서는|해선|하면은|하여선|어서는|아서는|으면|면|피우면|먹으면|가면|오면|넘으면)\s*안\s*(?:된|됩|돼|되)|안\s*됩니다|안됩니다|안돼|금지|불허|지\s*마(?:라|세요|십시오)|지\s*말(?:아야|라|고|자)|말아야')
-_NOREQ = re.compile(r'(?:하지|지)\s*않아도\s*(?:된|됩|돼)|필요(?:가)?\s*없|필요하지\s*않|불필요|필요\s*없')
-_OBLIG = re.compile(r'하여야|해야|돼야|되어야|되야|야\s*(?:한|합)|필요(?:가\s*있|하(?:다|며|고|지만|므로|여|니|ㅂ)|합|해|했|한\s*것)|필수|의무|반드시\s*[가-힣]*야')
+_NOREQ = re.compile(r'(?:하지|지)\s*않아도\s*(?:된|됩|돼)|필요(?:가)?\s*없|필요(?:로\s*)?하지\s*않|불필요|필요\s*없')
+# N을 필요로 하다 is the translationese form of N이 필요하다 (the same need): both read as OBLIG.
+_OBLIG = re.compile(r'하여야|해야|돼야|되어야|되야|야\s*(?:한|합)|필요(?:가\s*있|하(?:다|며|고|지만|므로|여|니|ㅂ)|합|해|했|한\s*것)|필요로\s*(?:하|한|할|합|해|했|함)|필수|의무|반드시\s*[가-힣]*야')
 _REC = re.compile(r'권장|권고|바람직|(?:것|편|게|면|는게|하는게)\s*(?:이|가)?\s*좋|좋겠')
 _CAN_NEG = re.compile(r'(?<![가-힣])못\s+(?=[가-힣])|[가-힣]지\s*못|못하|(?<![가-힣])수(?:가|는|도)?\s*없|불가능|불가(?![피침결분])|가능(?:하)?지\s*(?:않|못)|가능성(?:이|은|도)?\s*(?:전혀|거의|별로)?\s*없|못다')
 _CAN_POS = re.compile(r'(?<![가-힣])수(?:도|가|는)?\s*있|허용|허락|허가(?!증)|가능성(?:이|은|도)?\s*(?:있|충분)|가능(?!성)|도\s*(?:된다|됩니다|된다고|돼요|괜찮)')
@@ -197,10 +198,26 @@ class Features:
         self.short: Counter = Counter()
 
 
+# The bound noun 수 is often written attached ("할수 있다"). The CAN rules read it only after a space, so the
+# spacing fix 할수 있다 -> 할 수 있다 looked like a new ability and a lost negation. Both sides are read with 수
+# spaced after an attributive ㄹ ending; 할수록 and 할수밖에 are left alone.
+_RIEUL_FINAL = ''.join(chr(0xAC00 + i * 28 + 8) for i in range(19 * 21))
+_ATTACHED_SU = re.compile('([' + _RIEUL_FINAL + r'])수(?=(?:가|는|도)?\s*(?:있|없))')
+# Same for 안 + 되다: attached 안되요/안돼요 read as no negation (or as a prohibition) while the spaced
+# 안 돼요 read as a short negation, and the stems 되/돼 differed. 안 is spaced and 되요/됬 (always
+# misspellings of 돼요/됐) are read as spelled correctly, on both sides.
+_ATTACHED_AN = re.compile(r'(?<![가-힣])안(?=[되돼됐됩될된])')
+
+
+def _spacing_normal(text: str) -> str:
+    text = _ATTACHED_AN.sub('안 ', _ATTACHED_SU.sub(r'\1 수', text))
+    return text.replace('되요', '돼요').replace('됬', '됐')
+
+
 @lru_cache(maxsize=8192)
 def features(text: str) -> Features:
     f = Features()
-    work = _IDIOMS.sub(_blank, text)
+    work = _IDIOMS.sub(_blank, _spacing_normal(text))
     ev: list = []
 
     def add_bound(m):

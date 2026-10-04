@@ -57,6 +57,10 @@ class Preserved(unittest.TestCase):
         ('환자는 이 약을 임의로 중단해서는 안 됩니다.', '환자는 이 약을 마음대로 끊으면 안 됩니다.'),
         ('이 문제는 혼자서 풀기에는 어렵다.', '이 문제는 혼자서 풀기에는 쉽지 않다.'),
         ('그는 영어뿐 아니라 중국어도 한다.', '그는 영어와 함께 중국어도 한다.'),
+        # 필요로 하다 -> 필요하다, the translationese fix (2026-10-04 v2 Tier-B finding)
+        ('행사 참가자는 신분증을 필요로 합니다.', '행사 참가자는 신분증이 필요합니다.'),
+        ('이 작업은 많은 시간을 필요로 한다.', '이 작업에는 많은 시간이 필요하다.'),
+        ('이 기능은 별도 설치를 필요로 하지 않는다.', '이 기능은 별도 설치가 필요하지 않다.'),
     ]
 
     def test_meaning_preserving_rewrites_are_not_flagged(self):
@@ -67,7 +71,15 @@ class Preserved(unittest.TestCase):
     def test_spacing_only_changes_never_flag(self):
         for source, candidate in [('할 수있다.', '할 수 있다.'), ('할 수 있다.', '할 수  있다.'),
                                   ('서류를 제출하면 안됩니다.', '서류를 제출하면 안 됩니다.'),
-                                  ('그 사건의 배후가 있을 수 있다.', '그 사건의  배후가  있을 수  있다.')]:
+                                  ('그 사건의 배후가 있을 수 있다.', '그 사건의  배후가  있을 수  있다.'),
+                                  # attached bound noun 수, fixed by the writer (2026-10-04 live false positive)
+                                  ('참가를 원하시는 분은 15일까지 신청하실수 있어요.', '참가를 원하시는 분은 15일까지 신청하실 수 있어요.'),
+                                  ('그날은 비가 와서 볼수 없었다.', '그날은 비가 와서 볼 수 없었다.'),
+                                  ('혼자서는 할수가 없다.', '혼자서는 할 수가 없다.'),
+                                  ('누구나 참여할수도 있다.', '누구나 참여할 수도 있다.'),
+                                  # attached 안 + 되다 and the 되요 misspelling, fixed by the writer
+                                  ('그건 안되요.', '그건 안 돼요.'), ('그건 안돼요.', '그건 안 돼요.'),
+                                  ('거기 가면 안되나요?', '거기 가면 안 되나요?'), ('벌써 다 됬어요.', '벌써 다 됐어요.')]:
             with self.subTest(source=source):
                 self.assertFalse(any(flagged(source, candidate).values()))
 
@@ -84,6 +96,14 @@ class Changed(unittest.TestCase):
                      ('그는 안 먹는다.', '그는 못 먹는다.'),
                      ('답이 틀리지 않았다.', '답이 틀렸다.'),
                      ('그는 안 먹고 집에 갔다.', '그는 먹고 집에 안 갔다.')]:
+            with self.subTest(s=s):
+                self.assertCaught(s, c, 'polarity', 'modality', 'lexical')
+
+    def test_attached_forms_still_read_meaning(self):
+        # the spacing normalisation must not hide a real change: attached 할수 있다 / 안됐다 still count
+        for s, c in [('그는 범인일수 있다.', '그는 범인이다.'), ('오늘은 갈수 없다.', '오늘은 갈 수 있다.'),
+                     ('일이 다 안됐어요.', '일이 다 됐어요.'),
+                     ('이 기능은 별도 설치를 필요로 한다.', '이 기능은 별도 설치가 필요하지 않다.')]:
             with self.subTest(s=s):
                 self.assertCaught(s, c, 'polarity', 'modality', 'lexical')
 
