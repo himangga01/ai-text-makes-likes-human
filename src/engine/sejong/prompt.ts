@@ -283,11 +283,13 @@ const RESPONSE_SCHEMA_TEXT = '{"type":"object","additionalProperties":false,"req
   '"text":{"type":"string","minLength":1,"maxLength":4000},"reason":{"type":"string","maxLength":60}}}},' +
   '"rewrittenText":{"type":"string"},"warnings":{"type":"array","maxItems":20,"items":{"type":"string","maxLength":300}}}}';
 
-function outputSection(review: boolean, fullText: boolean): string {
+function outputSection(review: boolean, fullText: boolean, retry = false): string {
+  // At attempt 2 a failed open-review nomination is retried under its sentence id, so the ids are the retry ids.
+  const ids = retry ? '[재시도]에 적힌 ID(R… 또는 S…)' : `요청 ID(R…)${review ? ' 또는 [열린 검토]로 고른 문장 ID(S…)' : ''}`;
   return `[출력 형식]
 아래 JSON 스키마를 정확히 따르는 JSON 객체 하나만 출력한다. Markdown 코드 펜스나 설명 문장을 붙이지 않는다.
 ${RESPONSE_SCHEMA_TEXT}
-- replacements: 고친 문장마다 하나. id는 요청 ID(R…)${review ? ' 또는 [열린 검토]로 고른 문장 ID(S…)' : ''}다. 같은 id를 두 번 쓰지 않는다. text는 그 문장 전체를 고친 결과이며 줄바꿈을 넣지 않는다. reason은 60자 이내다.
+- replacements: 고친 문장마다 하나. id는 ${ids}다. 같은 id를 두 번 쓰지 않는다. text는 그 문장 전체를 고친 결과이며 줄바꿈을 넣지 않는다. reason은 60자 이내다.
 - rewrittenText: ${fullText ? '요청 방식으로 담을 수 없을 때만 고친 원문 전체를 담고 replacements는 빈 배열로 둔다. 두 방식을 함께 쓰지 않는다. 그 밖에는 빈 문자열 ""이다.' : '항상 빈 문자열 ""이다.'}
 - warnings: 보존 충돌처럼 원문을 유지한 사유만 짧게 담는다. 없으면 []이다.
 - 고칠 문장이 없으면 {"replacements":[],"rewrittenText":"","warnings":[]}를 출력한다.`;
@@ -372,7 +374,7 @@ ${block('SENTENCES', nonce, jsonLines(candidates.map(({ id, text }) => ({ id, te
     sections.push(`[경계 문맥] 이 구간은 한 문서를 나눈 ${plan.chunk.total}개 구간 중 ${plan.chunk.index}번째다. 아래 앞뒤 문단은 참고 전용, 출력 금지.\n` +
       block('SEAM_PREV', nonce, seam.prev) + '\n' + block('SEAM_NEXT', nonce, seam.next));
   }
-  sections.push(outputSection(review, attempt === 1 && plan.options.allowFullText));
+  sections.push(outputSection(review, attempt === 1 && plan.options.allowFullText, attempt === 2));
   sections.push(`[원문] 이 구간 전체. 읽기 전용이며 출력하지 않는다.\n${block('SOURCE', nonce, source)}`);
   return sections.join('\n\n');
 }

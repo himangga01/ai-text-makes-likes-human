@@ -630,12 +630,14 @@ def accept_v2(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: in
         state["warnings"].append(f"CHUNK_RETRY: {chunk_id}번 구간에서 검증에 걸린 문장 {len(report.retry)}개만 보수적으로 다시 다듬어 주세요.")
     else:
         # The decided text holds the source plus the edits that passed (a sentence that failed is back to its
-        # source text plus the deterministic fixes). A rollback keeps the chunk's source, as the server does.
+        # source text plus the deterministic fixes). A rollback delivers base(x), the source plus the deterministic
+        # fixes, as the server does.
         action = report.policy if report.policy in ("accept", "accept-with-warning", "rollback") else "accept-with-warning"
-        text = outcome.text if action != "rollback" else sejong().io.read_text(job / f"source-{chunk_id}.txt")
-        finish_chunk_v2(job, state, chunk, text)
+        finish_chunk_v2(job, state, chunk, outcome.text)
         if action == "rollback":
-            state["warnings"].append(f"CHUNK_ROLLED_BACK: {chunk_id}번 구간은 내용 보존을 확인하지 못해 원문을 유지했습니다.")
+            fixes = report.counts["normFixes"]
+            state["warnings"].append(f"CHUNK_ROLLED_BACK: {chunk_id}번 구간은 내용 보존을 확인하지 못해 원문을 유지했습니다."
+                                     + (f" 확실한 맞춤법 오류 {fixes}곳만 고쳤습니다." if fixes else ""))
         elif action == "accept-with-warning":
             state["warnings"].append(f"CHUNK_WARNING_ACCEPTED: {chunk_id}번 구간은 사람의 검토가 권장됩니다.")
     write_json(job / "job.json", state)

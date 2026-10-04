@@ -199,12 +199,13 @@ describe('SejongEngine with the writer', () => {
     expect(JSON.parse(python.checks[1]!.reply).replacements.map((item: { id: string }) => item.id)).toEqual(['R1']);
   });
 
-  it('rolls the chunk back to its source when attempt 2 ends in rollback', async () => {
-    const python = new FakePython({ checks: [contract.checks.retry, contract.checks.rollback] });
+  it('rolls the chunk back to base(x), the decided text of a rollback, when attempt 2 ends in rollback', async () => {
+    const base = '원문에 확실한 맞춤법 수정만 더한 글\n';
+    const python = new FakePython({ checks: [contract.checks.retry, contract.checks.rollback], decided: ['decided 1\n', base] });
     const writer = new StubWriter([EMPTY, EMPTY]);
     const { result, output, workspace } = await run(python, writer);
-    expect(output).toBe(contract.source);
-    expect(await readFile(workspace.path('02_chunk_01_rewritten.txt'), 'utf8')).toBe(contract.source);
+    expect(output).toBe(base);
+    expect(await readFile(workspace.path('02_chunk_01_rewritten.txt'), 'utf8')).toBe(base);
     expect(codes(result.warnings)).toEqual(['CHUNK_RETRY', 'CHUNK_ROLLED_BACK']);
     expect(result.diagnostics).toMatchObject({ rolledBackChunks: 1, gateCodes: ['GATE_WARN', 'GATE_ABORT', 'GATE_OK'] });
   });

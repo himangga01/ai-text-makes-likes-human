@@ -490,17 +490,17 @@ class RetryTests(SkillPathCase):
         self.assertNotIn("4만", output)
         self.assertIn("기 때문입니다", output)
 
-    def test_unusable_replies_cost_the_attempt_then_roll_back_to_the_source(self):
+    def test_unusable_replies_cost_the_attempt_then_roll_back_to_base(self):
         state = self.prepare()
         state = self.accept(state, "not json at all")
         self.assertEqual((state["decision"], state["attempt"]), ("retry", 2))
         self.assertTrue(any(w.startswith("MODEL_OUTPUT_UNUSABLE") and "not_json" in w for w in state["warnings"]))
         state = self.accept(state, reply(("R9", "x", "unknown id")))
         self.assertEqual((state["decision"], state["status"]), ("rollback", "ready-to-finalize"))
-        self.assertTrue(any(w.startswith("CHUNK_ROLLED_BACK") for w in state["warnings"]))
+        self.assertTrue(any(w.startswith("CHUNK_ROLLED_BACK") and "맞춤법 오류 1곳만 고쳤습니다" in w for w in state["warnings"]))
         self.assertTrue(any(w.startswith("MODEL_OUTPUT_UNUSABLE") and "unknown_id" in w for w in state["warnings"]))
         done, output = self.finalize(state)
-        self.assertEqual(output, BLOG)                                       # a rollback keeps the chunk's source, as the server does
+        self.assertEqual(output, BLOG.replace("됬", "됐"))                   # a rollback delivers base(x), as the server does
 
     def test_reply_in_the_legacy_shape_is_read_as_a_full_text_candidate(self):
         state = self.prepare()
@@ -805,7 +805,7 @@ class EquivalenceTests(SkillPathCase):
                 outcomes[(index, attempt or 1)] = report
             final = run / (f"decided-{index:02d}-2.txt" if 2 in attempts else f"decided-{index:02d}-1.txt")
             last = outcomes[(index, 2 if 2 in attempts else 1)]
-            kept = source if last["policy"] == "rollback" else final       # a rollback keeps the chunk's source
+            kept = final                                                    # a rollback's decided text is base(x)
             (run / entry["rewritten_file"]).write_text(kept.read_text(encoding="utf-8"), encoding="utf-8", newline="")
         self.assertEqual(self.cli("finalize", "--run-dir", run, "--output", "final.md", "--report", "assembly.json").returncode, 0)
         return outcomes, (run / "final.md").read_text(encoding="utf-8")
