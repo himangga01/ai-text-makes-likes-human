@@ -119,6 +119,8 @@ UPSHIFT = re.compile(LEX["upshift"])
 # like 했 -> 하였 (2026-10-04 real-model run: 최고인거 같아 -> 최고인 것 같아 instead of 최고인 거 같아); in 합쇼체
 # and 해라체 것 같다 is the expected form, so it is not counted there.
 _GEOT_GAT = re.compile(r"것(?=\s*같)")
+# The spoken form itself, as the retry should restore it ("거 같아"; an attached 최고인거 is shown spaced).
+_GEO_GAT_FORM = re.compile(r"(?<=[가-힣\s])거\s*(같[가-힣]*)")
 # A double passive folded before up-shift forms are counted: 변경되어졌습니다 -> 변경되었습니다 is the
 # SSB-A04 norm fix, not a 했 -> 하였 up-shift.
 _FOLD = tuple((a, b) for a, b in LEX["double_passive_fold"])
@@ -438,6 +440,7 @@ class Features:
     upshift: int                   # 하였/되었/하여 ... forms; 것 같다 in 해요체/해체
     quote_levels: Tuple[str, ...]  # level inside each quotation (non-whole-quote sentences)
     inner: Tuple[Tuple[str, str], ...] = ()   # (level, mood) of clauses closed by ^^ or ~ inside the unit
+    spoken: Tuple[str, ...] = ()   # spoken 거 같다 forms of a 해요체/해체 sentence (the upshift retry keeps them)
 
 
 def features(sentence: str, kind: str = "body") -> Features:
@@ -472,7 +475,8 @@ def features(sentence: str, kind: str = "body") -> Features:
                     directive=fin.word.endswith(_DIRECTIVE), humble_count=humble,
                     hon_nouns=_hon_nouns(masked), keep=keep, marks=marks,
                     upshift=len(UPSHIFT.findall(_fold(masked))) + (len(_GEOT_GAT.findall(masked)) if level in (HAEYO, HAE) else 0),
-                    quote_levels=quote_levels, inner=_inner(masked))
+                    quote_levels=quote_levels, inner=_inner(masked),
+                    spoken=tuple("거 " + m.group(1) for m in _GEO_GAT_FORM.finditer(masked)) if level in (HAEYO, HAE) else ())
 
 
 def _hon_nouns(masked: str) -> int:
