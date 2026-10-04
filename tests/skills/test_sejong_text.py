@@ -410,3 +410,13 @@ class VersionNumbers(unittest.TestCase):
         frozen = [doc.text[s.start:s.end] for s in protect.protected_spans(doc) if s.policy == "freeze"]
         self.assertIn("1.2.3", frozen)
         self.assertIn("3.5%", frozen)
+
+
+class ChattyLinesAreNotHeadings(unittest.TestCase):
+    def test_a_short_blog_line_without_a_period_is_a_sentence(self):
+        body = "오늘은 일정이 많아서 정리해 두려고 합니다. 내일 아침 회의가 있고 오후에는 외부 미팅이 잡혀 있습니다."
+        for line in ("내일 일찍 일어날려면 지금 자야 되는데 ㅋㅋ 잠이 안 와~", "진짜 맛있었어", "다음에 또 가 봐야겠어요 ㅎㅎ"):
+            with self.subTest(line=line):
+                self.assertFalse(text.unmarked_heading(line, len(body)))
+        self.assertTrue(text.unmarked_heading("행사 개요", len(body)))
+        self.assertTrue(text.unmarked_heading("신청 전에 확인할 사항", len(body)))

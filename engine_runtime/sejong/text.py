@@ -309,8 +309,11 @@ _BTN_STRONG_MARKS = "▶▷►☞👉✔✅※■□●○◆◇★☆•[(>"
 _TERMINAL_CHAR = re.compile(r"[.!?。！？…]")
 # A line ending like a sentence (predicate syllable, optionally CMC and punctuation) is prose,
 # never an unmarked heading.
-_PROSE_TAIL = re.compile(r"(?:[다요죠까네지군나래야자니라음함임]|습니다)[\s~～ㅋㅎㅠㅜ^!?.…]*$")
+# 해체 endings (와, 어, 봐, 줘 …) are prose too: a short blog line such as "잠이 안 와~" is not a heading.
+_PROSE_TAIL = re.compile(r"(?:[다요죠까네지군나래야자니라음함임어아와해게걸데대봐줘워]|습니다)[\s~～ㅋㅎㅠㅜ^!?.…]*$")
 UNMARKED_HEADING_MAX = 40
+# Nouns that end in 요 are not a 해요체 ending: "행사 개요", "준비물 필요" can be headings.
+_YO_NOUN = re.compile(r"(?:개요|필요|중요|주요|수요|소요|강요)\s*$")
 
 
 def is_button_line(line: str) -> bool:
@@ -349,9 +352,12 @@ def unmarked_heading(line: str, next_paragraph_chars: int) -> bool:
     s = line.strip()
     if not s or len(s) > UNMARKED_HEADING_MAX or next_paragraph_chars <= len(s):
         return False
-    if _TERMINAL_CHAR.search(s) or _PROSE_TAIL.search(s) or s.endswith((",", ":", ";")):
+    if _TERMINAL_CHAR.search(s) or (_PROSE_TAIL.search(s) and not _YO_NOUN.search(s)) or s.endswith((",", ":", ";")):
         return False
     if LIST_MARKER.match(s) or s.startswith(("(주)", "㈜")) or is_button_line(s):
+        return False
+    # Laughter, emoticons and tildes mark a chatty sentence, never a heading ("… 자야 되는데 ㅋㅋ").
+    if CMC_RE.search(s):
         return False
     return bool(re.search(r"[가-힣A-Za-z]", s))
 
