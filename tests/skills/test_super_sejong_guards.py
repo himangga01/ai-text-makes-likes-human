@@ -79,7 +79,10 @@ class Preserved(unittest.TestCase):
                                   ('누구나 참여할수도 있다.', '누구나 참여할 수도 있다.'),
                                   # attached 안 + 되다 and the 되요 misspelling, fixed by the writer
                                   ('그건 안되요.', '그건 안 돼요.'), ('그건 안돼요.', '그건 안 돼요.'),
-                                  ('거기 가면 안되나요?', '거기 가면 안 되나요?'), ('벌써 다 됬어요.', '벌써 다 됐어요.')]:
+                                  ('거기 가면 안되나요?', '거기 가면 안 되나요?'), ('벌써 다 됬어요.', '벌써 다 됐어요.'),
+                                  # spoken 거 of 거 같다 is the 것 of the hedge (2026-10-04 real-model run)
+                                  ('역시 가을 산이 최고인거 같아.', '역시 가을 산이 최고인 것 같아.'),
+                                  ('그게 맞는 거 같아.', '그게 맞는 것 같아.'), ('내일은 비가 올거 같아요.', '내일은 비가 올 거 같아요.')]:
             with self.subTest(source=source):
                 self.assertFalse(any(flagged(source, candidate).values()))
 
@@ -103,7 +106,8 @@ class Changed(unittest.TestCase):
         # the spacing normalisation must not hide a real change: attached 할수 있다 / 안됐다 still count
         for s, c in [('그는 범인일수 있다.', '그는 범인이다.'), ('오늘은 갈수 없다.', '오늘은 갈 수 있다.'),
                      ('일이 다 안됐어요.', '일이 다 됐어요.'),
-                     ('이 기능은 별도 설치를 필요로 한다.', '이 기능은 별도 설치가 필요하지 않다.')]:
+                     ('이 기능은 별도 설치를 필요로 한다.', '이 기능은 별도 설치가 필요하지 않다.'),
+                     ('내일은 비가 올 거 같아요.', '내일은 비가 와요.')]:
             with self.subTest(s=s):
                 self.assertCaught(s, c, 'polarity', 'modality', 'lexical')
 
