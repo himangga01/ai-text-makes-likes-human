@@ -103,6 +103,7 @@ MOVED_SHORT = 6           # normalised characters below which a moved sentence m
 MAX_MOVED_CELLS = 40_000  # full pairing of unpaired sentences up to this many cells, windowed beyond
 MOVED_WINDOW = 40
 MEMBERSHIP_SCORE = 0.5    # a 1:1 pair counts for paragraph membership from this Dice on
+STACK_MAX = 3             # stacked sentence-initial connectives read per sentence (그리고 또한 ...)
 SEAM_WINDOW = 2           # sentences on each side of a seam (T5 section 5.3 item 4)
 DUP_WINDOW = 4            # output sentences before a sentence near a seam that it is compared with
 
@@ -188,6 +189,19 @@ def _initial(masked: str) -> Optional[Tuple[str, str]]:
     return word, CLASS_OF[word]
 
 
+def _stack(masked: str, first: Optional[Tuple[str, str]]) -> Tuple[Tuple[str, str], ...]:
+    """Every connective stacked at the start ("그리고 또한 ...", "하지만 그래도 ..."), first one included,
+    at most STACK_MAX: removing one of them is not adding the next one."""
+    out: List[Tuple[str, str]] = []
+    rest, cur = masked, first
+    while cur is not None and len(out) < STACK_MAX:
+        out.append(cur)
+        m = _INITIAL.match(rest)
+        rest = rest[m.end():].lstrip(" \t,，")
+        cur = _initial(rest)
+    return tuple(out)
+
+
 def initial_connective(sentence: str) -> Optional[Tuple[str, str]]:
     """(word, class) of the sentence-initial connective, or None. Quoted text is not looked at."""
     return _initial(T.mask_quotes(body_text(sentence)))
@@ -196,12 +210,16 @@ def initial_connective(sentence: str) -> Optional[Tuple[str, str]]:
 class _Feat:
     """Marker counts of one sentence, computed once. All counts are on the quote-masked text."""
 
-    __slots__ = ("init", "contrast", "causal", "starter")
+    __slots__ = ("init", "stack", "contrast", "causal", "starter")
 
     def __init__(self, unit: Unit):
         masked = T.mask_quotes(body_text(unit.text))
         self.init = _initial(masked)
+        self.stack = _stack(masked, self.init)
         self.contrast: List[str] = _CONTRAST.findall(masked)
+        stacked = sum(1 for _word, cls in self.stack if cls == "contrast")
+        if stacked > 1:                             # 하지만 그래도 ... is one contrast, stacked for emphasis
+            self.contrast = self.contrast[stacked - 1:]
         if not self.contrast:                       # 비록 ... 지만 is one concession: the adverb counts only alone
             self.contrast = _CONCESSIVE.findall(masked)[:1]
         self.causal = len(_CAUSAL.findall(masked))
@@ -306,11 +324,13 @@ def _v(code: str, severity: str, sentence: Optional[str], detail: str, keep: Opt
 # per-pair rules
 # --------------------------------------------------------------------------
 def _init_counts(feats: Iterable[_Feat]) -> Counter:
-    return Counter(f.init[1] for f in feats if f.init)
+    """Classes of the sentence-initial connectives, stacked ones included (그리고 또한 = additive twice)."""
+    return Counter(cls for f in feats for _word, cls in f.stack)
 
 
 def _transition(sf: List[_Feat], of: List[_Feat], one_to_one: bool) -> List[str]:
-    """Labels of the transition changes of one pair, [] when none."""
+    """Labels of the transition changes of one pair, [] when none. Dropping one of two stacked connectives
+    ("그리고 또한 ..." -> "또한 ...", a redundancy fix) is neither an added class nor an upshift."""
     labels: List[str] = []
     si, oi = _init_counts(sf), _init_counts(of)
     for cls in ADDED_CLASSES:
@@ -319,7 +339,7 @@ def _transition(sf: List[_Feat], of: List[_Feat], one_to_one: bool) -> List[str]
     if sum(f.causal for f in of) > sum(f.causal for f in sf):
         labels.append("causal")
     if one_to_one and sf[0].init and of[0].init and sf[0].init[0] in SPOKEN and of[0].init[0] in WRITTEN \
-            and sf[0].init[0] != of[0].init[0]:
+            and all(word != of[0].init[0] for word, _cls in sf[0].stack):
         labels.append("register_upshift")
     return labels
 
