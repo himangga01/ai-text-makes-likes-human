@@ -213,6 +213,7 @@ const VIOLATION_KO: Record<string, string> = {
   lexical_polarity_changed: '뜻이 반대인 낱말로 바뀌었다', participant_role_changed: '행위 주체나 대상이 바뀌었다',
   aspect_changed: '진행·완료의 상(-고 있-·-어 있-)이 바뀌었다', partial_negation_changed: '부분 부정의 범위가 바뀌었다',
   content_dropped: '원문에 있던 내용어가 빠졌다', temporal_order_changed: '전후·시간 순서가 바뀌었다',
+  condition_dropped: '조건(-면·경우)이 빠졌다',
   voice_level: '말투가 바뀌었다', voice_mood: '문장 유형이 바뀌었다', voice_hon_si_dropped: "'-시-'가 빠졌다",
   voice_hon_si_added: "원문에 없던 '-시-'가 들어갔다", voice_hon_si_elsewhere: "'-시-'의 자리가 바뀌었다",
   voice_quote_level: '인용 안의 말투가 바뀌었다', voice_split_level: '나눈 문장의 말투가 원문과 다르다',
