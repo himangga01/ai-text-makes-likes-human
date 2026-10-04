@@ -8,6 +8,8 @@ import { CodexRunner } from '../engine/codex-runner.js';
 import { ClaudeRunner } from '../engine/claude-runner.js';
 import { CodexSemaphore } from '../engine/codex-semaphore.js';
 import { buildDocumentPrompt } from '../engine/document-prompt.js';
+import { selectEngine } from '../engine/sejong/config.js';
+import { buildSejongDocumentPrompt } from '../engine/sejong/document-prompt.js';
 import { resolveCli } from '../runtime/cli-path.js';
 import { EngineError } from '../engine/errors.js';
 import { parseModelSettings, type ModelSettings } from '../engine/model-policy.js';
@@ -78,11 +80,22 @@ export class DocumentEngine {
       await rm(directory,{recursive:true,force:true});this.ownedJobs.delete(job);
     } finally {this.closingJobs.delete(job);}
   }
+  /** The runners read a rulebook file on every call, whatever the prompt builder does with it. v2 sends no
+   * rules, so it points them at an empty file in the private runtime directory instead of the vendor rulebook. */
+  private async noQuickRules(): Promise<string> {
+    await mkdir(this.root,{recursive:true});
+    const file=path.join(this.root,'.sejong-no-quick-rules');
+    await writeFile(file,'','utf8');
+    return file;
+  }
   async transform(state: DocumentState, engine: 'claude'|'codex', outputDir: string, signal: AbortSignal, onEvent: EventSink, settings?: ModelSettings) {
     const selection = parseModelSettings(engine, settings?.model, settings?.effort);
+    // SUPER_SEJONG_ENGINE=v2: the plan-driven Office prompt, no rulebook. Python (same environment) writes the plan
+    // into each batch file; a batch without one is refused instead of being sent to the writer with no rules.
+    const v2=selectEngine(process.env)==='v2';
     const options={schemaPath:path.join(this.config.projectRoot,'engine_runtime','documents','response-schema.json'),
-      quickRulesPath:path.join(this.config.vendorRoot,'skills','humanize-korean','references','quick-rules.md'),
-      timeoutMs:this.config.chunkTimeoutMs, runner:this.runner,permitPool:this.pool,promptBuilder:buildDocumentPrompt,
+      quickRulesPath:v2?await this.noQuickRules():path.join(this.config.vendorRoot,'skills','humanize-korean','references','quick-rules.md'),
+      timeoutMs:this.config.chunkTimeoutMs, runner:this.runner,permitPool:this.pool,promptBuilder:v2?buildSejongDocumentPrompt:buildDocumentPrompt,
       resultParser:(raw: string)=>({rewrittenText:raw,warnings:[]})};
     const model=engine==='claude'?new ClaudeRunner({...options,claudeCommand:resolveCli('claude',this.config.claudeCommand)}):
       new CodexRunner({...options,codexCommand:resolveCli('codex',this.config.codexCommand)});

@@ -1,6 +1,8 @@
 from __future__ import annotations
+import os
 import re
 import json
+from bisect import bisect_right
 from .package import W, A, P, R, E, XMLSPACE, Package, DocumentError, local, ns, digest
 try:
     from ..quantities import signed_quantities
@@ -46,6 +48,234 @@ def has_editable_text(text, protected):
             return True
         cursor = max(cursor, span['end'])
     return bool(text[cursor:].strip())
+
+
+# --------------------------------------------------------------------------
+# Super Sejong Engine v2 (SUPER_SEJONG_ENGINE=v2): per-block plan and reject-only verification.
+# The sejong package is imported only after the switch is on, so legacy jobs never load it.
+# --------------------------------------------------------------------------
+def sejong_v2():
+    """Same reading of the switch as workflow.py: trimmed, lower-case; anything but v2 is legacy."""
+    return os.environ.get('SUPER_SEJONG_ENGINE', '').strip().lower() == 'v2'
+
+
+def _sejong():
+    try:
+        from .. import sejong
+        from ..sejong import config, diagnose, plan, text, types, verify, voice
+    except ImportError:  # Gateway imports documents as a top-level package.
+        import sejong
+        from sejong import config, diagnose, plan, text, types, verify, voice
+    return sejong, config, diagnose, plan, text, types, verify, voice
+
+
+def sejong_flags():
+    return _sejong()[1].Flags.from_env()
+
+
+def sejong_engine():
+    """{id, version} recorded in job.json when a job starts under v2 (a later change fails the job)."""
+    return {'id': _sejong()[0].ENGINE_ID, 'version': _sejong()[0].VERSION}
+
+
+class BlockRejected(DocumentError):
+    """A v2 rejection that names its violations, so the retry prompt can quote them."""
+    def __init__(self, message, violations=()):
+        super().__init__(message)
+        self.violations = list(violations)
+
+
+# What a rejection tells the user and the retry prompt, by the family of the first violation. Codes only,
+# never document text (DESIGN 4.4); the writer's retry prompt renders each code in Korean on the TS side.
+FAMILY_MESSAGE = {
+    'floor': '숫자·인용·이름 등 보호해야 할 표기가 바뀌었습니다',
+    'meaning': '부정·가능·당위·행위 주체 등 문장의 의미가 바뀌었습니다',
+    'voice': '말투(종결 어미·높임·문장 유형)가 바뀌었습니다',
+    'cta': '행동 요청(CTA)의 내용이나 강도가 바뀌었습니다',
+    'flow': '접속어·문장 순서 등 글의 흐름이 바뀌었습니다',
+    'clarity': '문장이 더 읽기 어려워졌습니다',
+    'norms': '맞춤법·띄어쓰기 오류가 새로 생겼습니다',
+    'runaway': '문장 변경률이 너무 높습니다',
+}
+MAX_REPORTED = 8
+
+
+def violation_json(violation):
+    """The retry-prompt shape of one violation: code, detail label and the form to keep."""
+    out = {'code': violation.code, 'detail': violation.detail or ''}
+    if violation.family:
+        out['family'] = violation.family
+    if violation.keep:
+        out['keep'] = violation.keep
+    return out
+
+
+def reject_with_sejong(source, result):
+    """v2 verification of one block rewrite (DESIGN 4.3): every enforced violation of the sentence-aligned
+    families (floor incl. josa, meaning, voice, CTA, flow, norms; clarity per its mode) rejects the edit.
+    Nothing is repaired: an Office edit maps to formatting runs, so the writer's text is taken or refused.
+    A crash in the checks refuses too (fail closed)."""
+    try:
+        found = _sejong()[6].verify_block(source, result)
+    except Exception:
+        raise DocumentError('수정 내용을 검증하지 못해 원문을 유지합니다.') from None
+    if not found:
+        return
+    # verify_block reports a floor code once per pair and once for the whole text; say each violation once.
+    found = list({(v.code, v.detail, v.keep): v for v in found}.values())
+    codes = list(dict.fromkeys(v.code for v in found))[:MAX_REPORTED]
+    if codes == ['josa_mismatch']:
+        message = '수정한 낱말 뒤의 조사 형태가 맞지 않습니다.'
+    else:
+        message = f"{FAMILY_MESSAGE.get(found[0].family or 'floor', FAMILY_MESSAGE['floor'])} ({', '.join(codes)})"
+    raise BlockRejected(message, [violation_json(v) for v in found[:MAX_REPORTED]])
+
+
+# Office has no strength setting: every block is planned at the owner's route strength (DESIGN 3.4 medium =
+# FIX + SUGGEST + open review) with the document genre (DESIGN 5.4: Office sends `document`).
+OFFICE_STRENGTH = 'medium'
+OFFICE_GENRE = 'document'
+
+
+def _union(spans):
+    """Sorted, non-overlapping [start, end) intervals covering every span."""
+    merged = []
+    for start, end in sorted((s['start'], s['end']) for s in spans):
+        if merged and start <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+    return merged
+
+
+def _free_text(text, merged, ends, start, end):
+    """Whether [start, end) of `text` has a non-blank character outside the Office-protected intervals
+    (`merged` from _union, `ends` their end offsets): the interval-wise form of has_editable_text."""
+    cursor = start
+    for lo, hi in merged[bisect_right(ends, start):]:
+        if lo >= end:
+            break
+        if lo > cursor and text[cursor:lo].strip():
+            return True
+        cursor = max(cursor, hi)
+    return cursor < end and bool(text[cursor:end].strip())
+
+
+def sejong_block_plan(block, flags):
+    """Compact v2 plan of one Office block (DESIGN 3.4, 4.3): sejong.plan.build_plan on the block text, cut
+    down to what the writer prompt needs. A request or deterministic fix on a sentence that the block's own
+    protection covers completely (numbers, entities, quotes, fields) is dropped, because no edit can reach it.
+
+      requests   [{sentence, text, tier, rules, guides, allowSplit, frozen, keepTokens, voice, fix?}] in
+                 sentence order; `fix` lists the deterministic misspelling fixes of that sentence
+                 (before/after), offered as FIX items because Office never repairs (OD 3)
+      nominable  the sentences an open review may nominate (editable, Hangul, not wholly frozen)
+      needsModel a request exists, or the plan allows an open review and a sentence can be nominated
+
+    Deterministic fixes are offered only with SUPER_SEJONG_DETERMINISTIC_FIX=all; edited-only and off
+    mean "never on a sentence the writer did not choose to rewrite" and "never"."""
+    _, _, diagnose, plan_mod, text_mod, types, _, _ = _sejong()
+    text = block['text']
+    options = types.Options(input_kind='direct-text', strength=OFFICE_STRENGTH, genre=OFFICE_GENRE,
+                            fix_colloquial=flags.fix_colloquial, deterministic_fix=flags.deterministic_fix)
+    try:
+        plan = plan_mod.build_plan(text, options=options, flags=flags)
+    except Exception:  # an unplannable block is left as it is
+        return {'requests': [], 'nominable': 0, 'needsModel': False}
+    merged = _union(block['protected'])
+    ends = [m[1] for m in merged]
+    free = {s.id: _free_text(text, merged, ends, s.start, s.end) for s in plan.sentences}
+    sentences = {s.id: s for s in plan.sentences}
+    order = {s.id: i for i, s in enumerate(plan.sentences)}
+    spans_of = {s.id: [] for s in plan.sentences}
+    starts = [s.start for s in plan.sentences]
+    for span in plan.protected:  # freeze/keep-token spans bucketed per sentence by bisection
+        at = max(0, bisect_right(starts, span.start) - 1)
+        while at < len(plan.sentences) and plan.sentences[at].start < span.end:
+            s = plan.sentences[at]
+            lo, hi = max(span.start, s.start), min(span.end, s.end)
+            if lo < hi:
+                spans_of[s.id].append((span.policy, text[lo:hi]))
+            at += 1
+    entries = {}
+
+    def entry(sentence_id, tier):
+        s = sentences[sentence_id]
+        if sentence_id not in entries:
+            voice = s.voice.to_json()
+            entries[sentence_id] = {
+                'sentence': sentence_id, 'text': text[s.start:s.end], 'tier': tier, 'rules': [], 'guides': [],
+                'allowSplit': False,
+                'frozen': list(dict.fromkeys(t for p, t in spans_of[sentence_id] if p == 'freeze' and t.strip())),
+                'keepTokens': list(dict.fromkeys(t for p, t in spans_of[sentence_id] if p != 'freeze' and t.strip())),
+                'voice': voice}
+        elif tier == 'FIX':
+            entries[sentence_id]['tier'] = 'FIX'
+        return entries[sentence_id]
+
+    for request in plan.requests:
+        if free.get(request.sentence):
+            item = entry(request.sentence, request.tier)
+            item['rules'] = list(request.rules)
+            item['guides'] = list(request.guides)
+            item['allowSplit'] = bool(request.allow_split)
+    if plan.options.deterministic_fix == 'all':
+        rule_of = {f.id: f.rule for f in plan.findings}
+        guides = diagnose.guides()
+        for fix in plan.deterministic:
+            if not free.get(fix.sentence):
+                continue
+            item = entry(fix.sentence, 'FIX')
+            rule = rule_of.get(fix.finding)
+            if rule and rule not in item['rules']:
+                item['rules'].append(rule)
+                if guides.get(rule) and guides[rule] not in item['guides']:
+                    item['guides'].append(guides[rule])
+            item.setdefault('fix', []).append({'before': fix.before, 'after': fix.after})
+    requests = [entries[k] for k in sorted(entries, key=order.get)]
+    nominable = 0
+    if plan.open_review.enabled:
+        document = plan_mod.source_document(plan, text)
+        nominable = sum(1 for u in document.units if free[u.id] and plan_mod.nominable(u, plan.protected))
+    return {'requests': requests, 'nominable': nominable, 'needsModel': bool(requests) or nominable > 0}
+
+
+def sejong_nominations(block, edits, asked):
+    """Sentences of the block that resolved `edits` really change although the plan made no request for them
+    (`asked`: the ids of the requested sentences the writer was shown): the writer's open-review nominations
+    (DESIGN 3.4, 3.9: unrequested edits are reverted unless the open review allows them). The changed range
+    of an edit is its before/after without their common prefix and suffix, so a unique anchor that reaches
+    into a neighbouring sentence does not count as touching it."""
+    text_mod = _sejong()[4]
+    changed = []
+    for edit in edits:
+        before, after = edit['before'], edit['after']
+        if before == after:
+            continue
+        head = 0
+        while head < min(len(before), len(after)) and before[head] == after[head]:
+            head += 1
+        tail = 0
+        while tail < min(len(before), len(after)) - head and before[-1 - tail] == after[-1 - tail]:
+            tail += 1
+        lo = edit['start'] + head
+        changed.append((lo, max(edit['end'] - tail, lo + 1)))
+    units = text_mod.segment(block['text']).units
+    touched = {u.id for u in units for lo, hi in changed if u.start < hi and u.end > lo}
+    return sorted(touched - set(asked))
+
+
+def sejong_review_limit(nominable):
+    """Open-review cap of a batch: max(3, ceil(0.1 n)) over its nominable sentences (DESIGN 3.4)."""
+    return _sejong()[3].review_limit(nominable)
+
+
+def sejong_profile(texts):
+    """{line, mixed} voice profile of a batch (prompt context only, never a decision; OD 1)."""
+    _, _, _, _, text_mod, _, _, voice = _sejong()
+    found = voice.profile(text_mod.segment('\n\n'.join(texts)))
+    return {'line': found['line'], 'mixed': bool(found['mixed'])}
+
 
 def extract(pkg: Package):
     parts = [(pkg.main, 0)]
@@ -222,6 +452,11 @@ def apply_edits(block, edits):
         raise DocumentError('짧은 부정 표현 변화가 감지되었습니다.')
     if signed_quantities(source)!=signed_quantities(result):
         raise DocumentError('숫자·부호·단위가 추가되거나 변경되었습니다.')
+    if sejong_v2():
+        # v2: the sentence-aligned verification (floor incl. particles, meaning, voice, CTA, flow, norms)
+        # replaces the two v1 enforce-mode checks below; it rejects and never repairs.
+        reject_with_sejong(source, result)
+        return result
     if sejong == 'enforce' and document_sentence_drift(source, result):
         raise DocumentError('문장이 사라지거나 부정·당위의 문장별 의미가 바뀌었습니다.')
     # Office runs map edits to formatting spans, so an introduced particle mismatch is rejected, not repaired.
