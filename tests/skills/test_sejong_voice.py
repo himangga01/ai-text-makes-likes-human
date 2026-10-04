@@ -277,6 +277,10 @@ class OwnerDecisionTests(unittest.TestCase):
         self.assertEqual([v.keep for v in check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 것 같아ㅎㅎ")],
                          ["거 같아"])
         self.assertEqual(check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 거 같아ㅎㅎ"), [])
+        # 이었 after a final consonant is the only spelling (the TR-JUNGE_ITDA repair in the past tense); the other
+        # upshifts still count
+        self.assertEqual(check("공사가 진행 중에 있었다.", "공사가 진행 중이었다."), [])
+        self.assertEqual([v.code for v in check("그는 그 일을 했다.", "그는 그 일을 하였다.")], ["voice_written_upshift"])
         # in 합쇼체 and 해라체 것 같다 is the expected form
         self.assertEqual(check("내일은 비가 올거 같습니다.", "내일은 비가 올 것 같습니다."), [])
         self.assertEqual(check("그는 이미 떠난 거 같다.", "그는 이미 떠난 것 같다."), [])
