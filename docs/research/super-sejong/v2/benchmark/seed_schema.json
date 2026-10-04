@@ -1,0 +1,645 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Super Sejong seed benchmark record (ssb-seed/1)",
+  "description": "One JSON object per line. All offsets are Unicode code point indices into `text` (identical to UTF-16 units: the set contains no non-BMP characters). Scoring unit for voice is the sentence; `voice_stratum` and `document_level_summary_informational_only` are stratification/informational labels and must never be used as a scoring reference.",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "key",
+    "family",
+    "item_type",
+    "genre",
+    "voice_stratum",
+    "input_state",
+    "length_bin",
+    "format",
+    "chars",
+    "text",
+    "gold_text",
+    "expect_edit",
+    "tags",
+    "injections",
+    "protected_spans",
+    "voice_profile",
+    "protected_tokens",
+    "cta",
+    "meaning_invariants",
+    "probes",
+    "provenance",
+    "old_engine_protected_sentences"
+  ],
+  "$defs": {
+    "span": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "features": {
+      "type": "object",
+      "required": [
+        "level",
+        "ending",
+        "honorific",
+        "humble",
+        "persona"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "hapsyo",
+            "haeyo",
+            "haera",
+            "haeche",
+            "nominal",
+            "quote_only",
+            "other"
+          ]
+        },
+        "ending": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "honorific": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "humble": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "persona": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema": {
+      "const": "ssb-seed/1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^SSB-(D?[0-9]{2,3})$"
+    },
+    "key": {
+      "type": "string",
+      "description": "Stable authoring key (NC=natural control, J/W/M=injected, T=meaning trap, A=CTA, V=voice trap; trailing t = twin)."
+    },
+    "family": {
+      "type": "string",
+      "description": "Cluster id for bootstrap resampling; twins share the family of the injected item."
+    },
+    "twin_of": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "item_type": {
+      "enum": [
+        "natural_control",
+        "injected",
+        "meaning_trap",
+        "cta",
+        "voice_trap",
+        "composite_document"
+      ]
+    },
+    "subtype": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "cta: preserve|awkward|cta_free; meaning_trap: invariant kinds; natural_control: twin_of_injected."
+    },
+    "genre": {
+      "enum": [
+        "blog",
+        "notice",
+        "report",
+        "essay",
+        "marketing",
+        "casual",
+        "mixed"
+      ]
+    },
+    "voice_stratum": {
+      "enum": [
+        "hapsyo",
+        "haeyo",
+        "haera",
+        "haeche",
+        "mixed",
+        "nominal"
+      ],
+      "description": "Stratification label only (mixed = quotation or several levels in one text)."
+    },
+    "input_state": {
+      "enum": [
+        "authored_with_defects",
+        "authored_clean",
+        "already_processed_proxy"
+      ],
+      "description": "already_processed_proxy = clean twin standing in for text the engine already rewrote; real already-processed inputs are private and added at run time."
+    },
+    "length_bin": {
+      "enum": [
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "description": "S<120, M 120-499, L 500-1499, XL>=1500 code points."
+    },
+    "format": {
+      "enum": [
+        "plain",
+        "markdown"
+      ]
+    },
+    "chars": {
+      "type": "integer"
+    },
+    "sentence_count": {
+      "type": "integer"
+    },
+    "text": {
+      "type": "string",
+      "description": "Exact input sent to an arm."
+    },
+    "gold_text": {
+      "type": "string",
+      "description": "text with every default gold fix applied; equals text when nothing is to be fixed."
+    },
+    "gold_text_optin_colloquial_fix": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "gold text when the opt-in option fix_colloquial_spelling is ON."
+    },
+    "expect_edit": {
+      "type": "boolean",
+      "description": "false = no edit is the correct outcome in the default configuration."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bait": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Legitimate uses of patterns that earlier rules flagged (EUIHAE, EDAEHAN, RO_BUTEO, GAJIDA, IREOHAN, SU_ITDA, HAGO_ITDA)."
+    },
+    "injections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "target_kind",
+          "gold_confidence",
+          "primary",
+          "span",
+          "before",
+          "gold_fix",
+          "defect_regex",
+          "voice_effect"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "AGREE",
+              "DPASS",
+              "TRANS",
+              "REDUN",
+              "PARTICLE",
+              "SPELL",
+              "NOMIN",
+              "CAUS",
+              "HONOR",
+              "COLLOC",
+              "CONNECT",
+              "TELL"
+            ]
+          },
+          "target_kind": {
+            "enum": [
+              "norm",
+              "awkward",
+              "tell"
+            ]
+          },
+          "gold_confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "genre_dependent": {
+            "type": "boolean"
+          },
+          "primary": {
+            "type": "boolean",
+            "description": "true = counts in the primary endpoint: high confidence, not genre-dependent, not an LLM tell, and the gold fix leaves the sentence's voice features unchanged."
+          },
+          "sentence_index": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "span": {
+            "$ref": "#/$defs/span"
+          },
+          "before": {
+            "type": "string"
+          },
+          "gold_fix": {
+            "type": "string"
+          },
+          "acceptable_fixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Span replacements, or full-sentence alternatives when the string ends with a period."
+          },
+          "defect_regex": {
+            "type": "string",
+            "description": "Matches `before` in text and nothing in gold_text; a match in the output sentence means the defect persists."
+          },
+          "voice_effect": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "level",
+                "ending",
+                "honorific",
+                "humble",
+                "persona",
+                "unknown"
+              ]
+            },
+            "description": "Non-empty = the gold fix itself changes the sentence's voice features; such sentences are exempt from voice scoring and reported as a separate stratum."
+          },
+          "voice_safe": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          },
+          "in_old_engine_protected_sentence": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "true = the injected defect sits in a sentence the old engine will not touch by design."
+          }
+        }
+      }
+    },
+    "protected_spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "span",
+          "reason"
+        ],
+        "properties": {
+          "span": {
+            "$ref": "#/$defs/span"
+          },
+          "reason": {
+            "const": "quotation"
+          }
+        }
+      }
+    },
+    "protected_tokens": {
+      "type": "array",
+      "description": "Colloquial spellings and CMC tokens kept verbatim by default (owner decision, 4 Oct 2026); changing one is over-editing unless the opt-in option is ON.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "text",
+          "spans"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "cmc",
+              "colloquial_spelling"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "spans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/span"
+            }
+          },
+          "optional_fix": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "option": {
+                "const": "fix_colloquial_spelling"
+              },
+              "gold_fix": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "voice_profile": {
+      "type": "object",
+      "required": [
+        "scoring_unit",
+        "sentence_levels"
+      ],
+      "properties": {
+        "declared_stratum_label": {
+          "type": "string"
+        },
+        "scoring_unit": {
+          "const": "sentence"
+        },
+        "document_level_summary_informational_only": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "must_keep": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sentence_levels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "i",
+              "span",
+              "kind",
+              "level",
+              "features",
+              "quotes"
+            ],
+            "properties": {
+              "i": {
+                "type": "integer"
+              },
+              "span": {
+                "$ref": "#/$defs/span"
+              },
+              "kind": {
+                "enum": [
+                  "prose",
+                  "heading",
+                  "list"
+                ]
+              },
+              "level": {
+                "type": "string"
+              },
+              "features": {
+                "$ref": "#/$defs/features"
+              },
+              "quotes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "span",
+                    "level",
+                    "features"
+                  ],
+                  "properties": {
+                    "span": {
+                      "$ref": "#/$defs/span"
+                    },
+                    "level": {
+                      "type": "string"
+                    },
+                    "features": {
+                      "$ref": "#/$defs/features"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "cta": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "span",
+          "text",
+          "form",
+          "force",
+          "action",
+          "object",
+          "cta_class"
+        ],
+        "properties": {
+          "span": {
+            "$ref": "#/$defs/span"
+          },
+          "form": {
+            "enum": [
+              "polite_request",
+              "suggestion",
+              "recommendation",
+              "obligation",
+              "question",
+              "imperative"
+            ]
+          },
+          "force": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "description": "1 invitation/question, 2 suggestion/recommendation, 3 polite request, 4 obligation/imperative or request plus urgency (꼭, 반드시, 지금 바로, 서둘러)."
+          },
+          "action": {
+            "type": "string"
+          },
+          "object": {
+            "type": "string"
+          },
+          "condition": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "channel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "deadline": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "awkward_wording": {
+            "type": "boolean"
+          },
+          "cta_class": {
+            "enum": [
+              "explicit",
+              "advice"
+            ]
+          }
+        }
+      }
+    },
+    "cta_lookalikes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "meaning_invariants": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "require_all",
+          "forbid_any"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "negation",
+              "number",
+              "role",
+              "modality",
+              "quantifier",
+              "condition",
+              "temporal",
+              "comparative"
+            ]
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "require_all": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "forbid_any": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "probes": {
+      "type": "array",
+      "description": "Hand-written rewrites of one source sentence with a gold label, for calibrating any meaning auditor (not for tuning one).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "source_sentence",
+          "rewrite",
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "enum": [
+              "preserve",
+              "change"
+            ]
+          },
+          "change_type": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "note": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "author",
+        "date",
+        "method",
+        "licence",
+        "review_status"
+      ]
+    },
+    "old_engine_protected_sentences": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "description": "Indices (voice_profile.sentence_levels[i]) of prose sentences that the old engine's direct-text protection treats as untouchable (obligation, negation, condition, number, quotation ...). Python re-implementation reproducing 463/640 on the owner's ten drafts."
+    }
+  }
+}

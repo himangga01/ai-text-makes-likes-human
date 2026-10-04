@@ -1,0 +1,525 @@
+[
+ {
+  "id": "C001",
+  "label": "preserve",
+  "category": "shop",
+  "source": "배송 전에 주소를 꼭 확인해 주세요.",
+  "rewrite": "배송 전에 주소를 반드시 확인해 주세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C002",
+  "label": "preserve",
+  "category": "shop",
+  "source": "문의사항은 고객센터(1588-1234)로 연락해 주시기 바랍니다.",
+  "rewrite": "문의사항이 있으면 고객센터(1588-1234)로 연락해 주시기 바랍니다.",
+  "expect_codes": [],
+  "note": "condition added in prose form? (soft-risk)"
+ },
+ {
+  "id": "C003",
+  "label": "preserve",
+  "category": "shop",
+  "source": "쿠폰은 이번 달 말일까지 사용하세요.",
+  "rewrite": "쿠폰은 이번 달 말일까지 쓰세요.",
+  "expect_codes": [],
+  "note": "사용 -> 쓰다 synonym, deadline kept"
+ },
+ {
+  "id": "C004",
+  "label": "preserve",
+  "category": "class",
+  "source": "수업 전에 교재 3장을 읽어 오세요.",
+  "rewrite": "수업 전에 교재 3장을 미리 읽어 오세요.",
+  "expect_codes": [],
+  "note": "adds 미리 (modifier, not intensifier)"
+ },
+ {
+  "id": "C005",
+  "label": "preserve",
+  "category": "class",
+  "source": "숙제는 금요일까지 제출하라.",
+  "rewrite": "숙제는 금요일까지 제출하라.",
+  "expect_codes": [],
+  "note": "해라체 unchanged"
+ },
+ {
+  "id": "C006",
+  "label": "preserve",
+  "category": "class",
+  "source": "모르는 것은 질문해라.",
+  "rewrite": "모르는 것이 있으면 질문해라.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C007",
+  "label": "preserve",
+  "category": "blog_haera",
+  "source": "이 글이 도움이 되었다면 공감을 눌러 주길 바란다.",
+  "rewrite": "이 글이 도움이 되었다면 공감을 눌러 주기를 바란다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C008",
+  "label": "preserve",
+  "category": "health",
+  "source": "증상이 있으면 즉시 병원을 방문하십시오.",
+  "rewrite": "증상이 나타나면 즉시 병원을 방문하십시오.",
+  "expect_codes": [],
+  "note": "condition reworded"
+ },
+ {
+  "id": "C009",
+  "label": "preserve",
+  "category": "health",
+  "source": "복용 전 반드시 의사와 상담하세요.",
+  "rewrite": "복용 전에 의사와 반드시 상담하세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C010",
+  "label": "preserve",
+  "category": "health",
+  "source": "음주는 삼가시기 바랍니다.",
+  "rewrite": "음주는 삼가 주시기 바랍니다.",
+  "expect_codes": [],
+  "note": "both prohibition class"
+ },
+ {
+  "id": "C011",
+  "label": "preserve",
+  "category": "news_ad",
+  "source": "지금 바로 앱을 내려받으세요.",
+  "rewrite": "지금 바로 앱을 다운로드하세요.",
+  "expect_codes": [],
+  "note": "내려받다/다운로드 synonyms of the same act"
+ },
+ {
+  "id": "C012",
+  "label": "preserve",
+  "category": "paragraph",
+  "source": "오늘은 전세계약 전 확인할 사항을 정리했습니다. 등기부등본은 계약 당일에도 다시 확인하세요. 특약사항은 꼭 서면으로 남겨 두세요.",
+  "rewrite": "오늘은 전세계약을 맺기 전에 확인할 사항을 정리했습니다. 계약 당일에도 등기부등본을 다시 확인하세요. 특약사항은 반드시 서면으로 남겨 두세요.",
+  "expect_codes": [],
+  "note": "two CTAs, necessity intensifier kept as class"
+ },
+ {
+  "id": "C013",
+  "label": "preserve",
+  "category": "paragraph",
+  "source": "이 제도는 올해부터 달라졌습니다. 변경 내용은 홈페이지에 공지되어 있습니다. 자세한 내용은 홈페이지(www.example.go.kr)에서 확인하세요.",
+  "rewrite": "올해부터 이 제도가 달라졌습니다. 변경된 내용은 홈페이지에 공지되어 있습니다. 자세한 내용은 홈페이지(www.example.go.kr)에서 확인하세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C014",
+  "label": "preserve",
+  "category": "paragraph",
+  "source": "저희 사무소는 서류 검토와 접수 대행을 맡고 있습니다. 상담을 원하시면 프로필의 링크로 예약해 주세요.",
+  "rewrite": "저희 사무소는 서류 검토와 접수 대행을 맡고 있어요. 상담을 원하시면 프로필 링크로 예약해 주세요.",
+  "expect_codes": [],
+  "note": "speech-level shift in a non-CTA sentence is not the CTA gate"
+ },
+ {
+  "id": "C015",
+  "label": "preserve",
+  "category": "informal",
+  "source": "궁금하면 댓글 달아줘.",
+  "rewrite": "궁금하면 댓글 달아 줘.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C016",
+  "label": "preserve",
+  "category": "suggestion",
+  "source": "함께 해결해 봅시다.",
+  "rewrite": "같이 해결해 봅시다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C017",
+  "label": "preserve",
+  "category": "advisory",
+  "source": "일정을 미리 정해 두는 것이 좋습니다.",
+  "rewrite": "일정을 미리 정해 두는 편이 좋습니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C018",
+  "label": "preserve",
+  "category": "advisory",
+  "source": "전문가와 상담해 보시길 권합니다.",
+  "rewrite": "전문가와 상담해 보시기를 권합니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C019",
+  "label": "preserve",
+  "category": "advisory",
+  "source": "전문가와 상담해 보시길 권합니다.",
+  "rewrite": "전문가와의 상담을 추천드립니다.",
+  "expect_codes": [],
+  "note": "advisory both (권합니다 -> 추천드립니다)"
+ },
+ {
+  "id": "C020",
+  "label": "preserve",
+  "category": "quote",
+  "source": "“꼭 확인하세요”라는 안내문이 붙어 있습니다.",
+  "rewrite": "“꼭 확인하세요”라는 안내문이 붙어 있었습니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C021",
+  "label": "preserve",
+  "category": "cta_free",
+  "source": "신청은 온라인으로 가능합니다.",
+  "rewrite": "신청은 온라인으로도 할 수 있습니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C022",
+  "label": "preserve",
+  "category": "cta_free",
+  "source": "행사는 5월 3일에 열립니다.",
+  "rewrite": "행사는 5월 3일에 개최됩니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C023",
+  "label": "preserve",
+  "category": "cta_free",
+  "source": "감사합니다. 좋은 하루 되세요.",
+  "rewrite": "감사합니다. 좋은 하루 보내세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C024",
+  "label": "preserve",
+  "category": "engage",
+  "source": "이웃추가하고 새 글 알림 받아 가세요.",
+  "rewrite": "이웃추가하고 새 글 알림도 받아 가세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C025",
+  "label": "preserve",
+  "category": "button",
+  "source": "▶ 무료 상담 예약하기",
+  "rewrite": "▶ 무료 상담 예약하기",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "C026",
+  "label": "preserve",
+  "category": "conditional",
+  "source": "자료가 필요하시면 메일로 요청해 주세요.",
+  "rewrite": "자료가 필요하시면 메일로 요청해 주세요.",
+  "expect_codes": [],
+  "note": "identical text (sanity)"
+ },
+ {
+  "id": "C027",
+  "label": "violate",
+  "category": "weaken",
+  "source": "배송 전에 주소를 꼭 확인해 주세요.",
+  "rewrite": "배송 전에 주소를 확인해 보시는 것도 좋겠습니다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C028",
+  "label": "violate",
+  "category": "channel",
+  "source": "문의사항은 고객센터(1588-1234)로 연락해 주시기 바랍니다.",
+  "rewrite": "문의사항은 고객센터로 연락해 주시기 바랍니다.",
+  "expect_codes": [
+   "CTA_CHANNEL_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C029",
+  "label": "violate",
+  "category": "deadline",
+  "source": "쿠폰은 이번 달 말일까지 사용하세요.",
+  "rewrite": "쿠폰은 사용하세요.",
+  "expect_codes": [
+   "CTA_DEADLINE_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C030",
+  "label": "violate",
+  "category": "action",
+  "source": "수업 전에 교재 3장을 읽어 오세요.",
+  "rewrite": "수업 전에 교재 3장을 복습하세요.",
+  "expect_codes": [
+   "CTA_ACTION_REPLACED"
+  ],
+  "note": "open-class verb: expected soft"
+ },
+ {
+  "id": "C031",
+  "label": "violate",
+  "category": "drop",
+  "source": "숙제는 금요일까지 제출하라. 지각은 감점이다.",
+  "rewrite": "숙제는 금요일까지다. 지각은 감점이다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C032",
+  "label": "violate",
+  "category": "weaken",
+  "source": "모르는 것은 질문해라.",
+  "rewrite": "모르는 것은 질문해도 된다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED",
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C033",
+  "label": "violate",
+  "category": "drop",
+  "source": "이 글이 도움이 되었다면 공감을 눌러 주길 바란다.",
+  "rewrite": "이 글이 도움이 되었기를 바란다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": "CTA turned into a wish for the reader"
+ },
+ {
+  "id": "C034",
+  "label": "violate",
+  "category": "condition",
+  "source": "증상이 있으면 즉시 병원을 방문하십시오.",
+  "rewrite": "병원을 방문하십시오.",
+  "expect_codes": [
+   "CTA_CONDITION_CHANGED",
+   "CTA_DEADLINE_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C035",
+  "label": "violate",
+  "category": "strengthen",
+  "source": "복용 전 의사와 상담해 보세요.",
+  "rewrite": "복용 전 반드시 의사와 상담하세요.",
+  "expect_codes": [
+   "CTA_FORCE_STRENGTHENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C036",
+  "label": "violate",
+  "category": "polarity",
+  "source": "음주는 삼가시기 바랍니다.",
+  "rewrite": "음주를 하시기 바랍니다.",
+  "expect_codes": [
+   "CTA_POLARITY_FLIPPED",
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C037",
+  "label": "violate",
+  "category": "weaken",
+  "source": "지금 바로 앱을 내려받으세요.",
+  "rewrite": "앱은 내려받을 수 있습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C038",
+  "label": "violate",
+  "category": "paragraph",
+  "source": "오늘은 전세계약 전 확인할 사항을 정리했습니다. 등기부등본은 계약 당일에도 다시 확인하세요. 특약사항은 꼭 서면으로 남겨 두세요.",
+  "rewrite": "오늘은 전세계약 전 확인할 사항을 정리했습니다. 등기부등본은 계약 당일에도 다시 확인하는 것이 좋습니다. 특약사항은 서면으로 남겨 두는 편이 좋습니다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED"
+  ],
+  "note": "two CTAs weakened, one intensifier lost"
+ },
+ {
+  "id": "C039",
+  "label": "violate",
+  "category": "paragraph",
+  "source": "이 제도는 올해부터 달라졌습니다. 변경 내용은 홈페이지에 공지되어 있습니다. 자세한 내용은 홈페이지(www.example.go.kr)에서 확인하세요.",
+  "rewrite": "이 제도는 올해부터 달라졌습니다. 변경 내용은 홈페이지에 공지되어 있습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C040",
+  "label": "violate",
+  "category": "paragraph",
+  "source": "저희 사무소는 서류 검토와 접수 대행을 맡고 있습니다. 상담을 원하시면 프로필의 링크로 예약해 주세요.",
+  "rewrite": "저희 사무소는 서류 검토와 접수 대행을 맡고 있습니다. 상담을 원하시면 예약해 주세요.",
+  "expect_codes": [
+   "CTA_CHANNEL_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C041",
+  "label": "violate",
+  "category": "paragraph",
+  "source": "저희 사무소는 서류 검토와 접수 대행을 맡고 있습니다. 상담을 원하시면 프로필의 링크로 예약해 주세요.",
+  "rewrite": "저희 사무소는 서류 검토와 접수 대행을 맡고 있습니다. 상담은 예약 후 이용하실 수 있습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": "CTA to ability statement"
+ },
+ {
+  "id": "C042",
+  "label": "violate",
+  "category": "informal",
+  "source": "궁금하면 댓글 달아줘.",
+  "rewrite": "궁금하면 댓글을 달 수도 있어.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C043",
+  "label": "violate",
+  "category": "weaken",
+  "source": "함께 해결해 봅시다.",
+  "rewrite": "함께 해결할 수도 있겠습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C044",
+  "label": "violate",
+  "category": "strengthen",
+  "source": "일정을 미리 정해 두는 것이 좋습니다.",
+  "rewrite": "일정을 반드시 미리 정해 두세요.",
+  "expect_codes": [
+   "CTA_FORCE_STRENGTHENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C045",
+  "label": "violate",
+  "category": "weaken",
+  "source": "전문가와 상담해 보시길 권합니다.",
+  "rewrite": "전문가와 상담해 보셔도 됩니다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C046",
+  "label": "violate",
+  "category": "invent",
+  "source": "신청은 온라인으로 가능합니다.",
+  "rewrite": "신청은 온라인으로 가능합니다. 서둘러 신청하세요.",
+  "expect_codes": [
+   "CTA_INVENTED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C047",
+  "label": "violate",
+  "category": "invent",
+  "source": "행사는 5월 3일에 열립니다.",
+  "rewrite": "행사는 5월 3일에 열립니다. 많은 참여 부탁드립니다.",
+  "expect_codes": [
+   "CTA_INVENTED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C048",
+  "label": "violate",
+  "category": "invent",
+  "source": "감사합니다.",
+  "rewrite": "감사합니다. 공감과 이웃추가 부탁드립니다.",
+  "expect_codes": [
+   "CTA_INVENTED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C049",
+  "label": "violate",
+  "category": "count",
+  "source": "이웃추가하고 새 글 알림 받아 가세요.",
+  "rewrite": "새 글 알림 받아 가세요.",
+  "expect_codes": [
+   "CTA_ACTION_COUNT_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C050",
+  "label": "violate",
+  "category": "benefit",
+  "source": "▶ 무료 상담 예약하기",
+  "rewrite": "▶ 상담 예약하기",
+  "expect_codes": [
+   "CTA_BENEFIT_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C051",
+  "label": "violate",
+  "category": "action",
+  "source": "자료가 필요하시면 메일로 요청해 주세요.",
+  "rewrite": "자료가 필요하시면 전화로 요청해 주세요.",
+  "expect_codes": [
+   "CTA_CHANNEL_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "C052",
+  "label": "violate",
+  "category": "drop",
+  "source": "이웃추가하고 새 글 알림 받아 가세요.",
+  "rewrite": "새 글이 올라옵니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ }
+]

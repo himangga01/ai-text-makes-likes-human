@@ -1,0 +1,613 @@
+[
+ {
+  "id": "B001",
+  "label": "preserve",
+  "category": "form_same",
+  "source": "서류를 미리 챙겨 두세요.",
+  "rewrite": "서류를 미리 챙겨 두시기 바랍니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B002",
+  "label": "preserve",
+  "category": "reorder",
+  "source": "관할 기관에 먼저 확인하세요",
+  "rewrite": "먼저 관할 기관에 확인하세요",
+  "expect_codes": [],
+  "note": "heading"
+ },
+ {
+  "id": "B003",
+  "label": "preserve",
+  "category": "informal",
+  "source": "댓글 남겨줘.",
+  "rewrite": "댓글 남겨 줘.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B004",
+  "label": "preserve",
+  "category": "reorder",
+  "source": "반드시 서류를 지참하십시오.",
+  "rewrite": "서류를 반드시 지참하십시오.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B005",
+  "label": "preserve",
+  "category": "paragraph",
+  "source": "지혜행정사사무소는 신고 대상 여부를 검토합니다. 준비 중이라면 언제든 문의해 주세요. 감사합니다.",
+  "rewrite": "지혜행정사사무소에서는 신고 대상인지 검토해 드립니다. 준비 중이시라면 언제든 문의해 주세요. 감사합니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B006",
+  "label": "preserve",
+  "category": "reorder",
+  "source": "자세한 내용은 아래 링크를 참고해 주세요.",
+  "rewrite": "아래 링크에서 자세한 내용을 참고해 주세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B007",
+  "label": "preserve",
+  "category": "synonym",
+  "source": "상담이 필요하시면 언제든 편하게 이야기 나눠 주세요.",
+  "rewrite": "상담이 필요하시다면 언제든 편하게 이야기해 주세요.",
+  "expect_codes": [],
+  "note": "light-verb reformulation of the same action"
+ },
+ {
+  "id": "B008",
+  "label": "preserve",
+  "category": "synonym",
+  "source": "아래 자료를 참고하세요.",
+  "rewrite": "아래 자료를 참조하세요.",
+  "expect_codes": [],
+  "note": "참고 vs 참조"
+ },
+ {
+  "id": "B009",
+  "label": "preserve",
+  "category": "synonym",
+  "source": "신청서를 제출하세요.",
+  "rewrite": "신청서를 내세요.",
+  "expect_codes": [],
+  "note": "plain-word substitution of 제출 (expected hard case)"
+ },
+ {
+  "id": "B010",
+  "label": "preserve",
+  "category": "synonym",
+  "source": "서류를 준비하세요.",
+  "rewrite": "서류를 챙기세요.",
+  "expect_codes": [],
+  "note": "plain-word substitution (expected hard case)"
+ },
+ {
+  "id": "B011",
+  "label": "preserve",
+  "category": "quote",
+  "source": "직원이 “서류를 확인하세요”라고 말했습니다.",
+  "rewrite": "직원은 “서류를 확인하세요”라고 말했습니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B012",
+  "label": "preserve",
+  "category": "form_same",
+  "source": "연락 주시면 안내해 드리겠습니다.",
+  "rewrite": "연락해 주시면 안내해 드리겠습니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B013",
+  "label": "preserve",
+  "category": "form_same",
+  "source": "상담해 보시기 바랍니다.",
+  "rewrite": "상담해 보세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B014",
+  "label": "preserve",
+  "category": "prohibitive",
+  "source": "서류를 누락하지 마시기 바랍니다.",
+  "rewrite": "서류를 누락하지 마세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B015",
+  "label": "preserve",
+  "category": "chain",
+  "source": "확인 후 신청하세요.",
+  "rewrite": "확인한 뒤에 신청하세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B016",
+  "label": "preserve",
+  "category": "bullets",
+  "source": "- 신청서를 작성하세요.\n- 서류를 제출하세요.",
+  "rewrite": "1. 신청서를 작성하세요.\n2. 서류를 제출하세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B017",
+  "label": "preserve",
+  "category": "reorder",
+  "source": "반드시 기한 내에 제출하십시오.",
+  "rewrite": "기한 내에 반드시 제출하십시오.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B018",
+  "label": "preserve",
+  "category": "engage",
+  "source": "구독과 공감, 댓글 부탁드립니다.",
+  "rewrite": "구독, 공감, 댓글을 부탁드립니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B019",
+  "label": "preserve",
+  "category": "channel",
+  "source": "전화는 02-123-4567입니다. 편하게 연락 주세요.",
+  "rewrite": "편하게 연락 주세요. 전화는 02-123-4567입니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B020",
+  "label": "preserve",
+  "category": "quote_button",
+  "source": "‘이웃추가’ 버튼을 눌러 주세요.",
+  "rewrite": "‘이웃추가’ 버튼을 눌러 주시기 바랍니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B021",
+  "label": "preserve",
+  "category": "cta_free",
+  "source": "필요한 서류를 대신 준비해 드립니다.",
+  "rewrite": "필요한 서류를 대신 준비해 드리고 있습니다.",
+  "expect_codes": [],
+  "note": "service offer, not a request"
+ },
+ {
+  "id": "B022",
+  "label": "preserve",
+  "category": "cta_free",
+  "source": "경찰은 시민들에게 주의를 당부했다.",
+  "rewrite": "경찰이 시민들에게 주의하라고 당부했다.",
+  "expect_codes": [],
+  "note": "reported directive"
+ },
+ {
+  "id": "B023",
+  "label": "preserve",
+  "category": "cta_free",
+  "source": "앞으로도 행복하시길 바랍니다.",
+  "rewrite": "앞으로도 늘 행복하시기를 바랍니다.",
+  "expect_codes": [],
+  "note": "blessing"
+ },
+ {
+  "id": "B024",
+  "label": "preserve",
+  "category": "deadline",
+  "source": "5월 10일까지 접수하세요.",
+  "rewrite": "접수는 5월 10일까지 하세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B025",
+  "label": "preserve",
+  "category": "list",
+  "source": "다음 서류를 준비하세요: 신분증, 인감도장.",
+  "rewrite": "다음 서류를 준비하세요. 신분증, 인감도장입니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B026",
+  "label": "preserve",
+  "category": "form_same",
+  "source": "확인해 주시길 부탁드립니다.",
+  "rewrite": "확인해 주시기를 부탁드립니다.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B027",
+  "label": "preserve",
+  "category": "suggestion",
+  "source": "함께 알아볼까요?",
+  "rewrite": "함께 살펴볼까요?",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B028",
+  "label": "preserve",
+  "category": "button",
+  "source": "지금 신청하기",
+  "rewrite": "지금 신청하기",
+  "expect_codes": [],
+  "note": "unchanged nominal button"
+ },
+ {
+  "id": "B029",
+  "label": "preserve",
+  "category": "button",
+  "source": "[상담 신청하기]",
+  "rewrite": "▶ 상담 신청하기",
+  "expect_codes": [],
+  "note": "nominal button, decoration changed"
+ },
+ {
+  "id": "B030",
+  "label": "preserve",
+  "category": "synonym",
+  "source": "서류를 송부하여 주시기 바랍니다.",
+  "rewrite": "서류를 보내 주시기 바랍니다.",
+  "expect_codes": [],
+  "note": "송부 -> 보내 (expected hard case)"
+ },
+ {
+  "id": "B031",
+  "label": "preserve",
+  "category": "paragraph",
+  "source": "신고는 접수 후 처리됩니다. 처리 기간은 25일입니다. 기간 중 보완을 요청받을 수 있습니다. 보완 요청이 오면 즉시 확인하세요.",
+  "rewrite": "신고는 접수 뒤에 처리되며, 처리 기간은 25일입니다. 기간 중에는 보완 요청이 올 수 있습니다. 보완 요청이 오면 즉시 확인하세요.",
+  "expect_codes": [],
+  "note": ""
+ },
+ {
+  "id": "B032",
+  "label": "violate",
+  "category": "weaken",
+  "source": "서류를 미리 챙겨 두세요.",
+  "rewrite": "서류를 미리 챙겨 두면 좋습니다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B033",
+  "label": "violate",
+  "category": "drop",
+  "source": "관할 기관에 먼저 확인하세요",
+  "rewrite": "관할 기관 확인이 필요합니다",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": "heading CTA to deontic noun phrase"
+ },
+ {
+  "id": "B034",
+  "label": "violate",
+  "category": "weaken",
+  "source": "댓글 남겨줘.",
+  "rewrite": "댓글을 남겨도 돼.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED",
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B035",
+  "label": "violate",
+  "category": "strengthen_loss",
+  "source": "반드시 서류를 지참하십시오.",
+  "rewrite": "서류를 지참하십시오.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B036",
+  "label": "violate",
+  "category": "weaken",
+  "source": "지혜행정사사무소는 신고 대상 여부를 검토합니다. 준비 중이라면 언제든 문의해 주세요. 감사합니다.",
+  "rewrite": "지혜행정사사무소는 신고 대상 여부를 검토합니다. 준비 중이라면 언제든 문의하실 수 있습니다. 감사합니다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED",
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B037",
+  "label": "violate",
+  "category": "weaken",
+  "source": "자세한 내용은 아래 링크를 참고해 주세요.",
+  "rewrite": "자세한 내용은 아래 링크에 정리되어 있습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B038",
+  "label": "violate",
+  "category": "weaken",
+  "source": "상담이 필요하시면 이야기 나눠 주세요.",
+  "rewrite": "상담이 필요하시면 이야기 나눠 보셔도 좋습니다.",
+  "expect_codes": [
+   "CTA_FORCE_WEAKENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B039",
+  "label": "violate",
+  "category": "count",
+  "source": "공감 부탁드립니다. 이웃추가도 부탁드립니다.",
+  "rewrite": "공감 부탁드립니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B040",
+  "label": "violate",
+  "category": "strengthen",
+  "source": "연락 주시면 안내해 드리겠습니다.",
+  "rewrite": "연락 주십시오.",
+  "expect_codes": [
+   "CTA_FORCE_STRENGTHENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B041",
+  "label": "violate",
+  "category": "strengthen",
+  "source": "신청해 보세요.",
+  "rewrite": "당장 신청하세요.",
+  "expect_codes": [
+   "CTA_FORCE_STRENGTHENED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B042",
+  "label": "violate",
+  "category": "invent",
+  "source": "이번 정책은 소상공인을 대상으로 합니다. 지원 한도는 업체당 500만원입니다.",
+  "rewrite": "이번 정책은 소상공인을 대상으로 합니다. 지원 한도는 업체당 500만원입니다. 좋아요와 구독 부탁드립니다.",
+  "expect_codes": [
+   "CTA_INVENTED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B043",
+  "label": "violate",
+  "category": "invent",
+  "source": "서류를 구비해야 합니다.",
+  "rewrite": "서류를 구비해야 합니다. 구비가 어렵다면 상담을 신청하세요.",
+  "expect_codes": [
+   "CTA_INVENTED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B044",
+  "label": "violate",
+  "category": "polarity",
+  "source": "서류를 누락하시기 바랍니다.",
+  "rewrite": "서류를 누락하지 마시기 바랍니다.",
+  "expect_codes": [
+   "CTA_POLARITY_FLIPPED"
+  ],
+  "note": "source is an unnatural but literal CTA"
+ },
+ {
+  "id": "B045",
+  "label": "violate",
+  "category": "condition",
+  "source": "신청 자격이 되시면 아래 링크로 신청하세요.",
+  "rewrite": "아래 링크로 신청하세요.",
+  "expect_codes": [
+   "CTA_CONDITION_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B046",
+  "label": "violate",
+  "category": "condition",
+  "source": "문서가 준비되셨다면 제출하세요.",
+  "rewrite": "문서가 준비되지 않았다면 제출하세요.",
+  "expect_codes": [
+   "CTA_CONDITION_CHANGED"
+  ],
+  "note": "known hard case: negated condition keeps the same lexeme"
+ },
+ {
+  "id": "B047",
+  "label": "violate",
+  "category": "deadline",
+  "source": "5월 10일까지 접수하세요.",
+  "rewrite": "5월 20일까지 접수하세요.",
+  "expect_codes": [
+   "CTA_DEADLINE_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B048",
+  "label": "violate",
+  "category": "deadline",
+  "source": "마감 전에 꼭 제출하세요.",
+  "rewrite": "꼭 제출하세요.",
+  "expect_codes": [
+   "CTA_DEADLINE_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B049",
+  "label": "violate",
+  "category": "channel",
+  "source": "카카오톡 채널로 문의해 주세요.",
+  "rewrite": "전화로 문의해 주세요.",
+  "expect_codes": [
+   "CTA_CHANNEL_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B050",
+  "label": "violate",
+  "category": "channel",
+  "source": "010-1234-5678로 연락 주세요.",
+  "rewrite": "연락 주세요.",
+  "expect_codes": [
+   "CTA_CHANNEL_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B051",
+  "label": "violate",
+  "category": "benefit",
+  "source": "무료 진단을 받아 보세요.",
+  "rewrite": "진단을 받아 보세요.",
+  "expect_codes": [
+   "CTA_BENEFIT_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B052",
+  "label": "violate",
+  "category": "action",
+  "source": "서류를 접수하세요.",
+  "rewrite": "서류를 보관하세요.",
+  "expect_codes": [
+   "CTA_ACTION_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B053",
+  "label": "violate",
+  "category": "object",
+  "source": "여권 사본을 제출하세요.",
+  "rewrite": "주민등록등본을 제출하세요.",
+  "expect_codes": [
+   "CTA_OBJECT_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B054",
+  "label": "violate",
+  "category": "count",
+  "source": "확인하고 서명한 뒤 제출하세요.",
+  "rewrite": "확인한 뒤 제출하세요.",
+  "expect_codes": [
+   "CTA_ACTION_COUNT_CHANGED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B055",
+  "label": "violate",
+  "category": "drop",
+  "source": "신청 절차는 다음과 같습니다. 접수 후 심사가 진행됩니다. 결과는 문자로 안내합니다. 궁금한 점은 언제든 문의해 주세요.",
+  "rewrite": "신청 절차는 다음과 같습니다. 접수 후 심사가 진행됩니다. 결과는 문자로 안내합니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B056",
+  "label": "violate",
+  "category": "weaken",
+  "source": "신청해 주시기 바랍니다.",
+  "rewrite": "신청하시는 분들이 많습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": ""
+ },
+ {
+  "id": "B057",
+  "label": "violate",
+  "category": "weaken",
+  "source": "참고하시면 좋겠습니다.",
+  "rewrite": "참고할 수 있습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": "advisory to bare ability statement"
+ },
+ {
+  "id": "B058",
+  "label": "violate",
+  "category": "drop",
+  "source": "서로이웃 환영합니다.",
+  "rewrite": "서로이웃을 맺고 있습니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": "invitation turned into statement"
+ },
+ {
+  "id": "B059",
+  "label": "violate",
+  "category": "polarity",
+  "source": "이 방법을 쓰는 것이 좋습니다.",
+  "rewrite": "이 방법을 쓰지 않아도 됩니다.",
+  "expect_codes": [
+   "CTA_DROPPED"
+  ],
+  "note": "advice reversed"
+ },
+ {
+  "id": "B060",
+  "label": "violate",
+  "category": "moved",
+  "source": "신고 기한과 절차를 정리했습니다.\n\n마지막으로 궁금한 점은 언제든 문의해 주세요.",
+  "rewrite": "궁금한 점은 언제든 문의해 주세요.\n\n신고 기한과 절차를 정리했습니다.",
+  "expect_codes": [
+   "CTA_MOVED"
+  ],
+  "note": "closing CTA moved to the opening (soft)"
+ },
+ {
+  "id": "B061",
+  "label": "violate",
+  "category": "invent",
+  "source": "신고는 15일 이내에 해야 합니다.",
+  "rewrite": "신고는 15일 이내에 해야 합니다. 지금 바로 문의하세요.",
+  "expect_codes": [
+   "CTA_INVENTED"
+  ],
+  "note": ""
+ }
+]
