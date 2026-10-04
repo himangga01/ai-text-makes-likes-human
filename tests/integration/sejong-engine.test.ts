@@ -184,10 +184,13 @@ function goldWriter(record: Composite): StubWriter {
   });
 }
 
+const A06_LICENSED = ['polarity_changed', 'modality_changed', 'lexical_polarity_changed'];
+
 describe('Tier-B stub run on the six seed composites (real Python CLI, gold-derived replacements)', () => {
   // Measured on 2026-10-04 at medium/general: primary injections fixed 10/16, 11/13, 13/16, 11/13, 9/11, 73/92
   // (127/161); the rest sit outside the plan's requests and beyond the open-review limit. The document gate
-  // still reports polarity_changed where an SSJ-A06 request licensed its own repair (it runs without plans).
+  // still reports the codes an SSJ-A06 request licenses for its own repair (polarity, modality, lexical polarity;
+  // check.LICENSED_BY_POLARITY_RULES), because it runs without plans; WP-10b added 별로/도저히/일절 to A06.
   it.each(composites.map(record => [record.id, record] as const))('%s', async (_id, record) => {
     const writer = goldWriter(record);
     const { result, output } = await run(record.text, writer, { inputKind: 'direct-text', strength: 'medium' });
@@ -196,7 +199,7 @@ describe('Tier-B stub run on the six seed composites (real Python CLI, gold-deri
     expect(d.unusableModelOutputs).toBe(0);
     expect([d.rolledBackChunks, d.fullSourceRollbacks]).toEqual([0, 0]);
     expect(codes(result)).not.toContain('DIRECT_TEXT_DOCUMENT_ROLLED_BACK');
-    expect(Object.keys(d.hardFailureCounts ?? {}).filter(code => code !== 'polarity_changed')).toEqual([]);
+    expect(Object.keys(d.hardFailureCounts ?? {}).filter(code => !A06_LICENSED.includes(code))).toEqual([]);
     // At most one call plus one targeted retry per chunk (G6).
     expect(d.codexCalls).toBeLessThanOrEqual(2 * d.bodyChunks);
     expect(writer.prompts.every(prompt => !prompt.includes('quick_rules') && !prompt.includes('<rewrite_policy>'))).toBe(true);
