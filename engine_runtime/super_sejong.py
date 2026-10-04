@@ -207,10 +207,14 @@ _ATTACHED_SU = re.compile('([' + _RIEUL_FINAL + r'])수(?=(?:가|는|도)?\s*(?:
 # 안 돼요 read as a short negation, and the stems 되/돼 differed. 안 is spaced and 되요/됬 (always
 # misspellings of 돼요/됐) are read as spelled correctly, on both sides.
 _ATTACHED_AN = re.compile(r'(?<![가-힣])안(?=[되돼됐됩될된])')
+# The spoken bound noun 거 of 거 같다 is the 것 of the hedge 것 같다: 최고인거 같아 -> 최고인 것 같아 and
+# 맞는 거 같아 -> 맞는 것 같아 read as a new hedge before. Both sides read 거 같다 (attached or spaced) as 것 같다.
+_GEO_GAT = re.compile(r'(?<=[가-힣])\s?거(?=\s*같)')
 
 
 def _spacing_normal(text: str) -> str:
     text = _ATTACHED_AN.sub('안 ', _ATTACHED_SU.sub(r'\1 수', text))
+    text = _GEO_GAT.sub(' 것', text)
     return text.replace('되요', '돼요').replace('됬', '됐')
 
 
