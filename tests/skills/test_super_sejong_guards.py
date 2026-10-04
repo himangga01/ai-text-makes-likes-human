@@ -57,6 +57,10 @@ class Preserved(unittest.TestCase):
         ('환자는 이 약을 임의로 중단해서는 안 됩니다.', '환자는 이 약을 마음대로 끊으면 안 됩니다.'),
         ('이 문제는 혼자서 풀기에는 어렵다.', '이 문제는 혼자서 풀기에는 쉽지 않다.'),
         ('그는 영어뿐 아니라 중국어도 한다.', '그는 영어와 함께 중국어도 한다.'),
+        # 필요로 하다 -> 필요하다, the translationese fix (2026-10-04 v2 Tier-B finding)
+        ('행사 참가자는 신분증을 필요로 합니다.', '행사 참가자는 신분증이 필요합니다.'),
+        ('이 작업은 많은 시간을 필요로 한다.', '이 작업에는 많은 시간이 필요하다.'),
+        ('이 기능은 별도 설치를 필요로 하지 않는다.', '이 기능은 별도 설치가 필요하지 않다.'),
     ]
 
     def test_meaning_preserving_rewrites_are_not_flagged(self):
@@ -98,7 +102,8 @@ class Changed(unittest.TestCase):
     def test_attached_forms_still_read_meaning(self):
         # the spacing normalisation must not hide a real change: attached 할수 있다 / 안됐다 still count
         for s, c in [('그는 범인일수 있다.', '그는 범인이다.'), ('오늘은 갈수 없다.', '오늘은 갈 수 있다.'),
-                     ('일이 다 안됐어요.', '일이 다 됐어요.')]:
+                     ('일이 다 안됐어요.', '일이 다 됐어요.'),
+                     ('이 기능은 별도 설치를 필요로 한다.', '이 기능은 별도 설치가 필요하지 않다.')]:
             with self.subTest(s=s):
                 self.assertCaught(s, c, 'polarity', 'modality', 'lexical')
 
