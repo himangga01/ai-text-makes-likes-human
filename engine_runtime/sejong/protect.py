@@ -29,7 +29,8 @@ Kinds (types.SPAN_KINDS) and detection, in the priority used when freeze spans o
   cmc         ㅋㅋ ㅎㅎ ㅠㅠ ^^ ~ !! ?? emoji (text.CMC_RE); a range tilde (3~5, 9시~오후, " ~ " between
               two words) is not CMC                                          keep-token
   colloquial  할께-family spellings (an eojeol whose ㄹ-final syllable is followed by 께/꺼/껄/껀:
-              전화할께, 연락드릴께요, 할 꺼야) and the T2 colloquial lexemes (넹, 걍, 쫌, 해용 …);
+              전화할께, 연락드릴께요, 할 꺼야), the spoken -구 of -고 (가 보려구요, 했구요) and the T2
+              colloquial lexemes (넹, 걍, 쫌, 해용 …);
               할려면/웬지 are errors, not colloquial (DESIGN 9.2a item 1); 께 after 달/날/말/일/월/들 is
               the time suffix or the particle (다음달께, 15일께, 어른들께)
                                                          keep-token unless fix_colloquial
@@ -124,7 +125,11 @@ _COLLOQ_LEXEME = re.compile(
     r"(?<![가-힣])(?:넹|넵|넴|웅|응응|그쵸|암튼|글구|담에)(?![가-힣])"
     r"|(?<![가-힣])(?:걍|젤|넘|쫌|첨|머)(?=[ ]+[가-힣])"
     r"|(?<=[가-힣])(?:니당|어용|아용|해용|세용|네용|했당|었당|았당|좋당|같당|이당|해여|어여|아여|세여|네여|거징|했엉|었엉|았엉|해앙"
-    r"|거양|이얌|거얌)" + _SENTENCE_END)
+    r"|거양|이얌|거얌)" + _SENTENCE_END +
+    # -고 spoken as -구 after a quotative or intention ending (가 보려구요, 한다구, 뭐라구, 가자구) and the -구요 of
+    # a past or existential stem (했구요, 있구요): spoken spellings like 할께 (2026-10-04 real-model run: 려구요 ->
+    # 려고요). 자구 노력 and 자구책 never match (a syllable must precede, no syllable may follow).
+    r"|(?<=[가-힣])(?:려|다|라|냐|자)구요?(?![가-힣])|(?<=[가-힣])(?:했|었|았|겠|있|없)구요(?![가-힣])")
 # 께 after these ㄹ-final syllables is the time suffix "around" (다음달께, 15일께, 월말께), not 할께.
 # 께 after 들 is the honorific particle on a plural (어른들께, 어르신들께).
 _TIME_GGE = frozenset("달날말일월들")

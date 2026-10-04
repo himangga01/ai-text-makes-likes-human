@@ -115,6 +115,10 @@ _HUMBLE = re.compile("|".join(map(re.escape, LEX["humble"])))
 _INTENSIFIER = re.compile(r"(?<![가-힣])(?:" + "|".join(map(re.escape, LEX["intensifiers"])) + r")(?=[\s,.!?~]|$)")
 _DIRECTIVE = tuple(LEX["directive_endings"])
 UPSHIFT = re.compile(LEX["upshift"])
+# The written 것 of the hedge 것 같다. In a 해요체 or 해체 sentence the spoken 거 같다 -> 것 같다 is a written upshift
+# like 했 -> 하였 (2026-10-04 real-model run: 최고인거 같아 -> 최고인 것 같아 instead of 최고인 거 같아); in 합쇼체
+# and 해라체 것 같다 is the expected form, so it is not counted there.
+_GEOT_GAT = re.compile(r"것(?=\s*같)")
 # A double passive folded before up-shift forms are counted: 변경되어졌습니다 -> 변경되었습니다 is the
 # SSB-A04 norm fix, not a 했 -> 하였 up-shift.
 _FOLD = tuple((a, b) for a, b in LEX["double_passive_fold"])
@@ -431,7 +435,7 @@ class Features:
     hon_nouns: int                 # 고객님, 학부모님 ... and the dative 께 (honorific address)
     keep: Counter                  # protect.keep_tokens + intensifiers: {(kind, token): n}
     marks: Counter                 # raw CMC marks as the main-branch lock reads them
-    upshift: int                   # 하였/되었/하여 ... forms
+    upshift: int                   # 하였/되었/하여 ... forms; 것 같다 in 해요체/해체
     quote_levels: Tuple[str, ...]  # level inside each quotation (non-whole-quote sentences)
     inner: Tuple[Tuple[str, str], ...] = ()   # (level, mood) of clauses closed by ^^ or ~ inside the unit
 
@@ -467,7 +471,8 @@ def features(sentence: str, kind: str = "body") -> Features:
     return Features(sig=sig, ending=ending, stance_family=family, question="?" in fin.tail,
                     directive=fin.word.endswith(_DIRECTIVE), humble_count=humble,
                     hon_nouns=_hon_nouns(masked), keep=keep, marks=marks,
-                    upshift=len(UPSHIFT.findall(_fold(masked))), quote_levels=quote_levels, inner=_inner(masked))
+                    upshift=len(UPSHIFT.findall(_fold(masked))) + (len(_GEOT_GAT.findall(masked)) if level in (HAEYO, HAE) else 0),
+                    quote_levels=quote_levels, inner=_inner(masked))
 
 
 def _hon_nouns(masked: str) -> int:
