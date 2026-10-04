@@ -64,6 +64,8 @@ export async function createProductionRuntime(
     "references",
     "quick-rules.md"
   );
+  // Inert unless SUPER_SEJONG_V2_SHADOW=1: the legacy engines then look at each job through v2 on the side (no model call).
+  const v2Shadow = new SejongPython({ pythonCommand: config.pythonCommand, engineRoot: path.dirname(config.engineRoot), runner });
   const codexSemaphore = new CodexSemaphore(2);
   const codex = new CodexRunner({
     codexCommand: config.codexCommand,
@@ -91,7 +93,8 @@ export async function createProductionRuntime(
         }),
         chunkConcurrency: config.chunkConcurrency,
         model: CLAUDE_MODEL,
-        reasoningEffort: CLAUDE_REASONING_EFFORT
+        reasoningEffort: CLAUDE_REASONING_EFFORT,
+        v2Shadow
       });
   return {
     refreshHealth,
@@ -99,7 +102,8 @@ export async function createProductionRuntime(
     engine: new HumanizeEngine({
       python,
       codex,
-      chunkConcurrency: config.chunkConcurrency
+      chunkConcurrency: config.chunkConcurrency,
+      v2Shadow
     }),
     claudeEngine,
     queue: new TransformQueue({

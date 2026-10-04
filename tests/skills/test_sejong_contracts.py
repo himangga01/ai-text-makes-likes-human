@@ -444,6 +444,9 @@ WIRED |= {"src/config.ts", "src/runtime/create-runtime.ts", "src/engine/rewrite-
 # WP-12: the Office engine picks the plan-driven prompt when SUPER_SEJONG_ENGINE=v2 (selectEngine) and builds it
 # with sejong/document-prompt.ts; the Python half (engine_runtime/documents/) imports sejong lazily, only under v2.
 WIRED |= {"src/documents/document-engine.ts"}
+# WP-17: humanize-engine.ts holds the legacy shadow hook (inert unless SUPER_SEJONG_V2_SHADOW=1; it only reads
+# the delivered text) and create-runtime.ts hands it the v2 adapter (tests/unit/sejong-shadow-*.test.ts pin the hook).
+WIRED |= {"src/engine/humanize-engine.ts", "src/runtime/create-runtime.ts"}
 
 
 class NoRuntimeWiring(unittest.TestCase):
