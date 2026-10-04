@@ -1,0 +1,65 @@
+{
+ "resource": "double_passive",
+ "version": 1,
+ "about": "Closed list of SSJ-A04 (double passive, FIX/request) and SSJ-A04s (잊혀지다, SUGGEST). A hit is stem + 지/진/질/져/졌/집 with no Hangul syllable before the stem other than a verbal-noun prefix (진행되어지고). Author-written from NIKL Q&A 310695 and 317346 as cited by T3 (not reopened for WP-8).",
+ "fix": [
+  "되어",
+  "보여",
+  "쓰여",
+  "나뉘어",
+  "읽혀",
+  "불려"
+ ],
+ "suggest": [
+  "잊혀"
+ ],
+ "endings": [
+  "지",
+  "진",
+  "질",
+  "져",
+  "졌",
+  "집"
+ ],
+ "exclusions": [
+  "느껴지다",
+  "여겨지다",
+  "남겨지다",
+  "이루어지다",
+  "만들어지다",
+  "-게 되다",
+  "짜여지다 (not listed)"
+ ],
+ "examples": {
+  "fix": [
+   [
+    "연구가 진행되어지고 있다.",
+    "진행되어지"
+   ],
+   [
+    "이렇게 보여진다.",
+    "보여진"
+   ],
+   [
+    "책에 쓰여진 글",
+    "쓰여진"
+   ],
+   [
+    "두 팀으로 나뉘어졌다.",
+    "나뉘어졌"
+   ]
+  ],
+  "suggest": [
+   [
+    "지난 일이 잊혀졌다.",
+    "잊혀졌"
+   ]
+  ],
+  "none": [
+   "합의가 이루어졌다.",
+   "제품이 만들어지는 과정",
+   "따뜻하게 느껴진다.",
+   "돼지가 보인다."
+  ]
+ }
+}

@@ -1,0 +1,742 @@
+{
+ "resource": "misspellings",
+ "version": 1,
+ "about": "Closed, hand-written misspelling list of SSJ-N04 (class error, FIX/deterministic, OD 3 and lead decision 9.2a item 1) and SSJ-N04c (class colloquial, the 할께 family: LEAVE unless SUPER_SEJONG_FIX_COLLOQUIAL=1, OD 2). pattern is a Python regex applied outside freeze spans; {RIEUL} expands to every Hangul syllable with final ㄹ. replace is a re template. examples are [wrong, fixed] pairs and exclusions are strings that must not match; tests/skills/test_sejong_diagnose.py checks both for every entry. norm cites the article or dictionary entry the correction follows; no dictionary text is copied. New entries need a native-editor review before they are added (T9 D1).",
+ "excluded_on_purpose": {
+  "뵈요→봬요": "the voice regex of T2 knows 뵈 but not 봬 as a humble form; enabling it would flip humble",
+  "설레임→설렘": "collides with a product name",
+  "구지→굳이": "collides with place names (구지면, 구지봉)",
+  "바램→바람": "빛바램/색 바램 are valid nouns of 바래다; SUGGEST at most, like 바래요 (CTA-BARAE)",
+  "않/안 confusion": "needs a clause-level decision (않되/안 돼), not a closed list"
+ },
+ "entries": [
+  {
+   "id": "doeyo",
+   "class": "error",
+   "wrong": "되요",
+   "right": "돼요",
+   "pattern": "(?<!않)되요",
+   "replace": "돼요",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ)",
+   "examples": [
+    [
+     "안 되요?",
+     "안 돼요?"
+    ],
+    [
+     "잘 사용되요.",
+     "잘 사용돼요."
+    ]
+   ],
+   "exclusions": [
+    "됩니다",
+    "되어요",
+    "받지 않되요"
+   ],
+   "note": "않되요 is left alone: 안/않 has to be decided first."
+  },
+  {
+   "id": "doeseo",
+   "class": "error",
+   "wrong": "되서",
+   "right": "돼서",
+   "pattern": "되서(?=[\\s.,!?…~)]|요|$)",
+   "replace": "돼서",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ)",
+   "examples": [
+    [
+     "늦게 되서 죄송합니다.",
+     "늦게 돼서 죄송합니다."
+    ]
+   ],
+   "exclusions": [
+    "되서울"
+   ]
+  },
+  {
+   "id": "doeya",
+   "class": "error",
+   "wrong": "되야",
+   "right": "돼야",
+   "pattern": "되야(?=[\\s.,!?…~)]|지|겠|만|죠|요|$)",
+   "replace": "돼야",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ)",
+   "examples": [
+    [
+     "꼭 되야 한다.",
+     "꼭 돼야 한다."
+    ],
+    [
+     "이제 되야지.",
+     "이제 돼야지."
+    ]
+   ],
+   "exclusions": [
+    "되야말로"
+   ]
+  },
+  {
+   "id": "dwaeeoss",
+   "class": "error",
+   "wrong": "돼었",
+   "right": "되었",
+   "pattern": "돼었",
+   "replace": "되었",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ); 돼 = 되어, so 돼었 doubles -어-",
+   "examples": [
+    [
+     "품게 돼었습니다.",
+     "품게 되었습니다."
+    ]
+   ],
+   "exclusions": [
+    "되었습니다",
+    "돼서"
+   ]
+  },
+  {
+   "id": "dwaemyeon",
+   "class": "error",
+   "wrong": "돼면·돼는",
+   "right": "되면·되는",
+   "pattern": "돼(?=면|는)",
+   "replace": "되",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ); -면/-는 attach to the stem 되-, not to 되어",
+   "examples": [
+    [
+     "발전돼면 안 된다.",
+     "발전되면 안 된다."
+    ],
+    [
+     "안 돼는 일",
+     "안 되는 일"
+    ]
+   ],
+   "exclusions": [
+    "돼서",
+    "돼요",
+    "돼지는"
+   ]
+  },
+  {
+   "id": "dwaess",
+   "class": "error",
+   "wrong": "됬",
+   "right": "됐",
+   "pattern": "됬",
+   "replace": "됐",
+   "norm": "한글 맞춤법 제35항 붙임 2 (ㅚ 뒤 -어/-었- → ㅙ/ㅙㅆ)",
+   "examples": [
+    [
+     "잘 됬습니다.",
+     "잘 됐습니다."
+    ]
+   ],
+   "exclusions": [
+    "됐습니다"
+   ]
+  },
+  {
+   "id": "myeochil",
+   "class": "error",
+   "wrong": "몇일",
+   "right": "며칠",
+   "pattern": "몇\\s?일(?=$|[^가-힣]|간|째|동안|[이은을에의만도쯤]|까지|부터|뒤|후|전)",
+   "replace": "며칠",
+   "norm": "한글 맞춤법 제27항 붙임 2 (어원이 분명하지 않은 말: 며칠)",
+   "examples": [
+    [
+     "몇일 동안 쉬었다.",
+     "며칠 동안 쉬었다."
+    ],
+    [
+     "몇 일째 비가 온다.",
+     "며칠째 비가 온다."
+    ]
+   ],
+   "exclusions": [
+    "몇 일본인",
+    "몇 일반인",
+    "몇 일요일",
+    "몇 일정"
+   ]
+  },
+  {
+   "id": "geumse",
+   "class": "error",
+   "wrong": "금새",
+   "right": "금세",
+   "pattern": "(?<![가-힣])금새(?=[\\s.,!?…~)\\]\"”’]|$)",
+   "replace": "금세",
+   "norm": "표준국어대사전 금세(부사, 금시에의 준말); 금새는 명사(물건의 값)",
+   "examples": [
+    [
+     "금새 끝났다.",
+     "금세 끝났다."
+    ]
+   ],
+   "exclusions": [
+    "금새가 비싸다",
+    "금새를 묻다",
+    "금새로운"
+   ]
+  },
+  {
+   "id": "haryeo",
+   "class": "error",
+   "wrong": "할려-",
+   "right": "하려-",
+   "pattern": "할려(?=고|면|는|다가|던)",
+   "replace": "하려",
+   "norm": "표준국어대사전 -려고/-려면 (어간 하- 뒤에 ㄹ을 덧붙이지 않음)",
+   "examples": [
+    [
+     "지금 할려면 늦는다.",
+     "지금 하려면 늦는다."
+    ],
+    [
+     "말할려고 했다.",
+     "말하려고 했다."
+    ]
+   ],
+   "exclusions": [
+    "놀려고",
+    "만들려면",
+    "할려니"
+   ]
+  },
+  {
+   "id": "boryeo",
+   "class": "error",
+   "wrong": "볼려-",
+   "right": "보려-",
+   "pattern": "볼려(?=고|면|는|다가|던)",
+   "replace": "보려",
+   "norm": "표준국어대사전 -려고/-려면",
+   "examples": [
+    [
+     "가 볼려고 해요.",
+     "가 보려고 해요."
+    ]
+   ],
+   "exclusions": [
+    "볼리면"
+   ]
+  },
+  {
+   "id": "doeryeo",
+   "class": "error",
+   "wrong": "될려-",
+   "right": "되려-",
+   "pattern": "될려(?=고|면|는|다가|던)",
+   "replace": "되려",
+   "norm": "표준국어대사전 -려고/-려면",
+   "examples": [
+    [
+     "의사가 될려면",
+     "의사가 되려면"
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "waenji",
+   "class": "error",
+   "wrong": "웬지",
+   "right": "왠지",
+   "pattern": "웬지",
+   "replace": "왠지",
+   "norm": "표준국어대사전 왠지(부사, 왜 그런지 모르게)",
+   "examples": [
+    [
+     "웬지 불안했다.",
+     "왠지 불안했다."
+    ]
+   ],
+   "exclusions": [
+    "웬일",
+    "왠지"
+   ]
+  },
+  {
+   "id": "wen",
+   "class": "error",
+   "wrong": "왠일·왠만",
+   "right": "웬일·웬만",
+   "pattern": "왠(?=일|만하|만큼)",
+   "replace": "웬",
+   "norm": "표준국어대사전 웬일·웬만하다",
+   "examples": [
+    [
+     "왠일이야.",
+     "웬일이야."
+    ],
+    [
+     "왠만하면 와.",
+     "웬만하면 와."
+    ]
+   ],
+   "exclusions": [
+    "왠지"
+   ]
+  },
+  {
+   "id": "geoyeyo",
+   "class": "error",
+   "wrong": "거에요",
+   "right": "거예요",
+   "pattern": "(?<![가-힣])(이|그|저)?거에요",
+   "replace": "\\g<1>거예요",
+   "norm": "거 + 이에요 → 거예요 (T3 cites NIKL Q&A 322852; not reopened for WP-8)",
+   "examples": [
+    [
+     "할 거에요.",
+     "할 거예요."
+    ],
+    [
+     "이거에요?",
+     "이거예요?"
+    ]
+   ],
+   "exclusions": [
+    "아니에요",
+    "저예요"
+   ]
+  },
+  {
+   "id": "mwoyeyo",
+   "class": "error",
+   "wrong": "뭐에요",
+   "right": "뭐예요",
+   "pattern": "(?<![가-힣])뭐에요",
+   "replace": "뭐예요",
+   "norm": "뭐 + 이에요 → 뭐예요 (same reasoning as 거예요)",
+   "examples": [
+    [
+     "이게 뭐에요?",
+     "이게 뭐예요?"
+    ]
+   ],
+   "exclusions": [
+    "뭐예요"
+   ]
+  },
+  {
+   "id": "aniyeyo",
+   "class": "error",
+   "wrong": "아니예요",
+   "right": "아니에요",
+   "pattern": "아니예요",
+   "replace": "아니에요",
+   "norm": "아니다 + -에요 (아니- 어간 + 해요체 어미 -에요)",
+   "examples": [
+    [
+     "그건 아니예요.",
+     "그건 아니에요."
+    ]
+   ],
+   "exclusions": [
+    "아니에요"
+   ]
+  },
+  {
+   "id": "aniyeoss",
+   "class": "error",
+   "wrong": "아니였",
+   "right": "아니었",
+   "pattern": "아니였",
+   "replace": "아니었",
+   "norm": "아니다 + -었- (이다의 축약형 -였-이 아님)",
+   "examples": [
+    [
+     "사실이 아니였다.",
+     "사실이 아니었다."
+    ]
+   ],
+   "exclusions": [
+    "아니었다"
+   ]
+  },
+  {
+   "id": "adverb_i",
+   "class": "error",
+   "wrong": "-히 (-이로 적는 부사)",
+   "right": "-이",
+   "pattern": "(?<![가-힣])(일일|틈틈|번번|곰곰|깨끗|따뜻|느긋|버젓|의젓)히(?![가-힣])",
+   "replace": "\\1이",
+   "norm": "한글 맞춤법 제51항 (-이/-히)",
+   "examples": [
+    [
+     "번번히 늦었다.",
+     "번번이 늦었다."
+    ],
+    [
+     "깨끗히 씻었다.",
+     "깨끗이 씻었다."
+    ]
+   ],
+   "exclusions": [
+    "번번이",
+    "깨끗하다"
+   ]
+  },
+  {
+   "id": "adverb_hi",
+   "class": "error",
+   "wrong": "-이 (-히로 적는 부사)",
+   "right": "-히",
+   "pattern": "(?<![가-힣])(꼼꼼|솔직|조용|가만)이(?![가-힣])",
+   "replace": "\\1히",
+   "norm": "한글 맞춤법 제51항 (-이/-히)",
+   "examples": [
+    [
+     "꼼꼼이 확인했다.",
+     "꼼꼼히 확인했다."
+    ],
+    [
+     "조용이 앉았다.",
+     "조용히 앉았다."
+    ]
+   ],
+   "exclusions": [
+    "열심이 대단하다",
+    "분명이다",
+    "솔직이다"
+   ]
+  },
+  {
+   "id": "eotteokhae",
+   "class": "error",
+   "wrong": "어떻해",
+   "right": "어떡해",
+   "pattern": "어떻해",
+   "replace": "어떡해",
+   "norm": "표준국어대사전 어떡하다 (어떻게 하다의 준말)",
+   "examples": [
+    [
+     "이제 어떻해?",
+     "이제 어떡해?"
+    ]
+   ],
+   "exclusions": [
+    "어떻게 해"
+   ]
+  },
+  {
+   "id": "oraenman",
+   "class": "error",
+   "wrong": "오랫만",
+   "right": "오랜만",
+   "pattern": "오랫만",
+   "replace": "오랜만",
+   "norm": "표준국어대사전 오랜만 (오래간만의 준말)",
+   "examples": [
+    [
+     "오랫만에 만났다.",
+     "오랜만에 만났다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "huihan",
+   "class": "error",
+   "wrong": "희안하다",
+   "right": "희한하다",
+   "pattern": "희안(?=하|한|해|히|함)",
+   "replace": "희한",
+   "norm": "표준국어대사전 희한하다(稀罕)",
+   "examples": [
+    [
+     "참 희안한 일이다.",
+     "참 희한한 일이다."
+    ]
+   ],
+   "exclusions": [
+    "희안이",
+    "이희안"
+   ]
+  },
+  {
+   "id": "yeokhal",
+   "class": "error",
+   "wrong": "역활",
+   "right": "역할",
+   "pattern": "(?<![지무])역활(?=[을이은도로의에과만]|[\\s.,!?]|$)",
+   "replace": "역할",
+   "norm": "표준국어대사전 역할(役割)",
+   "examples": [
+    [
+     "중요한 역활을 한다.",
+     "중요한 역할을 한다."
+    ]
+   ],
+   "exclusions": [
+    "지역활성화",
+    "역활용",
+    "무역활동"
+   ]
+  },
+  {
+   "id": "gaesu",
+   "class": "error",
+   "wrong": "갯수",
+   "right": "개수",
+   "pattern": "갯수",
+   "replace": "개수",
+   "norm": "한글 맞춤법 제30항 (사이시옷 조건; 한자어는 곳간·셋방·숫자·찻간·툇간·횟수만)",
+   "examples": [
+    [
+     "갯수를 셌다.",
+     "개수를 셌다."
+    ]
+   ],
+   "exclusions": [
+    "개수"
+   ]
+  },
+  {
+   "id": "dwicheori",
+   "class": "error",
+   "wrong": "뒷처리",
+   "right": "뒤처리",
+   "pattern": "뒷처리",
+   "replace": "뒤처리",
+   "norm": "한글 맞춤법 제30항 (사이시옷 조건; 한자어는 곳간·셋방·숫자·찻간·툇간·횟수만); 뒷말이 거센소리",
+   "examples": [
+    [
+     "뒷처리를 맡았다.",
+     "뒤처리를 맡았다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "wicheung",
+   "class": "error",
+   "wrong": "윗층",
+   "right": "위층",
+   "pattern": "윗층",
+   "replace": "위층",
+   "norm": "한글 맞춤법 제30항 (사이시옷 조건; 한자어는 곳간·셋방·숫자·찻간·툇간·횟수만); 뒷말이 거센소리",
+   "examples": [
+    [
+     "윗층에 산다.",
+     "위층에 산다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "chojeom",
+   "class": "error",
+   "wrong": "촛점",
+   "right": "초점",
+   "pattern": "촛점",
+   "replace": "초점",
+   "norm": "한글 맞춤법 제30항 (사이시옷 조건; 한자어는 곳간·셋방·숫자·찻간·툇간·횟수만)",
+   "examples": [
+    [
+     "촛점이 흐리다.",
+     "초점이 흐리다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "daega",
+   "class": "error",
+   "wrong": "댓가",
+   "right": "대가",
+   "pattern": "(?<![가-힣])댓가(?=[를이은도로의에]|[\\s.,!?]|$)",
+   "replace": "대가",
+   "norm": "한글 맞춤법 제30항 (사이시옷 조건; 한자어는 곳간·셋방·숫자·찻간·툇간·횟수만)",
+   "examples": [
+    [
+     "노력의 댓가를 받았다.",
+     "노력의 대가를 받았다."
+    ]
+   ],
+   "exclusions": [
+    "댓가지"
+   ]
+  },
+  {
+   "id": "insamal",
+   "class": "error",
+   "wrong": "인삿말",
+   "right": "인사말",
+   "pattern": "인삿말",
+   "replace": "인사말",
+   "norm": "표준국어대사전 인사말 ([인사말], 사이시옷 없음)",
+   "examples": [
+    [
+     "인삿말을 전했다.",
+     "인사말을 전했다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "meorimal",
+   "class": "error",
+   "wrong": "머릿말",
+   "right": "머리말",
+   "pattern": "머릿말",
+   "replace": "머리말",
+   "norm": "표준국어대사전 머리말 ([머리말], 사이시옷 없음)",
+   "examples": [
+    [
+     "머릿말을 썼다.",
+     "머리말을 썼다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "naerora",
+   "class": "error",
+   "wrong": "내노라하다",
+   "right": "내로라하다",
+   "pattern": "내노라(?=하)",
+   "replace": "내로라",
+   "norm": "표준국어대사전 내로라하다",
+   "examples": [
+    [
+     "내노라하는 사람들",
+     "내로라하는 사람들"
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "eoieop",
+   "class": "error",
+   "wrong": "어의없다",
+   "right": "어이없다",
+   "pattern": "어의없",
+   "replace": "어이없",
+   "norm": "표준국어대사전 어이없다",
+   "examples": [
+    [
+     "정말 어의없다.",
+     "정말 어이없다."
+    ]
+   ],
+   "exclusions": [
+    "어의 없이"
+   ]
+  },
+  {
+   "id": "seumnida",
+   "class": "error",
+   "wrong": "-읍니다",
+   "right": "-습니다",
+   "pattern": "(있|없|했|였|겠|었|았)읍니다",
+   "replace": "\\1습니다",
+   "norm": "표준어 규정 제17항 (-습니다를 표준어로 삼음; not reopened for WP-8)",
+   "examples": [
+    [
+     "잘 받았읍니다.",
+     "잘 받았습니다."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "eum",
+   "class": "error",
+   "wrong": "-슴",
+   "right": "-음",
+   "pattern": "(있|없|했|였|겠|었|았)슴(?=[\\s.,!?…~)]|$)",
+   "replace": "\\1음",
+   "norm": "명사형 어미 -음 (있음, 없음)",
+   "examples": [
+    [
+     "재고 없슴.",
+     "재고 없음."
+    ]
+   ],
+   "exclusions": [
+    "있습니다"
+   ]
+  },
+  {
+   "id": "gge",
+   "class": "colloquial",
+   "wrong": "-ㄹ께",
+   "right": "-ㄹ게",
+   "pattern": "(?<=[{RIEUL}])(?<![달날말일월들])께(?=요|[\\s.,!?…~)]|$)",
+   "replace": "게",
+   "norm": "한글 맞춤법 제53항 (-(으)ㄹ게 등은 예사소리로 적음)",
+   "examples": [
+    [
+     "연락할께요.",
+     "연락할게요."
+    ],
+    [
+     "갈께!",
+     "갈게!"
+    ]
+   ],
+   "exclusions": [
+    "다음달께",
+    "15일께",
+    "어른들께",
+    "할아버지께서"
+   ]
+  },
+  {
+   "id": "kkeo",
+   "class": "colloquial",
+   "wrong": "-ㄹ꺼",
+   "right": "-ㄹ 거",
+   "pattern": "(?<=[{RIEUL}])(?<![불를을])꺼(?=야|예요|에요|다|라고|든|지|죠|요|니|냐)",
+   "replace": " 거",
+   "norm": "한글 맞춤법 제42항 (의존 명사 거는 띄어 씀) + 된소리 표기",
+   "examples": [
+    [
+     "할꺼야.",
+     "할 거야."
+    ]
+   ],
+   "exclusions": [
+    "불꺼요",
+    "TV를 꺼야 해",
+    "불을 꺼요"
+   ]
+  },
+  {
+   "id": "kkeol",
+   "class": "colloquial",
+   "wrong": "-ㄹ껄",
+   "right": "-ㄹ걸",
+   "pattern": "(?<=[{RIEUL}])(?<![불를을])껄(?=요|[\\s.,!?…~)]|$)",
+   "replace": "걸",
+   "norm": "한글 맞춤법 제53항 (-(으)ㄹ게 등은 예사소리로 적음)",
+   "examples": [
+    [
+     "미리 할껄.",
+     "미리 할걸."
+    ]
+   ],
+   "exclusions": []
+  },
+  {
+   "id": "kkeon",
+   "class": "colloquial",
+   "wrong": "-ㄹ껀",
+   "right": "-ㄹ 건",
+   "pattern": "(?<=[{RIEUL}])(?<![불를을])껀(?=데|가|지|[\\s.,!?…~)]|$)",
+   "replace": " 건",
+   "norm": "한글 맞춤법 제42항 (의존 명사 것/거) + 된소리 표기",
+   "examples": [
+    [
+     "갈껀데",
+     "갈 건데"
+    ]
+   ],
+   "exclusions": []
+  }
+ ]
+}

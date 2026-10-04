@@ -1,0 +1,577 @@
+{
+ "resource": "redundancy",
+ "version": 1,
+ "about": "겹말 lexicon of SSJ-A05 (SUGGEST). Port of the enabled, not-allowed entries of docs/research/super-sejong/data/2026-10-04/lexicon/redundancy.json (author-written; some entries rely on author knowledge and need native review [EVALUATION §5]). T3 hand-check: 52/55. Patterns run on sentence text with freeze spans masked (numbers become 0), so 약 N 정도 still matches; the request never changes the number.",
+ "dropped": {
+  "RD_haebyeon_ga": "해변가 is a 표준국어대사전 headword (= 바닷가) [T3 §3]",
+  "RD_busang_danghada": "contested: 2 of 3 false positives in the T3 hand-check [T3 §3]"
+ },
+ "entries": [
+  {
+   "id": "RD_yeokjeon_ap",
+   "pattern": "역전 ?앞",
+   "suggestions": [
+    "역전",
+    "역 앞"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_dasi_jae",
+   "pattern": "다시 ?(재|재차)(?=[가-힣])",
+   "suggestions": [
+    "재~"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_hamkke_cheombu",
+   "pattern": "함께 ?첨부",
+   "suggestions": [
+    "첨부"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_dwit_baegyeong",
+   "pattern": "뒷 ?배경",
+   "suggestions": [
+    "배경",
+    "뒷사정"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_haemuk_sukwon",
+   "pattern": "해묵은 ?숙원",
+   "suggestions": [
+    "숙원"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_heulleo_yuip",
+   "pattern": "흘러드는 ?유입",
+   "suggestions": [
+    "유입"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_ilneun_sonsil",
+   "pattern": "잃는 ?손실",
+   "suggestions": [
+    "손실"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_ttatteuthan_onjeong",
+   "pattern": "따뜻한 ?온정",
+   "suggestions": [
+    "온정",
+    "따뜻한 정"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_saeroun_sinjepum",
+   "pattern": "새로운 ?신(제품|상품|기록|입|설|간|인|곡|제도)",
+   "suggestions": [
+    "신~"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_nopeun_goon",
+   "pattern": "높은 ?고온",
+   "suggestions": [
+    "고온"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_areumdaun_mi",
+   "pattern": "아름다운 ?미(녀|인)",
+   "suggestions": [
+    "미녀",
+    "아름다운 여인"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_gesok_sokchul",
+   "pattern": "계속 ?속출",
+   "suggestions": [
+    "속출",
+    "잇따라 나오다"
+   ],
+   "confidence": "high",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_geuttae_dangsi",
+   "pattern": "그때 ?당시|당시 ?그때",
+   "suggestions": [
+    "당시",
+    "그때"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_mae_sigan_maju",
+   "pattern": "매 ?(시간|일|주|달|년|분|초)마다",
+   "suggestions": [
+    "매시간",
+    "시간마다"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gwabansu_neomneun",
+   "pattern": "과반수(를|가)? ?넘",
+   "suggestions": [
+    "절반을 넘는",
+    "과반수"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_malro_hyeongeon",
+   "pattern": "말로 ?형언",
+   "suggestions": [
+    "형언",
+    "말로 다 못 하는"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_panihage_dareuda",
+   "pattern": "판이하게 ?다르",
+   "suggestions": [
+    "판이하다",
+    "전혀 다르다"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_ajik_sigisangjo",
+   "pattern": "아직 ?시기상조",
+   "suggestions": [
+    "시기상조"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_okssang_wi",
+   "pattern": "옥상 ?위",
+   "suggestions": [
+    "옥상에"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_nameun_yeosaeng",
+   "pattern": "남은 ?여생",
+   "suggestions": [
+    "여생",
+    "남은 생"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_sajeone_yebang",
+   "pattern": "사전에 ?예방|미리 ?예방",
+   "suggestions": [
+    "예방"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_meonjeo_seonchwi",
+   "pattern": "먼저 ?선취",
+   "suggestions": [
+    "선취점을 얻다"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_piraek_nabchi",
+   "pattern": "피랍된 ?(여객기|비행기|선박)",
+   "suggestions": [
+    "납치된 여객기",
+    "피랍 여객기"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gakkaun_geuncheo",
+   "pattern": "가까운 ?근처",
+   "suggestions": [
+    "근처",
+    "가까운 곳"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_nameun_janyeo",
+   "pattern": "남은 ?잔여|잔여 ?남은",
+   "suggestions": [
+    "잔여",
+    "남은"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_dasi_jaegae",
+   "pattern": "다시 ?재개",
+   "suggestions": [
+    "재개"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_dasi_bokgwi",
+   "pattern": "다시 ?복귀|되돌아 ?복귀",
+   "suggestions": [
+    "복귀"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_sajeone_mili",
+   "pattern": "사전에 ?미리|미리 ?사전에",
+   "suggestions": [
+    "사전에",
+    "미리"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_mili_yego",
+   "pattern": "미리 ?(예고|예견|예습|예측|예보)",
+   "suggestions": [
+    "예고",
+    "예습"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_dasi_hanbeon_jae",
+   "pattern": "다시 ?한 ?번 ?재(확인|검토|점검|강조|고려)",
+   "suggestions": [
+    "다시 한번 확인",
+    "재확인"
+   ],
+   "confidence": "medium",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html"
+  },
+  {
+   "id": "RD_dasi_banbok",
+   "pattern": "다시 ?(반복|복습)",
+   "suggestions": [
+    "반복",
+    "복습"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_sseuseuro_jahaek",
+   "pattern": "스스로 ?(자각|자처|자초|자임|자청)",
+   "suggestions": [
+    "자각",
+    "자초"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gakmada",
+   "pattern": "각 ?(부서|학교|가정|지역|나라|사람|개인|분야|항목)마다",
+   "suggestions": [
+    "각 부서",
+    "부서마다"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_seoro_sangho",
+   "pattern": "서로 ?(상호|상반|상충|상응)|상호 ?간에 ?서로|서로 ?간 ?상호",
+   "suggestions": [
+    "상호",
+    "서로"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_yak_garyang",
+   "pattern": "약 ?[0-9][0-9,.]*[가-힣%]{0,3} ?(가량|내외|정도|쯤)",
+   "suggestions": [
+    "약 ~",
+    "~가량"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_daeryak_jjeum",
+   "pattern": "대략 ?[0-9][0-9,.]*[가-힣%]{0,3} ?(가량|내외|정도|쯤)",
+   "suggestions": [
+    "대략 ~",
+    "~쯤"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_chong_hapgye",
+   "pattern": "총 ?합계|합계 ?총",
+   "suggestions": [
+    "합계",
+    "총"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_jangnae_mirae",
+   "pattern": "(미래|장래)의 ?(장래|미래)|앞으로의 ?(장래|미래)|향후 ?앞으로|앞으로 ?향후",
+   "suggestions": [
+    "장래",
+    "앞으로"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_geumil_oneul",
+   "pattern": "(금일|금년|금월|금주)(의)? ?(오늘|올해|이번 ?달|이번 ?주)|(오늘|올해|이번 ?달|이번 ?주)(의)? ?(금일|금년|금월|금주)",
+   "suggestions": [
+    "금일",
+    "오늘"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_choecho_cheoeum",
+   "pattern": "(최초|맨 ?처음)(로|으로)? ?처음|처음(으로)? ?최초",
+   "suggestions": [
+    "최초로",
+    "처음으로"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gajang_choego",
+   "pattern": "(가장|제일|젤) ?(최고|최선|최대|최소|최상|최악|최초|최강|최저)",
+   "suggestions": [
+    "최고",
+    "가장 좋은"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_bandeusi_pilsu",
+   "pattern": "(반드시|꼭|무조건) ?필수|필수(적)?(으로|인) ?(반드시|꼭)",
+   "suggestions": [
+    "필수",
+    "반드시"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_jinan_gwageo",
+   "pattern": "지난 ?과거|지나간 ?과거",
+   "suggestions": [
+    "과거",
+    "지난날"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_hamkke_gongdong",
+   "pattern": "함께 ?공동|공동으로 ?함께|함께 ?동참|같이 ?동참|같이 ?공유|서로 ?공유|서로 ?일치",
+   "suggestions": [
+    "공동",
+    "동참",
+    "공유",
+    "일치"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_oeguk_haeoe",
+   "pattern": "해외 ?외국|외국 ?해외",
+   "suggestions": [
+    "외국",
+    "해외"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_jeongdo_jeongdo",
+   "pattern": "(정도|가량) ?정도",
+   "suggestions": [
+    "정도"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_hoesang_chueok",
+   "pattern": "(추억|과거|지난 ?일)(을|를)? ?회상",
+   "suggestions": [
+    "회상",
+    "추억"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gobaek_solji",
+   "pattern": "솔직(히|하게) ?고백|고백(을)? ?솔직",
+   "suggestions": [
+    "고백"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_hyeonjae_jigeum",
+   "pattern": "현재(도)? ?지금|지금(도)? ?현재",
+   "suggestions": [
+    "현재",
+    "지금"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_dasu_manheun",
+   "pattern": "(수많은|많은) ?다수|다수의 ?많은",
+   "suggestions": [
+    "다수",
+    "많은"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gongtong_gongtongjeom",
+   "pattern": "공통(적으로)? ?공통점|공통된 ?공통점|같은 ?공통점",
+   "suggestions": [
+    "공통점"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_bin_gonghu",
+   "pattern": "텅 ?빈 ?공허|빈 ?공허",
+   "suggestions": [
+    "공허",
+    "텅 빈"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_nakha_tteoreo",
+   "pattern": "떨어지는 ?낙하|낙하(하여)? ?떨어",
+   "suggestions": [
+    "낙하",
+    "떨어지다"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_geupsok_bbareu",
+   "pattern": "빠르게 ?급속|급속(히|하게)? ?빠르|빠른 ?속도로 ?급속",
+   "suggestions": [
+    "급속하게",
+    "빠르게"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_ttaraseo_geureomeuro",
+   "pattern": "따라서 ?그러므로|그러므로 ?따라서|그래서 ?따라서|따라서 ?그래서",
+   "suggestions": [
+    "따라서",
+    "그러므로"
+   ],
+   "confidence": "high",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_dareun_chai",
+   "pattern": "서로 ?다른 ?차이|다른 ?차이점|차이점(이|을)? ?다르",
+   "suggestions": [
+    "차이",
+    "다른"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_gogeumae_nopi",
+   "pattern": "(높이|드높이) ?상승|상승(하여)? ?높아|높아지며 ?상승",
+   "suggestions": [
+    "상승",
+    "높아지다"
+   ],
+   "confidence": "medium",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  },
+  {
+   "id": "RD_jaemi_jaemiissneun",
+   "pattern": "재미(있|없)는 ?흥미|흥미(로|있)운 ?재미",
+   "suggestions": [
+    "흥미로운",
+    "재미있는"
+   ],
+   "confidence": "low",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845"
+  }
+ ]
+}
