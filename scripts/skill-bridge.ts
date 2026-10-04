@@ -6,6 +6,8 @@ import { parseTextResult } from '../src/engine/text-edits.js';
 import { EngineError } from '../src/engine/errors.js';
 import { candidateReviewForRetry } from '../src/engine/candidate-review.js';
 import { buildHumanizePrompt } from '../src/engine/prompt-builder.js';
+import { buildSejongPrompt } from '../src/engine/sejong/prompt.js';
+import { readSejongReply } from '../src/engine/sejong/response.js';
 import { diffText } from '../public/text-diff.js';
 declare const COMPARISON_BROWSER: string;
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]!));
@@ -27,6 +29,29 @@ try {
       let nonce; do { nonce = randomUUID(); } while (input.source.includes(nonce) || input.candidateReview?.candidate.includes(nonce));
       result = { sentences: sourceSentences(input.source), instructions: buildHumanizePrompt({ source: input.source,
         quickRules: input.quickRules, attempt: input.attempt, nonce, rewriteOptions: options, candidateReview: input.candidateReview }) }; break;
+    }
+    case 'context-v2': {
+      // Super Sejong v2 (SUPER_SEJONG_ENGINE=v2): the same prompt the server path renders (src/engine/sejong/prompt.ts),
+      // from the plan the gateway analysed in process. The nonce is alphanumeric (the prompt checks it) and absent from
+      // every text that goes into the prompt body.
+      const retry = input.retry ?? undefined;
+      const texts = [input.source, input.seamContext?.prev ?? '', input.seamContext?.next ?? '', JSON.stringify(input.plan), JSON.stringify(retry ?? [])];
+      let nonce: string; do { nonce = randomUUID().replaceAll('-', ''); } while (texts.some(text => text.includes(nonce)));
+      result = { instructions: buildSejongPrompt({ plan: input.plan, source: input.source, nonce, attempt: input.attempt, retry,
+        seamContext: input.seamContext ?? undefined }) };
+      break;
+    }
+    case 'parse-v2': {
+      // The writer reply as the server path reads it (src/engine/sejong/response.ts). Whole-reply problems are data, not
+      // errors: the gateway counts them as an unusable reply (the attempt is spent), exactly like a reply that is not JSON.
+      const reply = readSejongReply(input.raw, input.plan, input.retry ? { retry: input.retry } : {});
+      // `forward` (the reply without the replacements a retry may not touch) exists in the reader of the merged engine;
+      // an older reader has none, and the reply itself is then what the check receives.
+      result = reply.ok
+        ? { ok: true, usable: reply.value.usable.length, rejected: reply.value.rejected.map(item => ({ id: item.id, code: item.code })),
+            targets: reply.value.targets, forward: (reply.value as { forward?: unknown }).forward ?? reply.value.response }
+        : { ok: false, reason: reply.error.reason, at: reply.error.at ?? null };
+      break;
     }
     case 'parse':
       // Invalid or ambiguous edits cost the attempt (retry, then rollback), as on the server.

@@ -448,6 +448,10 @@ WIRED |= {"src/documents/document-engine.ts"}
 # the delivered text) and create-runtime.ts hands it the v2 adapter (tests/unit/sejong-shadow-*.test.ts pin the hook).
 WIRED |= {"src/engine/humanize-engine.ts", "src/runtime/create-runtime.ts"}
 
+# WP-13: skill_gateway.py runs v2 in process when SUPER_SEJONG_ENGINE=v2; it imports sejong lazily, only then
+# (test_sejong_skill_path pins the switch, the recorded engine id and version, and the legacy default).
+WIRED |= {"engine_runtime/skill_gateway.py"}
+
 
 class NoRuntimeWiring(unittest.TestCase):
     def test_legacy_modules_do_not_import_the_v2_package(self):

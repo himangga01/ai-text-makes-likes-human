@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -7,6 +8,13 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 GATEWAY = ROOT / "engine_runtime/skill_gateway.py"
+
+
+def legacy_environment():
+    """These tests pin the legacy engine and its host protocol (rulesPath, rewrittenText replies, modality restore).
+    The surrounding SUPER_SEJONG_ENGINE (v2 in the second pass of `npm run test:skills`) must not flip them: the v2
+    path of the same gateway is covered by test_sejong_skill_path.py, which pins v2 the same way."""
+    return {key: value for key, value in os.environ.items() if key != "SUPER_SEJONG_ENGINE"}
 
 
 class GatewayTest(unittest.TestCase):
@@ -23,7 +31,8 @@ class GatewayTest(unittest.TestCase):
         self.temp.cleanup()
 
     def call(self, *args, succeeds=True):
-        result = subprocess.run([sys.executable, str(GATEWAY), "--workspace-root", str(self.root / "jobs"), *map(str, args)], capture_output=True, encoding="utf-8")
+        result = subprocess.run([sys.executable, str(GATEWAY), "--workspace-root", str(self.root / "jobs"), *map(str, args)],
+                                capture_output=True, encoding="utf-8", env=legacy_environment())
         self.assertEqual(result.returncode, 0 if succeeds else 1, result.stdout + result.stderr)
         return json.loads(result.stdout)
 

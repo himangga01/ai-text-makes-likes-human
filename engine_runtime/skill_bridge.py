@@ -40,8 +40,10 @@ def invoke(operation, **payload):
         return json.loads(output.read_text(encoding="utf-8"))
 
 
-def options(input_kind=None, strength=None):
-    # Preserve file/legacy operation without installing or starting Node.
+def options(input_kind=None, strength=None, offline=False):
+    # Preserve file/legacy operation without installing or starting Node. `offline` (Super Sejong v2 jobs) also
+    # answers direct text from the checks below, which are exactly parseRewriteOptions: v2 starts Node only for a
+    # job that needs a writer prompt or a reply check.
     if input_kind not in (None, "direct-text", "text-file"):
         raise ValueError("Invalid input kind")
     if strength is not None and strength not in ("normal", "medium", "strong", "very-strong"):
@@ -54,4 +56,6 @@ def options(input_kind=None, strength=None):
         if strength not in (None, "normal"):
             raise ValueError("Strength is available for direct text only")
         return {"inputKind": input_kind, "strength": "normal"}
+    if offline:
+        return {"inputKind": input_kind, "strength": strength or "normal"}
     return invoke("options", inputKind=input_kind, strength=strength or "normal")["options"]

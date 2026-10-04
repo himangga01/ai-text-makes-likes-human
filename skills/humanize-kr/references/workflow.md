@@ -30,3 +30,18 @@
 | very-strong · 매우 강하게 | 뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다. |
 
 강도는 변경량 보장이 아니다. 보호 문장과 검증 결과에 따라 원문을 유지하며, 최대 한 번의 보수적 재시도 뒤에도 보존을 확인하지 못하면 원문으로 되돌린다. Gateway의 경고에는 원문이나 후보를 붙이지 않는다.
+
+## 슈퍼세종엔진 v2 (SUPER_SEJONG_ENGINE=v2)
+
+환경 변수가 `v2`이면 prepare → next → accept → finalize → cleanup 순서와 명령은 그대로이고 아래만 다르다. job은 prepare 때 고른 엔진으로 끝까지 가며, 중간에 엔진이나 버전이 바뀌면 `The engine changed during this job` 오류로 멈춘다. 그 job은 cleanup하고 새로 시작한다.
+
+- `status: rewrite` 응답에는 `rulesPath`와 `sentencesPath`가 없다. `inputPath`의 청크와 `instructionsPath`의 프롬프트만 읽는다. 프롬프트가 계약(말투 잠금·의미 보존·[보호] 구간), 요청 목록, 출력 형식을 담고 있으므로 위 3단계의 룰북 대신 그것을 따른다. attempt 2의 프롬프트에는 검증에 걸린 문장과 사유만 있다.
+- 답은 `responsePath`에 아래 형식으로 쓴다. 요청 ID(R…)마다 그 문장 전체를 고친 결과를 하나씩 담고, 고칠 이유가 없는 요청은 생략한다. 프롬프트에 [열린 검토]가 있으면 문장 ID(S…)로 고른 문장도 담을 수 있다. 줄바꿈은 넣지 않고, 고칠 문장이 없으면 `replacements`가 빈 배열이다. `rewrittenText`는 프롬프트가 허용할 때(매우 강하게)만 쓴다.
+
+```json
+{"replacements":[{"id":"R1","text":"고친 문장 전체","reason":"사유(60자 이내)"}],"rewrittenText":"","warnings":[]}
+```
+
+- Gateway가 고칠 곳이 없다고 본 구간은 호스트에게 묻지 않고 통과시킨다(결정적 맞춤법 교정만 반영). prepare나 accept의 결과가 곧바로 `ready-to-finalize`일 수 있으며, warnings의 `SEJONG_NO_EDIT_NEEDED`가 그 구간을 알려 준다. 모든 구간이 이렇게 끝나는 job은 Node 없이 끝난다.
+- accept의 `decision`은 같은 어휘(accept·retry·rollback·accept-with-warning)다. 한 구간의 재시도는 최대 한 번이며 검증을 통과한 문장의 수정은 유지된다. 통과하지 못한 문장은 원문(결정적 맞춤법 교정만 반영)으로 돌아간다.
+- warnings에는 코드와 개수만 담긴다(`SEJONG_SENTENCES_REVERTED`, `CHUNK_RETRY`, `CHUNK_ROLLED_BACK`, `MODEL_OUTPUT_UNUSABLE`, `DOCUMENT_REVIEW_RECOMMENDED`, `DIRECT_TEXT_DOCUMENT_ROLLED_BACK`). 원문이나 후보 문장은 붙지 않는다.
