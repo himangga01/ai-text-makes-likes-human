@@ -1,0 +1,381 @@
+{
+ "description": "Constructed Korean sentence pairs for the two new meaning axes of Super Sejong v2 (WP-5, 2026-10-04): aspect (-고 있-/-는 중/-어 있-) and partial negation ('모든 …는 것은 아니다'). 'label' is the meaning judgement of the author (an LLM, not a native-speaker rating); 'expect' is the designed behaviour of the axis: 'flag' = the axis code (aspect_changed or partial_negation_changed) must fire, 'pass' = it must not. Pairs where label and expect disagree are documented design choices (accepted misses). Original text, no production data.",
+ "pairs": [
+  {
+   "axis": "aspect",
+   "source": "그는 지금 책을 읽고 있다.",
+   "rewrite": "그는 지금 책을 읽는다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "E-2 rewrite: progressive lost (DESIGN 8.2 WP-5)"
+  },
+  {
+   "axis": "aspect",
+   "source": "정부는 새 제도를 검토하고 있습니다.",
+   "rewrite": "정부는 새 제도를 검토합니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "progressive lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "회사는 신제품을 개발 중입니다.",
+   "rewrite": "회사는 신제품을 개발했습니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "noun + 중 + copula lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "아이들이 운동장에서 놀고 있어요.",
+   "rewrite": "아이들이 운동장에서 놀아요.",
+   "label": "change",
+   "expect": "flag",
+   "note": "progressive lost, 해요체"
+  },
+  {
+   "axis": "aspect",
+   "source": "선생님께서 회의를 하고 계십니다.",
+   "rewrite": "선생님께서 회의를 하십니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "honorific progressive -고 계시- lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "물가가 계속 오르고 있다.",
+   "rewrite": "물가가 계속 올랐다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "ongoing turned into completed"
+  },
+  {
+   "axis": "aspect",
+   "source": "현재 서버를 점검중입니다.",
+   "rewrite": "현재 서버를 점검했습니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "attached verbal noun + 중 lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "지금 자료를 정리하는 중이에요.",
+   "rewrite": "지금 자료를 정리해요.",
+   "label": "change",
+   "expect": "flag",
+   "note": "-는 중 lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "창문이 열려 있다.",
+   "rewrite": "창문이 열렸다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "resultative state turned into an event"
+  },
+  {
+   "axis": "aspect",
+   "source": "손님들이 의자에 앉아 있었다.",
+   "rewrite": "손님들이 의자에 앉았다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "resultative lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "벽에 안내문이 붙어 있습니다.",
+   "rewrite": "벽에 안내문을 붙였습니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "resultative lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "책상 위에 서류가 놓여 있었다.",
+   "rewrite": "책상 위에 서류를 놓았다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "resultative lost"
+  },
+  {
+   "axis": "aspect",
+   "source": "그는 지금 책을 읽고 있다.",
+   "rewrite": "그는 지금 책을 읽는 중이다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "-고 있- = -는 중 (DESIGN 8.2 WP-5)"
+  },
+  {
+   "axis": "aspect",
+   "source": "현재 검토 중입니다.",
+   "rewrite": "현재 검토하고 있습니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "noun + 중 = -고 있-"
+  },
+  {
+   "axis": "aspect",
+   "source": "현재 진행중입니다.",
+   "rewrite": "현재 진행하고 있습니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "attached 진행중 = -고 있-"
+  },
+  {
+   "axis": "aspect",
+   "source": "회사는 신제품을 개발하고 있다.",
+   "rewrite": "회사는 신제품 개발을 진행하고 있다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "progressive kept"
+  },
+  {
+   "axis": "aspect",
+   "source": "창문이 열려 있다.",
+   "rewrite": "창문이 열린 상태다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "-ㄴ 상태 equivalent"
+  },
+  {
+   "axis": "aspect",
+   "source": "불이 켜져 있다.",
+   "rewrite": "불이 켜진 채로 있다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "stative -어져 있- and -ㄴ 채"
+  },
+  {
+   "axis": "aspect",
+   "source": "손님이 앉아 계십니다.",
+   "rewrite": "손님께서 앉아 계십니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "resultative kept"
+  },
+  {
+   "axis": "aspect",
+   "source": "그는 그 사실을 알고 있다.",
+   "rewrite": "그는 그 사실을 안다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "knowledge state: 알고 있다 = 안다"
+  },
+  {
+   "axis": "aspect",
+   "source": "이 회사는 높은 기술력을 가지고 있습니다.",
+   "rewrite": "이 회사는 높은 기술력이 있습니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "possession: 가지고 있다 = 있다"
+  },
+  {
+   "axis": "aspect",
+   "source": "우리 팀은 특허 세 건을 보유하고 있다.",
+   "rewrite": "우리 팀은 특허 세 건을 보유한다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "possession: 보유하고 있다 = 보유한다"
+  },
+  {
+   "axis": "aspect",
+   "source": "교내 흡연은 금지되어 있다.",
+   "rewrite": "교내 흡연은 금지된다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "stative 되어 있- never triggers"
+  },
+  {
+   "axis": "aspect",
+   "source": "행사는 다음 주로 예정되어 있습니다.",
+   "rewrite": "행사는 다음 주에 열릴 예정입니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "stative 되어 있- never triggers"
+  },
+  {
+   "axis": "aspect",
+   "source": "아이들은 읽고 있고 어른들은 쓰고 있다.",
+   "rewrite": "아이들은 읽고 어른들은 쓰고 있다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "presence, not count"
+  },
+  {
+   "axis": "aspect",
+   "source": "이 제품은 효과가 있다.",
+   "rewrite": "이 제품은 효과 있다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "효과 있다 is not resultative"
+  },
+  {
+   "axis": "aspect",
+   "source": "그 일은 학교에서 있었던 일이다.",
+   "rewrite": "그 일은 학교에서 생긴 일이다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "에서 + 있다 is not resultative"
+  },
+  {
+   "axis": "aspect",
+   "source": "그는 이미 그 문제를 지적한 바 있다.",
+   "rewrite": "그는 이미 그 문제를 지적했다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "-ㄴ 바 있다 is experiential"
+  },
+  {
+   "axis": "aspect",
+   "source": "물가가 올랐다.",
+   "rewrite": "물가가 오르고 있다.",
+   "label": "change",
+   "expect": "pass",
+   "note": "accepted miss: an added progressive is not flagged (losses only, T8)"
+  },
+  {
+   "axis": "aspect",
+   "source": "그녀는 책을 읽는다.",
+   "rewrite": "그녀는 책을 읽고 있다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "added progressive; labelled preserve in the code-reviewer 555-pair set"
+  },
+  {
+   "axis": "partial",
+   "source": "모든 사람이 그 의견에 동의하는 것은 아니다.",
+   "rewrite": "모든 사람이 그 의견에 동의하지 않는다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "partial turned total (T4 CLR_NEG_SCOPE)"
+  },
+  {
+   "axis": "partial",
+   "source": "모든 학생이 시험에 합격한 것은 아닙니다.",
+   "rewrite": "모든 학생이 시험에 합격하지 못했습니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "partial turned total"
+  },
+  {
+   "axis": "partial",
+   "source": "참가자가 모두 오지는 않았다.",
+   "rewrite": "참가자가 모두 오지 않았다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "-지는 않- turned -지 않-"
+  },
+  {
+   "axis": "partial",
+   "source": "이 방법이 항상 통하는 것은 아니에요.",
+   "rewrite": "이 방법은 항상 통하지 않아요.",
+   "label": "change",
+   "expect": "flag",
+   "note": "not always turned never"
+  },
+  {
+   "axis": "partial",
+   "source": "다 그런 건 아니다.",
+   "rewrite": "다 그렇지 않다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "adverb 다 with 건 아니다"
+  },
+  {
+   "axis": "partial",
+   "source": "그 약이 모든 환자에게 안전한 것은 아니다.",
+   "rewrite": "그 약은 모든 환자에게 안전하지 않다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "partial turned total"
+  },
+  {
+   "axis": "partial",
+   "source": "모든 학생이 합격하지 못했다.",
+   "rewrite": "모든 학생이 합격한 것은 아니다.",
+   "label": "change",
+   "expect": "flag",
+   "note": "total turned partial"
+  },
+  {
+   "axis": "partial",
+   "source": "모든 사람이 그 의견에 동의하는 것은 아니다.",
+   "rewrite": "모든 사람이 그 의견에 동의하지는 않는다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "both partial"
+  },
+  {
+   "axis": "partial",
+   "source": "항상 그런 것은 아니다.",
+   "rewrite": "늘 그런 건 아니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "both partial"
+  },
+  {
+   "axis": "partial",
+   "source": "모든 학생이 합격한 것은 아니다.",
+   "rewrite": "합격하지 못한 학생도 있다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "existential negative keeps partial"
+  },
+  {
+   "axis": "partial",
+   "source": "모든 학생이 합격한 것은 아니다.",
+   "rewrite": "일부 학생은 합격하지 못했다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "SOME + negation keeps partial"
+  },
+  {
+   "axis": "partial",
+   "source": "이 방법이 항상 통하는 것은 아니에요.",
+   "rewrite": "이 방법이 통하지 않을 때도 있어요.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "existential negative keeps partial"
+  },
+  {
+   "axis": "partial",
+   "source": "그 약이 모든 환자에게 안전한 것은 아니다.",
+   "rewrite": "그 약이 모든 환자에게 안전하지는 않다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "both partial"
+  },
+  {
+   "axis": "partial",
+   "source": "이것은 단순한 실수가 아니라 구조적 문제다.",
+   "rewrite": "이것은 단순한 실수가 아닌 구조적 문제다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "no universal"
+  },
+  {
+   "axis": "partial",
+   "source": "그 주장이 사실인 것은 아니다.",
+   "rewrite": "그 주장은 사실이 아니다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "no universal: plain negation"
+  },
+  {
+   "axis": "partial",
+   "source": "전체 매출이 감소한 것은 아니다.",
+   "rewrite": "전체 매출은 감소하지 않았다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "전체 is a noun, not a universal"
+  },
+  {
+   "axis": "partial",
+   "source": "반드시 그렇게 해야 하는 것은 아니다.",
+   "rewrite": "반드시 그렇게 해야 할 필요는 없다.",
+   "label": "preserve",
+   "expect": "pass",
+   "note": "반드시 is modality, not a universal"
+  }
+ ]
+}
