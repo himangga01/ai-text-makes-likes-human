@@ -309,6 +309,15 @@ def check(plan: Plan, source: str, *, response: Optional[object] = None, candida
         for k, verdict in verdicts.items():
             if verdict.status == "retry":
                 verdicts[k] = DC.Verdict("rejected" if not reasons.get(k) else "reverted", "revert", verdict.codes)
+    if gate.policy == "rollback" and not floor_failed:
+        # A rollback delivers base(x), the source plus the deterministic fixes, which verify clean by construction
+        # (3.11): the chunk keeps its certain misspelling fixes. The reverts above already leave base(x); this
+        # states it for every rollback reason (runaway, an unusable reply with nothing kept).
+        for k in range(n):
+            if texts[k] != st.base[k]:
+                verdicts[k] = DC.Verdict("reverted", "revert", verdicts[k].codes or list(gate.hard))
+                texts[k] = st.base[k]
+        text = AP.assemble(doc, texts)[0]
     report = _report(st, ar, rr, texts, verdicts, reasons, gate, attempt, nominated, previous)
     return CheckOutcome(text=text, report=report)
 

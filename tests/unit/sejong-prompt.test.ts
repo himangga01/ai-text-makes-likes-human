@@ -208,6 +208,9 @@ describe('buildSejongPrompt, attempt 2', () => {
       retry: [{ id: 'S1', sentence: 'S1', violations: [{ code: 'collateral_edit', detail: '' }] }] });
     expect(nominated).toContain('S1 이전 답: 요청 밖 문장이 바뀌었다(collateral_edit).');
     expect(nominated).toContain('"id":"S1","sentence":"S1","text":"오늘은 세미나 후기를 정리합니다."');
+    // the output section names the retry ids, so an S id is not refused as "not a request id"
+    expect(nominated).toContain('id는 [재시도]에 적힌 ID(R… 또는 S…)다.');
+    expect(nominated).not.toContain('id는 요청 ID(R…)다.');
   });
 
   it('renders the fixture retry list and never echoes a malformed code', () => {

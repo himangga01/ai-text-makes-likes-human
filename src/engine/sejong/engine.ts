@@ -10,7 +10,8 @@
  *                          otherwise prompt (prompt.ts) → writer.runPrompt with response-schema.json →
  *                          reply parsed (response.ts) → check attempt 1; on policy `retry` one targeted retry
  *                          with only the failed requests and their named violations → check attempt 2 with
- *                          --base. The decided text goes to 02_chunk_NN_rewritten.txt (the source on rollback).
+ *                          --base. The decided text goes to 02_chunk_NN_rewritten.txt (on rollback it is base(x):
+ *                          the source plus the deterministic fixes, which verify clean by construction).
  *   finalize               reassembly, document floor and seam reverts (a residual floor failure puts the
  *                          whole document back to the source: DIRECT_TEXT_DOCUMENT_ROLLED_BACK)
  *   final verify gate      legacy gate JSON on the whole document; exit 3 fails the job (VALIDATION_FAILED)
@@ -295,8 +296,12 @@ export class SejongEngine {
     let rolledBack = false;
     if (report.policy === 'rollback') {
       rolledBack = true;
-      await writeFile(rewrittenPath, source, 'utf8');
-      record({ code: CHUNK_ROLLBACK, message: `${index}번 구간은 의미 보존을 위해 원문을 유지했습니다.` });
+      await writeFile(rewrittenPath, await readFile(decided, 'utf8'), 'utf8');
+      const fixes = report.counts.normFixes;
+      record({
+        code: CHUNK_ROLLBACK,
+        message: `${index}번 구간은 의미 보존을 위해 원문을 유지했습니다.` + (fixes > 0 ? ` 확실한 맞춤법 오류 ${fixes}곳만 고쳤습니다.` : '')
+      });
     } else {
       await writeFile(rewrittenPath, await readFile(decided, 'utf8'), 'utf8');
       if (report.policy === 'accept-with-warning') {

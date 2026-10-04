@@ -399,6 +399,10 @@ class DecideTests(unittest.TestCase):
         self.assertEqual((unusable.report.gate["exit_code"], unusable.report.shadow_failures[0]), (1, "model_output_unusable"))
         nothing = CK.check(plan, BLOG, response="not json", attempt=2, base=BLOG.replace("됬", "됐"), flags=FLAGS)
         self.assertEqual((nothing.report.policy, nothing.report.hard_failures), ("rollback", ["model_output_unusable"]))
+        # a rollback delivers base(x): the certain misspelling fix (됬 -> 됐) survives it
+        self.assertEqual(nothing.text, base_text(plan, BLOG))
+        self.assertIn("됐", nothing.text)
+        self.assertGreater(nothing.report.counts["normFixes"], 0)
 
     def test_polarity_rule_licenses_its_own_repair_only(self):
         text = "그는 결코 약속을 어기는 사람이다. 그는 늘 일찍 온다.\n"
