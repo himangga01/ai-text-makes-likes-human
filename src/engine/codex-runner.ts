@@ -1,7 +1,8 @@
 import type { CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
-import { readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import type { CommandRunner } from "../process/command-runner.js";
 import { EngineError, engineFailed, modelUnavailable } from "./errors.js";
@@ -10,6 +11,7 @@ import {
   HUMANIZE_REASONING_EFFORT
 } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
+import type { ChunkPromptContext } from "./super-sejong.js";
 import { parseTextResult } from './text-edits.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
@@ -128,7 +130,8 @@ export class CodexRunner {
     signal: AbortSignal,
     settings?: ModelSettings,
     rewriteOptions?: RewriteOptions,
-    candidateReview?: CandidateReview
+    candidateReview?: CandidateReview,
+    chunkContext?: ChunkPromptContext
   ): Promise<CodexResult> {
     const options = parseRewriteOptions(rewriteOptions?.inputKind, rewriteOptions?.strength);
     const sourcePath = path.resolve(inputPath);
@@ -145,11 +148,14 @@ export class CodexRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
 
     await rm(resultPath, { force: true });
-    const command = await this.options.permitPool.run(signal, () =>
-      this.options.runner.run({
+    const isolatedCwd = await mkdtemp(path.join(os.tmpdir(), "humanize-codex-"));
+    let command;
+    try {
+      command = await this.options.permitPool.run(signal, () =>
+        this.options.runner.run({
         command: this.options.codexCommand,
         args: [
           "exec",
@@ -157,6 +163,16 @@ export class CodexRunner {
           "--skip-git-repo-check",
           "--ignore-user-config",
           "--ignore-rules",
+          // The model receives untrusted document text and needs no host tools. Codex 0.160
+          // accepts but ignores --disable unified_exec, so the read-only sandbox and the empty
+          // working directory remain the actual containment.
+          "--disable", "shell_tool",
+          "--disable", "unified_exec",
+          "--disable", "code_mode_host",
+          "--disable", "view_image",
+          "--disable", "browser_use",
+          "--disable", "apps",
+          "--disable", "computer_use",
           "--model",
           selection.model,
           "--config",
@@ -169,19 +185,25 @@ export class CodexRunner {
           resultPath,
           "-"
         ],
-        cwd: path.dirname(sourcePath),
+        cwd: isolatedCwd,
         stdin: prompt,
         timeoutMs: this.options.timeoutMs,
         signal,
         env: { ...process.env, NO_COLOR: "1" }
-      })
-    );
+        })
+      );
+    } finally {
+      await rm(isolatedCwd, { recursive: true, force: true });
+    }
 
     if (command.termination === "timeout") {
       throw new EngineError("ENGINE_TIMEOUT", true, "Codex timed out");
     }
     if (command.termination === "aborted") {
       throw new EngineError("CLIENT_ABORTED", true, "Codex was cancelled");
+    }
+    if (command.termination === "output-limit") {
+      throw engineFailed("Codex", "CLI output limit exceeded");
     }
     const rejection = modelRejection(command.exitCode, command.stderr);
     if (rejection) throw modelUnavailable("Codex", rejection);

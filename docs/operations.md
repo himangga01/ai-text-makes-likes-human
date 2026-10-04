@@ -19,13 +19,15 @@
 - 입력 크기: 웹·앱의 직접 입력·TXT·MD는 LF 정규화 후 Unicode code point 기준 100,000자 이하(`src/engine/input-limits.ts`). `Content-Length`가 400,000바이트를 넘으면 받기 전에 `413 INPUT_TOO_LARGE`, 그 밖의 요청은 받는 도중 정규화한 글자 수가 100,000자를 넘으면 스트림 오류로 중단함. TXT·MD 파일은 1 MiB를 넘으면 브라우저와 앱이 읽기 전에 거절함. `/api/health`의 `inputLimits`로 제공하며 호스트 세션의 스킬 TXT·MD에는 이 제한을 적용하지 않음
 - 서버 종료로 끊긴 변환은 사용자 취소(`CLIENT_ABORTED`)가 아닌 `SERVER_SHUTDOWN`으로 알림. 종료 중에 들어온 새 요청도 `503 SERVER_SHUTDOWN`으로 거절함
 - 본문 이력·본문 로그: 없음. 처리 중 원문·중간 결과는 임시 파일로 사용함. 일반 텍스트는 완료·실패·취소 후 정리하고 Office는 마지막 사용 후 30분까지 보관함. 활성 작업과 읽기 임대 중에는 정리를 미룸
-- 허용 로그: job ID, 글자 수, 청크 수, 처리 시간, 결과 코드, 서법 복원·쉼표 제거 건수
-- 게이트 직전 후처리: `restore_modality.py`와 `strip_injected_commas.py`를 청크마다 실행. `--all` 격상은 진단 단계가 없으므로 사용하지 않음
+- 허용 로그: job ID, 글자 수, 청크 수, 처리 시간, 결과 코드, 서법 복원·쉼표 제거·조사 교정 건수, 게이트 실패 코드별 횟수, 문체 진단 건수(코드와 숫자만, 본문 없음)
+- 게이트 직전 후처리: `restore_modality.py`, `strip_injected_commas.py`, `engine_runtime/super_sejong_josa.py`(수정으로 새로 틀어진 조사 형태 교정)를 청크마다 실행. `--all` 격상은 진단 단계가 없으므로 사용하지 않음
+- 슈퍼세종엔진: `SUPER_SEJONG_MODE`가 `enforce`(기본)면 의미 보존 검사(부정·서법·어휘 극성·참여자 역할·조사 형태)가 실패 시 보수적 재시도·되돌림을 일으킴. `shadow`는 같은 검사를 실행해 `shadowFailureCounts`로만 기록하고 막지 않음. `off`는 검사·조사 교정·문체 힌트를 모두 끄고 기존 게이트만 사용함. 아래 [슈퍼세종엔진 모드](#슈퍼세종엔진-모드) 참고
 - 줄바꿈: 수신 단계에서 CR·CRLF를 LF로 통일
 - 준비 상태: Python 3.11+와 엔진 라벨 2.3.2가 준비되고 Codex 또는 Claude 중 하나가 설치·로그인돼 있으면 ready. Office 지원은 별도로 `lxml` import를 확인하며 `documentsAvailable`로 표시함
+- 프로세스 상태: `/api/status`는 외부 CLI를 점검하지 않고 `status`·`pid`·`activeJobs`·`queuedJobs`만 즉시 반환함. supervisor가 사용하며, 이 경로가 없는 이전 빌드에는 `/api/health`로 대신 확인함
 - 상태 갱신: `/api/health`는 3초 캐시·진행 중 조회 공유를 사용해 재점검함. 보이는 유휴 화면은 60초마다 조회하고 수동 점검·화면 복귀·관련 오류 때도 다시 조회함. 모델별 계정 권한은 실제 실행으로만 확인됨
 - 상태 수치의 범위: `activeJobs`·`queuedJobs`에는 일반 텍스트 업로드 예약과 Office 보관·파싱·다운로드가 표시되지 않음. 두 값이 0이어도 모든 작업이 끝났다는 뜻은 아님
-- 접근 범위: 소켓의 로컬·사설 IP 및 제공된 Origin을 확인함. 사용자 로그인·TLS·Host 허용 목록은 없으며 같은 와이파이 여부를 직접 확인하지 않음
+- 접근 범위: 소켓의 로컬·사설 IP, 로컬·사설 IP 또는 localhost Host, 제공된 Origin을 확인함. 사용자 로그인·TLS는 없으며 같은 와이파이 여부를 직접 확인하지 않음
 
 ## macOS 서버 운영
 
@@ -54,7 +56,36 @@ E2E_PORT=7893 npm run test:e2e
 
 운영 중인 서비스는 기본 포트 7882와 `runtime/` 잠금을 점유합니다. 서비스를 멈추지 않고 e2e를 실행하려면 `E2E_PORT`를 지정하세요. 별도 포트로 실행하면 테스트 서버가 `runtime/test-tmp/e2e`를 사용해 운영 job 폴더와 잠금을 건드리지 않습니다. 다른 런타임 경로가 필요하면 `HUMANIZE_RUNTIME_ROOT`로 지정합니다.
 
+`npm run test:e2e`는 Playwright 서버를 띄우기 전에 `npm run build`로 `dist/`를 다시 만듭니다. 운영 서버와 매시간 watchdog도 같은 `dist/`를 실행하므로 커밋하지 않은 코드로 e2e를 돌리면 다음 재시작부터 그 빌드가 운영에 쓰입니다. 운영 중인 저장소에서는 `dist/`를 백업한 뒤 실행하고 끝나면 되돌리거나, 별도 체크아웃에서 실행하세요.
+
+Python 단계(`engine_runtime/`, `vendor/humanize-engine/`)는 작업마다 파일을 새로 읽으므로 저장하는 즉시 운영 게이트 동작이 바뀝니다. 진행 중인 작업이 없는지 `/api/status`로 확인한 뒤 수정하세요. TypeScript 변경은 빌드와 재시작 후에만 반영됩니다.
+
 Windows 전용 검사는 macOS에서 자동으로 건너뜁니다. 방화벽·엔진 동기화 PowerShell 스크립트 검사, 데스크톱 앱 Playwright 검사, Windows 기준으로 캡처한 시각 스냅샷이 여기에 해당합니다. 릴리스 전 전체 검증은 Windows에서 수행하세요.
+
+## 슈퍼세종엔진 모드
+
+서버와 Python 단계는 실행한 프로세스의 환경 변수를 그대로 물려받습니다. supervisor로 모드를 바꾸려면 재시작 명령에 값을 지정합니다.
+
+```sh
+SUPER_SEJONG_MODE=shadow node dist/ops/hermes-service.js restart
+```
+
+watchdog이 서버를 다시 띄울 때는 watchdog 자신의 환경을 사용하므로, 기본값이 아닌 모드를 유지하려면 cron 항목에도 같은 값을 넣어야 합니다. 그렇지 않으면 자동 재시작 후 `enforce`로 돌아갑니다. Python 단계는 작업마다 값을 읽지만 서버가 시작할 때 받은 환경을 전달하므로, 모드 변경은 재시작해야 반영됩니다.
+
+| 모드 | 의미 보존 검사 | 조사 교정 | 문체 힌트 | Office 순서 비교 |
+| --- | --- | --- | --- | --- |
+| `enforce` | 실패하면 재시도·되돌림 | 실행 | 첫 시도에만 전달 | 슈퍼세종 문장 정렬 비교로 대체 |
+| `shadow` | 기록만(`shadowFailureCounts`) | 실행 | 첫 시도에만 전달 | 기존 서법·짧은 부정 목록 비교(Office는 shadow 기록 없음) |
+| `off` | 실행 안 함 | 실행 안 함 | 전달 안 함 | 기존 서법·짧은 부정 목록 비교 |
+
+`transform_complete` 로그의 `diagnostics`에서 다음 값을 확인합니다. 모두 코드와 숫자이며 본문은 들어가지 않습니다.
+
+- `hardFailureCounts`: 구간·전체 게이트에서 막은 실패 코드별 횟수(`polarity_changed`, `modality_changed`, `lexical_polarity_changed`, `participant_role_changed`, `josa_mismatch` 등)
+- `shadowFailureCounts`: shadow 모드에서 막았을 실패 코드별 횟수
+- `repairedParticles`: 복원 단계에서 고친 조사 수
+- `styleFindingsBefore`·`styleFindingsAfter`: 각 구간의 원문·결과에서 찾은 문체 진단 건수. 힌트가 실제로 효과가 있는지 비교하는 용도
+
+새 검사의 과잉 차단이 의심되면 먼저 `shadow`로 바꿔 실패 코드 분포를 모은 뒤 판단합니다. 측정 근거와 한계는 [슈퍼세종엔진 평가](research/super-sejong/EVALUATION-2026-10-04.md)에 있습니다.
 
 ## 시작 전 점검
 
@@ -89,6 +120,7 @@ Get-ChildItem .\runtime\jobs -Force
 - 청크 수
 - 처리 시간
 - 서법 복원 문장 수와 제거한 쉼표 수
+- 교정한 조사 수, 게이트 실패 코드별 횟수, 문체 진단 건수
 - 오류 코드
 
 원문 문장이나 결과 문장이 콘솔에 나오면 운영을 중단하고 로그 경계를 점검합니다.

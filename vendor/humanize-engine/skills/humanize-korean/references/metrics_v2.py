@@ -690,30 +690,49 @@ def change_rate(before: str, after: str, ignore_markup: bool = False) -> float:
 
 
 # 문자 diff(autojunk=False)는 입력 길이의 제곱에 가깝게 느려진다 — 실측 9만 자 전체 문서
-# 검증 139초. 이 합계 길이를 넘으면 줄 단위로 짝지어 각 줄만 문자 비교한다. 윤문은
-# 줄(문단) 구조를 유지하므로 값은 전체 비교와 거의 같고, 청크 단위 입력은 그대로다.
-_SEGMENTED_CHANGE_RATE_CHARS = 20_000
+# 검증 139초, 반복이 많은 1만 자 두 개도 16초. 이 합계 길이를 넘으면 줄과 문장 단위로
+# 짝지어 각 단위만 문자 비교한다. 줄바꿈 없이 이어진 긴 문단도 문장 끝에서 나뉜다.
+# 윤문은 문장·문단 구조를 유지하므로 값은 전체 비교와 거의 같다.
+_SEGMENTED_CHANGE_RATE_CHARS = 8_000
+# 짝이 맞지 않는 구간이 이보다 길면 한 덩어리로 비교하지 않고 단위끼리 차례로 비교한다.
+_SEGMENT_BLOCK_CHARS = 4_000
+# 줄바꿈, 또는 문장 끝 부호 뒤의 공백에서 단위를 끊는다. 각 단위는 뒤따르는 구분자를
+# 포함하므로 단위를 이어 붙이면 원문이 된다.
+_UNIT_BREAK = re.compile(r"\n|(?<=[.!?。！？…])[ \t]+")
 
 
 def _char_matches(a: str, b: str) -> int:
+    # 문장 부호 없이 아주 긴 단위는 autojunk 근사 비교로 제곱 시간을 피한다.
+    autojunk = len(a) + len(b) > 2 * _SEGMENT_BLOCK_CHARS
     return sum(block.size for block in
-               difflib.SequenceMatcher(None, a, b, autojunk=False).get_matching_blocks())
+               difflib.SequenceMatcher(None, a, b, autojunk=autojunk).get_matching_blocks())
+
+
+def _units(text: str) -> list[str]:
+    units, start = [], 0
+    for match in _UNIT_BREAK.finditer(text):
+        units.append(text[start:match.end()])
+        start = match.end()
+    units.append(text[start:])
+    return units
 
 
 def _segmented_matches(before: str, after: str) -> int:
-    a_lines, b_lines = before.split("\n"), after.split("\n")
-    if len(a_lines) == len(b_lines):
-        return sum(_char_matches(x, y) for x, y in zip(a_lines, b_lines)) + len(a_lines) - 1
+    a_units, b_units = _units(before), _units(after)
+    if len(a_units) == len(b_units):
+        return min(sum(_char_matches(x, y) for x, y in zip(a_units, b_units)), len(before), len(after))
     matched = 0
-    lines = difflib.SequenceMatcher(None, a_lines, b_lines, autojunk=False)
-    for tag, i1, i2, j1, j2 in lines.get_opcodes():
+    units = difflib.SequenceMatcher(None, a_units, b_units, autojunk=False)
+    for tag, i1, i2, j1, j2 in units.get_opcodes():
         if tag == "equal":
-            matched += sum(len(line) + 1 for line in a_lines[i1:i2])
+            matched += sum(len(unit) for unit in a_units[i1:i2])
         elif tag == "replace":
-            if i2 - i1 == j2 - j1:
-                matched += sum(_char_matches(x, y) + 1 for x, y in zip(a_lines[i1:i2], b_lines[j1:j2]))
+            left, right = a_units[i1:i2], b_units[j1:j2]
+            joined = sum(map(len, left)) + sum(map(len, right))
+            if i2 - i1 == j2 - j1 or joined > _SEGMENT_BLOCK_CHARS:
+                matched += sum(_char_matches(x, y) for x, y in zip(left, right))
             else:
-                matched += _char_matches("\n".join(a_lines[i1:i2]), "\n".join(b_lines[j1:j2]))
+                matched += _char_matches("".join(left), "".join(right))
     return min(matched, len(before), len(after))
 
 

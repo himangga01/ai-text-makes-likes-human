@@ -18,6 +18,16 @@ describe("streamRequestBody", () => {
     } finally {await removeTestRoot(root);}
   });
 
+  it('keeps the size error if closing the input stream also aborts its signal', async () => {
+    const root=await makeTestRoot(), destination=path.join(root,'large-aborted.txt');
+    const controller=new AbortController(), body=Readable.from(['가'.repeat(11)]);
+    body.on('close',()=>controller.abort());
+    try {
+      await expect(streamRequestBody(body,destination,{minFreeBytes:1,maxChars:10,
+        signal:controller.signal,getFreeBytes:async()=>1000})).rejects.toMatchObject({publicCode:'INPUT_TOO_LARGE'});
+    } finally {await removeTestRoot(root);}
+  });
+
   it('never removes a destination it did not create', async () => {
     const root=await makeTestRoot(), destination=path.join(root,'existing.txt');
     try {

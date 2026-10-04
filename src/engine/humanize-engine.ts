@@ -1,6 +1,7 @@
 import { candidateReviewForRetry, type CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences } from './direct-text-fidelity.js';
+import { collectKoreanStyleFindings, documentRegister, type ChunkPromptContext } from './super-sejong.js';
 import { readFile, writeFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import type { EventSink } from "../contracts.js";
@@ -48,7 +49,8 @@ export interface CodexAdapter {
     signal: AbortSignal,
     settings?: ModelSettings,
     rewriteOptions?: RewriteOptions,
-    candidateReview?: CandidateReview
+    candidateReview?: CandidateReview,
+    chunkContext?: ChunkPromptContext
   ): Promise<CodexResult>;
 }
 
@@ -93,6 +95,23 @@ interface ChunkTaskContext {
   onWorkUnit(phase: "transform" | "verify"): void;
   onWarning(warning: HumanizeWarning): void;
   trackModelCall<T>(task: () => Promise<T>): Promise<T>;
+  chunkContext?: ChunkPromptContext;
+}
+
+function countCodes(target: Record<string, number>, codes: readonly string[] | undefined): void {
+  for (const code of codes ?? []) target[code] = (target[code] ?? 0) + 1;
+}
+
+function codeCounts(codes: readonly string[] | undefined): Record<string, number> {
+  const counts: Record<string, number> = {};
+  countCodes(counts, codes);
+  return counts;
+}
+
+function mergeCounts(results: ReadonlyArray<Record<string, number>>): Record<string, number> {
+  const merged: Record<string, number> = {};
+  for (const counts of results) for (const [code, count] of Object.entries(counts)) merged[code] = (merged[code] ?? 0) + count;
+  return merged;
 }
 
 export interface ChunkTaskResult {
@@ -102,6 +121,7 @@ export interface ChunkTaskResult {
   retries: number;
   restoredSentences: number;
   removedCommas: number;
+  repairedParticles: number;
   skippedSentences: number;
   fidelityGuardFailures: number;
   rolledBackChunks: number;
@@ -110,6 +130,10 @@ export interface ChunkTaskResult {
   candidateReviewRetries: number;
   /** Attempts whose reply was malformed or ambiguous (0–2). */
   unusableModelOutputs: number;
+  hardFailures: Record<string, number>;
+  shadowFailures: Record<string, number>;
+  styleBefore: number;
+  styleAfter: number;
   gateCodes: GateCode[];
   timings: ChunkTiming;
 }
@@ -195,12 +219,13 @@ export class HumanizeEngine {
   private collectModelWarnings(
     context: ChunkTaskContext,
     warnings: HumanizeWarning[],
-    messages: string[]
+    messages: string[],
+    chunkIndex: number
   ): void {
-    for (const message of messages) {
+    if (messages.length) {
       this.recordChunkWarning(context, warnings, {
         code: "MODEL_WARNING",
-        message
+        message: `${chunkIndex}번 구간에 모델 검토 주의가 있습니다. 원문과 결과를 확인해 주세요.`
       });
     }
   }
@@ -227,6 +252,7 @@ export class HumanizeEngine {
     let gateMs = 0;
     let restoredSentences = 0;
     let removedCommas = 0;
+    let repairedParticles = 0;
     let skippedSentences = 0;
     let fidelityGuardFailures = 0;
     let rolledBackChunks = 0;
@@ -270,6 +296,7 @@ export class HumanizeEngine {
       restoreMs += this.now() - startedAt;
       restoredSentences += report.restoredSentences;
       removedCommas += report.removedCommas;
+      repairedParticles += report.repairedParticles ?? 0;
       if (direct) {
         skippedSentences += report.skippedSentences;
         fidelityFailed = candidateFidelityIssues > 0 || report.skippedSentences > 0 || checkDirectTextFidelity(sourceText, await readFile(rewrittenPath, 'utf8')).violations > 0;
@@ -302,6 +329,7 @@ export class HumanizeEngine {
     // A malformed or ambiguous reply costs this chunk an attempt, not the job:
     // attempt 1 falls through to the retry, attempt 2 rolls back.
     let unusableModelOutputs = 0;
+    const hardFailures: Record<string, number> = {}, shadowFailures: Record<string, number> = {};
     const attemptTransform = async (attempt: 1 | 2, candidateReview?: CandidateReview): Promise<CodexResult | undefined> => {
       const startedAt = this.now();
       try {
@@ -312,7 +340,8 @@ export class HumanizeEngine {
           context.signal,
           context.settings,
           context.rewriteOptions,
-          candidateReview
+          candidateReview,
+          context.chunkContext
         ));
       } catch (error) {
         if (context.signal.aborted || !unusableModelOutput(error)) throw error;
@@ -328,7 +357,7 @@ export class HumanizeEngine {
       }
     };
     const acceptCandidate = async (result: CodexResult): Promise<void> => {
-      this.collectModelWarnings(context, warnings, result.warnings);
+      this.collectModelWarnings(context, warnings, result.warnings, chunk.index);
       candidateFidelityIssues = result.fidelityIssues ?? 0;
       await writeFile(rewrittenPath, alignOuterWhitespace(sourceText, result.rewrittenText), "utf8");
       await restore();
@@ -348,6 +377,8 @@ export class HumanizeEngine {
       );
       gateMs += this.now() - firstGateStartedAt;
       gateCodes.push(...gate.gateCodes);
+      countCodes(hardFailures, gate.hardFailures);
+      countCodes(shadowFailures, gate.shadowFailures);
       if (gate.status === "error") {
         throw validation(`Chunk ${chunk.index} gate execution failed`);
       }
@@ -386,6 +417,8 @@ export class HumanizeEngine {
         );
         gateMs += this.now() - secondGateStartedAt;
         gateCodes.push(...gate.gateCodes);
+        countCodes(hardFailures, gate.hardFailures);
+        countCodes(shadowFailures, gate.shadowFailures);
         if (gate.status === "error") {
           throw validation(`Chunk ${chunk.index} retry gate execution failed`);
         }
@@ -407,6 +440,9 @@ export class HumanizeEngine {
 
     this.ensureActive(context.signal);
     context.onWorkUnit("verify");
+    // Whether the style hints helped is measured, never assumed: findings in the source vs the delivered chunk.
+    const styleBefore = collectKoreanStyleFindings(sourceText).length;
+    const styleAfter = collectKoreanStyleFindings(await readFile(rewrittenPath, "utf8")).length;
     return {
       chunkIndex: chunk.index,
       warnings,
@@ -414,8 +450,13 @@ export class HumanizeEngine {
       retries,
       restoredSentences,
       removedCommas,
+      repairedParticles,
       skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences, restoredProtectedSentences, candidateReviewRetries,
       unusableModelOutputs,
+      hardFailures,
+      shadowFailures,
+      styleBefore,
+      styleAfter,
       gateCodes,
       timings: { codexMs, restoreMs, gateMs }
     };
@@ -471,6 +512,8 @@ export class HumanizeEngine {
       );
     }
     const bodyChunks = manifest.chunks.filter(chunk => !chunk.passthrough);
+    // Chunks are rewritten independently; the document's speech level keeps them consistent.
+    const documentRegisterOfSource = bodyChunks.length > 1 ? documentRegister(source) : undefined;
     const concurrency =
       manifest.processingMode === "single" ? 1 : this.chunkConcurrency;
     let completedUnits = 0;
@@ -494,6 +537,7 @@ export class HumanizeEngine {
       async ({ chunk, bodyIndex }, signal) => {
         this.ensureActive(signal);
         return this.processChunk(chunk, {
+          chunkContext: bodyChunks.length > 1 ? { index: bodyIndex + 1, total: bodyChunks.length, register: documentRegisterOfSource } : undefined,
           settings: request.settings,
           rewriteOptions,
           sourcePoints,
@@ -579,6 +623,11 @@ export class HumanizeEngine {
       } : {}),
       rolledBackChunks: chunkResults.reduce((sum, result) => sum + result.rolledBackChunks, 0),
       unusableModelOutputs: chunkResults.reduce((sum, result) => sum + result.unusableModelOutputs, 0),
+      hardFailureCounts: mergeCounts([...chunkResults.map(result => result.hardFailures), codeCounts(fullGate.hardFailures)]),
+      shadowFailureCounts: mergeCounts([...chunkResults.map(result => result.shadowFailures), codeCounts(fullGate.shadowFailures)]),
+      styleFindingsBefore: chunkResults.reduce((sum, result) => sum + result.styleBefore, 0),
+      styleFindingsAfter: chunkResults.reduce((sum, result) => sum + result.styleAfter, 0),
+      repairedParticles: chunkResults.reduce((sum, result) => sum + result.repairedParticles, 0),
       model: request.settings?.model ?? this.model,
       reasoningEffort: request.settings?.effort ?? this.reasoningEffort,
       processingMode: manifest.processingMode,

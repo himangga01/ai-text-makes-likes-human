@@ -8,10 +8,10 @@ import re
 _QUANTITY = re.compile(
     r"(?<![\d.])([+\-−]?\d+(?:,\d{3})*(?:\.\d+)?)([천백]?[만억조]?)"
     r"(?:[ \t\u00a0]*(%|℃|°[CF]|kg|mg|μg|µg|g|km|cm|mm|mL|ml|L|l|m|ms|s|Hz|kHz|MHz|GHz|"
-    r"원|개월|년|월|일|명|건|개|회|번)(?![A-Za-z]))?"
+    r"원|개월|시간|분|초|달|주|년|월|일|명|건|개|회|번)(?![A-Za-z]))?"
 )
 _MAGNITUDE = {"천": 1000, "백": 100, "만": 10**4, "억": 10**8, "조": 10**12}
-_UNITS ={"개월", "년", "월", "일", "명", "건", "개", "회", "번", "원"}
+_UNITS ={"개월", "시간", "분", "초", "달", "주", "년", "월", "일", "명", "건", "개", "회", "번", "원"}
 
 # 전각 숫자·기호는 반각과 같은 값이다("２０％" == "20%").
 _WIDTH = str.maketrans({**{chr(0xFF10 + d): str(d) for d in range(10)},
@@ -48,8 +48,6 @@ def _native_value(word: str) -> int | None:
     ones = word[len(tens):]
     if ones and ones not in _ONES:
         return None
-    if not tens and _ONES.get(ones) == 1:
-        return None
     if tens == "스무" and ones or tens == "스물" and not ones:
         return None
     value = _TENS.get(tens, 0) + _ONES.get(ones, 0)
@@ -80,14 +78,21 @@ def number_words(text: str) -> Counter:
             continue
         if m.group("counter") == "번" and after == "째":
             continue
+        # "두 번 다시 …않다/없다" means "never again", not a count of two.
+        if m.group(0).replace(" ", "") == "두번" and re.match(r"\s*다시", text[m.end():m.end() + 4]):
+            continue
         numeral = m.group("native") or m.group("sino")
+        counter = m.group("counter")
+        # "한 번 더" is often idiomatic, while a precise duration, count or
+        # monetary amount of one must compare with its digit spelling.
+        if numeral in ("한", "하나") and counter not in _UNITS - {"번"}:
+            continue
         if numeral in _ATTACHED_WORDS and m.group(0) == numeral + m.group("counter"):
             continue
         value = _native_value(m.group("native")) if m.group("native") else (
             _sino_value(m.group("sino")) if m.group("sino") else None)
         if value is None:
             continue
-        counter = m.group("counter")
         # 숫자 표기와 같은 단위 규칙("3배"→단위 없음, "3명"→명)을 따라야 "세 배"=="3배"다.
         found[(Decimal(value), counter if counter in _UNITS else "")] += 1
     return found

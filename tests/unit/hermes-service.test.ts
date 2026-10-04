@@ -418,4 +418,26 @@ describe("NodeServicePlatform", () => {
       errorCode: "ENGINE_UNAVAILABLE"
     });
   });
+
+  it("falls back to /api/health when a server built before /api/status answers 404", async () => {
+    const paths: string[] = [];
+    const server = createServer((request, response) => {
+      paths.push(request.url ?? "");
+      if (request.url === "/api/status") { response.statusCode = 404; response.setHeader("content-type", "text/html"); response.end("<!doctype html>Not Found"); return; }
+      response.setHeader("content-type", "application/json");
+      response.end(JSON.stringify({ status: "ready", pid: process.pid, activeJobs: 1, queuedJobs: 0 }));
+    });
+    servers.push(server);
+    await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (address === null || typeof address === "string") throw new Error("Expected a TCP test server");
+    const runtimeRoot = await makeRuntimeRoot();
+    const platform = new NodeServicePlatform({
+      projectRoot: path.dirname(runtimeRoot), port: address.port, nodeCommand: process.execPath,
+      pythonCommand: "python", codexCommand: "codex", claudeCommand: "claude",
+      stdoutLogPath: path.join(runtimeRoot, "stdout.log"), stderrLogPath: path.join(runtimeRoot, "stderr.log")
+    });
+    await expect(platform.getHealth()).resolves.toMatchObject({ status: "ready", pid: process.pid, activeJobs: 1 });
+    expect(paths).toEqual(["/api/status", "/api/health"]);
+  });
 });

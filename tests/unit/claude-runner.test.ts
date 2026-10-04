@@ -235,4 +235,13 @@ describe("ClaudeRunner", () => {
       runner.transform(inputPath, outputPath, 1, new AbortController().signal)
     ).rejects.toMatchObject({ publicCode: "CLIENT_ABORTED", retryable: true });
   });
+
+  it("classifies an output-limit termination before parsing truncated CLI text", async () => {
+    const { runner } = makeRunner([
+      { exitCode: -1, stdout: '{"error":"secret', stderr: "", termination: "output-limit" }
+    ]);
+    const failure = await runner.transform(inputPath, outputPath, 1, new AbortController().signal).catch(error => error);
+    expect(failure).toMatchObject({ publicCode: "ENGINE_FAILED" });
+    expect(failure.message).not.toContain('secret');
+  });
 });

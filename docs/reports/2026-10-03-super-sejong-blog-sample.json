@@ -1,0 +1,179 @@
+{
+  "sampleDate": "2026-10-03",
+  "blogUrl": "https://blog.naver.com/wisdom_jhk",
+  "samplingFrame": "28 unique posts visible on public prologue",
+  "framePostIds": [
+    "224430442212",
+    "224430121623",
+    "224429263151",
+    "224429088499",
+    "224428125730",
+    "224427917810",
+    "224427160325",
+    "224426833726",
+    "224425987864",
+    "224425687796",
+    "224425525816",
+    "224424763003",
+    "224424585146",
+    "224424492063",
+    "224423687749",
+    "224374972689",
+    "224346212081",
+    "224203838093",
+    "224196505454",
+    "224042992615",
+    "223831095432",
+    "223773934750",
+    "223721390340",
+    "224423571743",
+    "224422386089",
+    "224419408694",
+    "224416091233",
+    "224417487008"
+  ],
+  "seed": 20261003,
+  "selectionAlgorithm": "Fisher-Yates with uint32 LCG (1664525*x+1013904223) mod 2^32",
+  "selectedPosts": [
+    {
+      "postId": "224430121623",
+      "url": "https://blog.naver.com/wisdom_jhk/224430121623",
+      "title": "정기간행물 신고, 학회지·협회 소식지를 발행하기 전 확인할 사항",
+      "bodyChars": 2765,
+      "bodySha256": "2ae54846a52f8f88384d97c9a04fd3f684d3efed2079d9579a18e933ee88b4a9"
+    },
+    {
+      "postId": "223831095432",
+      "url": "https://blog.naver.com/wisdom_jhk/223831095432",
+      "title": "학교폭력 학생확인서 학부모확인서 보호자확인서 작성, 초기 대응, 학교폭력 상담 전문 행정사",
+      "bodyChars": 2834,
+      "bodySha256": "d645e21ccb610a6f4db4c00098a31008526c85ff94a65a06f28e9b7a62f8e726"
+    },
+    {
+      "postId": "224429088499",
+      "url": "https://blog.naver.com/wisdom_jhk/224429088499",
+      "title": "강아지 유치원·애견호텔 창업, 동물위탁관리업 등록 전에 확인하세요",
+      "bodyChars": 3027,
+      "bodySha256": "ac8b85df28509ac9ff6ec22a85865cd37abc316d50592bfcab60f2dff8fe9f92"
+    },
+    {
+      "postId": "224424763003",
+      "url": "https://blog.naver.com/wisdom_jhk/224424763003",
+      "title": "중소기업확인서, 공공입찰 전에 소기업·소상공인 구분부터 확인하세요",
+      "bodyChars": 2955,
+      "bodySha256": "8d62aab87f1ac3291372777946f18954cb97dc0d9244e0292041b233be4c84c9"
+    },
+    {
+      "postId": "224417487008",
+      "url": "https://blog.naver.com/wisdom_jhk/224417487008",
+      "title": "국제회의기획업 등록, 행사대행업체가 준비할 요건과 사업계획서",
+      "bodyChars": 2863,
+      "bodySha256": "57f0c2c8482dee2a5b29004282153eb538415b2eba8715ed1542de9f6516ff6b"
+    },
+    {
+      "postId": "224426833726",
+      "url": "https://blog.naver.com/wisdom_jhk/224426833726",
+      "title": "학교폭력 전담조사관 조사 전, 학부모가 꼭 준비해야 할 사항",
+      "bodyChars": 2874,
+      "bodySha256": "095455dadac99ce56ac5168d6053e6a2831d211d847fa5bb7cf08aeaed749dbf"
+    },
+    {
+      "postId": "224346212081",
+      "url": "https://blog.naver.com/wisdom_jhk/224346212081",
+      "title": "학교폭력 학폭위 사안조사는 어떻게 이뤄질까? 전담조사관이자 화해중재단의 역할",
+      "bodyChars": 2275,
+      "bodySha256": "aa136268ca71ff81c6dfa5725aa5dc5640cbb1e4706a4db1647dc89bd91d6ff2"
+    },
+    {
+      "postId": "224042992615",
+      "url": "https://blog.naver.com/wisdom_jhk/224042992615",
+      "title": "학교폭력 기록, 대학입시 불이익? 교사 출신 행정사가 알려드립니다.",
+      "bodyChars": 2741,
+      "bodySha256": "fb8a308de7506d38e5ba833be1de2793138fb97a228b8dac5ca6a014bd691b0d"
+    },
+    {
+      "postId": "224425687796",
+      "url": "https://blog.naver.com/wisdom_jhk/224425687796",
+      "title": "이노비즈 인증 신청 핵심조건과 필요한 서류 준비로 인정 받는 방법",
+      "bodyChars": 3015,
+      "bodySha256": "6032f77f0306b76247e019e0db9f69aa16582da89e67c1f6009870d5dbea8ffd"
+    },
+    {
+      "postId": "224424492063",
+      "url": "https://blog.naver.com/wisdom_jhk/224424492063",
+      "title": "교육환경보호구역, 학교 근처 창업은 임대차계약 전에 확인하세요",
+      "bodyChars": 2955,
+      "bodySha256": "cea60c6a4d0e1014e93f27f211a31bdb797cb19a2c0a56fda2b017aa7c2c8dd7"
+    },
+    {
+      "postId": "224203838093",
+      "url": "https://blog.naver.com/wisdom_jhk/224203838093",
+      "title": "학교폭력 신고부터 학폭위 심의까지. 정교사 출신 행정사가 직접 상담합니다.",
+      "bodyChars": 1914,
+      "bodySha256": "0ca28a7cc41e8fbcdbd88d073a04ab6b60bc2f74356263623d3077cff9b90f39"
+    },
+    {
+      "postId": "224374972689",
+      "url": "https://blog.naver.com/wisdom_jhk/224374972689",
+      "title": "[학교폭력전문행정사] 학교폭력 절차를 알면 아이를 지킬 수 있습니다",
+      "bodyChars": 2983,
+      "bodySha256": "ee61e17744033f84d2d94041ffccdc75c4d8a2e6e12c887c477336d57f6bd407"
+    },
+    {
+      "postId": "224430442212",
+      "url": "https://blog.naver.com/wisdom_jhk/224430442212",
+      "title": "외국인환자 유치사업자 등록갱신, 만료일과 준비서류부터 확인하세요",
+      "bodyChars": 3051,
+      "bodySha256": "228b85ec815c259e90c3230be6a5e5e61c0b9f388485780a26170abe9309a4ee"
+    },
+    {
+      "postId": "224423687749",
+      "url": "https://blog.naver.com/wisdom_jhk/224423687749",
+      "title": "2027년 가족친화인증 준비, 공고 전에 챙겨야 할 운영자료",
+      "bodyChars": 2800,
+      "bodySha256": "266b9d876ffc66f445533383f7a15b0dd6b55dbc17919773d4746c2e8deb89c4"
+    },
+    {
+      "postId": "224422386089",
+      "url": "https://blog.naver.com/wisdom_jhk/224422386089",
+      "title": "애견미용실 창업, 계약 전에 확인할 시설기준과 등록 준비",
+      "bodyChars": 3155,
+      "bodySha256": "f4f85ff264e727c505edae6efe9b74d8156c96c9057139879b20c4610aa46d15"
+    },
+    {
+      "postId": "224423571743",
+      "url": "https://blog.naver.com/wisdom_jhk/224423571743",
+      "title": "비디오물제작업 신고, 영상제작사라면 모두 대상일까요?",
+      "bodyChars": 2985,
+      "bodySha256": "678fb0655e6c4a370591d84b8c4d810c9a3f68756211017046f1caa9eadb4295"
+    },
+    {
+      "postId": "224428125730",
+      "url": "https://blog.naver.com/wisdom_jhk/224428125730",
+      "title": "병역지정업체 신청, 산업기능요원 채용을 준비하는 제조업체의 확인사항",
+      "bodyChars": 2559,
+      "bodySha256": "8bb1167a40a6763d437a9c78ae30a31b5dbadd95d9b765459d9ecba7e708b861"
+    },
+    {
+      "postId": "223773934750",
+      "url": "https://blog.naver.com/wisdom_jhk/223773934750",
+      "title": "2025 학교폭력 사안처리 가이드북 개정 안내",
+      "bodyChars": 2063,
+      "bodySha256": "72fd1f2b941bcaa1523ff24a6928aec993325ef455d61953ffe475d34b25c13f"
+    },
+    {
+      "postId": "224427917810",
+      "url": "https://blog.naver.com/wisdom_jhk/224427917810",
+      "title": "안내전광판 MAS 등록, 직접생산확인부터 나라장터 종합쇼핑몰 계약까지",
+      "bodyChars": 2817,
+      "bodySha256": "6d551a6f279ac47d293b690151601e3e06f6327bfd15fe5a7a688d0c8c317d94"
+    },
+    {
+      "postId": "224419408694",
+      "url": "https://blog.naver.com/wisdom_jhk/224419408694",
+      "title": "산업디자인전문회사 신고, 디자인 회사라면 모두 가능한가요?",
+      "bodyChars": 3052,
+      "bodySha256": "5bdf842b7905f379260b4a91b0b05a2bb5227b5fd5ed2ef71ee830d37b70f8ff"
+    }
+  ]
+}

@@ -11,12 +11,28 @@ import { parseModelSettings } from '../engine/model-policy.js';
 import { EngineError } from '../engine/errors.js';
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from '../transport/public-error.js';
 
-// Python and store errors are Korean user messages; anything else is internal text.
 function documentFailure(error:unknown) {
   if(error instanceof EngineError) return {...publicEvent(error),retryable:false};
-  const message=error instanceof Error&&/[가-힣]/.test(error.message)?error.message:'문서 변환에 실패했습니다.';
   // The record is removed after any failure, so the same document cannot be retried.
-  return {type:'error' as const,code:'VALIDATION_FAILED' as const,message,retryable:false};
+  if(error instanceof Error && error.message==='보호된 서식이 바뀌어 저장하지 않았습니다.')
+    return {type:'error' as const,code:'VALIDATION_FAILED' as const,
+      message:'보호된 서식이 바뀌어 저장하지 않았습니다.',retryable:false};
+  return {...publicEvent(error),retryable:false};
+}
+
+function documentImportFailure(error:unknown) {
+  const message=error instanceof Error?error.message:'';
+  if(message.includes('디스크 공간이 부족'))return {status:507,code:'INSUFFICIENT_DISK',message:'문서를 처리할 디스크 공간이 부족합니다.'};
+  if(message.includes('50 MiB')||message.includes('크기 제한')||message.includes('너무 큰 문서'))
+    return {status:413,code:'DOCUMENT_TOO_LARGE',message:'문서 크기 제한을 초과했습니다. 더 작은 파일을 선택해 주세요.'};
+  if(message.includes('암호화')||message.includes('편집 보호')||message.includes('writeProtection'))
+    return {status:400,code:'DOCUMENT_PROTECTED',message:'암호화 또는 편집 보호된 문서는 지원하지 않습니다.'};
+  if(message==='DOCX 또는 PPTX 파일을 선택해 주세요.'||message.includes('확장자와 실제 문서 형식')||
+     message.includes('Office 문서 패키지가 아닙니다.')||message.includes('ZIP 문서를 읽지 못')||message.includes('손상된 XML'))
+    return {status:400,code:'DOCUMENT_FORMAT_INVALID',message:'DOCX 또는 PPTX 파일 형식을 확인해 주세요.'};
+  if(message.includes('보관 중인 문서가 3개'))
+    return {status:429,code:'DOCUMENT_CAPACITY',message:'보관 중인 문서가 3개입니다. 이전 문서를 닫은 뒤 다시 시도해 주세요.'};
+  return {status:500,code:'DOCUMENT_IMPORT_FAILED',message:'문서를 읽지 못했습니다. 잠시 후 다시 시도해 주세요.'};
 }
 
 // Refused before any job starts: the server keeps the document, and the client
@@ -48,7 +64,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       if(record.controller.signal.aborted||response.destroyed)throw new Error('문서 읽기가 취소되었습니다.');
       completed=true;
       response.status(201).json(info);
-    } catch(e) {if(record){record.busy=false;await store.remove(record);}if(!response.headersSent&&!response.destroyed)response.status(400).json({message:e instanceof Error?e.message:'문서를 읽지 못했습니다.'});}
+    } catch(e) {if(record){record.busy=false;await store.remove(record);}if(!response.headersSent&&!response.destroyed){const failure=documentImportFailure(e);response.status(failure.status).json({code:failure.code,message:failure.message});}}
     finally {request.removeListener('aborted',onDisconnect);response.removeListener('close',onDisconnect);}
   });
   app.post('/api/documents/:id/transform',async(request,response)=>{
@@ -87,13 +103,13 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
         r.expires=Date.now()+30*60000;
         writer!.write({type:'document-result',artifactId:r.id,name:store.public(r).name,format:r.state.format,
           bytes:result.bytes,sha256:result.sha256,preview:r.state.preview});
-        writer!.write({type:'done',sourceChars:r.state.sourceChars,outputChars:r.state.sourceChars,chunks:r.state.totalChunks,elapsedMs:result.elapsedMs});
+        writer!.write({type:'done',sourceChars:r.state.sourceChars,outputChars:r.state.outputChars,chunks:r.state.totalChunks,elapsedMs:result.elapsedMs});
       },position=>writer!.write({type:'queued',position}));
       finished=true;
     } catch(e) {
       if(writer) writer.write(documentFailure(shutdownAware(e,deps.queue.isShuttingDown,clientClosed)));
       else if(e instanceof Rejection) response.status(e.status).json({code:e.code,message:e.message});
-      else response.status(400).json({code:'DOCUMENT_TRANSFORM_FAILED',message:e instanceof Error&&/[가-힣]/.test(e.message)?e.message:'문서 변환에 실패했습니다.'});
+      else response.status(400).json({code:'DOCUMENT_TRANSFORM_FAILED',message:'문서 변환에 실패했습니다. 다시 선택해 주세요.'});
     } finally {
       removeAbortListener?.();
       reservation?.release();

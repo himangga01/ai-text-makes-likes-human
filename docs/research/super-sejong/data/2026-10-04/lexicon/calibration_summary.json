@@ -1,0 +1,100 @@
+{
+ "meta": {
+  "generated": "2026-10-04",
+  "corpus_stats": {
+   "human/essay": {
+    "docs": 181,
+    "chars": 116208
+   },
+   "llm/essay": {
+    "docs": 590,
+    "chars": 540146
+   },
+   "gpt4o/essay": {
+    "docs": 181,
+    "chars": 203441
+   },
+   "human/abstract": {
+    "docs": 100,
+    "chars": 40736
+   },
+   "llm/abstract": {
+    "docs": 278,
+    "chars": 126908
+   },
+   "gpt4o/abstract": {
+    "docs": 100,
+    "chars": 53071
+   },
+   "human/poetry": {
+    "docs": 189,
+    "chars": 39141
+   },
+   "llm/poetry": {
+    "docs": 756,
+    "chars": 169593
+   },
+   "gpt4o/poetry": {
+    "docs": 189,
+    "chars": 38366
+   },
+   "news/news": {
+    "docs": 2740,
+    "chars": 2728229
+   },
+   "klue/klue": {
+    "docs": 1283,
+    "chars": 1284820
+   }
+  },
+  "method": "Calibrate the Super Sejong lexical resources on real Korean text.\n\nInputs (all local, read-only):\n  KatFish dataset  research/B/katfish_repo/katfish_dataset/{essay,abstract,poetry}.jsonl  (label 0=human, 1=LLM)\n  Naver news       research/B/naver_news_test.csv  (human, professional)\n  KLUE-MRC ctx     research/B/klue_mrc_ctx.json    (human, wiki/news/etc.)\nOutputs: five JSON resource files + calibration_summary.json in --out.\n\nMethod\n  * hits per 10k characters per corpus group (regex finditer, non-overlapping)\n  * log-odds ratio with informative Dirichlet prior (Monroe, Colaresi & Quinn 2008, \"Fightin' Words\"):\n      delta = log((yL+a)/(nL+a0-yL-a)) - log((yH+a)/(nH+a0-yH-a)),  var ~ 1/(yL+a)+1/(yH+a),  z = delta/sqrt(var)\n    exposure n is the number of characters, a_w = a0 * p_bg(w) with p_bg = hits per character in the background\n    (human news + KLUE), a0 = A0 pseudo-characters. Computed per genre and combined by inverse-variance weighting\n    (stratified, so genre mix differences between human and LLM sets do not leak into the score).\n  * document-level bootstrap (resample docs within genre x class) for a 95% interval of the stratified delta",
+  "a0": 200000.0,
+  "bootstrap_reps": 300,
+  "tier_legend": {
+   "A": "enable by default",
+   "B": "suggest-only / needs context guard",
+   "C": "disabled (kept for the record)",
+   "allow": "exemption list entry"
+  }
+ },
+ "tiers": {
+  "translationese": {
+   "total": 48,
+   "by_tier": {
+    "B": 32,
+    "A": 12,
+    "C": 4
+   }
+  },
+  "redundancy": {
+   "total": 82,
+   "by_tier": {
+    "A": 48,
+    "B": 23,
+    "allow": 11
+   }
+  },
+  "boilerplate": {
+   "total": 63,
+   "by_tier": {
+    "A": 39,
+    "C": 15,
+    "B": 9
+   }
+  },
+  "confusables": {
+   "total": 44,
+   "by_tier": {
+    "A": 30,
+    "B": 14
+   }
+  },
+  "collocations": {
+   "total": 47,
+   "by_tier": {
+    "B": 37,
+    "A": 10
+   }
+  }
+ }
+}

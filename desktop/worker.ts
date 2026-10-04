@@ -40,7 +40,7 @@ async function transformDocument(id:string,input:any,signal:AbortSignal) {
     record.output=result.output;record.state=result.state;
     record.expires=Date.now()+30*60000;
     event(id,{type:'document-result',artifactId:record.id,name:record.name!,format:result.state.format,bytes:result.bytes,sha256:result.sha256,preview:result.state.preview});
-    event(id,{type:'done',sourceChars:result.state.sourceChars,outputChars:result.state.sourceChars,chunks:result.state.totalChunks,elapsedMs:result.elapsedMs});
+    event(id,{type:'done',sourceChars:result.state.sourceChars,outputChars:result.state.outputChars,chunks:result.state.totalChunks,elapsedMs:result.elapsedMs});
     complete=true;
   } catch(e){
     // A job that started is removed after any failure and cannot be retried; a rejection before

@@ -1,10 +1,18 @@
 # Code Analysis
 
-Analysis date: October 2, 2026 (Asia/Seoul).
+Baseline analysis: October 2, 2026 (Asia/Seoul). Reviewed and updated: October 3, 2026.
 
 Inspected source revision: `d9df30ee495b1e97764410e16785c245d77d25ff` on `main`. Application version: `0.4.0`. Vendored engine label: `2.3.2`; pinned upstream commit: `9747f036cdc28a1a8aea4dc71fef1f7846eb96f7`.
 
-This is a static reanalysis of the current checkout. It replaces the September 5 analysis of `2ada4fb`, whose feature descriptions and several findings are obsolete. No build, test suite, live model request, browser automation, deployment or running-service check was performed during this documentation update.
+The original static analysis below describes the October 2 checkout at `d9df30e`. The October 3 changes are recorded in the addendum before it; this document now reflects the reviewed working tree. The October 2 pass did not run tests. The October 3 pass ran type checking, Python and Vitest suites, a browser E2E slice, and an isolated live Codex fixture. No deployment was performed.
+
+## October 3 review addendum
+
+Two independent rounds of code and service review found and reproduced failure modes in semantic preservation, runtime isolation, import state, and Office packaging. The current text and Office paths both use [Super Sejong semantic checks](../engine_runtime/super_sejong.py): selected negation and its target, obligation and possibility by sentence, high-confidence participant role exchange, and a small set of decision/trend antonyms. [Quantity normalization](../engine_runtime/quantities.py) now distinguishes recognized time units and Korean numeral one. The guards reject known drift; they do not prove full meaning equivalence. [Style findings](../src/engine/super-sejong.ts) are bounded, source-anchored model hints, never automatic replacement or a naturalness score. Their regex scan is bounded for long Hangul inputs and excludes protected textual regions.
+
+The [Codex runner](../src/engine/codex-runner.ts) disables its tool surfaces for text transformation and executes in a disposable empty working directory. The [command runner](../src/process/command-runner.ts) caps combined CLI output. [Host validation](../src/network/private-address.ts) now rejects arbitrary DNS Host values in addition to the existing socket and Origin checks. The Express error handler and [Office routes](../src/documents/routes.ts) emit fixed public messages; known import failures have distinct stable codes. [Office package loading](../engine_runtime/documents/package.py) checks per-part and aggregate XML budgets during decompression. The desktop renderer/main import handshake commits a new source reference only after successful loading, preventing a failed import from leaving an incorrect save target. Text and Office completion counts reflect accepted output.
+
+At the two-round review checkpoint: TypeScript typecheck passed; Vitest 420 passed/9 skipped; Python document tests 53 passed; Python skill tests 74 passed/4 skipped; browser E2E 54 passed/9 skipped; isolated Codex live fixture passed. The Windows-only desktop regression was added but cannot execute on macOS. The live fixture verifies a protected sample and cleanup, not a population-level naturalness improvement. Later benchmark-driven negation fixes have their own verification record and 20-post results in the [Codex handoff](HANDOFF-2026-10-04.md) and [benchmark report](reports/2026-10-03-super-sejong-blog-benchmark.md). See also the [two-round report](reports/2026-10-03-two-round-review.md), [English change plan](plans/2026-10-03-super-sejong-code-plan.md), and [research synthesis](research/super-sejong/RESEARCH-SYNTHESIS.md).
 
 ## 1. Architecture
 
@@ -35,6 +43,7 @@ The frontend is plain JavaScript, HTML and CSS. The server uses strict TypeScrip
 | Models/strength | [model-policy.ts](../src/engine/model-policy.ts), [rewrite-policy.ts](../src/engine/rewrite-policy.ts) | Allowed model/effort pairs and direct-text editing scope. |
 | Text orchestration | [humanize-engine.ts](../src/engine/humanize-engine.ts), [python-engine.ts](../src/engine/python-engine.ts) | Prepare, rewrite, restore, verify, retry, roll back, assemble and report diagnostics. |
 | Text responses/guards | [text-edits.ts](../src/engine/text-edits.ts), [direct-text-fidelity.ts](../src/engine/direct-text-fidelity.ts), [candidate-review.ts](../src/engine/candidate-review.ts) | Exact anchors, structure/content checks, protected restoration and candidate review. |
+| Super Sejong prototype | [super-sejong.ts](../src/engine/super-sejong.ts), [super_sejong.py](../engine_runtime/super_sejong.py), [quantities.py](../engine_runtime/quantities.py) | Source-anchored Korean style hypotheses and conservative semantic invariants shared by text/Office validation. |
 | Providers/processes | [codex-runner.ts](../src/engine/codex-runner.ts), [claude-runner.ts](../src/engine/claude-runner.ts), [command-runner.ts](../src/process/command-runner.ts) | CLI flags, results, failure classification, deadlines and termination. |
 | Queue/transport | [transform-queue.ts](../src/queue/transform-queue.ts), [request-body.ts](../src/transport/request-body.ts), [ndjson.ts](../src/transport/ndjson.ts) | Admission, UTF-8 reception and validated result delivery. |
 | Office integration | [routes.ts](../src/documents/routes.ts), [artifact-store.ts](../src/documents/artifact-store.ts), [document-engine.ts](../src/documents/document-engine.ts) | Capability tokens, upload/download, retention/read leases and CLI orchestration. |
@@ -57,7 +66,7 @@ The frontend is plain JavaScript, HTML and CSS. The server uses strict TypeScrip
 | `GET /api/documents/:id/result` | Download the verified same-format result with its token; hold a read lease during transfer. |
 | `DELETE /api/documents/:id` | Authorize removal, abort work and clean the owned artifact when work/read leases settle. |
 
-All `/api` routes share an Origin check: supplied Origin must equal request protocol/Host; native clients without Origin remain permitted. Socket addresses must be loopback or recognized private IPv4/IPv6. There is no application login or TLS listener.
+All `/api` routes share an Origin check: supplied Origin must equal request protocol/Host; native clients without Origin remain permitted. Socket addresses must be loopback or recognized private IPv4/IPv6, and Host must be localhost or a literal allowed local/private IP. There is no application login or TLS listener.
 
 Text rejection before streaming can use `400` for invalid settings, `413` for declared size, `415` for content type, `429` for capacity or `503` for readiness/shutdown. Office upload errors return `400`; transform rejection has its own structured codes and preserves the prepared record before acceptance.
 
@@ -151,7 +160,7 @@ Sources: [models](../src/engine/model-policy.ts), [runtime](../src/runtime/creat
 
 Text source/intermediate/result files live in private workspaces until normal completion/failure/cancellation cleanup. Office artifacts/Python jobs remain for an idle 30-minute lifetime to support repeated saving; active work/read leases defer removal. Startup clears stale server jobs, and desktop/store initialization clears owned old jobs. Portal queues/indexes are in memory and do not resume after restart.
 
-Transformation logs contain metadata and fixed failure reasons, not intentionally source/result bodies. CLI streams and Python details are buffered transiently. Desktop settings persist CLI paths and explicit engine/model/effort/strength choices without document history. Skill jobs remain until cleanup; host conversation retention is governed by the host.
+Transformation logs contain metadata and fixed failure reasons, not intentionally source/result bodies. CLI streams have a combined output budget; captured text and Python details remain transient. Desktop settings persist CLI paths and explicit engine/model/effort/strength choices without document history. Skill jobs remain until cleanup; host conversation retention is governed by the host.
 
 Browser warnings remain in a deduplicated panel and affect the completion label. Direct-text diff uses the final verified output; copy/export excludes displayed deletions. Diff operation/time/node budgets may produce a coarse whole replacement. File input lacks strength/comparison. Editing loaded TXT/MD clears metadata and makes the next job direct text.
 
@@ -159,7 +168,7 @@ Electron disables renderer Node integration, enables context isolation/sandbox, 
 
 ## 9. Current Static Findings and Limits
 
-These are source observations, not newly reproduced test findings. This update includes no application fixes.
+These observations were first recorded on October 2. The rows below show their disposition after the October 3 review and fixes.
 
 | Observation | Evidence and implication |
 | --- | --- |
@@ -167,9 +176,9 @@ These are source observations, not newly reproduced test findings. This update i
 | Health omits capacity/retention state | [app.ts](../src/app.ts) exposes active/queued transforms, not upload reservations or Office records/imports/readers. Zero displayed jobs is not a complete maintenance-idle check. |
 | Health timestamp is response time | [runtime](../src/runtime/create-runtime.ts) can reuse a probe for three seconds while [app.ts](../src/app.ts) stamps a new `checkedAt`. API-only transforms also use cached readiness until refreshed. |
 | Readiness does not prove model access | [probes](../src/runtime/provider-health.ts) do not infer with all models and have no Claude model-specific minimum-version gate. Recognized runtime rejection becomes `MODEL_UNAVAILABLE`. |
-| Office output count is a placeholder | [routes](../src/documents/routes.ts) and [desktop worker](../desktop/worker.ts) set `done.outputChars` to `sourceChars`; it cannot measure edit amount. |
-| Resource bounds are incomplete | There is no total-job deadline; [command-runner.ts](../src/process/command-runner.ts) buffers stdout/stderr without a size ceiling. Skill TXT/MD has no shared-server input cap. |
-| Network scope is address-based | Private socket/Origin checks do not establish same-Wi-Fi membership, user identity or Host allowlisting. Proxy and DNS-rebinding exposure need separate consideration if trusted-LAN scope changes. |
+| Office output count corrected | [Office workflow](../engine_runtime/documents/workflow.py) computes accepted edit length; [routes](../src/documents/routes.ts) and [desktop worker](../desktop/worker.ts) use it in completion events. |
+| Resource bounds remain partial | There is no total-job deadline; [command-runner.ts](../src/process/command-runner.ts) now caps combined CLI output. Skill TXT/MD has no shared-server input cap. |
+| Network scope remains address-based | Private socket, literal Host and Origin checks do not establish same-Wi-Fi membership or user identity. Proxy deployment still needs a deliberate trust policy. |
 | Preservation is heuristic | Number/name/quantity sets and sentence alignment do not prove all subject/value associations or arbitrary Korean-name/meaning preservation. Literal direct-text/Office protection reduces some risks. |
 | Skill guards depend on bridge | Python-only TXT/MD omits the optional JavaScript structure check, and skill direct-text finalization differs from app rollback. Package/bridge freshness is separate from source freshness. |
 | Version labels do not identify artifacts | Later fixes retain `0.4.0`/`2.3.2`. Source commits and build metadata/hashes are needed to identify deployed/installed code. |
@@ -182,4 +191,4 @@ The repository contains Vitest unit/integration, Python document/skill, browser 
 
 September 30/October 2 results are historical records in [works-log.md](../works-log.md). Earlier [speed measurements](research/2026-09-09-speed-loop-results.md) and [strength baseline](research/2026-09-10-strength-live-evaluation.md) retain their dates/models/caveats and are not fresh verification.
 
-This task read source and updated documents only. It does not establish running readiness, compiled-artifact equality, installed-skill freshness, live quality/performance or passing tests. Product interpretation and historical deployment context are in [Service Analysis](service-analysis.md).
+The October 3 review included code fixes, automated suites, browser E2E, and two isolated live Codex samples. These establish behavior for tested inputs, not running production readiness, compiled-artifact equality, installed-skill freshness, population-level Korean quality, or performance across hosts. Product interpretation and historical deployment context are in [Service Analysis](service-analysis.md).

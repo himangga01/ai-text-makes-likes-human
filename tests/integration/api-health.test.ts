@@ -8,6 +8,38 @@ import { close, listen } from "../helpers/http-app.js";
 const config = loadConfig({}, process.cwd());
 
 describe("GET /api/health", () => {
+  it('returns a fixed error when a readiness probe throws an internal path', async () => {
+    const queue = new TransformQueue({ maxActive: 1, maxAccepted: 3 });
+    const app = createApp({ config, queue,
+      engine: { transform: async () => { throw new Error('not used'); } },
+      preflight: { ready: false, nodeVersion: '24.19.0' },
+      refreshHealth: async () => { throw new Error('비밀 경로 /private/auth.json'); }
+    });
+    const running = await listen(app);
+    try {
+      const response = await fetch(`${running.baseUrl}/api/health`);
+      const body = await response.text();
+      expect(response.status).toBe(500);
+      expect(body).toContain('INTERNAL_ERROR');
+      expect(body).not.toContain('/private/auth.json');
+    } finally { await close(running.server); }
+  });
+  it('serves supervisor status without waiting for provider or Office probes', async () => {
+    const queue = new TransformQueue({ maxActive: 1, maxAccepted: 3 });
+    let probes = 0;
+    const app = createApp({ config, queue,
+      engine: { transform: async () => { throw new Error('not used'); } },
+      preflight: { ready: false, nodeVersion: '24.19.0' },
+      refreshHealth: async () => { probes++; throw new Error('slow or unavailable CLI'); }
+    });
+    const running = await listen(app);
+    try {
+      const response = await fetch(`${running.baseUrl}/api/status`);
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({ status: 'degraded', pid: process.pid, activeJobs: 0, queuedJobs: 0 });
+      expect(probes).toBe(0);
+    } finally { await close(running.server); }
+  });
   it('refreshes provider readiness instead of retaining the startup login status',async()=>{
     const preflight={ready:false,nodeVersion:'24.19.0',message:'로그인 필요'};
     let count=0;

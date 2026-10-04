@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld("humanizeDesktop", {
   transform: (input: { text: string; engine: string; inputKind?: string; strength?: string; settings?: {model:string;effort:string} }) => ipcRenderer.invoke("humanize:transform", input),
   cancel: () => ipcRenderer.invoke("humanize:cancel"),
   openText: () => ipcRenderer.invoke("humanize:open-text"),
+  commitSource: (sourceToken: string) => ipcRenderer.invoke("humanize:commit-source", { sourceToken }),
+  clearSource: () => ipcRenderer.invoke("humanize:clear-source"),
   transformDocument: (input: {id:string;token:string;engine:string;settings?:{model:string;effort:string}}) => ipcRenderer.invoke('humanize:transform-document',input),
   closeDocument: (input:{id:string;token:string})=>ipcRenderer.invoke('humanize:close-document',input),
   saveDocument: (input:{id:string;token:string})=>ipcRenderer.invoke('humanize:save-document',input),

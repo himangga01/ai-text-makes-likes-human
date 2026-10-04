@@ -72,6 +72,15 @@ describe("SpawnCommandRunner", () => {
 
     expect(result.termination).toBe("aborted");
   });
+  it('stops a child that exceeds the combined output budget', async () => {
+    const result = await runner.run({
+      command: process.execPath,
+      args: ['-e', "process.stdout.write('x'.repeat(100_000)); setInterval(() => {}, 1000)"],
+      cwd: process.cwd(), timeoutMs: 5_000, maxOutputBytes: 4096
+    });
+    expect(result.termination).toBe('output-limit');
+    expect(Buffer.byteLength(result.stdout) + Buffer.byteLength(result.stderr)).toBeLessThanOrEqual(4096);
+  });
   it.skipIf(process.platform === "win32").each(["uncaught exception", "process.exit"])(
     "kills detached CLI children when the server process dies by %s",
     async mode => {

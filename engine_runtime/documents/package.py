@@ -10,6 +10,7 @@ from lxml import etree as E
 MAX_FILE = 50 * 1024**2
 MAX_TOTAL = 250 * 1024**2
 MAX_XML = 10 * 1024**2
+MAX_TOTAL_XML = 24 * 1024**2
 W = ('http://schemas.openxmlformats.org/wordprocessingml/2006/main', 'http://purl.oclc.org/ooxml/wordprocessingml/main')
 A = ('http://schemas.openxmlformats.org/drawingml/2006/main', 'http://purl.oclc.org/ooxml/drawingml/main')
 P = ('http://schemas.openxmlformats.org/presentationml/2006/main', 'http://purl.oclc.org/ooxml/presentationml/main')
@@ -58,26 +59,38 @@ class Package:
                 if len(self.infos) > 10000:
                     raise DocumentError('문서 내부 파일 수가 너무 많습니다.')
                 total = 0
+                xml_total = 0
                 for info in self.infos:
                     name = info.filename
+                    is_xml = name.lower().endswith(('.xml', '.rels'))
                     if name in self.parts or '\\' in name or name.startswith('/') or ':' in name or '..' in name.split('/'):
                         raise DocumentError('잘못된 문서 내부 경로입니다.')
-                    if info.flag_bits & 1 or info.file_size > MAX_TOTAL:
-                        raise DocumentError('암호화되었거나 너무 큰 문서입니다.')
+                    if info.flag_bits & 1:
+                        raise DocumentError('암호화된 문서는 지원하지 않습니다.')
+                    if info.file_size > MAX_TOTAL:
+                        raise DocumentError('문서 압축 해제 크기 제한을 초과했습니다.')
                     chunks = []
+                    member_size = 0
                     with z.open(info) as f:
                         while chunk := f.read(1024*1024):
+                            member_size += len(chunk)
                             total += len(chunk)
                             if total > MAX_TOTAL:
                                 raise DocumentError('압축 해제 크기 제한을 초과했습니다.')
+                            if is_xml:
+                                xml_total += len(chunk)
+                                if member_size > MAX_XML:
+                                    raise DocumentError('XML 크기 제한을 초과했습니다.')
+                                if xml_total > MAX_TOTAL_XML:
+                                    raise DocumentError('문서 XML 전체 크기 제한을 초과했습니다.')
                             chunks.append(chunk)
                     data = b''.join(chunks)
                     self.parts[name] = data
-                    if name.lower().endswith(('.xml', '.rels')):
+                    if is_xml:
                         self.trees[name] = xml(data)
                 self.comment = z.comment
         except (BadZipFile, RuntimeError, NotImplementedError) as exc:
-            raise DocumentError('DOCX/PPTX ZIP 문서를 읽지 못했습니다. 암호화 파일은 지원하지 않습니다.') from exc
+            raise DocumentError('DOCX/PPTX ZIP 문서를 읽지 못했습니다.') from exc
         if '[Content_Types].xml' not in self.parts or '_rels/.rels' not in self.parts:
             raise DocumentError('Office 문서 패키지가 아닙니다.')
         ctypes = self.parts['[Content_Types].xml'].lower()

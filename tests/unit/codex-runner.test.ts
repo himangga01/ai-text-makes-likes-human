@@ -124,6 +124,13 @@ describe("CodexRunner", () => {
         "--skip-git-repo-check",
         "--ignore-user-config",
         "--ignore-rules",
+        "--disable", "shell_tool",
+        "--disable", "unified_exec",
+        "--disable", "code_mode_host",
+        "--disable", "view_image",
+        "--disable", "browser_use",
+        "--disable", "apps",
+        "--disable", "computer_use",
         "--model",
         "gpt-5.6-sol",
         "--config",
@@ -137,7 +144,7 @@ describe("CodexRunner", () => {
         "-"
       ]);
       expect(runner.request?.stdin).toContain("BEGIN_SOURCE_");
-      expect(runner.request?.cwd).toBe(test.root);
+      expect(runner.request?.cwd).toContain('humanize-codex-');
       expect(await readFile(test.outputPath, "utf8")).toContain("rewrittenText");
     } finally {
       await removeTestRoot(test.root);
@@ -277,7 +284,8 @@ describe("CodexRunner", () => {
 
   it.each([
     ["timeout", "ENGINE_TIMEOUT"],
-    ["aborted", "CLIENT_ABORTED"]
+    ["aborted", "CLIENT_ABORTED"],
+    ["output-limit", "ENGINE_FAILED"]
   ] as const)("maps %s termination to %s", async (termination, code) => {
     const test = await fixture(
       new OutputRunner("", {

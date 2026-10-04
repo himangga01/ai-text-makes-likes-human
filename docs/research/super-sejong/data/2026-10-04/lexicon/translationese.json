@@ -1,0 +1,4261 @@
+{
+ "resource": "translationese",
+ "meta": {
+  "generated": "2026-10-04",
+  "corpus_stats": {
+   "human/essay": {
+    "docs": 181,
+    "chars": 116208
+   },
+   "llm/essay": {
+    "docs": 590,
+    "chars": 540146
+   },
+   "gpt4o/essay": {
+    "docs": 181,
+    "chars": 203441
+   },
+   "human/abstract": {
+    "docs": 100,
+    "chars": 40736
+   },
+   "llm/abstract": {
+    "docs": 278,
+    "chars": 126908
+   },
+   "gpt4o/abstract": {
+    "docs": 100,
+    "chars": 53071
+   },
+   "human/poetry": {
+    "docs": 189,
+    "chars": 39141
+   },
+   "llm/poetry": {
+    "docs": 756,
+    "chars": 169593
+   },
+   "gpt4o/poetry": {
+    "docs": 189,
+    "chars": 38366
+   },
+   "news/news": {
+    "docs": 2740,
+    "chars": 2728229
+   },
+   "klue/klue": {
+    "docs": 1283,
+    "chars": 1284820
+   }
+  },
+  "method": "Calibrate the Super Sejong lexical resources on real Korean text.\n\nInputs (all local, read-only):\n  KatFish dataset  research/B/katfish_repo/katfish_dataset/{essay,abstract,poetry}.jsonl  (label 0=human, 1=LLM)\n  Naver news       research/B/naver_news_test.csv  (human, professional)\n  KLUE-MRC ctx     research/B/klue_mrc_ctx.json    (human, wiki/news/etc.)\nOutputs: five JSON resource files + calibration_summary.json in --out.\n\nMethod\n  * hits per 10k characters per corpus group (regex finditer, non-overlapping)\n  * log-odds ratio with informative Dirichlet prior (Monroe, Colaresi & Quinn 2008, \"Fightin' Words\"):\n      delta = log((yL+a)/(nL+a0-yL-a)) - log((yH+a)/(nH+a0-yH-a)),  var ~ 1/(yL+a)+1/(yH+a),  z = delta/sqrt(var)\n    exposure n is the number of characters, a_w = a0 * p_bg(w) with p_bg = hits per character in the background\n    (human news + KLUE), a0 = A0 pseudo-characters. Computed per genre and combined by inverse-variance weighting\n    (stratified, so genre mix differences between human and LLM sets do not leak into the score).\n  * document-level bootstrap (resample docs within genre x class) for a 95% interval of the stratified delta",
+  "a0": 200000.0,
+  "bootstrap_reps": 300,
+  "tier_legend": {
+   "A": "enable by default",
+   "B": "suggest-only / needs context guard",
+   "C": "disabled (kept for the record)",
+   "allow": "exemption list entry"
+  }
+ },
+ "entries": [
+  {
+   "id": "TR_by_agent",
+   "pattern": "에 의(해서?|하여)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "passive_agent_by",
+   "explanation_ko": "영어 'by'/일본어 'によって' 직역. 행위자는 '이/가', '에게', '(으)로'로 자연스럽게 나타낼 수 있다.",
+   "suggestions": [
+    "~이/가 ~했다",
+    "~에게 ~되다",
+    "~(으)로"
+   ],
+   "legit_use_note_ko": "법령·규정의 근거('법에 의해'), 수단·방법('수술에 의해')에서는 자연스럽다. 인용 출처 '~에 의하면'은 별개의 정상 표현.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 57,
+     "gpt4o/essay": 13,
+     "human/abstract": 1,
+     "llm/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 36,
+     "klue/klue": 153
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.729,
+     "katfish_gpt4o": 0.441,
+     "news": 0.132,
+     "klue": 1.191,
+     "human_essay": 0.172,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 1.055,
+     "llm_abstract": 0.236,
+     "llm_poetry": 0.059,
+     "all_human": 0.456,
+     "human_professional": 0.469
+    },
+    "hits_all_human": 192,
+    "hits_llm": 61,
+    "doc_frac": {
+     "human": 0.0323,
+     "llm": 0.024
+    },
+    "prior": {
+     "p_bg_per10k": 0.472,
+     "a_w": 9.444,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.317,
+     "z": 1.43,
+     "ratio_x": 1.37,
+     "per_genre_delta": {
+      "essay": 0.908,
+      "abstract": -0.131,
+      "poetry": -0.335
+     },
+     "per_genre_z": {
+      "essay": 2.84,
+      "abstract": -0.31,
+      "poetry": -0.75
+     },
+     "z_gpt4o_only": 0.61,
+     "boot_ci95": [
+      0.119,
+      0.493
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 해는 지식베이스의 불완전성에 의해 충분한 정보를 분석하지 ",
+     "[news]  돌아봐야 할 때다. 편의에 의해 진정한 혁신을 놓칠 수도",
+     "[news] 년 발표한 비전 2030 에 의해 국가전략을 수행하고 있는"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.469/10k (LLM 0.729/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_192_human_and_61_llm_hits"
+  },
+  {
+   "id": "TR_through",
+   "pattern": "(을|를) 통(해서?|하여)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "preposition_through",
+   "explanation_ko": "영어 'through' 직역. '~(으)로', '~해서', '~에서'로 바꾸는 편이 자연스럽다(공공언어 바로 쓰기).",
+   "suggestions": [
+    "~(으)로",
+    "~해서",
+    "~에서"
+   ],
+   "legit_use_note_ko": "매체·경로('방송을 통해 알려졌다')는 정상 표현으로 널리 쓰인다.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 35,
+     "llm/essay": 808,
+     "gpt4o/essay": 371,
+     "human/abstract": 43,
+     "llm/abstract": 229,
+     "gpt4o/abstract": 118,
+     "human/poetry": 0,
+     "llm/poetry": 13,
+     "news/news": 1789,
+     "klue/klue": 572
+    },
+    "per10k": {
+     "katfish_human": 3.978,
+     "katfish_llm": 12.55,
+     "katfish_gpt4o": 16.583,
+     "news": 6.557,
+     "klue": 4.452,
+     "human_essay": 3.012,
+     "human_abstract": 10.556,
+     "human_poetry": 0.0,
+     "llm_essay": 14.959,
+     "llm_abstract": 18.045,
+     "llm_poetry": 0.767,
+     "all_human": 5.795,
+     "human_professional": 5.93
+    },
+    "hits_all_human": 2439,
+    "hits_llm": 1050,
+    "doc_frac": {
+     "human": 0.327,
+     "llm": 0.3294
+    },
+    "prior": {
+     "p_bg_per10k": 5.885,
+     "a_w": 117.691,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.513,
+     "z": 8.92,
+     "ratio_x": 1.67,
+     "per_genre_delta": {
+      "essay": 0.952,
+      "abstract": 0.463,
+      "poetry": -0.331
+     },
+     "per_genre_z": {
+      "essay": 10.9,
+      "abstract": 4.86,
+      "poetry": -2.6
+     },
+     "z_gpt4o_only": 8.46,
+     "boot_ci95": [
+      0.443,
+      0.57
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 이다. 인간과 기계의 분업을 통해 인간의 피로를 최대한 줄",
+     "[human] 를 구분하도록 하였다. 이를 통해 구축된 소규모 형태분석 ",
+     "[human]  변화시키려면 다시 수작업을 통해서 디자인을 변경해야 한다."
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 5.93/10k (LLM 12.55/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_2439_human_and_1050_llm_hits"
+  },
+  {
+   "id": "TR_about",
+   "pattern": "에 대(해서?|하여|한)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "preposition_about",
+   "explanation_ko": "영어 'about/of'. '~에게', '~을/를', '~ 관련'으로 바꾸면 자연스러운 경우가 많다. 공공언어 바로 쓰기는 '에 대하여'를 '에게'로 고치도록 안내한다.",
+   "suggestions": [
+    "~에게",
+    "~을/를",
+    "~(이)라는"
+   ],
+   "legit_use_note_ko": "'~에 대한 연구/생각' 같은 명사 수식은 학술문에서 정착된 표현이며 한 문서에 몇 번 쓰는 것은 문제가 아니다.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 156,
+     "llm/essay": 1346,
+     "gpt4o/essay": 359,
+     "human/abstract": 83,
+     "llm/abstract": 180,
+     "gpt4o/abstract": 38,
+     "human/poetry": 1,
+     "llm/poetry": 21,
+     "gpt4o/poetry": 1,
+     "news/news": 2061,
+     "klue/klue": 992
+    },
+    "per10k": {
+     "katfish_human": 12.24,
+     "katfish_llm": 18.49,
+     "katfish_gpt4o": 13.497,
+     "news": 7.554,
+     "klue": 7.721,
+     "human_essay": 13.424,
+     "human_abstract": 20.375,
+     "human_poetry": 0.255,
+     "llm_essay": 24.919,
+     "llm_abstract": 14.184,
+     "llm_poetry": 1.238,
+     "all_human": 7.823,
+     "human_professional": 7.736
+    },
+    "hits_all_human": 3293,
+    "hits_llm": 1547,
+    "doc_frac": {
+     "human": 0.3775,
+     "llm": 0.3701
+    },
+    "prior": {
+     "p_bg_per10k": 7.609,
+     "a_w": 152.179,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.352,
+     "z": 7.67,
+     "ratio_x": 1.42,
+     "per_genre_delta": {
+      "essay": 0.732,
+      "abstract": 0.039,
+      "poetry": -0.313
+     },
+     "per_genre_z": {
+      "essay": 11.7,
+      "abstract": 0.46,
+      "poetry": -2.82
+     },
+     "z_gpt4o_only": 1.2,
+     "boot_ci95": [
+      0.292,
+      0.425
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 로 활용되기 때문에 형태소에 대한 품사를 결정하는 것은 매",
+     "[human] 소의 품사를 태깅하는 방법에 대한 연구들이 많이 진행되고 ",
+     "[human] 음절 단위로 분리된 형태소에 대해서 기계학습을 이용하여 분리"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 7.736/10k (LLM 18.49/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_3293_human_and_1547_llm_hits"
+  },
+  {
+   "id": "TR_in_regard",
+   "pattern": "에 있어(서|서의)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "japanese_ni_oite",
+   "explanation_ko": "일본어 'において'. 공공언어 바로 쓰기는 일본어 번역 투로 분류하고 쓰지 않도록 권한다.",
+   "suggestions": [
+    "~에서",
+    "~할 때",
+    "~(으)로서는"
+   ],
+   "legit_use_note_ko": "법령·공문서 관용구 '~함에 있어'는 남아 있으나, 일반 산문에서는 대체하는 편이 낫다.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "listed_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 7,
+     "llm/essay": 21,
+     "gpt4o/essay": 6,
+     "human/abstract": 3,
+     "llm/abstract": 15,
+     "gpt4o/abstract": 7,
+     "human/poetry": 0,
+     "llm/poetry": 13,
+     "gpt4o/poetry": 2,
+     "news/news": 49,
+     "klue/klue": 50
+    },
+    "per10k": {
+     "katfish_human": 0.51,
+     "katfish_llm": 0.586,
+     "katfish_gpt4o": 0.509,
+     "news": 0.18,
+     "klue": 0.389,
+     "human_essay": 0.602,
+     "human_abstract": 0.736,
+     "human_poetry": 0.0,
+     "llm_essay": 0.389,
+     "llm_abstract": 1.182,
+     "llm_poetry": 0.767,
+     "all_human": 0.259,
+     "human_professional": 0.252
+    },
+    "hits_all_human": 109,
+    "hits_llm": 49,
+    "doc_frac": {
+     "human": 0.0196,
+     "llm": 0.0259
+    },
+    "prior": {
+     "p_bg_per10k": 0.248,
+     "a_w": 4.959,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.348,
+     "z": 1.47,
+     "ratio_x": 1.42,
+     "per_genre_delta": {
+      "essay": -0.075,
+      "abstract": 0.613,
+      "poetry": 0.852
+     },
+     "per_genre_z": {
+      "essay": -0.22,
+      "abstract": 1.46,
+      "poetry": 1.68
+     },
+     "z_gpt4o_only": 0.22,
+     "boot_ci95": [
+      -0.07,
+      0.766
+     ]
+    },
+    "signal_genres": [
+     "abstract",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human]  이용하여 문장유사도 측정에 있어서, 기존 글자임베딩 방법에",
+     "[human] 이러한 참여 모델을 구축함에 있어서 본 연구에서는 다수의 화",
+     "[human] 였다. 폰트는 디자인 분야에 있어서 필수적인 요소이며 문화적"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.252/10k (LLM 0.586/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_109_human_and_49_llm_hits"
+  },
+  {
+   "id": "TR_need_object",
+   "pattern": "(을|를) 필요로 (하|한|합|했|해)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_need",
+   "explanation_ko": "영어 'need' 직역. '~이/가 필요하다'가 우리말답다(공공언어 바로 쓰기).",
+   "suggestions": [
+    "~이/가 필요하다"
+   ],
+   "legit_use_note_ko": "목적어가 사람 주어의 요구임을 강조할 때 드물게 쓰인다.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "listed_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 19,
+     "gpt4o/essay": 7,
+     "human/abstract": 1,
+     "llm/abstract": 2,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 4,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.251,
+     "katfish_gpt4o": 0.271,
+     "news": 0.015,
+     "klue": 0.039,
+     "human_essay": 0.086,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 0.352,
+     "llm_abstract": 0.158,
+     "llm_poetry": 0.0,
+     "all_human": 0.026,
+     "human_professional": 0.025
+    },
+    "hits_all_human": 11,
+    "hits_llm": 21,
+    "doc_frac": {
+     "human": 0.002,
+     "llm": 0.0111
+    },
+    "prior": {
+     "p_bg_per10k": 0.024,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.958,
+     "z": 1.54,
+     "ratio_x": 2.61,
+     "per_genre_delta": {
+      "essay": 1.715,
+      "abstract": 0.205,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.02,
+      "abstract": 0.2,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 1.11,
+     "boot_ci95": [
+      0.133,
+      1.681
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 격지도 학습은 사람의 노력을 필요로 하지 않고 학습 데이터를 만",
+     "[news] 다양한 산업계에서 개발자들을 필요로 하는 시기가 왔습니다. 코로",
+     "[news] 까지 상당 기간 화석 연료를 필요로 한다는 근본적인 현실을 분명"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.025/10k, LLM 0.251/10k (21 LLM hits, 11 human hits)",
+   "precision_evidence": "measured_on_11_human_and_21_llm_hits"
+  },
+  {
+   "id": "TR_enable_thing",
+   "pattern": "가능(하게|케) (하|한|합|했|해)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "inanimate_subject_enable",
+   "explanation_ko": "'make possible'/'enable' 직역. 사물 주어 구문은 영어 번역 투(공공언어 바로 쓰기). 사람 주어로 풀어 쓴다.",
+   "suggestions": [
+    "~할 수 있다",
+    "~할 수 있게 해 준다"
+   ],
+   "legit_use_note_ko": "기술 문서에서 기능 설명으로는 허용된다.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 11,
+     "gpt4o/essay": 3,
+     "human/abstract": 1,
+     "llm/abstract": 6,
+     "gpt4o/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 8,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.203,
+     "katfish_gpt4o": 0.203,
+     "news": 0.029,
+     "klue": 0.039,
+     "human_essay": 0.086,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 0.204,
+     "llm_abstract": 0.473,
+     "llm_poetry": 0.0,
+     "all_human": 0.036,
+     "human_professional": 0.035
+    },
+    "hits_all_human": 15,
+    "hits_llm": 17,
+    "doc_frac": {
+     "human": 0.0033,
+     "llm": 0.0105
+    },
+    "prior": {
+     "p_bg_per10k": 0.034,
+     "a_w": 0.673,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.922,
+     "z": 1.63,
+     "ratio_x": 2.51,
+     "per_genre_delta": {
+      "essay": 1.092,
+      "abstract": 1.078,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.32,
+      "abstract": 1.25,
+      "poetry": -0.25
+     },
+     "z_gpt4o_only": 0.91,
+     "boot_ci95": [
+      0.141,
+      1.647
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human] 현실 사례에 이를 적용 불가능하게 했던 학습 시간에 대한 문제",
+     "[news] 컸는데 다른 결제 방식도 가능하게 하자는 취지로 법이 개정됐지",
+     "[news]  건물에서도 위치 인식을 가능하게 하는 최초의 기술이다. 8일"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.035/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_15_human_and_17_llm_hits"
+  },
+  {
+   "id": "TR_enable_allow",
+   "pattern": "(할|볼|쓸|즐길|만날|느낄|알) 수 있(도록|게) 해 ?(준다|줍니다|주었다|주는|주며|줄)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "inanimate_subject_allow",
+   "explanation_ko": "'allows you to' 직역. 사물이 사람에게 허락을 베푸는 구조.",
+   "suggestions": [
+    "~할 수 있다",
+    "~하기 좋다"
+   ],
+   "legit_use_note_ko": "제품 설명서·UI 문구에서는 정착한 관용.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 9,
+     "gpt4o/essay": 8,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 4,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.131,
+     "katfish_gpt4o": 0.305,
+     "news": 0.015,
+     "klue": 0.016,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.167,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.059,
+     "all_human": 0.017,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 7,
+    "hits_llm": 11,
+    "doc_frac": {
+     "human": 0.0013,
+     "llm": 0.0068
+    },
+    "prior": {
+     "p_bg_per10k": 0.016,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.897,
+     "z": 1.28,
+     "ratio_x": 2.45,
+     "per_genre_delta": {
+      "essay": 0.995,
+      "abstract": 0.793,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": 1.13,
+      "abstract": 0.49,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": 1.67,
+     "boot_ci95": [
+      -0.121,
+      1.51
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 삶과 이색적인 여정을 경험할 수 있게 해 줄 예정이다. 성문안 마을은",
+     "[news] 진정한 휴식과 힐링을 경험할 수 있게 해 줄 예정이다. 웅장한 절벽과",
+     "[news] 지 맛있게 완성된 요리를 즐길 수 있도록 해준다. 특히 구이 볶음 등 수"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.015/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_7_human_and_11_llm_hits"
+  },
+  {
+   "id": "TR_about_kwan",
+   "pattern": "에 관(해서?|하여|한)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "preposition_about",
+   "explanation_ko": "영어 'about/concerning' 직역(새국어생활 영한 번역투). '~을/를', '~ 관련'으로 대체 가능.",
+   "suggestions": [
+    "~을/를",
+    "~ 관련",
+    "~(이)라는"
+   ],
+   "legit_use_note_ko": "공문서 제목·법령 표현('~에 관한 법률')은 고정 명칭이다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 10,
+     "llm/essay": 7,
+     "gpt4o/essay": 4,
+     "human/abstract": 3,
+     "llm/abstract": 4,
+     "gpt4o/abstract": 1,
+     "human/poetry": 1,
+     "llm/poetry": 0,
+     "news/news": 96,
+     "klue/klue": 74
+    },
+    "per10k": {
+     "katfish_human": 0.714,
+     "katfish_llm": 0.131,
+     "katfish_gpt4o": 0.17,
+     "news": 0.352,
+     "klue": 0.576,
+     "human_essay": 0.861,
+     "human_abstract": 0.736,
+     "human_poetry": 0.255,
+     "llm_essay": 0.13,
+     "llm_abstract": 0.315,
+     "llm_poetry": 0.0,
+     "all_human": 0.437,
+     "human_professional": 0.427
+    },
+    "hits_all_human": 184,
+    "hits_llm": 11,
+    "doc_frac": {
+     "human": 0.0354,
+     "llm": 0.0068
+    },
+    "prior": {
+     "p_bg_per10k": 0.425,
+     "a_w": 8.497,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.658,
+     "z": -2.86,
+     "ratio_x": 0.52,
+     "per_genre_delta": {
+      "essay": -1.027,
+      "abstract": -0.223,
+      "poetry": -0.547
+     },
+     "per_genre_z": {
+      "essay": -2.98,
+      "abstract": -0.54,
+      "poetry": -1.16
+     },
+     "z_gpt4o_only": -1.57,
+     "boot_ci95": [
+      -0.891,
+      -0.369
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human] 내에서 한국어 의존구문분석에 관한 연구가 활발히 진행되고 ",
+     "[human]  트리플을 밝히는 관계추출에 관한 연구를 기술한다. 사람이",
+     "[human] 되면서 다양한 채팅 시스템에 관한 연구가 빠르게 진행 되고"
+    ]
+   },
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "fires as often on professional human prose as on LLM text: pro-human 0.427/10k vs LLM 0.131/10k; disabled by default",
+   "precision_evidence": "measured_on_184_human_and_11_llm_hits"
+  },
+  {
+   "id": "TR_from_source",
+   "pattern": "(으)?로부터",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "preposition_from",
+   "explanation_ko": "영어 'from' 직역. '~에게서', '~에서', '~한테서'가 우리말답다(김정우 2007의 예).",
+   "suggestions": [
+    "~에게서",
+    "~에서",
+    "~한테"
+   ],
+   "legit_use_note_ko": "공식 문어체의 '~로부터 위임받아'는 문법적으로 정상.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 29,
+     "gpt4o/essay": 7,
+     "human/abstract": 18,
+     "llm/abstract": 17,
+     "gpt4o/abstract": 7,
+     "human/poetry": 1,
+     "llm/poetry": 2,
+     "news/news": 282,
+     "klue/klue": 241
+    },
+    "per10k": {
+     "katfish_human": 1.275,
+     "katfish_llm": 0.574,
+     "katfish_gpt4o": 0.475,
+     "news": 1.034,
+     "klue": 1.876,
+     "human_essay": 0.516,
+     "human_abstract": 4.419,
+     "human_poetry": 0.255,
+     "llm_essay": 0.537,
+     "llm_abstract": 1.34,
+     "llm_poetry": 0.118,
+     "all_human": 1.302,
+     "human_professional": 1.335
+    },
+    "hits_all_human": 548,
+    "hits_llm": 48,
+    "doc_frac": {
+     "human": 0.0979,
+     "llm": 0.0271
+    },
+    "prior": {
+     "p_bg_per10k": 1.304,
+     "a_w": 26.09,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.339,
+     "z": -2.54,
+     "ratio_x": 0.71,
+     "per_genre_delta": {
+      "essay": -0.31,
+      "abstract": -0.329,
+      "poetry": -0.399
+     },
+     "per_genre_z": {
+      "essay": -1.4,
+      "abstract": -1.54,
+      "poetry": -1.48
+     },
+     "z_gpt4o_only": -1.48,
+     "boot_ci95": [
+      -0.476,
+      -0.183
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human] 과정이다. 그러나 단일문서로부터 키워드를 추출해 내는 기",
+     "[human] 니라 단어를 구성하는 문자로부터 단어 임베딩을 합성해 내",
+     "[human]  한국어 위키피디아 말뭉치로부터 학습하고, 한국어 질의응"
+    ]
+   },
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "fires as often on professional human prose as on LLM text: pro-human 1.335/10k vs LLM 0.574/10k; disabled by default",
+   "precision_evidence": "measured_on_548_human_and_48_llm_hits"
+  },
+  {
+   "id": "TR_double_passive",
+   "pattern": "(되어지|보여지|쓰여지|불려지|나뉘어지|잊혀지|짜여지|지어지)(다|는|고|며|면|지|었|어|ㄴ|ㄹ|도록|게|기|니|는데)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "double_passive",
+   "explanation_ko": "피동 접사(-이-, -되-)에 '-어지다'를 겹쳐 쓴 이중 피동. 공공언어 바로 쓰기는 '보여지다'를 '보이다'로 고치도록 안내한다.",
+   "suggestions": [
+    "되다/보이다/쓰이다/불리다/나뉘다/잊히다"
+   ],
+   "legit_use_note_ko": "'만들어지다', '이루어지다'는 이중 피동이 아닌 정상 단어다(이 패턴에는 넣지 않았다).",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 2,
+     "human/abstract": 1,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 12,
+     "gpt4o/poetry": 4,
+     "news/news": 4,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.167,
+     "katfish_gpt4o": 0.136,
+     "news": 0.015,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 0.037,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.708,
+     "all_human": 0.021,
+     "human_professional": 0.022
+    },
+    "hits_all_human": 9,
+    "hits_llm": 14,
+    "doc_frac": {
+     "human": 0.002,
+     "llm": 0.0086
+    },
+    "prior": {
+     "p_bg_per10k": 0.021,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.886,
+     "z": 1.0,
+     "ratio_x": 2.43,
+     "per_genre_delta": {
+      "essay": 0.759,
+      "abstract": -1.405,
+      "poetry": 2.784
+     },
+     "per_genre_z": {
+      "essay": 0.49,
+      "abstract": -0.86,
+      "poetry": 1.93
+     },
+     "z_gpt4o_only": 0.48,
+     "boot_ci95": [
+      0.219,
+      1.622
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human] 에 대한 연구가 많이 진행되어지고 있다. 본 논문에서는 한",
+     "[news] 을 갖고 있는 것으로 추측되어지고 있는 상태다. NASA에",
+     "[news]  끌고 있다. 특히 최근 지어지는 단지들은 드레스룸 붙박이"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.022/10k, LLM 0.167/10k (14 LLM hits, 9 human hits)",
+   "precision_evidence": "measured_on_9_human_and_14_llm_hits"
+  },
+  {
+   "id": "TR_achieved_passive",
+   "pattern": "(이|가) 이루어(지|졌|진|집)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "nominal_passive",
+   "explanation_ko": "'~이 이루어지다'로 동작성 명사를 피동화하는 구조는 행위자가 사라져 번역 투로 흐르기 쉽다(2019 공공언어 진단의 피동 과다 범주).",
+   "suggestions": [
+    "~했다",
+    "~하였다",
+    "~하다"
+   ],
+   "legit_use_note_ko": "'합의가 이루어졌다', '화해가 이루어지다'처럼 결과 상태를 말하는 정상 용법이 많다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 29,
+     "gpt4o/essay": 10,
+     "human/abstract": 2,
+     "llm/abstract": 6,
+     "gpt4o/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 3,
+     "klue/klue": 12
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.43,
+     "katfish_gpt4o": 0.441,
+     "news": 0.011,
+     "klue": 0.093,
+     "human_essay": 0.086,
+     "human_abstract": 0.491,
+     "human_poetry": 0.0,
+     "llm_essay": 0.537,
+     "llm_abstract": 0.473,
+     "llm_poetry": 0.059,
+     "all_human": 0.043,
+     "human_professional": 0.042
+    },
+    "hits_all_human": 18,
+    "hits_llm": 36,
+    "doc_frac": {
+     "human": 0.004,
+     "llm": 0.0216
+    },
+    "prior": {
+     "p_bg_per10k": 0.039,
+     "a_w": 0.772,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.116,
+     "z": 2.28,
+     "ratio_x": 3.05,
+     "per_genre_delta": {
+      "essay": 1.971,
+      "abstract": 0.587,
+      "poetry": 0.395
+     },
+     "per_genre_z": {
+      "essay": 2.55,
+      "abstract": 0.82,
+      "poetry": 0.29
+     },
+     "z_gpt4o_only": 1.49,
+     "boot_ci95": [
+      0.436,
+      1.879
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human]  자질들에 대한 비교 연구가 이루어지지 않았다. 본 논문에서는",
+     "[human] Role Labeling)이 이루어진다. 이를 위해서는 격틀 ",
+     "[news] 은 금액이다. 앞으로 입법이 이루어진다면 코인평가기관은 평가 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.042/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_18_human_and_36_llm_hits"
+  },
+  {
+   "id": "TR_progress_passive",
+   "pattern": "(이|가) 진행(되|됐|된|됩|되어)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "nominal_passive",
+   "explanation_ko": "'~이 진행되다'는 'proceeds'의 직역형 피동. 행위자가 있는 동작이면 능동으로 푼다.",
+   "suggestions": [
+    "~하다",
+    "~을/를 진행하다",
+    "~이/가 이어지다"
+   ],
+   "legit_use_note_ko": "공연·행사가 시간 순서로 전개된다는 의미의 '진행되다'는 자연스럽다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "gpt4o/essay": 1,
+     "human/abstract": 2,
+     "llm/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 51,
+     "klue/klue": 24
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.024,
+     "katfish_gpt4o": 0.034,
+     "news": 0.187,
+     "klue": 0.187,
+     "human_essay": 0.0,
+     "human_abstract": 0.491,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.0,
+     "all_human": 0.183,
+     "human_professional": 0.19
+    },
+    "hits_all_human": 77,
+    "hits_llm": 2,
+    "doc_frac": {
+     "human": 0.0167,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.188,
+     "a_w": 3.763,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.517,
+     "z": -1.33,
+     "ratio_x": 0.6,
+     "per_genre_delta": {
+      "essay": -0.615,
+      "abstract": -0.497,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.89,
+      "abstract": -0.8,
+      "poetry": -0.6
+     },
+     "z_gpt4o_only": -0.44,
+     "boot_ci95": [
+      -0.792,
+      -0.241
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human]  방법에 대한 연구들이 많이 진행되고 있다. 음절 단위 형태",
+     "[human] 는 방법에 대한 연구가 많이 진행되어지고 있다. 본 논문에서",
+     "[news] 법 회계 마케팅 등의 교육이 진행된다. BBQ 관계자는 해외"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.19/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_77_human_and_2_llm_hits"
+  },
+  {
+   "id": "TR_can_be_possible",
+   "pattern": "는 것이 가능(하|합|했|해|한)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_possible",
+   "explanation_ko": "'it is possible to'의 직역. '~할 수 있다'가 간결하다.",
+   "suggestions": [
+    "~할 수 있다"
+   ],
+   "legit_use_note_ko": "가능 여부 자체를 논하는 문장(법적 가능성, 기술적 가능성)은 정상.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.048,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.074,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.014,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 6,
+    "hits_llm": 4,
+    "doc_frac": {
+     "human": 0.0011,
+     "llm": 0.0018
+    },
+    "prior": {
+     "p_bg_per10k": 0.016,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.443,
+     "z": 0.43,
+     "ratio_x": 1.56,
+     "per_genre_delta": {
+      "essay": 1.347,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.9,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.53,
+      0.828
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 가 추구하는 목표도 달성하는 것이 가능하다 며 디지털 플랫폼 정부",
+     "[news] 가능한지 기계적으로 판별하는 것이 가능하다면 ‘프로그램 P x 는",
+     "[klue] 의 병력을 습지로 실어나르는 것이 가능했다. 이 보트 중대는 주로"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.015/10k, LLM 0.048/10k (4 LLM hits, 6 human hits)",
+   "precision_evidence": "measured_on_6_human_and_4_llm_hits"
+  },
+  {
+   "id": "TR_have_calque",
+   "pattern": "(을|를) (가지고|갖고) (있|있는|있다|있습니다|있어)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_have",
+   "explanation_ko": "영어 'have'의 직역(새국어생활 영한 번역투: '아름다운 목소리를 가지고 있다'→'목소리가 아름답다'). '있다', '~(이)다', 서술어 형용사로 바꾼다.",
+   "suggestions": [
+    "~이/가 있다",
+    "형용사 서술"
+   ],
+   "legit_use_note_ko": "'자격증을 가지고 있다', '관심을 가지고 있다'는 사전 용례에 있는 정상 표현.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 16,
+     "llm/essay": 164,
+     "gpt4o/essay": 56,
+     "human/abstract": 3,
+     "llm/abstract": 8,
+     "gpt4o/abstract": 3,
+     "human/poetry": 1,
+     "llm/poetry": 16,
+     "news/news": 68,
+     "klue/klue": 76
+    },
+    "per10k": {
+     "katfish_human": 1.02,
+     "katfish_llm": 2.247,
+     "katfish_gpt4o": 2.001,
+     "news": 0.249,
+     "klue": 0.592,
+     "human_essay": 1.377,
+     "human_abstract": 0.736,
+     "human_poetry": 0.255,
+     "llm_essay": 3.036,
+     "llm_abstract": 0.63,
+     "llm_poetry": 0.943,
+     "all_human": 0.39,
+     "human_professional": 0.363
+    },
+    "hits_all_human": 164,
+    "hits_llm": 188,
+    "doc_frac": {
+     "human": 0.0334,
+     "llm": 0.085
+    },
+    "prior": {
+     "p_bg_per10k": 0.36,
+     "a_w": 7.202,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.85,
+     "z": 4.85,
+     "ratio_x": 2.34,
+     "per_genre_delta": {
+      "essay": 1.148,
+      "abstract": 0.093,
+      "poetry": 0.605
+     },
+     "per_genre_z": {
+      "essay": 5.19,
+      "abstract": 0.23,
+      "poetry": 1.49
+     },
+     "z_gpt4o_only": 2.38,
+     "boot_ci95": [
+      0.605,
+      1.07
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human]  정보가 누락된다는 문제점을 가지고 있다. 본 논문에서는 이러한",
+     "[human] 게 학습하면서도 선형 구조를 가지고 있어 딥러닝 기반 자연어처리",
+     "[human] 분석 결과에 의존적인 형태를 갖고 있어서, 형태소 분석 결과의"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.363/10k (LLM 2.247/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_164_human_and_188_llm_hits"
+  },
+  {
+   "id": "TR_make_to",
+   "pattern": "(으)?로 하여금",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_causative",
+   "explanation_ko": "영어 'cause/let ~ to'의 구문 직역. 사람이 문장 주어일 때만 쓰고 다른 경우 '~게 하다'로 푼다.",
+   "suggestions": [
+    "~게 하다",
+    "~이/가 ~하도록"
+   ],
+   "legit_use_note_ko": "규정·법령에서 사역 대상을 분명히 할 때는 관용.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 8,
+     "gpt4o/essay": 3,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2,
+     "klue/klue": 12
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.096,
+     "katfish_gpt4o": 0.102,
+     "news": 0.007,
+     "klue": 0.093,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.148,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.033,
+     "human_professional": 0.035
+    },
+    "hits_all_human": 14,
+    "hits_llm": 8,
+    "doc_frac": {
+     "human": 0.0027,
+     "llm": 0.0043
+    },
+    "prior": {
+     "p_bg_per10k": 0.036,
+     "a_w": 0.723,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.595,
+     "z": 0.7,
+     "ratio_x": 1.81,
+     "per_genre_delta": {
+      "essay": 1.64,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.34,
+      "abstract": -0.18,
+      "poetry": -0.26
+     },
+     "z_gpt4o_only": 0.72,
+     "boot_ci95": [
+      0.152,
+      0.874
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 비주의 콘셉트로 보는 이들로 하여금 호기심을 자극하며 색다른",
+     "[news] 다면서 이러한 결정이 기업으로 하여금 소송을 당하게 하거나 소",
+     "[klue] 하지 못하자 천적인 고질라로 하여금 제압하도록 유도하는 장면"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.035/10k, LLM 0.096/10k (8 LLM hits, 14 human hits)",
+   "precision_evidence": "measured_on_14_human_and_8_llm_hits"
+  },
+  {
+   "id": "TR_none_other_than",
+   "pattern": "다름 ?아닌|다름 ?아니(라|다|며|었|ㅂ|오)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_none_other",
+   "explanation_ko": "'nothing other than' 직역.",
+   "suggestions": [
+    "바로 ~이다",
+    "~이다"
+   ],
+   "legit_use_note_ko": "문어체 강조로 일부러 쓰는 경우.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 6
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.047,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.017,
+     "human_professional": 0.017
+    },
+    "hits_all_human": 7,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0016,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.019,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  수 있는 곳이 어딜까. 다름 아닌 인구 950만의 대도시 ",
+     "[klue] 고 하는데, ‘주인님’은 다름아닌 묘지에 잠들어있는 남자로",
+     "[klue]  화룡점정을 찍은 요소는 다름 아닌 프랑스 유크림이었다. 두"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.017/10k, LLM 0.0/10k (0 LLM hits, 7 human hits)",
+   "precision_evidence": "measured_on_7_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_despite",
+   "pattern": "에도 불구하고",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "calque_despite",
+   "explanation_ko": "'in spite of' 직역(번역 기원이나 이미 정착). 문장 전체에 연속해서 쓰면 부담스럽다.",
+   "suggestions": [
+    "~는데도",
+    "~지만",
+    "~ㄴ데"
+   ],
+   "legit_use_note_ko": "정착한 표현이며 규범적으로 틀리지 않다. 새국어생활은 번역 기원만으로 부자연스럽다고 보지 않는다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 8,
+     "llm/essay": 79,
+     "gpt4o/essay": 9,
+     "human/abstract": 1,
+     "llm/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 11,
+     "gpt4o/poetry": 1,
+     "news/news": 34,
+     "klue/klue": 48
+    },
+    "per10k": {
+     "katfish_human": 0.459,
+     "katfish_llm": 1.112,
+     "katfish_gpt4o": 0.339,
+     "news": 0.125,
+     "klue": 0.374,
+     "human_essay": 0.688,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 1.463,
+     "llm_abstract": 0.236,
+     "llm_poetry": 0.649,
+     "all_human": 0.216,
+     "human_professional": 0.205
+    },
+    "hits_all_human": 91,
+    "hits_llm": 93,
+    "doc_frac": {
+     "human": 0.0189,
+     "llm": 0.0486
+    },
+    "prior": {
+     "p_bg_per10k": 0.206,
+     "a_w": 4.112,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.849,
+     "z": 3.48,
+     "ratio_x": 2.34,
+     "per_genre_delta": {
+      "essay": 1.076,
+      "abstract": 0.024,
+      "poetry": 0.866
+     },
+     "per_genre_z": {
+      "essay": 3.5,
+      "abstract": 0.04,
+      "poetry": 1.56
+     },
+     "z_gpt4o_only": -0.35,
+     "boot_ci95": [
+      0.513,
+      1.179
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human]  서로 밀접한 연관이 있음에도 불구하고 함께 분석하는 연구가 시",
+     "[news] 있는 능력을 보유하고 있음에도 불구하고 수도권만 집중적으로 육성",
+     "[news]  위험자산한도 70% 규제에도 불구하고 사전지정운용방법은 적립금"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.205/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_91_human_and_93_llm_hits"
+  },
+  {
+   "id": "TR_one_of",
+   "pattern": "(중|가운데)(의)? 하나(이다|입니다|로|다|인|였)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_one_of",
+   "explanation_ko": "'one of the ~'의 직역. 'X 중 하나'는 우리말에도 있으나 '가장 ~ 중 하나'로 쌓이면 번역 투.",
+   "suggestions": [
+    "~ 가운데 ~이다",
+    "~이기도 하다"
+   ],
+   "legit_use_note_ko": "정상 어법이므로 단독 사용은 허용.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 5,
+     "llm/essay": 84,
+     "gpt4o/essay": 35,
+     "human/abstract": 3,
+     "llm/abstract": 9,
+     "gpt4o/abstract": 4,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 60,
+     "klue/klue": 50
+    },
+    "per10k": {
+     "katfish_human": 0.408,
+     "katfish_llm": 1.124,
+     "katfish_gpt4o": 1.323,
+     "news": 0.22,
+     "klue": 0.389,
+     "human_essay": 0.43,
+     "human_abstract": 0.736,
+     "human_poetry": 0.0,
+     "llm_essay": 1.555,
+     "llm_abstract": 0.709,
+     "llm_poetry": 0.059,
+     "all_human": 0.28,
+     "human_professional": 0.279
+    },
+    "hits_all_human": 118,
+    "hits_llm": 94,
+    "doc_frac": {
+     "human": 0.0245,
+     "llm": 0.0486
+    },
+    "prior": {
+     "p_bg_per10k": 0.275,
+     "a_w": 5.507,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.708,
+     "z": 2.98,
+     "ratio_x": 2.03,
+     "per_genre_delta": {
+      "essay": 1.292,
+      "abstract": 0.228,
+      "poetry": -0.268
+     },
+     "per_genre_z": {
+      "essay": 3.96,
+      "abstract": 0.53,
+      "poetry": -0.46
+     },
+     "z_gpt4o_only": 2.41,
+     "boot_ci95": [
+      0.439,
+      0.916
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human]  가장 기본과 핵심 작업 중 하나이다. 본 연구에서는 순환형 ",
+     "[human] 발히 연구되고 있는 주제 중 하나이다. 최근에는 대화 모델 학",
+     "[human] 하여, 자연어 이해 기술 중 하나인 고객상담 대화의 도메인 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.279/10k (LLM 1.124/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_118_human_and_94_llm_hits"
+  },
+  {
+   "id": "TR_superlative_one_of",
+   "pattern": "가장 [^.!?\\n]{1,24}(것|곳|사람|도시|나라|분야|방법|이유|문제|요소|유산)들? ?(중|가운데)(의)? 하나",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_one_of_most",
+   "explanation_ko": "'one of the most ~'의 직역.",
+   "suggestions": [
+    "매우 ~한 ~이다",
+    "~으로 손꼽힌다"
+   ],
+   "legit_use_note_ko": "정상 어법이므로 한 문서에서 반복될 때만 문제.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 10,
+     "gpt4o/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 3,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.12,
+     "katfish_gpt4o": 0.136,
+     "news": 0.011,
+     "klue": 0.016,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.185,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.012,
+     "human_professional": 0.012
+    },
+    "hits_all_human": 5,
+    "hits_llm": 10,
+    "doc_frac": {
+     "human": 0.0011,
+     "llm": 0.0062
+    },
+    "prior": {
+     "p_bg_per10k": 0.014,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.882,
+     "z": 0.87,
+     "ratio_x": 2.42,
+     "per_genre_delta": {
+      "essay": 2.194,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.52,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.89,
+     "boot_ci95": [
+      0.552,
+      1.147
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 화 기술 시장은 미국에서 가장 빠르게 발전하는 분야 중 하나로 사반토의 무인 기술은 ",
+     "[news] 가운데 중국은 그 확률이 가장 낮은 곳 중 하나 라며 2023년까지 정책",
+     "[news] 화 기술 시장은 미국에서 가장 빠르게 발전하는 분야 중 하나로 사반토의 무인 기술은 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.012/10k, LLM 0.12/10k (10 LLM hits, 5 human hits)",
+   "precision_evidence": "measured_on_5_human_and_10_llm_hits"
+  },
+  {
+   "id": "TR_indef_article",
+   "pattern": "하나의 (?=[가-힣])",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_article_a",
+   "explanation_ko": "영어 부정관사 'a/an'의 직역. 우리말은 관사가 없어 생략하는 편이 자연스럽다.",
+   "suggestions": [
+    "(생략)",
+    "한"
+   ],
+   "legit_use_note_ko": "수 1을 강조하는 '하나의 원칙', '하나의 몸'은 정상.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 13,
+     "llm/essay": 30,
+     "gpt4o/essay": 15,
+     "human/abstract": 9,
+     "llm/abstract": 9,
+     "gpt4o/abstract": 4,
+     "human/poetry": 3,
+     "llm/poetry": 6,
+     "gpt4o/poetry": 1,
+     "news/news": 43,
+     "klue/klue": 26
+    },
+    "per10k": {
+     "katfish_human": 1.275,
+     "katfish_llm": 0.538,
+     "katfish_gpt4o": 0.678,
+     "news": 0.158,
+     "klue": 0.202,
+     "human_essay": 1.119,
+     "human_abstract": 2.209,
+     "human_poetry": 0.766,
+     "llm_essay": 0.555,
+     "llm_abstract": 0.709,
+     "llm_poetry": 0.354,
+     "all_human": 0.223,
+     "human_professional": 0.192
+    },
+    "hits_all_human": 94,
+    "hits_llm": 45,
+    "doc_frac": {
+     "human": 0.018,
+     "llm": 0.0234
+    },
+    "prior": {
+     "p_bg_per10k": 0.173,
+     "a_w": 3.464,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.174,
+     "z": -0.8,
+     "ratio_x": 0.84,
+     "per_genre_delta": {
+      "essay": -0.141,
+      "abstract": -0.306,
+      "poetry": -0.054
+     },
+     "per_genre_z": {
+      "essay": -0.47,
+      "abstract": -0.76,
+      "poetry": -0.11
+     },
+     "z_gpt4o_only": -1.18,
+     "boot_ci95": [
+      -0.547,
+      0.255
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human]  기반 질의응답 시스템은 하나의 질의 문장만을 사용하므로 ",
+     "[human] 의미역 결정에서 하나의 의미 논항이 둘 이상의 의",
+     "[human] 결하여 주제어를 설명하는 하나의 문서를 작성한다."
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.192/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_94_human_and_45_llm_hits"
+  },
+  {
+   "id": "TR_pronoun_she_they",
+   "pattern": "(그녀|그들)(는|은|가|이|의|를|을|에게|와|와의|도)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "pronoun_calque",
+   "explanation_ko": "3인칭 대명사 '그녀', '그들'은 번역소설 문체에서 굳어졌다. 일상 한국어는 이름이나 생략이 자연스럽다.",
+   "suggestions": [
+    "(이름/생략)",
+    "그 사람",
+    "그 사람들"
+   ],
+   "legit_use_note_ko": "소설·번역 문학에서는 문체로 쓰인다. 인용문 안에서는 보존해야 한다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 16,
+     "llm/essay": 171,
+     "gpt4o/essay": 60,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 13,
+     "llm/poetry": 53,
+     "gpt4o/poetry": 6,
+     "news/news": 17,
+     "klue/klue": 188
+    },
+    "per10k": {
+     "katfish_human": 1.479,
+     "katfish_llm": 2.677,
+     "katfish_gpt4o": 2.238,
+     "news": 0.062,
+     "klue": 1.463,
+     "human_essay": 1.377,
+     "human_abstract": 0.0,
+     "human_poetry": 3.321,
+     "llm_essay": 3.166,
+     "llm_abstract": 0.0,
+     "llm_poetry": 3.125,
+     "all_human": 0.556,
+     "human_professional": 0.506
+    },
+    "hits_all_human": 234,
+    "hits_llm": 224,
+    "doc_frac": {
+     "human": 0.0285,
+     "llm": 0.085
+    },
+    "prior": {
+     "p_bg_per10k": 0.512,
+     "a_w": 10.242,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.729,
+     "z": 4.9,
+     "ratio_x": 2.07,
+     "per_genre_delta": {
+      "essay": 1.082,
+      "abstract": -0.306,
+      "poetry": 0.566
+     },
+     "per_genre_z": {
+      "essay": 5.18,
+      "abstract": -0.69,
+      "poetry": 2.33
+     },
+     "z_gpt4o_only": 1.81,
+     "boot_ci95": [
+      0.45,
+      1.002
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 큼 사람들이 야생동물에게 그들의 공간을 돌려주고 갚는다는",
+     "[news]  2주 정도 지나면 러브버그들이 자연히 소멸할 것으로 예",
+     "[news]  유지하고 있지 못했죠. 그들은 연구 전 애초의 걸음수로"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.506/10k (LLM 2.677/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_234_human_and_224_llm_hits"
+  },
+  {
+   "id": "TR_double_plural",
+   "pattern": "(많은|여러|다양한|수많은|모든|각종) ?[가-힣]{1,5}들(이|은|을|의|도|에게|에서|과|와)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "plural_marker_overuse",
+   "explanation_ko": "수량 한정어가 있는데 복수 접미사 '-들'을 또 붙이는 영어식 복수 표지(새국어생활 영한 번역투 3.2).",
+   "suggestions": [
+    "(들 삭제)"
+   ],
+   "legit_use_note_ko": "'-들'이 다양한 종류의 느낌을 주는 뉘앙스 기능을 하는 경우가 있다(같은 글의 지적).",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "listed_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 78,
+     "llm/essay": 357,
+     "gpt4o/essay": 130,
+     "human/abstract": 2,
+     "llm/abstract": 1,
+     "human/poetry": 8,
+     "llm/poetry": 31,
+     "gpt4o/poetry": 4,
+     "news/news": 138,
+     "klue/klue": 102
+    },
+    "per10k": {
+     "katfish_human": 4.488,
+     "katfish_llm": 4.65,
+     "katfish_gpt4o": 4.544,
+     "news": 0.506,
+     "klue": 0.794,
+     "human_essay": 6.712,
+     "human_abstract": 0.491,
+     "human_poetry": 2.044,
+     "llm_essay": 6.609,
+     "llm_abstract": 0.079,
+     "llm_poetry": 1.828,
+     "all_human": 0.779,
+     "human_professional": 0.597
+    },
+    "hits_all_human": 328,
+    "hits_llm": 389,
+    "doc_frac": {
+     "human": 0.0579,
+     "llm": 0.1539
+    },
+    "prior": {
+     "p_bg_per10k": 0.599,
+     "a_w": 11.986,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.459,
+     "z": 4.42,
+     "ratio_x": 1.58,
+     "per_genre_delta": {
+      "essay": 0.561,
+      "abstract": -0.38,
+      "poetry": 0.331
+     },
+     "per_genre_z": {
+      "essay": 4.77,
+      "abstract": -0.99,
+      "poetry": 1.22
+     },
+     "z_gpt4o_only": 1.0,
+     "boot_ci95": [
+      0.234,
+      0.72
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 비용으로 만들 수 있어, 많은 연구들이 관계 추출 문제를 해결하",
+     "[human] 현대사회에 존재하는 다양한 시스템들이 병합될 때는 병합을 위해",
+     "[news] 방법도 간단한 만큼 보다 많은 소비자들이 집에서도 간편하게 맛있는"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.597/10k (LLM 4.65/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_328_human_and_389_llm_hits"
+  },
+  {
+   "id": "TR_of_case",
+   "pattern": "의 경우(에는|에도|엔|에)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_in_case_of",
+   "explanation_ko": "'in the case of'의 직역. '~는', '~면', '~일 때'로 줄일 수 있다.",
+   "suggestions": [
+    "~은/는",
+    "~일 때",
+    "~면"
+   ],
+   "legit_use_note_ko": "구분·분류를 명시할 때 정상 어법.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 14,
+     "llm/essay": 29,
+     "gpt4o/essay": 9,
+     "human/abstract": 10,
+     "llm/abstract": 11,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 307,
+     "klue/klue": 92
+    },
+    "per10k": {
+     "katfish_human": 1.224,
+     "katfish_llm": 0.478,
+     "katfish_gpt4o": 0.339,
+     "news": 1.125,
+     "klue": 0.716,
+     "human_essay": 1.205,
+     "human_abstract": 2.455,
+     "human_poetry": 0.0,
+     "llm_essay": 0.537,
+     "llm_abstract": 0.867,
+     "llm_poetry": 0.0,
+     "all_human": 1.005,
+     "human_professional": 1.009
+    },
+    "hits_all_human": 423,
+    "hits_llm": 40,
+    "doc_frac": {
+     "human": 0.0743,
+     "llm": 0.0216
+    },
+    "prior": {
+     "p_bg_per10k": 0.996,
+     "a_w": 19.91,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.402,
+     "z": -2.71,
+     "ratio_x": 0.67,
+     "per_genre_delta": {
+      "essay": -0.484,
+      "abstract": -0.273,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -2.17,
+      "abstract": -1.06,
+      "poetry": -1.37
+     },
+     "z_gpt4o_only": -1.83,
+     "boot_ci95": [
+      -0.575,
+      -0.228
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human] rich language)의 경우에는 무수히 많은 단어가 파생",
+     "[human] 있다. 그러나 서답형 문항의 경우 채점하는 데 시간과 비용",
+     "[human]  2가지 이상인 동형이의어의 경우 기존의 인접 어절을 이용"
+    ]
+   },
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "fires as often on professional human prose as on LLM text: pro-human 1.009/10k vs LLM 0.478/10k; disabled by default",
+   "precision_evidence": "measured_on_423_human_and_40_llm_hits"
+  },
+  {
+   "id": "TR_genitive_nodes",
+   "pattern": "(에서의|으로의|로서의|로의|와의|과의|에의)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "japanese_no_chain",
+   "explanation_ko": "일본어 'での/への/との'식 조사 겹침. 명사를 풀어 쓰는 편이 자연스럽다.",
+   "suggestions": [
+    "~에서 한",
+    "~(으)로 가는",
+    "~와 한"
+   ],
+   "legit_use_note_ko": "'우리와의 약속', '로서의 역할'은 널리 정착.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 33,
+     "llm/essay": 260,
+     "gpt4o/essay": 108,
+     "human/abstract": 11,
+     "llm/abstract": 47,
+     "gpt4o/abstract": 25,
+     "human/poetry": 7,
+     "llm/poetry": 67,
+     "gpt4o/poetry": 28,
+     "news/news": 623,
+     "klue/klue": 420
+    },
+    "per10k": {
+     "katfish_human": 2.601,
+     "katfish_llm": 4.47,
+     "katfish_gpt4o": 5.46,
+     "news": 2.284,
+     "klue": 3.269,
+     "human_essay": 2.84,
+     "human_abstract": 2.7,
+     "human_poetry": 1.788,
+     "llm_essay": 4.814,
+     "llm_abstract": 3.703,
+     "llm_poetry": 3.951,
+     "all_human": 2.599,
+     "human_professional": 2.6
+    },
+    "hits_all_human": 1094,
+    "hits_llm": 374,
+    "doc_frac": {
+     "human": 0.1787,
+     "llm": 0.1736
+    },
+    "prior": {
+     "p_bg_per10k": 2.6,
+     "a_w": 52.005,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.319,
+     "z": 3.84,
+     "ratio_x": 1.38,
+     "per_genre_delta": {
+      "essay": 0.45,
+      "abstract": 0.146,
+      "poetry": 0.266
+     },
+     "per_genre_z": {
+      "essay": 3.68,
+      "abstract": 0.91,
+      "poetry": 1.67
+     },
+     "z_gpt4o_only": 3.35,
+     "boot_ci95": [
+      0.204,
+      0.425
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human] 본 논문은 문장에서의 어절 간 의존관계가 성립",
+     "[human] 로 기존의 LSTM CRF에서의 성능 향상을 가져왔다. ",
+     "[human] 자의 주관에 따라 채점 결과의 일관성과 신뢰성을 보장하"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 2.6/10k (LLM 4.47/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_1094_human_and_374_llm_hits"
+  },
+  {
+   "id": "TR_to_iu",
+   "pattern": "(이)?라고 하는 ",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "japanese_to_iu",
+   "explanation_ko": "일본어 'という'식 인용 수식. '~(이)라는'으로 줄인다.",
+   "suggestions": [
+    "~(이)라는"
+   ],
+   "legit_use_note_ko": "구어체 인용에서는 자연스럽다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 3,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 6,
+     "klue/klue": 6
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.022,
+     "klue": 0.047,
+     "human_essay": 0.258,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.036,
+     "human_professional": 0.03
+    },
+    "hits_all_human": 15,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0031,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.031,
+     "a_w": 0.623,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.402,
+     "z": -1.51,
+     "ratio_x": 0.25,
+     "per_genre_delta": {
+      "essay": -2.611,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.9,
+      "abstract": -0.17,
+      "poetry": -0.24
+     },
+     "z_gpt4o_only": -1.01,
+     "boot_ci95": [
+      -1.805,
+      -0.529
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 리지만 언론에 3에서 8%라고 하는 것은 우리나라 상황과 비풍",
+     "[news] 화됩니다. 그리고 피부양자라고 하는 분들은 소득 요건이 조금 ",
+     "[news] 습니까 답변 사실 피부양자라고 하는 건 지금 말씀해 주신 것처"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.03/10k, LLM 0.0/10k (0 LLM hits, 15 human hits)",
+   "precision_evidence": "measured_on_15_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_tokoro",
+   "pattern": "(한|하는|된|되는|은|는) 바(가)? 있(다|습니다|었|으)|는 바이다|는 바입니다",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "japanese_tokoro",
+   "explanation_ko": "일본어 'ところ' 투의 '바' 구문.",
+   "suggestions": [
+    "~했다",
+    "~한 적이 있다"
+   ],
+   "legit_use_note_ko": "공문서·판결문 문체('~한 바 있다')에서 관용.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 4,
+     "llm/essay": 3,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 168,
+     "klue/klue": 31
+    },
+    "per10k": {
+     "katfish_human": 0.204,
+     "katfish_llm": 0.036,
+     "katfish_gpt4o": 0.034,
+     "news": 0.616,
+     "klue": 0.241,
+     "human_essay": 0.344,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.056,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.482,
+     "human_professional": 0.491
+    },
+    "hits_all_human": 203,
+    "hits_llm": 3,
+    "doc_frac": {
+     "human": 0.041,
+     "llm": 0.0018
+    },
+    "prior": {
+     "p_bg_per10k": 0.497,
+     "a_w": 9.943,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.594,
+     "z": -2.42,
+     "ratio_x": 0.55,
+     "per_genre_delta": {
+      "essay": -0.925,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -2.4,
+      "abstract": -0.68,
+      "poetry": -0.97
+     },
+     "z_gpt4o_only": -0.8,
+     "boot_ci95": [
+      -0.812,
+      -0.394
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  34개 단체협약안을 제시한 바 있다. 이 외에도 정년 65세",
+     "[news]  갔다가 극적 합의에 성공한 바 있다. 금융권 관계자는 지난해",
+     "[news] 로세그멘테이션 역량을 확장한 바 있다. 레이턴 CEO는 향후 "
+    ]
+   },
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "fires as often on professional human prose as on LLM text: pro-human 0.491/10k vs LLM 0.036/10k; disabled by default",
+   "precision_evidence": "measured_on_203_human_and_3_llm_hits"
+  },
+  {
+   "id": "TR_noyori",
+   "pattern": "에 (즈음(하여|해서)|임(하여|해서)|입각(하여|해서|한)|앞서)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "japanese_kango_grammar",
+   "explanation_ko": "'~に際して/に基づいて' 계열의 한자어 문법 표현.",
+   "suggestions": [
+    "~할 때",
+    "~을 바탕으로",
+    "~기 전에"
+   ],
+   "legit_use_note_ko": "격식 문서에서는 사용.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 5,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 45,
+     "klue/klue": 20
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.06,
+     "katfish_gpt4o": 0.034,
+     "news": 0.165,
+     "klue": 0.156,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.093,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.154,
+     "human_professional": 0.16
+    },
+    "hits_all_human": 65,
+    "hits_llm": 5,
+    "doc_frac": {
+     "human": 0.0142,
+     "llm": 0.0031
+    },
+    "prior": {
+     "p_bg_per10k": 0.163,
+     "a_w": 3.264,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.183,
+     "z": -0.43,
+     "ratio_x": 0.83,
+     "per_genre_delta": {
+      "essay": 0.078,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.12,
+      "abstract": -0.39,
+      "poetry": -0.56
+     },
+     "z_gpt4o_only": -0.01,
+     "boot_ci95": [
+      -0.444,
+      0.007
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 할 계획이다. 이같은 계획에 앞서 윤석렬 대통령은 지난 6",
+     "[news] 고수했다. 이후 2차 협의에 앞서 노조는 사측에 모빌리티 ",
+     "[news] 를 설명했다. 서비스 통합에 앞서 카카오는 지난 4일부터 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.16/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_65_human_and_5_llm_hits"
+  },
+  {
+   "id": "TR_in_progress",
+   "pattern": "(진행|검토|논의|준비|추진|개발|협의|조사) ?중에 (있|놓)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_in_process",
+   "explanation_ko": "'is in the process of'/'~中にある'의 직역.",
+   "suggestions": [
+    "~하고 있다",
+    "~하는 중이다",
+    "~ 중이다"
+   ],
+   "legit_use_note_ko": "서식·상태 표기에는 사용.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 10,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.037,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.026,
+     "human_professional": 0.027
+    },
+    "hits_all_human": 11,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0024,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.029,
+     "a_w": 0.573,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.49,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.46,
+      "abstract": -0.16,
+      "poetry": -0.23
+     },
+     "z_gpt4o_only": -0.09,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 반의 블루수소 생산사업도 추진 중에 있다. 천연가스를 개질해 수",
+     "[news] 기 디지털 손해보험사업을 준비 중에 있고 신한금융이 카디프손해보",
+     "[news] 이두창 검사가 가능하도록 준비중에 있습니다. 백신 및 치료제 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.027/10k, LLM 0.0/10k (0 LLM hits, 11 human hits)",
+   "precision_evidence": "measured_on_11_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_because_of",
+   "pattern": "(으)?로 인(해서?|하여|한)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_due_to",
+   "explanation_ko": "'due to'/'によって'의 직역. '~ 때문에', '~ 탓에', '~ㄴ 까닭에'.",
+   "suggestions": [
+    "~ 때문에",
+    "~ 탓에",
+    "~해서"
+   ],
+   "legit_use_note_ko": "공문서·뉴스 문체에서 정착. 인과가 약할 때 쓰면 막연하다.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 55,
+     "llm/essay": 291,
+     "gpt4o/essay": 89,
+     "human/abstract": 5,
+     "llm/abstract": 22,
+     "gpt4o/abstract": 13,
+     "human/poetry": 1,
+     "llm/poetry": 3,
+     "news/news": 309,
+     "klue/klue": 153
+    },
+    "per10k": {
+     "katfish_human": 3.111,
+     "katfish_llm": 3.777,
+     "katfish_gpt4o": 3.459,
+     "news": 1.133,
+     "klue": 1.191,
+     "human_essay": 4.733,
+     "human_abstract": 1.227,
+     "human_poetry": 0.255,
+     "llm_essay": 5.387,
+     "llm_abstract": 1.734,
+     "llm_poetry": 0.177,
+     "all_human": 1.243,
+     "human_professional": 1.152
+    },
+    "hits_all_human": 523,
+    "hits_llm": 316,
+    "doc_frac": {
+     "human": 0.0888,
+     "llm": 0.1435
+    },
+    "prior": {
+     "p_bg_per10k": 1.152,
+     "a_w": 23.05,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.35,
+     "z": 3.37,
+     "ratio_x": 1.42,
+     "per_genre_delta": {
+      "essay": 0.542,
+      "abstract": 0.168,
+      "poetry": -0.355
+     },
+     "per_genre_z": {
+      "essay": 4.28,
+      "abstract": 0.7,
+      "poetry": -1.26
+     },
+     "z_gpt4o_only": 0.95,
+     "boot_ci95": [
+      0.169,
+      0.553
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 정보의 양이 빠르게 증가함으로 인해 필요한 정보만을 효율적으",
+     "[human] 장의 길이를 줄여주며, 그로 인하여 문장 구조가 단순해져 번",
+     "[human]  선호하는 소비자들의 증가로 인해 기업의 고객 응대의 형태"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 1.152/10k (LLM 3.777/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_523_human_and_316_llm_hits"
+  },
+  {
+   "id": "TR_do_sino",
+   "pattern": "(을|를) 행(하|한|합|했|해)(다|고|는|며)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_do_verb",
+   "explanation_ko": "명사 뒤 '행하다'는 'perform'의 직역. '~하다'로 줄인다.",
+   "suggestions": [
+    "~하다"
+   ],
+   "legit_use_note_ko": "'선행을 행하다'처럼 행위 자체를 강조하는 경우.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2,
+     "klue/klue": 9
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.07,
+     "human_essay": 0.172,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.031,
+     "human_professional": 0.027
+    },
+    "hits_all_human": 13,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0029,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.029,
+     "a_w": 0.573,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.983,
+     "z": -1.22,
+     "ratio_x": 0.37,
+     "per_genre_delta": {
+      "essay": -1.343,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.33,
+      "abstract": -0.16,
+      "poetry": -0.23
+     },
+     "z_gpt4o_only": -0.81,
+     "boot_ci95": [
+      -1.682,
+      0.087
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 어렵거나 부지불식간에 위규를 행하는 일은 더 이상 없어야 한",
+     "[news] 어났다 고 말한다. 짝짓기를 행한 최초의 생명체는 약 10",
+     "[klue] 납세 및 기타 국민된 의무를 행하게 된다면, 어찌 내지인과"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.027/10k, LLM 0.012/10k (1 LLM hits, 13 human hits)",
+   "precision_evidence": "measured_on_13_human_and_1_llm_hits"
+  },
+  {
+   "id": "TR_make_feel",
+   "pattern": "(하|되|보|느끼|생각하)게 만(든다|듭니다|들었|들어|드는|들며)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_make_causative",
+   "explanation_ko": "'make ~ feel/do'의 직역. 사람이 아닌 주어가 사람을 조종하는 영어식 사역.",
+   "suggestions": [
+    "~게 한다",
+    "~하게 된다",
+    "~하도록 이끈다"
+   ],
+   "legit_use_note_ko": "원인-결과를 강조하는 일상 용법도 있다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 59,
+     "gpt4o/essay": 33,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 2,
+     "llm/poetry": 9,
+     "gpt4o/poetry": 1,
+     "news/news": 9,
+     "klue/klue": 15
+    },
+    "per10k": {
+     "katfish_human": 0.408,
+     "katfish_llm": 0.813,
+     "katfish_gpt4o": 1.153,
+     "news": 0.033,
+     "klue": 0.117,
+     "human_essay": 0.516,
+     "human_abstract": 0.0,
+     "human_poetry": 0.511,
+     "llm_essay": 1.092,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.531,
+     "all_human": 0.076,
+     "human_professional": 0.059
+    },
+    "hits_all_human": 32,
+    "hits_llm": 68,
+    "doc_frac": {
+     "human": 0.0071,
+     "llm": 0.0363
+    },
+    "prior": {
+     "p_bg_per10k": 0.061,
+     "a_w": 1.221,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.027,
+     "z": 3.17,
+     "ratio_x": 2.79,
+     "per_genre_delta": {
+      "essay": 1.271,
+      "abstract": -0.306,
+      "poetry": 0.719
+     },
+     "per_genre_z": {
+      "essay": 3.23,
+      "abstract": -0.24,
+      "poetry": 1.13
+     },
+     "z_gpt4o_only": 2.6,
+     "boot_ci95": [
+      0.513,
+      1.543
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news]  회사들이 이를 따르지 못하게 만들었다. 바슈롬은 당초 계획했",
+     "[news] 움을 줘 피부 구조를 탄탄하게 만들어준다 며 멜라닌 생성을 감",
+     "[news]  연구팀은 플라스틱을 유연하게 만들어주는 물질인 가소제가 포함"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.059/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_32_human_and_68_llm_hits"
+  },
+  {
+   "id": "TR_mean_obj",
+   "pattern": "(을|를) 의미(한다|합니다|하며|하는|했|하기)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_means",
+   "explanation_ko": "'X means Y' 직역. 정의문에서는 정상.",
+   "suggestions": [
+    "~이다",
+    "~라는 뜻이다"
+   ],
+   "legit_use_note_ko": "용어 정의에서는 자연스럽다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 55,
+     "gpt4o/essay": 13,
+     "human/abstract": 1,
+     "llm/abstract": 2,
+     "gpt4o/abstract": 2,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 44,
+     "klue/klue": 28
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.681,
+     "katfish_gpt4o": 0.509,
+     "news": 0.161,
+     "klue": 0.218,
+     "human_essay": 0.172,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 1.018,
+     "llm_abstract": 0.158,
+     "llm_poetry": 0.0,
+     "all_human": 0.178,
+     "human_professional": 0.18
+    },
+    "hits_all_human": 75,
+    "hits_llm": 57,
+    "doc_frac": {
+     "human": 0.0158,
+     "llm": 0.032
+    },
+    "prior": {
+     "p_bg_per10k": 0.181,
+     "a_w": 3.613,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.697,
+     "z": 2.14,
+     "ratio_x": 2.01,
+     "per_genre_delta": {
+      "essay": 1.495,
+      "abstract": -0.11,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 3.38,
+      "abstract": -0.17,
+      "poetry": -0.59
+     },
+     "z_gpt4o_only": 1.34,
+     "boot_ci95": [
+      0.43,
+      0.909
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 하여 그 종류를 결정하는것을 의미한다. Bidirectiona",
+     "[news] 기 위한 비즈니스 아이디어를 의미한다. 특히 일자리 문제 해결",
+     "[news] 과 자신의 정체성을 드러냄을 의미하는 커밍아웃 의 합성어다. "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.18/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_75_human_and_57_llm_hits"
+  },
+  {
+   "id": "TR_based_on",
+   "pattern": "(을|를) 기반으로|에 기반(한|하여|해서|하고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_based_on",
+   "explanation_ko": "'based on'의 직역. '~을 바탕으로', '~에 따라'.",
+   "suggestions": [
+    "~을 바탕으로",
+    "~에 따라",
+    "~에서"
+   ],
+   "legit_use_note_ko": "IT·데이터 분야에서 정착.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 24,
+     "gpt4o/essay": 10,
+     "human/abstract": 17,
+     "llm/abstract": 53,
+     "gpt4o/abstract": 29,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 196,
+     "klue/klue": 34
+    },
+    "per10k": {
+     "katfish_human": 0.918,
+     "katfish_llm": 0.92,
+     "katfish_gpt4o": 1.323,
+     "news": 0.718,
+     "klue": 0.265,
+     "human_essay": 0.086,
+     "human_abstract": 4.173,
+     "human_poetry": 0.0,
+     "llm_essay": 0.444,
+     "llm_abstract": 4.176,
+     "llm_poetry": 0.0,
+     "all_human": 0.589,
+     "human_professional": 0.609
+    },
+    "hits_all_human": 248,
+    "hits_llm": 77,
+    "doc_frac": {
+     "human": 0.0463,
+     "llm": 0.0431
+    },
+    "prior": {
+     "p_bg_per10k": 0.574,
+     "a_w": 11.488,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.27,
+     "z": 1.59,
+     "ratio_x": 1.31,
+     "per_genre_delta": {
+      "essay": 0.194,
+      "abstract": 0.511,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.59,
+      "abstract": 2.27,
+      "poetry": -1.04
+     },
+     "z_gpt4o_only": 1.35,
+     "boot_ci95": [
+      0.026,
+      0.481
+     ]
+    },
+    "signal_genres": [
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human] ayesian Model)을 기반으로 서술어에 가능한 의미역을",
+     "[human] 를 프레임 시멘틱스의 구조에 기반하여 기계가 읽을 수 있는 임",
+     "[human] der-decoder 모델을 기반으로, 주어진 입력 열에 대응"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "pro-human 0.609/10k (LLM 0.92/10k): downgraded to suggest-only",
+   "precision_evidence": "measured_on_248_human_and_77_llm_hits"
+  },
+  {
+   "id": "TR_demand_passive",
+   "pattern": "(이|가) 요구(된다|됩니다|되는|되며|되고|되어)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "nominal_passive",
+   "explanation_ko": "'is required'의 직역.",
+   "suggestions": [
+    "~해야 한다",
+    "~이 필요하다"
+   ],
+   "legit_use_note_ko": "규정 문체.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 27,
+     "gpt4o/essay": 10,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 8,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.323,
+     "katfish_gpt4o": 0.339,
+     "news": 0.029,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.5,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.029,
+     "human_professional": 0.03
+    },
+    "hits_all_human": 12,
+    "hits_llm": 27,
+    "doc_frac": {
+     "human": 0.0024,
+     "llm": 0.016
+    },
+    "prior": {
+     "p_bg_per10k": 0.031,
+     "a_w": 0.623,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.267,
+     "z": 1.41,
+     "ratio_x": 3.55,
+     "per_genre_delta": {
+      "essay": 2.941,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.3,
+      "abstract": -0.17,
+      "poetry": -0.24
+     },
+     "z_gpt4o_only": 1.37,
+     "boot_ci95": [
+      1.036,
+      1.429
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 더 긴 시간과 더 큰 비용이 요구된다. 코인 평가의 적정 가격",
+     "[news] 를 보는 경우가 많아 주의가 요구됩니다. 한국소비자원은 올해 1",
+     "[news]  위해 작목별 꼼꼼한 관리가 요구된다. 벼 논·밭둑이나 제방이"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.03/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_12_human_and_27_llm_hits"
+  },
+  {
+   "id": "TR_for_whom",
+   "pattern": "에게 있어(서|서는|서도)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "japanese_ni_totte",
+   "explanation_ko": "일본어 'にとって'. '~에게는', '~로서는'.",
+   "suggestions": [
+    "~에게는",
+    "~(으)로서는"
+   ],
+   "legit_use_note_ko": "공문서 외에는 대체.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.023,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.01,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 4,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0009,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.047,
+     "z": -0.98,
+     "ratio_x": 0.35,
+     "per_genre_delta": {
+      "essay": -1.949,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.19,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.55,
+     "boot_ci95": [
+      -1.516,
+      -0.52
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 여립을 제거하는 일은 서인에게 있어 동인 세력의 상승세를 꺾",
+     "[klue]  약속한 것이다. 제왕 건에게 있어, 이미 대세는 기울어졌고",
+     "[klue] 됨). 이는 당시의 서민들에게 있어서 관현악곡을 듣는 것은 고"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.007/10k, LLM 0.0/10k (0 LLM hits, 4 human hits)",
+   "precision_evidence": "measured_on_4_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_cleft",
+   "pattern": "(것은|건) 바로 [^.!?\\n]{1,40}(것)?(이다|입니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "cleft_it_is_that",
+   "explanation_ko": "영어 강조 구문 'It is ~ that'의 직역.",
+   "suggestions": [
+    "바로 ~가 ~했다"
+   ],
+   "legit_use_note_ko": "강조 문체.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 7,
+     "gpt4o/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.084,
+     "katfish_gpt4o": 0.068,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.13,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 2,
+    "hits_llm": 7,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0043
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.436,
+     "z": 0.58,
+     "ratio_x": 1.55,
+     "per_genre_delta": {
+      "essay": 0.759,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.85,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.2,
+     "boot_ci95": [
+      -0.466,
+      0.929
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news]  반짝이는 것처럼 보이는 것은 바로 이 대기의 효과 때문이다. 개울물 아래 있는 돌들"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_7_llm_hits"
+  },
+  {
+   "id": "TR_known_as",
+   "pattern": "(으)?로 알려져 (있|왔|있다|있습니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_is_known_as",
+   "explanation_ko": "'is known as'의 직역 피동.",
+   "suggestions": [
+    "~(으)로 불린다",
+    "~이라고들 한다"
+   ],
+   "legit_use_note_ko": "백과사전 문체에서 정착.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 2,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 13,
+     "klue/klue": 15
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.024,
+     "katfish_gpt4o": 0.034,
+     "news": 0.048,
+     "klue": 0.117,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.037,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.067,
+     "human_professional": 0.069
+    },
+    "hits_all_human": 28,
+    "hits_llm": 2,
+    "doc_frac": {
+     "human": 0.006,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.071,
+     "a_w": 1.42,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.205,
+     "z": -0.32,
+     "ratio_x": 0.81,
+     "per_genre_delta": {
+      "essay": 0.028,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.03,
+      "abstract": -0.26,
+      "poetry": -0.37
+     },
+     "z_gpt4o_only": 0.15,
+     "boot_ci95": [
+      -0.536,
+      0.096
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 공기 운송은 최고난도 물류로 알려져 있다. CJ대한통운은 성공적",
+     "[news]  히트시킨 애니메이션 명가로 알려져 있다. 나혼렙 애니메이션은 ",
+     "[news]  유럽은 K 푸드의 불모지로 알려져 있지만 최근 아시안 푸드와 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.069/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_28_human_and_2_llm_hits"
+  },
+  {
+   "id": "TR_lie_in",
+   "pattern": "에 놓여 (있|져)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_lies_in",
+   "explanation_ko": "'lies in'의 직역.",
+   "suggestions": [
+    "~에 있다",
+    "~에 달려 있다"
+   ],
+   "legit_use_note_ko": "비유적 표현에서는 자연스럽다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 3,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 3,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.048,
+     "katfish_gpt4o": 0.034,
+     "news": 0.011,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.056,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.01,
+     "human_professional": 0.01
+    },
+    "hits_all_human": 4,
+    "hits_llm": 4,
+    "doc_frac": {
+     "human": 0.0009,
+     "llm": 0.0025
+    },
+    "prior": {
+     "p_bg_per10k": 0.011,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.613,
+     "z": 0.63,
+     "ratio_x": 1.85,
+     "per_genre_delta": {
+      "essay": 1.095,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": 0.72,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": 0.33,
+     "boot_ci95": [
+      -0.329,
+      1.068
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 중이 높아 국제 경쟁 열위에 놓여 있다는 게 보고서의 판단이다",
+     "[news] 밖의 결제수단은 제도 바깥에 놓여 있는 상황이다. 가상 화폐 ",
+     "[news] 만 벌써 수년째 공백 상태에 놓여 있는 셈이다. 한은은 통화신"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.01/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_4_human_and_4_llm_hits"
+  },
+  {
+   "id": "TR_there_exists",
+   "pattern": "(이|가) 존재(한다|합니다|하는|했|하며|하고|해)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_there_is",
+   "explanation_ko": "'there exists'의 직역. '~이 있다'.",
+   "suggestions": [
+    "~이/가 있다"
+   ],
+   "legit_use_note_ko": "논리·철학 문체.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 102,
+     "gpt4o/essay": 44,
+     "human/abstract": 1,
+     "llm/abstract": 4,
+     "gpt4o/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 3,
+     "gpt4o/poetry": 1,
+     "news/news": 10,
+     "klue/klue": 17
+    },
+    "per10k": {
+     "katfish_human": 0.357,
+     "katfish_llm": 1.303,
+     "katfish_gpt4o": 1.628,
+     "news": 0.037,
+     "klue": 0.132,
+     "human_essay": 0.516,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 1.888,
+     "llm_abstract": 0.315,
+     "llm_poetry": 0.177,
+     "all_human": 0.081,
+     "human_professional": 0.069
+    },
+    "hits_all_human": 34,
+    "hits_llm": 109,
+    "doc_frac": {
+     "human": 0.0065,
+     "llm": 0.0554
+    },
+    "prior": {
+     "p_bg_per10k": 0.069,
+     "a_w": 1.371,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.454,
+     "z": 4.5,
+     "ratio_x": 4.28,
+     "per_genre_delta": {
+      "essay": 1.79,
+      "abstract": 0.512,
+      "poetry": 0.724
+     },
+     "per_genre_z": {
+      "essay": 4.7,
+      "abstract": 0.66,
+      "poetry": 0.74
+     },
+     "z_gpt4o_only": 3.83,
+     "boot_ci95": [
+      1.083,
+      1.87
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human]  데이터가 필요하다는 단점이 존재한다. 이에 본 논문에서는 도",
+     "[news] 는 이유는 대기 내에 메탄이 존재하고 있기 때문이다. 메탄은 ",
+     "[news]  디지털 분야에서 틈새시장이 존재하는 유럽이 네이버를 비롯한 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.069/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_34_human_and_109_llm_hits"
+  },
+  {
+   "id": "TR_genitive_chain",
+   "pattern": "[가-힣]+의 [가-힣]+의 [가-힣]+의 [가-힣]+",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "genitive_chain",
+   "explanation_ko": "'의'가 세 번 연속되는 일본어·영어 소유격 직역(の/of 연쇄).",
+   "suggestions": [
+    "명사구 분리",
+    "서술어로 풀기"
+   ],
+   "legit_use_note_ko": "고유명사, 기관 명칭에서는 불가피.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.012,
+     "human_professional": 0.012
+    },
+    "hits_all_human": 5,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0011,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.014,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 캐나다 그리고 주요 서구 국가들의 대부분의 성인들의 하루 평균 걸음 수는 5000",
+     "[klue] 어떠한 경우에도 플로리다 인디언의 하의 노예들의 부담은 영국령 식민지의 그것보다",
+     "[klue] 고는 하지 못하고 오히려 전체주의 국가의 하나의 특징을 이루는 고도의 정치화의 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.012/10k, LLM 0.0/10k (0 LLM hits, 5 human hits)",
+   "precision_evidence": "measured_on_5_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_been_ing",
+   "pattern": "(해|되어|발전해|증가해|감소해|확대되어|진행되어) 오고 있(다|습니다|는|으며)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_present_perfect_progressive",
+   "explanation_ko": "'has been -ing'의 직역.",
+   "suggestions": [
+    "~해 왔다",
+    "~하고 있다"
+   ],
+   "legit_use_note_ko": "변화 과정 강조에는 쓰인다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 3
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.011,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 서 현재의 법 체계를 유지해 오고 있다. 다만 유선 전환 시기 ",
+     "[news] 해서 한 20년 동안 운영해 오고 있습니다. 이제까지 누적적으로 한",
+     "[news]  2016년부터 함께 운영해 오고 있다. 특히 카카오는 ESG "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.007/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_3_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_more_and_more",
+   "pattern": "점점 더 (많|커|높|중요|다양)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_more_and_more",
+   "explanation_ko": "'more and more'의 직역. '점점 많은', '갈수록 많은'.",
+   "suggestions": [
+    "점점 많은",
+    "갈수록 ~해지는"
+   ],
+   "legit_use_note_ko": "구어에서 흔하다.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 7,
+     "gpt4o/essay": 6,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 4,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.096,
+     "katfish_gpt4o": 0.203,
+     "news": 0.015,
+     "klue": 0.023,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.13,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.019,
+     "human_professional": 0.017
+    },
+    "hits_all_human": 8,
+    "hits_llm": 8,
+    "doc_frac": {
+     "human": 0.0016,
+     "llm": 0.0049
+    },
+    "prior": {
+     "p_bg_per10k": 0.019,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.598,
+     "z": 0.82,
+     "ratio_x": 1.82,
+     "per_genre_delta": {
+      "essay": 0.759,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": 0.85,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": 1.13,
+     "boot_ci95": [
+      -0.384,
+      1.15
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 향후 해외건설시장 규모는 점점 더 커질 전망이다. 네옴시티 수",
+     "[news] 날 투자계획을 발표하면서 점점 더 중요해지고 있는 아일랜드를 아",
+     "[news] 441억원으로 적자 폭이 점점 더 커졌다. 올해 1분기에는 2"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.017/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_8_human_and_8_llm_hits"
+  },
+  {
+   "id": "TR_doing_now_middle",
+   "pattern": "(하|되|가|보|있|가고|하고) 있는 중(이다|입니다|이었|이며|이라)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_progressive_in_process",
+   "explanation_ko": "진행 표지 '-고 있다'와 '중'을 겹쳐 쓴 구문.",
+   "suggestions": [
+    "~하고 있다",
+    "~하는 중이다"
+   ],
+   "legit_use_note_ko": "강조 용법.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "TR_caus_siki",
+   "pattern": "(소개|사용|이용|활용|진행|제공|표현|대비)시키(다|고|며|면|는|지|어|여|ㄴ|ㄹ|도록|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "causative_siki_overuse",
+   "explanation_ko": "'~시키다'를 직접 동작에 붙이는 일본어·영어 사역 직역. '~하다'가 정상.",
+   "suggestions": [
+    "~하다",
+    "~을 하게 하다"
+   ],
+   "legit_use_note_ko": "'교육시키다', '이해시키다'는 사역 의미가 있는 정상 단어(이 패턴에 넣지 않았다).",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 신으로 추대하려는 음모를 진행시키고 있었다. 10월말 다시 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "TR_part_of",
+   "pattern": "의 일환(으로|이다|이며|입니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "bureaucratic_part_of",
+   "explanation_ko": "'as part of'의 직역으로 쓰이는 공문서 투.",
+   "suggestions": [
+    "~의 하나로",
+    "~하려고"
+   ],
+   "legit_use_note_ko": "정식 사업 보고서에서 관용.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 4,
+     "gpt4o/essay": 1,
+     "human/abstract": 1,
+     "llm/abstract": 2,
+     "gpt4o/abstract": 2,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 53,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.072,
+     "katfish_gpt4o": 0.102,
+     "news": 0.194,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 0.074,
+     "llm_abstract": 0.158,
+     "llm_poetry": 0.0,
+     "all_human": 0.138,
+     "human_professional": 0.143
+    },
+    "hits_all_human": 58,
+    "hits_llm": 6,
+    "doc_frac": {
+     "human": 0.0127,
+     "llm": 0.0031
+    },
+    "prior": {
+     "p_bg_per10k": 0.143,
+     "a_w": 2.866,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.132,
+     "z": -0.31,
+     "ratio_x": 0.88,
+     "per_genre_delta": {
+      "essay": 0.023,
+      "abstract": -0.076,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.03,
+      "abstract": -0.11,
+      "poetry": -0.52
+     },
+     "z_gpt4o_only": 0.21,
+     "boot_ci95": [
+      -0.504,
+      0.176
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human] 의 자동 평가 시스템 개발의 일환으로, 자동 평가 결과에 대한",
+     "[news] 는 한국형발사체 고도화사업의 일환으로 체계종합기업을 선정한다.",
+     "[news]  주택공급정책인 8.4대책의 일환으로 이야기 됐다. 발표 당시"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.143/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_58_human_and_6_llm_hits"
+  },
+  {
+   "id": "TR_aim_to_do",
+   "pattern": "(을|를) 목표로 (한다|합니다|하는|하며|하고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_aim",
+   "explanation_ko": "'aim at'의 직역.",
+   "suggestions": [
+    "~하려고 한다",
+    "~을 노린다"
+   ],
+   "legit_use_note_ko": "사업 계획 문체.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 5,
+     "human/abstract": 2,
+     "llm/abstract": 22,
+     "gpt4o/abstract": 9,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 20,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.323,
+     "katfish_gpt4o": 0.305,
+     "news": 0.073,
+     "klue": 0.039,
+     "human_essay": 0.0,
+     "human_abstract": 0.491,
+     "human_poetry": 0.0,
+     "llm_essay": 0.093,
+     "llm_abstract": 1.734,
+     "llm_poetry": 0.0,
+     "all_human": 0.064,
+     "human_professional": 0.067
+    },
+    "hits_all_human": 27,
+    "hits_llm": 27,
+    "doc_frac": {
+     "human": 0.0058,
+     "llm": 0.0142
+    },
+    "prior": {
+     "p_bg_per10k": 0.064,
+     "a_w": 1.271,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.154,
+     "z": 2.46,
+     "ratio_x": 3.17,
+     "per_genre_delta": {
+      "essay": 0.746,
+      "abstract": 1.656,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.77,
+      "abstract": 2.8,
+      "poetry": -0.35
+     },
+     "z_gpt4o_only": 1.32,
+     "boot_ci95": [
+      0.654,
+      1.541
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human] 하는 시스템을 설계하는 것을 목표로 한다. 이를 위해 활용 가능한",
+     "[human] TLINK를 추출하는 것만을 목표로 한다. 또한, 사람이 직접 태",
+     "[news] 션 공급자 로 성장하는 것을 목표로 하고 있다. 코오롱그룹 관계자"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.067/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_27_human_and_27_llm_hits"
+  },
+  {
+   "id": "TR_emphasize_point",
+   "pattern": "는 점을 (강조|지적|시사)(한다|합니다|하며|했|하고|하는)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "calque_point_out",
+   "explanation_ko": "'emphasize the fact that'의 직역.",
+   "suggestions": [
+    "~라고 강조한다"
+   ],
+   "legit_use_note_ko": "학술문 정착 표현.",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0106.pdf",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 2,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 8,
+     "klue/klue": 7
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.024,
+     "katfish_gpt4o": 0.034,
+     "news": 0.029,
+     "klue": 0.054,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.037,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.036,
+     "human_professional": 0.037
+    },
+    "hits_all_human": 15,
+    "hits_llm": 2,
+    "doc_frac": {
+     "human": 0.0033,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.039,
+     "a_w": 0.772,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.02,
+     "z": -0.02,
+     "ratio_x": 0.98,
+     "per_genre_delta": {
+      "essay": 0.427,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.33,
+      "abstract": -0.19,
+      "poetry": -0.27
+     },
+     "z_gpt4o_only": 0.26,
+     "boot_ci95": [
+      -0.536,
+      0.352
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 성하는 최초의 치킨대학이라는 점을 강조했다. BBQ 점포를 내기 ",
+     "[news] 리 부문에서 성과가 있었다는 점을 강조했다. 고 위원장은 취임 시",
+     "[news]  구조적인 조치가 필요하다는 점을 강조하고 있다. 이탈리아와 스페인"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.037/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_15_human_and_2_llm_hits"
+  },
+  {
+   "id": "TR_thing_actor",
+   "pattern": "(기술|시스템|경험|문화|사회|시간)(이|은) (우리|사람들|우리의 삶|인간)(을|에게)[^.!?\\n]{0,12}(가능하게|도와|이끌|만들어)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "inanimate_subject",
+   "explanation_ko": "사물·추상물이 행위 주체인 영어식 문장(공공언어 바로 쓰기: 사물 주어는 영어 번역 투).",
+   "suggestions": [
+    "사람을 주어로 다시 쓴다"
+   ],
+   "legit_use_note_ko": "수사적·학술적 서술.",
+   "source_url": "https://www.korean.go.kr/front/etcData/etcDataView.do?etc_seq=699&mn_id=56&pageIndex=1",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.105,
+     "z": -0.1,
+     "ratio_x": 0.9,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.539,
+      0.324
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.0/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_0_human_and_1_llm_hits"
+  }
+ ]
+}

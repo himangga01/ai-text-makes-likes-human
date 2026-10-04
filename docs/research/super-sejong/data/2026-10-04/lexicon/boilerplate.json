@@ -1,0 +1,5776 @@
+{
+ "resource": "boilerplate",
+ "meta": {
+  "generated": "2026-10-04",
+  "corpus_stats": {
+   "human/essay": {
+    "docs": 181,
+    "chars": 116208
+   },
+   "llm/essay": {
+    "docs": 590,
+    "chars": 540146
+   },
+   "gpt4o/essay": {
+    "docs": 181,
+    "chars": 203441
+   },
+   "human/abstract": {
+    "docs": 100,
+    "chars": 40736
+   },
+   "llm/abstract": {
+    "docs": 278,
+    "chars": 126908
+   },
+   "gpt4o/abstract": {
+    "docs": 100,
+    "chars": 53071
+   },
+   "human/poetry": {
+    "docs": 189,
+    "chars": 39141
+   },
+   "llm/poetry": {
+    "docs": 756,
+    "chars": 169593
+   },
+   "gpt4o/poetry": {
+    "docs": 189,
+    "chars": 38366
+   },
+   "news/news": {
+    "docs": 2740,
+    "chars": 2728229
+   },
+   "klue/klue": {
+    "docs": 1283,
+    "chars": 1284820
+   }
+  },
+  "method": "Calibrate the Super Sejong lexical resources on real Korean text.\n\nInputs (all local, read-only):\n  KatFish dataset  research/B/katfish_repo/katfish_dataset/{essay,abstract,poetry}.jsonl  (label 0=human, 1=LLM)\n  Naver news       research/B/naver_news_test.csv  (human, professional)\n  KLUE-MRC ctx     research/B/klue_mrc_ctx.json    (human, wiki/news/etc.)\nOutputs: five JSON resource files + calibration_summary.json in --out.\n\nMethod\n  * hits per 10k characters per corpus group (regex finditer, non-overlapping)\n  * log-odds ratio with informative Dirichlet prior (Monroe, Colaresi & Quinn 2008, \"Fightin' Words\"):\n      delta = log((yL+a)/(nL+a0-yL-a)) - log((yH+a)/(nH+a0-yH-a)),  var ~ 1/(yL+a)+1/(yH+a),  z = delta/sqrt(var)\n    exposure n is the number of characters, a_w = a0 * p_bg(w) with p_bg = hits per character in the background\n    (human news + KLUE), a0 = A0 pseudo-characters. Computed per genre and combined by inverse-variance weighting\n    (stratified, so genre mix differences between human and LLM sets do not leak into the score).\n  * document-level bootstrap (resample docs within genre x class) for a 95% interval of the stratified delta",
+  "a0": 200000.0,
+  "bootstrap_reps": 300,
+  "tier_legend": {
+   "A": "enable by default",
+   "B": "suggest-only / needs context guard",
+   "C": "disabled (kept for the record)",
+   "allow": "exemption list entry"
+  }
+ },
+ "entries": [
+  {
+   "id": "BP_diverse",
+   "pattern": "다양한 (관점|분야|측면|요인|방법|방식|의견|문화|경험|역할|형태|영역)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'다양한 + 명사'는 LLM이 범주를 얼버무릴 때 자주 쓰는 틀.",
+   "suggestions": [
+    "구체적 항목 나열",
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "통계·분류 설명에서 정상.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 208,
+     "gpt4o/essay": 97,
+     "human/abstract": 7,
+     "llm/abstract": 24,
+     "gpt4o/abstract": 8,
+     "human/poetry": 0,
+     "llm/poetry": 2,
+     "news/news": 87,
+     "klue/klue": 24
+    },
+    "per10k": {
+     "katfish_human": 0.357,
+     "katfish_llm": 2.797,
+     "katfish_gpt4o": 3.561,
+     "news": 0.319,
+     "klue": 0.187,
+     "human_essay": 0.0,
+     "human_abstract": 1.718,
+     "human_poetry": 0.0,
+     "llm_essay": 3.851,
+     "llm_abstract": 1.891,
+     "llm_poetry": 0.118,
+     "all_human": 0.28,
+     "human_professional": 0.291
+    },
+    "hits_all_human": 118,
+    "hits_llm": 234,
+    "doc_frac": {
+     "human": 0.0238,
+     "llm": 0.1047
+    },
+    "prior": {
+     "p_bg_per10k": 0.278,
+     "a_w": 5.557,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.124,
+     "z": 4.69,
+     "ratio_x": 3.08,
+     "per_genre_delta": {
+      "essay": 2.799,
+      "abstract": 0.55,
+      "poetry": -0.128
+     },
+     "per_genre_z": {
+      "essay": 6.51,
+      "abstract": 1.63,
+      "poetry": -0.23
+     },
+     "z_gpt4o_only": 3.74,
+     "boot_ci95": [
+      0.791,
+      1.454
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human]  연구에서는 정확하면서도 다양한 분야의 텍스트에 적용 가능한 ",
+     "[human] 보 검색, 기계 번역 등 다양한 분야에서 유용하게 사용되고 있",
+     "[human]  데이터에 나타나지 않은 다양한 형태의 질의문에 대해 응답을 "
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.124 (CI [0.791, 1.454]), z=4.69, LLM 2.797 vs human 0.357/10k, pro-human/LLM=0.10",
+   "precision_evidence": "measured_on_118_human_and_234_llm_hits"
+  },
+  {
+   "id": "BP_important_role",
+   "pattern": "(중요한|큰|핵심적인|주요한|필수적인) 역할을 (한다|합니다|하고|했|하며|하는|할 )",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'중요한 역할을 하다'는 구체적 기능을 대체하는 상투어.",
+   "suggestions": [
+    "구체적 기능 서술"
+   ],
+   "legit_use_note_ko": "역할이 실제로 핵심일 때.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 84,
+     "gpt4o/essay": 30,
+     "human/abstract": 0,
+     "llm/abstract": 9,
+     "gpt4o/abstract": 5,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 11,
+     "klue/klue": 11
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 1.124,
+     "katfish_gpt4o": 1.187,
+     "news": 0.04,
+     "klue": 0.086,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 1.555,
+     "llm_abstract": 0.709,
+     "llm_poetry": 0.059,
+     "all_human": 0.052,
+     "human_professional": 0.054
+    },
+    "hits_all_human": 22,
+    "hits_llm": 94,
+    "doc_frac": {
+     "human": 0.0047,
+     "llm": 0.0536
+    },
+    "prior": {
+     "p_bg_per10k": 0.056,
+     "a_w": 1.121,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 2.074,
+     "z": 3.5,
+     "ratio_x": 7.96,
+     "per_genre_delta": {
+      "essay": 3.479,
+      "abstract": 1.894,
+      "poetry": 0.202
+     },
+     "per_genre_z": {
+      "essay": 3.66,
+      "abstract": 1.9,
+      "poetry": 0.17
+     },
+     "z_gpt4o_only": 3.04,
+     "boot_ci95": [
+      1.797,
+      2.293
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news]  상황에서 이착륙시 매우 중요한 역할을 한다. 사진 RTCA 보고서 ",
+     "[news]  상황에서 이착륙시 매우 중요한 역할을 한다. 당장은 이통3사가 사용",
+     "[news]  석유·가스 가격 상승도 중요한 역할을 했다고 분석했다. 실제 에너"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=2.074 (CI [1.797, 2.293]), z=3.5, LLM 1.124 vs human 0.0/10k, pro-human/LLM=0.05",
+   "precision_evidence": "measured_on_22_human_and_94_llm_hits"
+  },
+  {
+   "id": "BP_can_be_said",
+   "pattern": "(라고|다고|이라고) (할|볼) 수 (있(다|습니다|으며|겠|어)|있는)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "단정을 피하는 헤지 '~라고 할 수 있다'.",
+   "suggestions": [
+    "~이다"
+   ],
+   "legit_use_note_ko": "의견 완화가 필요한 학술문.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 11,
+     "llm/essay": 49,
+     "gpt4o/essay": 19,
+     "human/abstract": 1,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 0,
+     "news/news": 19,
+     "klue/klue": 17
+    },
+    "per10k": {
+     "katfish_human": 0.663,
+     "katfish_llm": 0.586,
+     "katfish_gpt4o": 0.644,
+     "news": 0.07,
+     "klue": 0.132,
+     "human_essay": 0.947,
+     "human_abstract": 0.245,
+     "human_poetry": 0.255,
+     "llm_essay": 0.907,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.116,
+     "human_professional": 0.091
+    },
+    "hits_all_human": 49,
+    "hits_llm": 49,
+    "doc_frac": {
+     "human": 0.0102,
+     "llm": 0.0277
+    },
+    "prior": {
+     "p_bg_per10k": 0.091,
+     "a_w": 1.819,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.29,
+     "z": 1.02,
+     "ratio_x": 1.34,
+     "per_genre_delta": {
+      "essay": 0.527,
+      "abstract": -0.744,
+      "poetry": -0.873
+     },
+     "per_genre_z": {
+      "essay": 1.69,
+      "abstract": -0.78,
+      "poetry": -0.92
+     },
+     "z_gpt4o_only": 0.28,
+     "boot_ci95": [
+      -0.127,
+      0.698
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human]  관계 추출 모델을 학습한다고 볼 수 있다. 본 논문에서는 원격 지",
+     "[news]  NTT도코모와 같은 현상이라고 볼 수 있다 고 설명했다. 복구가 늦",
+     "[news] 이고 안전한 기술을 개발했다고 볼 수 있다”고 설명했다. 개발한 기"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.29, z=1.02); disabled",
+   "precision_evidence": "measured_on_49_human_and_49_llm_hits"
+  },
+  {
+   "id": "BP_big_influence",
+   "pattern": "(큰|긍정적인|부정적인|중대한|막대한) 영향을 (미치|미칩|끼치|끼칩|주)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'큰 영향을 미치다'는 효과를 구체화하지 않는 상투어.",
+   "suggestions": [
+    "무엇이 어떻게 변하는지 서술"
+   ],
+   "legit_use_note_ko": "사전에도 있는 정상 연어.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 35,
+     "gpt4o/essay": 15,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 3,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.418,
+     "katfish_gpt4o": 0.509,
+     "news": 0.011,
+     "klue": 0.031,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.648,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.019,
+     "human_professional": 0.017
+    },
+    "hits_all_human": 8,
+    "hits_llm": 35,
+    "doc_frac": {
+     "human": 0.0018,
+     "llm": 0.0191
+    },
+    "prior": {
+     "p_bg_per10k": 0.019,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.622,
+     "z": 2.26,
+     "ratio_x": 5.06,
+     "per_genre_delta": {
+      "essay": 2.314,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.78,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 2.08,
+     "boot_ci95": [
+      1.107,
+      1.782
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 에너지 수입 증가가 워낙 큰 영향을 미치고 있기 때문에 적자를 보",
+     "[news] 의 경기 부양책도 증시에 긍정적인 영향을 주고 있다는 분석이 있습니다",
+     "[news] 른 K팝 아티스트에게까지 큰 영향을 미치지는 않을 것이다. 오히려"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.622 (CI [1.107, 1.782]), z=2.26, LLM 0.418 vs human 0.051/10k, pro-human/LLM=0.04",
+   "precision_evidence": "measured_on_8_human_and_35_llm_hits"
+  },
+  {
+   "id": "BP_matters_to_do",
+   "pattern": "(하는|되는|가지는|갖는|지키는|이해하는|유지하는|노력하는) ?것이 (매우 |무엇보다 |더욱 )?중요(하다|합니다|하며|하고|하다고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~하는 것이 중요하다' 결론 투.",
+   "suggestions": [
+    "(삭제)",
+    "~해야 한다"
+   ],
+   "legit_use_note_ko": "논설 결론에서 흔함.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 143,
+     "gpt4o/essay": 58,
+     "human/abstract": 1,
+     "llm/abstract": 2,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 1.733,
+     "katfish_gpt4o": 2.001,
+     "news": 0.007,
+     "klue": 0.023,
+     "human_essay": 0.0,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 2.647,
+     "llm_abstract": 0.158,
+     "llm_poetry": 0.0,
+     "all_human": 0.014,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 6,
+    "hits_llm": 145,
+    "doc_frac": {
+     "human": 0.0013,
+     "llm": 0.0727
+    },
+    "prior": {
+     "p_bg_per10k": 0.014,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.471,
+     "z": 1.91,
+     "ratio_x": 4.35,
+     "per_genre_delta": {
+      "essay": 4.809,
+      "abstract": 0.205,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 3.39,
+      "abstract": 0.2,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 1.8,
+     "boot_ci95": [
+      0.585,
+      2.613
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 자의 화행을 정확하게 파악하는 것이 매우 중요하다. 본 논문에서는 한국어 ",
+     "[news]  등 개인 위생수칙을 준수하는 것이 중요하다고 당부했다. 또 귀국 후",
+     "[news] 율적인 최적의 대안을 적용하는 것이 중요하다. 에너지기술연구원은 20"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['essay']: per-genre z=[3.39], delta=[4.809]; pooled delta=1.471",
+   "precision_evidence": "measured_on_6_human_and_145_llm_hits"
+  },
+  {
+   "id": "BP_through_this",
+   "pattern": "(^|[.!?] ?)이를 통해",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "문장 머리 '이를 통해'.",
+   "suggestions": [
+    "그래서",
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 173,
+     "gpt4o/essay": 66,
+     "human/abstract": 2,
+     "llm/abstract": 24,
+     "gpt4o/abstract": 9,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 58,
+     "klue/klue": 11
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 2.355,
+     "katfish_gpt4o": 2.543,
+     "news": 0.213,
+     "klue": 0.086,
+     "human_essay": 0.086,
+     "human_abstract": 0.491,
+     "human_poetry": 0.0,
+     "llm_essay": 3.203,
+     "llm_abstract": 1.891,
+     "llm_poetry": 0.0,
+     "all_human": 0.171,
+     "human_professional": 0.175
+    },
+    "hits_all_human": 72,
+    "hits_llm": 197,
+    "doc_frac": {
+     "human": 0.0154,
+     "llm": 0.0954
+    },
+    "prior": {
+     "p_bg_per10k": 0.173,
+     "a_w": 3.464,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.646,
+     "z": 5.37,
+     "ratio_x": 5.19,
+     "per_genre_delta": {
+      "essay": 2.827,
+      "abstract": 1.309,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 5.9,
+      "abstract": 2.79,
+      "poetry": -0.57
+     },
+     "z_gpt4o_only": 4.31,
+     "boot_ci95": [
+      1.311,
+      1.873
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human] 어간부를 구분하도록 하였다. 이를 통해 구축된 소규모 형태분석 ",
+     "[human] 율로 나타났음을 확인하였다. 이를 통해 키워드의 극성에 의존하기",
+     "[news] 체 개발한 제품을 선보인다. 이를 통해 최근 급성장하고 있는 국"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.646 (CI [1.311, 1.873]), z=5.37, LLM 2.355 vs human 0.153/10k, pro-human/LLM=0.07",
+   "precision_evidence": "measured_on_72_human_and_197_llm_hits"
+  },
+  {
+   "id": "BP_in_conclusion",
+   "pattern": "(^|[.!?\\n] ?)(결론적으로|요약하자면|요약하면|종합하면|종합적으로|결과적으로|마무리하며|마치며|맺으며)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "결론 신호어.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "긴 글 결론.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 301,
+     "gpt4o/essay": 143,
+     "human/abstract": 0,
+     "llm/abstract": 20,
+     "gpt4o/abstract": 11,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 3.837,
+     "katfish_gpt4o": 5.222,
+     "news": 0.004,
+     "klue": 0.016,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 5.573,
+     "llm_abstract": 1.576,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 321,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.197
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 3.496,
+     "z": 3.89,
+     "ratio_x": 32.99,
+     "per_genre_delta": {
+      "essay": 5.552,
+      "abstract": 3.408,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 3.92,
+      "abstract": 2.38,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 3.77,
+     "boot_ci95": [
+      3.297,
+      3.633
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news] 0점 단위로 나눠 공시한다. 결과적으로 은행연합회에서 은행별로 ",
+     "[klue] 서구화의 노력은 계속되었다. 결과적으로, 터키는 가장 서구화된 ",
+     "[klue] 억하여 활용하는 방식이었다. 결론적으로 19단의 암기는 그것만으"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=3.496 (CI [3.297, 3.633]), z=3.89, LLM 3.837 vs human 0.0/10k, pro-human/LLM=0.00",
+   "precision_evidence": "measured_on_3_human_and_321_llm_hits"
+  },
+  {
+   "id": "BP_furthermore",
+   "pattern": "(^|[.!?\\n] ?)(더 나아가|나아가|또한|아울러|뿐만 아니라|이와 더불어|이와 함께)[ ,]",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "문장 머리 첨가 접속어 남용.",
+   "suggestions": [
+    "(삭제)",
+    "그리고"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 43,
+     "llm/essay": 597,
+     "gpt4o/essay": 173,
+     "human/abstract": 21,
+     "llm/abstract": 84,
+     "gpt4o/abstract": 24,
+     "human/poetry": 1,
+     "llm/poetry": 1,
+     "news/news": 434,
+     "klue/klue": 198
+    },
+    "per10k": {
+     "katfish_human": 3.315,
+     "katfish_llm": 8.152,
+     "katfish_gpt4o": 6.681,
+     "news": 1.591,
+     "klue": 1.541,
+     "human_essay": 3.7,
+     "human_abstract": 5.155,
+     "human_poetry": 0.255,
+     "llm_essay": 11.053,
+     "llm_abstract": 6.619,
+     "llm_poetry": 0.059,
+     "all_human": 1.656,
+     "human_professional": 1.611
+    },
+    "hits_all_human": 697,
+    "hits_llm": 682,
+    "doc_frac": {
+     "human": 0.1215,
+     "llm": 0.2845
+    },
+    "prior": {
+     "p_bg_per10k": 1.576,
+     "a_w": 31.522,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.805,
+     "z": 8.78,
+     "ratio_x": 2.24,
+     "per_genre_delta": {
+      "essay": 1.282,
+      "abstract": 0.482,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 10.47,
+      "abstract": 2.9,
+      "poetry": -1.76
+     },
+     "z_gpt4o_only": 4.21,
+     "boot_ci95": [
+      0.698,
+      0.911
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 를 이용한 방법을 제안한다. 또한, bi-LSTM-CRFs의",
+     "[human] 의학 인과 관계를 구축한다. 또한, 위키피디아에 나타나는 의",
+     "[human] 하여 확장 질의를 선택한다. 또한, 질병 중심 문서 클러스터"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=0.805 (CI [0.698, 0.911]), z=8.78, LLM 8.152 vs human 3.315/10k, pro-human/LLM=0.20",
+   "precision_evidence": "measured_on_697_human_and_682_llm_hits"
+  },
+  {
+   "id": "BP_not_only",
+   "pattern": "뿐만 아니라",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~뿐만 아니라 ~도' 병렬 틀.",
+   "suggestions": [
+    "~고",
+    "~도"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 17,
+     "llm/essay": 105,
+     "gpt4o/essay": 42,
+     "human/abstract": 3,
+     "llm/abstract": 9,
+     "gpt4o/abstract": 2,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 172,
+     "klue/klue": 65
+    },
+    "per10k": {
+     "katfish_human": 1.02,
+     "katfish_llm": 1.363,
+     "katfish_gpt4o": 1.492,
+     "news": 0.63,
+     "klue": 0.506,
+     "human_essay": 1.463,
+     "human_abstract": 0.736,
+     "human_poetry": 0.0,
+     "llm_essay": 1.944,
+     "llm_abstract": 0.709,
+     "llm_poetry": 0.0,
+     "all_human": 0.611,
+     "human_professional": 0.592
+    },
+    "hits_all_human": 257,
+    "hits_llm": 114,
+    "doc_frac": {
+     "human": 0.0499,
+     "llm": 0.0628
+    },
+    "prior": {
+     "p_bg_per10k": 0.592,
+     "a_w": 11.836,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.276,
+     "z": 1.69,
+     "ratio_x": 1.32,
+     "per_genre_delta": {
+      "essay": 0.549,
+      "abstract": 0.034,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.64,
+      "abstract": 0.1,
+      "poetry": -1.06
+     },
+     "z_gpt4o_only": 1.12,
+     "boot_ci95": [
+      0.089,
+      0.451
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 위해 단어 단위의 임베딩 뿐만 아니라 단어를 구성하는 문자로부",
+     "[human] 다. 이 기법은 식품안전 뿐만 아니라 최근 발생한 콜레라 감염",
+     "[human] 용하고, 입력 자질로 단어뿐만 아니라 품사 임베딩 모델과, 개"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak genre-scoped lean in ['essay']; suggest-only",
+   "precision_evidence": "measured_on_257_human_and_114_llm_hits"
+  },
+  {
+   "id": "BP_this_means",
+   "pattern": "(이는|이것은|그것은) [^.!?\\n]{2,40}(을|를) 의미(합니다|한다|하며)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'이는 ~을 의미합니다' 해설 연결.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 16,
+     "gpt4o/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 5,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.191,
+     "katfish_gpt4o": 0.068,
+     "news": 0.018,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.296,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.014,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 6,
+    "hits_llm": 16,
+    "doc_frac": {
+     "human": 0.0013,
+     "llm": 0.0086
+    },
+    "prior": {
+     "p_bg_per10k": 0.016,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.115,
+     "z": 1.11,
+     "ratio_x": 3.05,
+     "per_genre_delta": {
+      "essay": 2.646,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.84,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.58,
+     "boot_ci95": [
+      0.708,
+      1.34
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 계적으로 원전 활용도를 높이는 방향으로 정책이 전환된 것을 의미한다며 우리의 원전 수출 기회",
+     "[news] 이를 것으로 보고 있다. 이는 2008년 이후 가장 높은 금리로 한 해를 마감하는 것을 의미한다. 연준은 금리를 올림으로",
+     "[news] 신호가 증가하고 있다 며 이는 더는 성장을 위해 수출 회복에 기댈 수 없음을 의미하며 이로 인해 다중 경기후퇴"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=1.115, z=1.11); disabled",
+   "precision_evidence": "measured_on_6_human_and_16_llm_hits"
+  },
+  {
+   "id": "BP_emphasize_importance",
+   "pattern": "(의|라는) (중요성|필요성|가치|의미)(을|를) (강조|일깨|보여|시사|상기)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'중요성을 강조/일깨워' 결말 상투.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 12,
+     "gpt4o/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 2,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 8,
+     "klue/klue": 8
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.167,
+     "katfish_gpt4o": 0.102,
+     "news": 0.029,
+     "klue": 0.062,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.222,
+     "llm_abstract": 0.158,
+     "llm_poetry": 0.0,
+     "all_human": 0.038,
+     "human_professional": 0.039
+    },
+    "hits_all_human": 16,
+    "hits_llm": 14,
+    "doc_frac": {
+     "human": 0.0033,
+     "llm": 0.0086
+    },
+    "prior": {
+     "p_bg_per10k": 0.041,
+     "a_w": 0.822,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.031,
+     "z": 1.39,
+     "ratio_x": 2.8,
+     "per_genre_delta": {
+      "essay": 1.896,
+      "abstract": 0.927,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.67,
+      "abstract": 0.74,
+      "poetry": -0.28
+     },
+     "z_gpt4o_only": 0.83,
+     "boot_ci95": [
+      0.517,
+      1.339
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news] 고준위 방폐물 특별법 제정의 필요성을 강조했다. 김창락 국제원자력대",
+     "[news] 원인 기저 전원으로서 원전의 중요성을 강조하고 있습니다. 원전 발전",
+     "[news] 며 당정 간 유기적인 협력의 중요성을 강조했다. 권성동 원내대표도 "
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=1.031, z=1.39); disabled",
+   "precision_evidence": "measured_on_16_human_and_14_llm_hits"
+  },
+  {
+   "id": "BP_hereby_show",
+   "pattern": "(살펴|알아|다루어|짚어|정리해) ?보(겠습니다|고자 합니다|도록 하겠습니다|려고 합니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "안내형 'X를 살펴보겠습니다'.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "강의·블로그 도입.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 6,
+     "gpt4o/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 8
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.072,
+     "katfish_gpt4o": 0.136,
+     "news": 0.029,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.111,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.021,
+     "human_professional": 0.02
+    },
+    "hits_all_human": 9,
+    "hits_llm": 6,
+    "doc_frac": {
+     "human": 0.0018,
+     "llm": 0.0037
+    },
+    "prior": {
+     "p_bg_per10k": 0.021,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.329,
+     "z": 0.43,
+     "ratio_x": 1.39,
+     "per_genre_delta": {
+      "essay": 0.616,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.68,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.75,
+     "boot_ci95": [
+      -0.559,
+      0.889
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 는 게 많다고 해서 미리 알아보려고 합니다. 김현우 행복자산관리연구",
+     "[news] 요한 것들 최나리 기자와 알아보겠습니다. 바뀌는 대출제도부터 알",
+     "[news] 오라 는 요구는 정당한지 살펴보겠습니다. 방금 사례와 같이 세입"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.329, z=0.43); disabled",
+   "precision_evidence": "measured_on_9_human_and_6_llm_hits"
+  },
+  {
+   "id": "BP_following",
+   "pattern": "다음과 같(습니다|다|은|이)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'다음과 같습니다' 나열 도입.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "목록 도입.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 21,
+     "gpt4o/essay": 7,
+     "human/abstract": 2,
+     "llm/abstract": 10,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 4,
+     "klue/klue": 22
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.371,
+     "katfish_gpt4o": 0.271,
+     "news": 0.015,
+     "klue": 0.171,
+     "human_essay": 0.086,
+     "human_abstract": 0.491,
+     "human_poetry": 0.0,
+     "llm_essay": 0.389,
+     "llm_abstract": 0.788,
+     "llm_poetry": 0.0,
+     "all_human": 0.069,
+     "human_professional": 0.069
+    },
+    "hits_all_human": 29,
+    "hits_llm": 31,
+    "doc_frac": {
+     "human": 0.006,
+     "llm": 0.0179
+    },
+    "prior": {
+     "p_bg_per10k": 0.066,
+     "a_w": 1.321,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.947,
+     "z": 2.19,
+     "ratio_x": 2.58,
+     "per_genre_delta": {
+      "essay": 1.413,
+      "abstract": 0.921,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.05,
+      "abstract": 1.47,
+      "poetry": -0.35
+     },
+     "z_gpt4o_only": 0.67,
+     "boot_ci95": [
+      0.346,
+      1.46
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human] 어쓰기 오류 교정 과정은 다음과 같다. 첫째, 띄어쓰기 오류가",
+     "[human] 외래어 인식 학습 과정은 다음과 같다. 첫째, 학습용 말뭉치 ",
+     "[news]  발표했다. 주요 내용은 다음과 같다. 신규 팀장 선임 황현정"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak LLM lean: delta=0.947, z=2.19, LLM 0.371 vs human 0.153/10k, pro-human/LLM=0.19; suggest-only",
+   "precision_evidence": "measured_on_29_human_and_31_llm_hits"
+  },
+  {
+   "id": "BP_meaningful_point",
+   "pattern": "(는|ㄴ|은) 점에서 (큰 |매우 )?(의미|가치|중요)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~는 점에서 의미가 있다' 평가 문장.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 3,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 7,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.036,
+     "katfish_gpt4o": 0.034,
+     "news": 0.026,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.236,
+     "llm_poetry": 0.0,
+     "all_human": 0.019,
+     "human_professional": 0.02
+    },
+    "hits_all_human": 8,
+    "hits_llm": 3,
+    "doc_frac": {
+     "human": 0.0018,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.021,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.422,
+     "z": 0.41,
+     "ratio_x": 1.53,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": 1.64,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": 1.08,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.36,
+     "boot_ci95": [
+      -0.536,
+      0.889
+     ]
+    },
+    "signal_genres": [
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news] 활기찬 분위기로 진행되었다는 점에서 의미가 컸다.” 며 “현재의 ",
+     "[news] 과목 개설 등으로 발전됐다는 점에서 큰 의미가 있다며 SKT는 앞으로",
+     "[news] 대해 지지를 적극 요청했다는 점에서 의미가 크다. 안 본부장은 이"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.422, z=0.41); disabled",
+   "precision_evidence": "measured_on_8_human_and_3_llm_hits"
+  },
+  {
+   "id": "BP_contribute",
+   "pattern": "(기여|이바지)(할|하는|한다|합니다|하고|하며)( 수 있)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~에 기여하다'.",
+   "suggestions": [
+    "(삭제)",
+    "도움이 된다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 47,
+     "gpt4o/essay": 17,
+     "human/abstract": 0,
+     "llm/abstract": 28,
+     "gpt4o/abstract": 16,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 107,
+     "klue/klue": 15
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.896,
+     "katfish_gpt4o": 1.119,
+     "news": 0.392,
+     "klue": 0.117,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.87,
+     "llm_abstract": 2.206,
+     "llm_poetry": 0.0,
+     "all_human": 0.29,
+     "human_professional": 0.301
+    },
+    "hits_all_human": 122,
+    "hits_llm": 75,
+    "doc_frac": {
+     "human": 0.0249,
+     "llm": 0.0437
+    },
+    "prior": {
+     "p_bg_per10k": 0.305,
+     "a_w": 6.105,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.962,
+     "z": 3.56,
+     "ratio_x": 2.62,
+     "per_genre_delta": {
+      "essay": 1.313,
+      "abstract": 1.414,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 3.07,
+      "abstract": 3.22,
+      "poetry": -0.76
+     },
+     "z_gpt4o_only": 3.14,
+     "boot_ci95": [
+      0.79,
+      1.108
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news]  가치를 확산하는데 크게 기여하고 있다”라며 “bhc치킨은",
+     "[news] 체의 이익과 지속 성장에 기여할 수 있도록 역할과 책임을 다하겠",
+     "[news] 인력 양성과 연구 협력에 기여할 수 있을 것으로 기대한다 며 S"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=0.962 (CI [0.79, 1.108]), z=3.56, LLM 0.896 vs human 0.0/10k, pro-human/LLM=0.34",
+   "precision_evidence": "measured_on_122_human_and_75_llm_hits"
+  },
+  {
+   "id": "BP_implication",
+   "pattern": "시사(하는|한다|합니다|하며|해 준|점)( 바)?",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'시사하는 바가 크다'.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "학술문.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 13,
+     "gpt4o/essay": 7,
+     "human/abstract": 0,
+     "llm/abstract": 17,
+     "gpt4o/abstract": 10,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 11,
+     "klue/klue": 8
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.359,
+     "katfish_gpt4o": 0.577,
+     "news": 0.04,
+     "klue": 0.062,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.241,
+     "llm_abstract": 1.34,
+     "llm_poetry": 0.0,
+     "all_human": 0.045,
+     "human_professional": 0.047
+    },
+    "hits_all_human": 19,
+    "hits_llm": 30,
+    "doc_frac": {
+     "human": 0.0038,
+     "llm": 0.0172
+    },
+    "prior": {
+     "p_bg_per10k": 0.049,
+     "a_w": 0.972,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.66,
+     "z": 2.53,
+     "ratio_x": 5.26,
+     "per_genre_delta": {
+      "essay": 1.815,
+      "abstract": 2.611,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.73,
+      "abstract": 2.51,
+      "poetry": -0.3
+     },
+     "z_gpt4o_only": 2.49,
+     "boot_ci95": [
+      1.322,
+      1.944
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news] 가 임직원에게 정리해고를 시사하는 발언을 해 외신의 주목을",
+     "[news] 사 및 블록체임 업계에도 시사점을 준다. 또한 010PA",
+     "[news]  않는다 며 투자 중단을 시사하는 방식으로 정부를 압박했다"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.66 (CI [1.322, 1.944]), z=2.53, LLM 0.359 vs human 0.0/10k, pro-human/LLM=0.13",
+   "precision_evidence": "measured_on_19_human_and_30_llm_hits"
+  },
+  {
+   "id": "BP_essential",
+   "pattern": "(필수적|핵심적|결정적|근본적|본질적|획기적)(인|으로|이다|입니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "한자어 '~적' 평가 형용사.",
+   "suggestions": [
+    "구체적 표현"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 5,
+     "llm/essay": 136,
+     "gpt4o/essay": 52,
+     "human/abstract": 6,
+     "llm/abstract": 6,
+     "gpt4o/abstract": 4,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 61,
+     "klue/klue": 43
+    },
+    "per10k": {
+     "katfish_human": 0.561,
+     "katfish_llm": 1.697,
+     "katfish_gpt4o": 1.899,
+     "news": 0.224,
+     "klue": 0.335,
+     "human_essay": 0.43,
+     "human_abstract": 1.473,
+     "human_poetry": 0.0,
+     "llm_essay": 2.518,
+     "llm_abstract": 0.473,
+     "llm_poetry": 0.0,
+     "all_human": 0.273,
+     "human_professional": 0.271
+    },
+    "hits_all_human": 115,
+    "hits_llm": 142,
+    "doc_frac": {
+     "human": 0.0234,
+     "llm": 0.072
+    },
+    "prior": {
+     "p_bg_per10k": 0.26,
+     "a_w": 5.208,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.793,
+     "z": 3.34,
+     "ratio_x": 2.21,
+     "per_genre_delta": {
+      "essay": 1.777,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 5.48,
+      "abstract": -0.72,
+      "poetry": -0.7
+     },
+     "z_gpt4o_only": 2.87,
+     "boot_ci95": [
+      0.553,
+      1.064
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 은 자연어 처리 영역에서 필수적인 언어 도구로 활용되기 때",
+     "[human] 뭉치에 적용되지 않는다는 근본적인 문제를 해결하기 위해 내",
+     "[human] 축 하였다. 학습 시간의 획기적인 감소를 입증하기 위해 국"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=0.793 (CI [0.553, 1.064]), z=3.34, LLM 1.697 vs human 0.561/10k, pro-human/LLM=0.16",
+   "precision_evidence": "measured_on_115_human_and_142_llm_hits"
+  },
+  {
+   "id": "BP_positive_negative",
+   "pattern": "(긍정적|부정적)인 (영향|효과|변화|측면|이미지|결과)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'긍정적/부정적인 영향'.",
+   "suggestions": [
+    "구체적 서술"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 3,
+     "llm/essay": 64,
+     "gpt4o/essay": 36,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 17,
+     "klue/klue": 6
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.777,
+     "katfish_gpt4o": 1.221,
+     "news": 0.062,
+     "klue": 0.047,
+     "human_essay": 0.258,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 1.185,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.0,
+     "all_human": 0.062,
+     "human_professional": 0.057
+    },
+    "hits_all_human": 26,
+    "hits_llm": 65,
+    "doc_frac": {
+     "human": 0.0049,
+     "llm": 0.0351
+    },
+    "prior": {
+     "p_bg_per10k": 0.059,
+     "a_w": 1.171,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.41,
+     "z": 3.24,
+     "ratio_x": 4.09,
+     "per_genre_delta": {
+      "essay": 1.898,
+      "abstract": 0.311,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 3.76,
+      "abstract": 0.27,
+      "poetry": -0.33
+     },
+     "z_gpt4o_only": 3.27,
+     "boot_ci95": [
+      0.908,
+      1.654
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 역시 준비 중이기 때문에 부정적인 영향을 최소화해 사업을 추진할",
+     "[news]  면서 제작사 입장에서는 긍정적인 변화로 IP를 제작사가 소유·",
+     "[news] 다양성을 보호하고 사회에 긍정적인 영향을 끼친 기업을 선정한다."
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.41 (CI [0.908, 1.654]), z=3.24, LLM 0.777 vs human 0.153/10k, pro-human/LLM=0.07",
+   "precision_evidence": "measured_on_26_human_and_65_llm_hits"
+  },
+  {
+   "id": "BP_sustainable",
+   "pattern": "지속 ?가능(한|하게|성)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'지속 가능한' 유행어.",
+   "suggestions": [
+    "오래 이어질 수 있는"
+   ],
+   "legit_use_note_ko": "ESG·환경 용어.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 41,
+     "gpt4o/essay": 9,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 95,
+     "klue/klue": 10
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.49,
+     "katfish_gpt4o": 0.305,
+     "news": 0.348,
+     "klue": 0.078,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.759,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.249,
+     "human_professional": 0.259
+    },
+    "hits_all_human": 105,
+    "hits_llm": 41,
+    "doc_frac": {
+     "human": 0.0165,
+     "llm": 0.0166
+    },
+    "prior": {
+     "p_bg_per10k": 0.263,
+     "a_w": 5.258,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.431,
+     "z": 1.36,
+     "ratio_x": 1.54,
+     "per_genre_delta": {
+      "essay": 1.324,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.88,
+      "abstract": -0.5,
+      "poetry": -0.71
+     },
+     "z_gpt4o_only": 0.92,
+     "boot_ci95": [
+      0.214,
+      0.604
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 청정에너지 사업을 그룹의 지속 가능한 미래를 만들 수 있는 핵",
+     "[news] 면역까지 챙긴 제품 내놔 지속가능성·반려동물 복지 최우선 과",
+     "[news] 시도들이 이어지고 있다. 지속가능한 미래를 위해 반려동물 업"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak genre-scoped lean in ['essay']; suggest-only",
+   "precision_evidence": "measured_on_105_human_and_41_llm_hits"
+  },
+  {
+   "id": "BP_together_effort",
+   "pattern": "(함께|다 같이|모두가|우리 모두가|서로) 노력(해야|할 때|하는|하며|한다면)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'함께 노력해야 한다' 호소.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 30,
+     "gpt4o/essay": 11,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.359,
+     "katfish_gpt4o": 0.373,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.555,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 3,
+    "hits_llm": 30,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0172
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.506,
+     "z": 2.09,
+     "ratio_x": 4.51,
+     "per_genre_delta": {
+      "essay": 2.162,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.58,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 1.75,
+     "boot_ci95": [
+      0.908,
+      1.686
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news]  정부·기업·국민 모두가 함께 노력해야 하는 중요한 상황”이라며",
+     "[news] 서 근무할 수 있도록 다 함께 노력해야 할 것이다."
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.506 (CI [0.908, 1.686]), z=2.09, LLM 0.359 vs human 0.051/10k, pro-human/LLM=0.01",
+   "precision_evidence": "measured_on_3_human_and_30_llm_hits"
+  },
+  {
+   "id": "BP_we_all",
+   "pattern": "우리 (모두|사회|모두의)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'우리 모두' 호소 표현.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 15,
+     "llm/essay": 376,
+     "gpt4o/essay": 96,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 33,
+     "gpt4o/poetry": 3,
+     "news/news": 11,
+     "klue/klue": 7
+    },
+    "per10k": {
+     "katfish_human": 0.816,
+     "katfish_llm": 4.889,
+     "katfish_gpt4o": 3.357,
+     "news": 0.04,
+     "klue": 0.054,
+     "human_essay": 1.291,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 6.961,
+     "llm_abstract": 0.0,
+     "llm_poetry": 1.946,
+     "all_human": 0.081,
+     "human_professional": 0.044
+    },
+    "hits_all_human": 34,
+    "hits_llm": 409,
+    "doc_frac": {
+     "human": 0.006,
+     "llm": 0.1299
+    },
+    "prior": {
+     "p_bg_per10k": 0.046,
+     "a_w": 0.922,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 2.258,
+     "z": 9.46,
+     "ratio_x": 9.56,
+     "per_genre_delta": {
+      "essay": 2.314,
+      "abstract": -0.306,
+      "poetry": 2.435
+     },
+     "per_genre_z": {
+      "essay": 9.05,
+      "abstract": -0.21,
+      "poetry": 3.28
+     },
+     "z_gpt4o_only": 5.67,
+     "boot_ci95": [
+      1.77,
+      2.88
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 대면 활동을 본격화했다. 우리 사회에 의로운 일을 펼친 시민",
+     "[news] 고객들로부터 받은 사랑을 우리 사회 구성원에게 고루 환원할 ",
+     "[news] 공헌활동을 더욱 발전시켜 우리 사회가 보다 더 건강한 사회가"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=2.258 (CI [1.77, 2.88]), z=9.46, LLM 4.889 vs human 0.816/10k, pro-human/LLM=0.01",
+   "precision_evidence": "measured_on_34_human_and_409_llm_hits"
+  },
+  {
+   "id": "BP_endless",
+   "pattern": "끊임없(이|는)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'끊임없이/끊임없는' 시적 과장.",
+   "suggestions": [
+    "계속",
+    "꾸준히"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 22,
+     "gpt4o/essay": 11,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 4,
+     "llm/poetry": 23,
+     "gpt4o/poetry": 3,
+     "news/news": 25,
+     "klue/klue": 8
+    },
+    "per10k": {
+     "katfish_human": 0.204,
+     "katfish_llm": 0.538,
+     "katfish_gpt4o": 0.475,
+     "news": 0.092,
+     "klue": 0.062,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 1.022,
+     "llm_essay": 0.407,
+     "llm_abstract": 0.0,
+     "llm_poetry": 1.356,
+     "all_human": 0.088,
+     "human_professional": 0.081
+    },
+    "hits_all_human": 37,
+    "hits_llm": 45,
+    "doc_frac": {
+     "human": 0.0082,
+     "llm": 0.0246
+    },
+    "prior": {
+     "p_bg_per10k": 0.083,
+     "a_w": 1.67,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.046,
+     "z": 2.77,
+     "ratio_x": 2.85,
+     "per_genre_delta": {
+      "essay": 1.801,
+      "abstract": -0.306,
+      "poetry": 1.035
+     },
+     "per_genre_z": {
+      "essay": 2.25,
+      "abstract": -0.28,
+      "poetry": 2.22
+     },
+     "z_gpt4o_only": 0.95,
+     "boot_ci95": [
+      0.525,
+      1.522
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 성을 높일 새로운 방식을 끊임없이 고민해 나가겠다”고 밝혔",
+     "[news] 적이어서 기업들이 개선을 끊임없이 요구하고 있다. 기업 현",
+     "[news]  각종 제도 개선을 위해 끊임없이 노력함으로써 해양산업 발"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.046 (CI [0.525, 1.522]), z=2.77, LLM 0.538 vs human 0.204/10k, pro-human/LLM=0.15",
+   "precision_evidence": "measured_on_37_human_and_45_llm_hits"
+  },
+  {
+   "id": "BP_harmony",
+   "pattern": "조화(를|롭게) (이루|이뤄|이룬|이룹)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'조화를 이루다'.",
+   "suggestions": [
+    "어울리다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 8,
+     "gpt4o/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 8,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.108,
+     "katfish_gpt4o": 0.136,
+     "news": 0.029,
+     "klue": 0.039,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.148,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.033,
+     "human_professional": 0.032
+    },
+    "hits_all_human": 14,
+    "hits_llm": 9,
+    "doc_frac": {
+     "human": 0.0031,
+     "llm": 0.0055
+    },
+    "prior": {
+     "p_bg_per10k": 0.034,
+     "a_w": 0.673,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.559,
+     "z": 0.83,
+     "ratio_x": 1.75,
+     "per_genre_delta": {
+      "essay": 0.795,
+      "abstract": -0.306,
+      "poetry": 0.475
+     },
+     "per_genre_z": {
+      "essay": 0.94,
+      "abstract": -0.18,
+      "poetry": 0.33
+     },
+     "z_gpt4o_only": 0.69,
+     "boot_ci95": [
+      -0.171,
+      1.138
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 이곳에서는 가전과 가구가 조화를 이루는 공간을 직접 체험하고 ",
+     "[news] 또한 현지 상품과 적절한 조화를 이루는 K 푸드 전략으로 편의",
+     "[news]  수평선과 수직선이 서로 조화를 이루면서도 대비된다. 토레스 "
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.559, z=0.83); disabled",
+   "precision_evidence": "measured_on_14_human_and_9_llm_hits"
+  },
+  {
+   "id": "BP_new_horizon",
+   "pattern": "(새로운|넓은|더 넓은|무한한) (지평|가능성|세계|시대|길|도약)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'새로운 가능성/지평'.",
+   "suggestions": [
+    "구체적 서술"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 25,
+     "gpt4o/essay": 3,
+     "human/abstract": 0,
+     "llm/abstract": 3,
+     "gpt4o/abstract": 2,
+     "human/poetry": 0,
+     "llm/poetry": 28,
+     "gpt4o/poetry": 3,
+     "news/news": 12,
+     "klue/klue": 6
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.669,
+     "katfish_gpt4o": 0.271,
+     "news": 0.044,
+     "klue": 0.047,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.463,
+     "llm_abstract": 0.236,
+     "llm_poetry": 1.651,
+     "all_human": 0.045,
+     "human_professional": 0.044
+    },
+    "hits_all_human": 19,
+    "hits_llm": 56,
+    "doc_frac": {
+     "human": 0.004,
+     "llm": 0.0271
+    },
+    "prior": {
+     "p_bg_per10k": 0.046,
+     "a_w": 0.922,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.947,
+     "z": 3.61,
+     "ratio_x": 7.01,
+     "per_genre_delta": {
+      "essay": 1.751,
+      "abstract": 1.142,
+      "poetry": 3.011
+     },
+     "per_genre_z": {
+      "essay": 2.34,
+      "abstract": 0.99,
+      "poetry": 2.85
+     },
+     "z_gpt4o_only": 1.49,
+     "boot_ci95": [
+      1.323,
+      2.496
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news]  실현을 위한 한일 협력 새로운 세계 질서와 국제 관계 등이 ",
+     "[news]  실현을 위한 한일 협력 새로운 세계질서와 국제관계에 대해 논",
+     "[news] 강한 기술경쟁력을 가지고 새로운 길을 찾아 나가는 중소벤처기"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.947 (CI [1.323, 2.496]), z=3.61, LLM 0.669 vs human 0.051/10k, pro-human/LLM=0.07",
+   "precision_evidence": "measured_on_19_human_and_56_llm_hits"
+  },
+  {
+   "id": "BP_profound",
+   "pattern": "(깊은|깊이 있는|풍부한|다채로운|소중한|값진|특별한|의미 있는) (울림|의미|경험|통찰|이해|교훈|가치|추억|시간)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "형용사 + 추상명사 감성 결합.",
+   "suggestions": [
+    "구체적 사례"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 11,
+     "gpt4o/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 8,
+     "gpt4o/poetry": 2,
+     "news/news": 6,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.239,
+     "katfish_gpt4o": 0.203,
+     "news": 0.022,
+     "klue": 0.031,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.204,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.472,
+     "all_human": 0.026,
+     "human_professional": 0.025
+    },
+    "hits_all_human": 11,
+    "hits_llm": 20,
+    "doc_frac": {
+     "human": 0.0022,
+     "llm": 0.0123
+    },
+    "prior": {
+     "p_bg_per10k": 0.026,
+     "a_w": 0.523,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.363,
+     "z": 2.03,
+     "ratio_x": 3.91,
+     "per_genre_delta": {
+      "essay": 1.173,
+      "abstract": 0.763,
+      "poetry": 2.355
+     },
+     "per_genre_z": {
+      "essay": 1.36,
+      "abstract": 0.48,
+      "poetry": 1.65
+     },
+     "z_gpt4o_only": 1.21,
+     "boot_ci95": [
+      0.498,
+      2.163
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 장하는데 자양분이 되어준 소중한 시간이다”라며 한국에 대한 애",
+     "[news] 자산관리를 통해 고객에게 특별한 가치를 제공한다는 의미의 우리",
+     "[news] 째 업무협약으로 고객에게 특별한 경험을 제공하려는 ‘와이 낫 "
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.363 (CI [0.498, 2.163]), z=2.03, LLM 0.239 vs human 0.051/10k, pro-human/LLM=0.10",
+   "precision_evidence": "measured_on_11_human_and_20_llm_hits"
+  },
+  {
+   "id": "BP_warm_touch",
+   "pattern": "(따뜻한|따스한|포근한|아늑한) (온기|위로|마음|손길|햇살|미소|공기|품|분위기)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "감성 시어 관용구.",
+   "suggestions": [
+    "구체적 장면"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 2,
+     "llm/poetry": 22,
+     "gpt4o/poetry": 7,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.275,
+     "katfish_gpt4o": 0.271,
+     "news": 0.0,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.511,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 1.297,
+     "all_human": 0.014,
+     "human_professional": 0.01
+    },
+    "hits_all_human": 6,
+    "hits_llm": 23,
+    "doc_frac": {
+     "human": 0.0013,
+     "llm": 0.0142
+    },
+    "prior": {
+     "p_bg_per10k": 0.011,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.385,
+     "z": 2.35,
+     "ratio_x": 3.99,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": 1.762
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": 2.64
+     },
+     "z_gpt4o_only": 1.5,
+     "boot_ci95": [
+      0.716,
+      1.824
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[klue] 의성과 커뮤니티 의식으로 따뜻한 위로를 더할 예정이다.",
+     "[klue]  지면가열에 따른 하층의 따뜻한 공기가 만나 강한 대기불안정이",
+     "[klue]  털어놓고 금재는 혜주를 따뜻한 마음으로 대한다. 혜주는 좌절"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.385 (CI [0.716, 1.824]), z=2.35, LLM 0.275 vs human 0.102/10k, pro-human/LLM=0.04",
+   "precision_evidence": "measured_on_6_human_and_23_llm_hits"
+  },
+  {
+   "id": "BP_glitter",
+   "pattern": "(찬란한|눈부신|반짝이는|빛나는|영롱한|은은한) ",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "시적 수식어 반복.",
+   "suggestions": [
+    "구체적 묘사"
+   ],
+   "legit_use_note_ko": "시·소설에서 문체.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 7,
+     "llm/poetry": 172,
+     "gpt4o/poetry": 52,
+     "news/news": 13,
+     "klue/klue": 6
+    },
+    "per10k": {
+     "katfish_human": 0.357,
+     "katfish_llm": 2.056,
+     "katfish_gpt4o": 1.763,
+     "news": 0.048,
+     "klue": 0.047,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 1.788,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 10.142,
+     "all_human": 0.062,
+     "human_professional": 0.047
+    },
+    "hits_all_human": 26,
+    "hits_llm": 172,
+    "doc_frac": {
+     "human": 0.0038,
+     "llm": 0.08
+    },
+    "prior": {
+     "p_bg_per10k": 0.049,
+     "a_w": 0.972,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 2.278,
+     "z": 6.68,
+     "ratio_x": 9.76,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 2.642
+     },
+     "per_genre_z": {
+      "essay": -0.59,
+      "abstract": -0.21,
+      "poetry": 7.29
+     },
+     "z_gpt4o_only": 4.63,
+     "boot_ci95": [
+      1.783,
+      2.645
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 고 했다. 2K는 조던의 빛나는 경력 중 15가지 상징적인",
+     "[news] 츠를 탐사할 수 있으며 ‘반짝이는 골드’를 획득해 상점에서 ",
+     "[news] 비소프트 ‘마리오 래비드 반짝이는 희망’ 10월 닌텐도 스위"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=2.278 (CI [1.783, 2.645]), z=6.68, LLM 2.056 vs human 0.357/10k, pro-human/LLM=0.02",
+   "precision_evidence": "measured_on_26_human_and_172_llm_hits"
+  },
+  {
+   "id": "BP_whisper",
+   "pattern": "속삭(이|인|임|여|였|입니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "시어 '속삭이다'.",
+   "suggestions": [
+    "말하다"
+   ],
+   "legit_use_note_ko": "시.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 41,
+     "gpt4o/poetry": 15,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.49,
+     "katfish_gpt4o": 0.509,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 2.418,
+     "all_human": 0.005,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 2,
+    "hits_llm": 41,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0234
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.996,
+     "z": 2.79,
+     "ratio_x": 7.36,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 2.885
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 3.47
+     },
+     "z_gpt4o_only": 2.29,
+     "boot_ci95": [
+      1.52,
+      2.174
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[klue] \"키드는 죽을 거야\"라고 속삭였다. 그때 미란다는 보닌에"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.996 (CI [1.52, 2.174]), z=2.79, LLM 0.49 vs human 0.051/10k, pro-human/LLM=0.00",
+   "precision_evidence": "measured_on_2_human_and_41_llm_hits"
+  },
+  {
+   "id": "BP_journey",
+   "pattern": "(여정|향연|발자취|흔적|물결)(이|을|은|의|입니다|이다|에)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "비유 명사.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 1,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 42,
+     "gpt4o/poetry": 3,
+     "news/news": 15,
+     "klue/klue": 18
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.514,
+     "katfish_gpt4o": 0.136,
+     "news": 0.055,
+     "klue": 0.14,
+     "human_essay": 0.172,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 2.477,
+     "all_human": 0.086,
+     "human_professional": 0.081
+    },
+    "hits_all_human": 36,
+    "hits_llm": 43,
+    "doc_frac": {
+     "human": 0.0058,
+     "llm": 0.0216
+    },
+    "prior": {
+     "p_bg_per10k": 0.083,
+     "a_w": 1.67,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.791,
+     "z": 1.75,
+     "ratio_x": 2.21,
+     "per_genre_delta": {
+      "essay": -1.169,
+      "abstract": -0.306,
+      "poetry": 2.359
+     },
+     "per_genre_z": {
+      "essay": -1.45,
+      "abstract": -0.28,
+      "poetry": 3.74
+     },
+     "z_gpt4o_only": 0.02,
+     "boot_ci95": [
+      0.27,
+      1.31
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 을 확산한 카카오브레인의 여정에 구글 클라우드가 함께 할",
+     "[news] 가치 있는 삶과 이색적인 여정을 경험할 수 있게 해 줄 ",
+     "[news] 원으로 거듭나기 위한 긴 여정에 성실히 임한 신입행원들을"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['poetry']: per-genre z=[3.74], delta=[2.359]; pooled delta=0.791",
+   "precision_evidence": "measured_on_36_human_and_43_llm_hits"
+  },
+  {
+   "id": "BP_offer_gift",
+   "pattern": "(선사|제공)(한다|합니다|하며|하는|해|할)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'선사하다/제공하다'.",
+   "suggestions": [
+    "준다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 185,
+     "gpt4o/essay": 96,
+     "human/abstract": 5,
+     "llm/abstract": 42,
+     "gpt4o/abstract": 14,
+     "human/poetry": 0,
+     "llm/poetry": 4,
+     "news/news": 651,
+     "klue/klue": 142
+    },
+    "per10k": {
+     "katfish_human": 0.561,
+     "katfish_llm": 2.761,
+     "katfish_gpt4o": 3.73,
+     "news": 2.386,
+     "klue": 1.105,
+     "human_essay": 0.516,
+     "human_abstract": 1.227,
+     "human_poetry": 0.0,
+     "llm_essay": 3.425,
+     "llm_abstract": 3.309,
+     "llm_poetry": 0.236,
+     "all_human": 1.91,
+     "human_professional": 1.969
+    },
+    "hits_all_human": 804,
+    "hits_llm": 231,
+    "doc_frac": {
+     "human": 0.1166,
+     "llm": 0.1047
+    },
+    "prior": {
+     "p_bg_per10k": 1.977,
+     "a_w": 39.546,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.341,
+     "z": 3.19,
+     "ratio_x": 1.41,
+     "per_genre_delta": {
+      "essay": 0.745,
+      "abstract": 0.299,
+      "poetry": -0.339
+     },
+     "per_genre_z": {
+      "essay": 4.58,
+      "abstract": 1.6,
+      "poetry": -1.54
+     },
+     "z_gpt4o_only": 3.64,
+     "boot_ci95": [
+      0.223,
+      0.439
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human]  적절한 응답과 서비스를 제공하는데 있어 매우 중요하다. ",
+     "[human] 활용하여 시각화로 정보를 제공한다. 이 기법은 식품안전 뿐",
+     "[human] 만 일반적으로 온톨로지가 제공하는 그래프 형태의 데이터들은"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak LLM lean: delta=0.341, z=3.19, LLM 2.761 vs human 0.561/10k, pro-human/LLM=0.71; suggest-only",
+   "precision_evidence": "measured_on_804_human_and_231_llm_hits"
+  },
+  {
+   "id": "BP_when_looking",
+   "pattern": "(돌이켜|되돌아|바라|살펴|생각해|곰곰이 생각해) ?(보면|볼 때|본다면|볼 때)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'돌아보면' 시선 전환 도입.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 20,
+     "gpt4o/essay": 12,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 9,
+     "gpt4o/poetry": 3,
+     "news/news": 45,
+     "klue/klue": 11
+    },
+    "per10k": {
+     "katfish_human": 0.306,
+     "katfish_llm": 0.347,
+     "katfish_gpt4o": 0.509,
+     "news": 0.165,
+     "klue": 0.086,
+     "human_essay": 0.516,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.37,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.531,
+     "all_human": 0.147,
+     "human_professional": 0.138
+    },
+    "hits_all_human": 62,
+    "hits_llm": 29,
+    "doc_frac": {
+     "human": 0.0131,
+     "llm": 0.0179
+    },
+    "prior": {
+     "p_bg_per10k": 0.141,
+     "a_w": 2.816,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.247,
+     "z": 0.78,
+     "ratio_x": 1.28,
+     "per_genre_delta": {
+      "essay": 0.1,
+      "abstract": -0.306,
+      "poetry": 0.999
+     },
+     "per_genre_z": {
+      "essay": 0.25,
+      "abstract": -0.36,
+      "poetry": 1.51
+     },
+     "z_gpt4o_only": 0.95,
+     "boot_ci95": [
+      -0.185,
+      0.7
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 는 지난 1분기 매출액을 살펴보면 보안과 컴퓨터 분야 매출",
+     "[news] 가 활성화된 유통 환경을 생각해보면 물리적 상점에 대한 영업",
+     "[news] 수 시장에서 차량 종류로 살펴보면 세단은 그랜저가 7919"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.247, z=0.78); disabled",
+   "precision_evidence": "measured_on_62_human_and_29_llm_hits"
+  },
+  {
+   "id": "BP_not_just_but",
+   "pattern": "(단순히|그저|단지) [^.!?\\n]{2,30}(만|뿐)? ?(이 )?아니(라|고|며|다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'단순히 ~이 아니라 ~' 대조 틀.",
+   "suggestions": [
+    "~이다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 83,
+     "gpt4o/essay": 25,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 14,
+     "klue/klue": 6
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 1.016,
+     "katfish_gpt4o": 0.848,
+     "news": 0.051,
+     "klue": 0.047,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 1.537,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.059,
+     "all_human": 0.05,
+     "human_professional": 0.049
+    },
+    "hits_all_human": 21,
+    "hits_llm": 85,
+    "doc_frac": {
+     "human": 0.0045,
+     "llm": 0.0493
+    },
+    "prior": {
+     "p_bg_per10k": 0.051,
+     "a_w": 1.022,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.832,
+     "z": 3.34,
+     "ratio_x": 6.24,
+     "per_genre_delta": {
+      "essay": 2.877,
+      "abstract": 0.377,
+      "poetry": 0.247
+     },
+     "per_genre_z": {
+      "essay": 4.04,
+      "abstract": 0.31,
+      "poetry": 0.2
+     },
+     "z_gpt4o_only": 2.53,
+     "boot_ci95": [
+      1.537,
+      1.987
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 매우 실감나게 느껴졌다. 단순히 배경만 띄워 놓는 것이 아니라 배경 속 사물이 카메라 ",
+     "[news] 타지 등 요소 투입 물론 단순히 NFT를 출시하는 데서 끝나는 것이 아니다. 향후 내놓을 NFT 프",
+     "[news]  줄어들었다는 점입니다. 단순히 가격이 많이 올랐다고 버블인 것은 아니라는 점입니다. 서울은 이 "
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.832 (CI [1.537, 1.987]), z=3.34, LLM 1.016 vs human 0.051/10k, pro-human/LLM=0.05",
+   "precision_evidence": "measured_on_21_human_and_85_llm_hits"
+  },
+  {
+   "id": "BP_intrinsic_wh",
+   "pattern": "(무엇보다|무엇보다도|특히나|특히|더욱이|더욱더|더욱) ",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "강조 부사 남발.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 56,
+     "llm/essay": 340,
+     "gpt4o/essay": 153,
+     "human/abstract": 8,
+     "llm/abstract": 76,
+     "gpt4o/abstract": 51,
+     "human/poetry": 4,
+     "llm/poetry": 33,
+     "gpt4o/poetry": 4,
+     "news/news": 983,
+     "klue/klue": 299
+    },
+    "per10k": {
+     "katfish_human": 3.468,
+     "katfish_llm": 5.367,
+     "katfish_gpt4o": 7.054,
+     "news": 3.603,
+     "klue": 2.327,
+     "human_essay": 4.819,
+     "human_abstract": 1.964,
+     "human_poetry": 1.022,
+     "llm_essay": 6.295,
+     "llm_abstract": 5.989,
+     "llm_poetry": 1.946,
+     "all_human": 3.207,
+     "human_professional": 3.182
+    },
+    "hits_all_human": 1350,
+    "hits_llm": 449,
+    "doc_frac": {
+     "human": 0.2212,
+     "llm": 0.1915
+    },
+    "prior": {
+     "p_bg_per10k": 3.196,
+     "a_w": 63.916,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.264,
+     "z": 3.55,
+     "ratio_x": 1.3,
+     "per_genre_delta": {
+      "essay": 0.364,
+      "abstract": 0.36,
+      "poetry": -0.08
+     },
+     "per_genre_z": {
+      "essay": 3.5,
+      "abstract": 2.48,
+      "poetry": -0.5
+     },
+     "z_gpt4o_only": 3.66,
+     "boot_ci95": [
+      0.157,
+      0.356
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human]  형태소를 이용한 방법을 더욱 개선시켜 UAS 93.65",
+     "[human]  있는 방법을 제시하고, 특히 보조사에 적용할 경우에 생",
+     "[human] 인 성능 향상을 보였고, 특히 감정이 있는 경우 더 잘 "
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract",
+    "poetry"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak LLM lean: delta=0.264, z=3.55, LLM 5.367 vs human 3.468/10k, pro-human/LLM=0.59; suggest-only",
+   "precision_evidence": "measured_on_1350_human_and_449_llm_hits"
+  },
+  {
+   "id": "BP_however_head",
+   "pattern": "(^|[.!?\\n] ?)(하지만|그러나|그럼에도 불구하고|그럼에도|반면에|반면)[ ,]",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "문장 머리 대조 접속어 남발.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 112,
+     "llm/essay": 993,
+     "gpt4o/essay": 252,
+     "human/abstract": 17,
+     "llm/abstract": 58,
+     "gpt4o/abstract": 19,
+     "human/poetry": 18,
+     "llm/poetry": 315,
+     "gpt4o/poetry": 29,
+     "news/news": 556,
+     "klue/klue": 548
+    },
+    "per10k": {
+     "katfish_human": 7.497,
+     "katfish_llm": 16.327,
+     "katfish_gpt4o": 10.174,
+     "news": 2.038,
+     "klue": 4.265,
+     "human_essay": 9.638,
+     "human_abstract": 4.173,
+     "human_poetry": 4.599,
+     "llm_essay": 18.384,
+     "llm_abstract": 4.57,
+     "llm_poetry": 18.574,
+     "all_human": 2.972,
+     "human_professional": 2.765
+    },
+    "hits_all_human": 1251,
+    "hits_llm": 1366,
+    "doc_frac": {
+     "human": 0.2005,
+     "llm": 0.4791
+    },
+    "prior": {
+     "p_bg_per10k": 2.752,
+     "a_w": 55.045,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.887,
+     "z": 14.0,
+     "ratio_x": 2.43,
+     "per_genre_delta": {
+      "essay": 0.987,
+      "abstract": 0.145,
+      "poetry": 1.188
+     },
+     "per_genre_z": {
+      "essay": 11.85,
+      "abstract": 0.96,
+      "poetry": 9.28
+     },
+     "z_gpt4o_only": 3.27,
+     "boot_ci95": [
+      0.801,
+      0.974
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human] 자의 변화가 매우 용이하다. 하지만 메타폰트는 프로그래밍 언어",
+     "[human] 에서 매우 중요한 과정이다. 그러나 단일문서로부터 키워드를 추",
+     "[human] 양한 곳에 이용될 수 있다. 그러나 하위범주화에서 다루는 필수"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=0.887 (CI [0.801, 0.974]), z=14.0, LLM 16.327 vs human 7.497/10k, pro-human/LLM=0.17",
+   "precision_evidence": "measured_on_1251_human_and_1366_llm_hits"
+  },
+  {
+   "id": "BP_therefore_head",
+   "pattern": "(^|[.!?\\n] ?)(따라서|그러므로|이에 따라|결국|이처럼|이러한|이와 같은|이렇듯)[ ,]",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "문장 머리 결과/지시 접속어.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 77,
+     "llm/essay": 1144,
+     "gpt4o/essay": 349,
+     "human/abstract": 23,
+     "llm/abstract": 47,
+     "gpt4o/abstract": 18,
+     "human/poetry": 5,
+     "llm/poetry": 8,
+     "gpt4o/poetry": 6,
+     "news/news": 250,
+     "klue/klue": 198
+    },
+    "per10k": {
+     "katfish_human": 5.355,
+     "katfish_llm": 14.331,
+     "katfish_gpt4o": 12.649,
+     "news": 0.916,
+     "klue": 1.541,
+     "human_essay": 6.626,
+     "human_abstract": 5.646,
+     "human_poetry": 1.277,
+     "llm_essay": 21.179,
+     "llm_abstract": 3.703,
+     "llm_poetry": 0.472,
+     "all_human": 1.314,
+     "human_professional": 1.162
+    },
+    "hits_all_human": 553,
+    "hits_llm": 1199,
+    "doc_frac": {
+     "human": 0.1022,
+     "llm": 0.3448
+    },
+    "prior": {
+     "p_bg_per10k": 1.118,
+     "a_w": 22.352,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.097,
+     "z": 12.66,
+     "ratio_x": 2.99,
+     "per_genre_delta": {
+      "essay": 1.614,
+      "abstract": 0.119,
+      "poetry": -0.331
+     },
+     "per_genre_z": {
+      "essay": 15.44,
+      "abstract": 0.62,
+      "poetry": -1.26
+     },
+     "z_gpt4o_only": 7.62,
+     "boot_ci95": [
+      0.995,
+      1.214
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 공하지 않는 경우가 많았다. 따라서 본 논문에서는 의존 경로(",
+     "[human] 자이너에게 사용되지 않았다. 따라서 본 논문에서는 폰트 디자이",
+     "[human] 하기 어려운 문제가 있었다. 따라서 본 연구에서는 정확하면서도"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.097 (CI [0.995, 1.214]), z=12.66, LLM 14.331 vs human 5.355/10k, pro-human/LLM=0.08",
+   "precision_evidence": "measured_on_553_human_and_1199_llm_hits"
+  },
+  {
+   "id": "BP_these_kind",
+   "pattern": "이러한 (점|노력|변화|문제|상황|측면|과정|경험|사실|특징|요소)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'이러한 N' 반복 지시.",
+   "suggestions": [
+    "이 N",
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 15,
+     "llm/essay": 229,
+     "gpt4o/essay": 79,
+     "human/abstract": 5,
+     "llm/abstract": 9,
+     "gpt4o/abstract": 7,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 11,
+     "klue/klue": 7
+    },
+    "per10k": {
+     "katfish_human": 1.02,
+     "katfish_llm": 2.845,
+     "katfish_gpt4o": 2.916,
+     "news": 0.04,
+     "klue": 0.054,
+     "human_essay": 1.291,
+     "human_abstract": 1.227,
+     "human_poetry": 0.0,
+     "llm_essay": 4.24,
+     "llm_abstract": 0.709,
+     "llm_poetry": 0.0,
+     "all_human": 0.09,
+     "human_professional": 0.057
+    },
+    "hits_all_human": 38,
+    "hits_llm": 238,
+    "doc_frac": {
+     "human": 0.008,
+     "llm": 0.1158
+    },
+    "prior": {
+     "p_bg_per10k": 0.046,
+     "a_w": 0.922,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.452,
+     "z": 6.34,
+     "ratio_x": 4.27,
+     "per_genre_delta": {
+      "essay": 1.82,
+      "abstract": 0.21,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 7.02,
+      "abstract": 0.4,
+      "poetry": -0.3
+     },
+     "z_gpt4o_only": 4.59,
+     "boot_ci95": [
+      1.12,
+      1.834
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 하는 것은 필수적이지만, 이러한 노력을 최소화하기 위해 본 논",
+     "[human] 에러를 유발하기도 한다. 이러한 문제점은 프로그래머들이 코드를",
+     "[human] 하는 경우가 대부분이다. 이러한 문제를 해결하기 위해 본 논문"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.452 (CI [1.12, 1.834]), z=6.34, LLM 2.845 vs human 1.02/10k, pro-human/LLM=0.02",
+   "precision_evidence": "measured_on_38_human_and_238_llm_hits"
+  },
+  {
+   "id": "BP_i_think_ending",
+   "pattern": "(저는|나는|제 생각에는|제 생각으로는)[^.!?\\n]{2,60}(생각합니다|생각한다|믿습니다|믿는다|느낍니다|느낀다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'저는 ~라고 생각합니다' 에세이 관용 마무리.",
+   "suggestions": [
+    "~이다"
+   ],
+   "legit_use_note_ko": "학생 에세이에서는 사람도 자주 쓴다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 86,
+     "llm/essay": 198,
+     "gpt4o/essay": 67,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 5,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 4.437,
+     "katfish_llm": 2.426,
+     "katfish_gpt4o": 2.272,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 7.401,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 3.666,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.295,
+     "all_human": 0.209,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 88,
+    "hits_llm": 203,
+    "doc_frac": {
+     "human": 0.0142,
+     "llm": 0.1004
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.004,
+     "z": -0.03,
+     "ratio_x": 1.0,
+     "per_genre_delta": {
+      "essay": -0.02,
+      "abstract": -0.306,
+      "poetry": 0.864
+     },
+     "per_genre_z": {
+      "essay": -0.15,
+      "abstract": -0.15,
+      "poetry": 0.94
+     },
+     "z_gpt4o_only": -3.07,
+     "boot_ci95": [
+      -0.257,
+      0.294
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[klue] 받아들여진다. 이를테면 \"나는 약속을 철두철미하게 지키는 사람이야\"라는 정체성이 형성되어 있는 사람은 약속을 지키는 데 자부심을 느낀다. 특정한 정치 성향에 대"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=-0.004, z=-0.03); disabled",
+   "precision_evidence": "measured_on_88_human_and_203_llm_hits"
+  },
+  {
+   "id": "BP_should_ending",
+   "pattern": "(해야 (할 것|합니다|한다)|필요가 있(습니다|다)|할 필요가 있)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "당위 마무리.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 63,
+     "llm/essay": 991,
+     "gpt4o/essay": 361,
+     "human/abstract": 3,
+     "llm/abstract": 7,
+     "gpt4o/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 6,
+     "news/news": 404,
+     "klue/klue": 179
+    },
+    "per10k": {
+     "katfish_human": 3.366,
+     "katfish_llm": 12.0,
+     "katfish_gpt4o": 12.344,
+     "news": 1.481,
+     "klue": 1.393,
+     "human_essay": 5.421,
+     "human_abstract": 0.736,
+     "human_poetry": 0.0,
+     "llm_essay": 18.347,
+     "llm_abstract": 0.552,
+     "llm_poetry": 0.354,
+     "all_human": 1.542,
+     "human_professional": 1.446
+    },
+    "hits_all_human": 649,
+    "hits_llm": 1004,
+    "doc_frac": {
+     "human": 0.0977,
+     "llm": 0.2648
+    },
+    "prior": {
+     "p_bg_per10k": 1.454,
+     "a_w": 29.08,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.059,
+     "z": 11.47,
+     "ratio_x": 2.88,
+     "per_genre_delta": {
+      "essay": 1.556,
+      "abstract": -0.188,
+      "poetry": -0.248
+     },
+     "per_genre_z": {
+      "essay": 14.3,
+      "abstract": -0.78,
+      "poetry": -0.99
+     },
+     "z_gpt4o_only": 8.65,
+     "boot_ci95": [
+      0.961,
+      1.165
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 업을 통해서 디자인을 변경해야 한다. 이를 보완하기 위한 프",
+     "[human] 기 위해선 그 의미를 분석할 필요가 있다. 발화에 대한 의미 분",
+     "[human] 석하고 대화의 문맥을 고려해야 한다. 본 논문에서 제안하는 "
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.059 (CI [0.961, 1.165]), z=11.47, LLM 12.0 vs human 3.366/10k, pro-human/LLM=0.12",
+   "precision_evidence": "measured_on_649_human_and_1004_llm_hits"
+  },
+  {
+   "id": "BP_can_ending",
+   "pattern": "할 수 있(습니다|다|으며|고|는|도록)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "가능 표현.",
+   "suggestions": [
+    "~한다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 98,
+     "llm/essay": 1023,
+     "gpt4o/essay": 484,
+     "human/abstract": 36,
+     "llm/abstract": 107,
+     "gpt4o/abstract": 38,
+     "human/poetry": 3,
+     "llm/poetry": 14,
+     "gpt4o/poetry": 1,
+     "news/news": 1764,
+     "klue/klue": 588
+    },
+    "per10k": {
+     "katfish_human": 6.987,
+     "katfish_llm": 13.674,
+     "katfish_gpt4o": 17.736,
+     "news": 6.466,
+     "klue": 4.577,
+     "human_essay": 8.433,
+     "human_abstract": 8.837,
+     "human_poetry": 0.766,
+     "llm_essay": 18.939,
+     "llm_abstract": 8.431,
+     "llm_poetry": 0.826,
+     "all_human": 5.913,
+     "human_professional": 5.891
+    },
+    "hits_all_human": 2489,
+    "hits_llm": 1144,
+    "doc_frac": {
+     "human": 0.3181,
+     "llm": 0.322
+    },
+    "prior": {
+     "p_bg_per10k": 5.862,
+     "a_w": 117.243,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.397,
+     "z": 7.27,
+     "ratio_x": 1.49,
+     "per_genre_delta": {
+      "essay": 0.818,
+      "abstract": 0.075,
+      "poetry": -0.348
+     },
+     "per_genre_z": {
+      "essay": 11.0,
+      "abstract": 0.71,
+      "poetry": -2.76
+     },
+     "z_gpt4o_only": 7.02,
+     "boot_ci95": [
+      0.319,
+      0.466
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 서는 정답을 확실하게 제안할 수 있다는 것이 특징이다. 국어사",
+     "[human] 리하여 다양한 폰트를 파생할 수 있는 한글 외곽선 폰트 시스템",
+     "[human] 외곽선 방식의 폰트를 제작할 수 있도록 하는 웹 외곽선 폰트 편"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['essay']: per-genre z=[11.0], delta=[0.818]; pooled delta=0.397",
+   "precision_evidence": "measured_on_2489_human_and_1144_llm_hits"
+  },
+  {
+   "id": "BP_tendency",
+   "pattern": "경향이 있(습니다|다|으며|는)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~하는 경향이 있다' 헤지.",
+   "suggestions": [
+    "~하곤 한다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 20,
+     "gpt4o/essay": 12,
+     "human/abstract": 1,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 7,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.239,
+     "katfish_gpt4o": 0.407,
+     "news": 0.026,
+     "klue": 0.023,
+     "human_essay": 0.0,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 0.37,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.026,
+     "human_professional": 0.027
+    },
+    "hits_all_human": 11,
+    "hits_llm": 20,
+    "doc_frac": {
+     "human": 0.0024,
+     "llm": 0.0111
+    },
+    "prior": {
+     "p_bg_per10k": 0.026,
+     "a_w": 0.523,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.679,
+     "z": 0.73,
+     "ratio_x": 1.97,
+     "per_genre_delta": {
+      "essay": 2.819,
+      "abstract": -1.374,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.01,
+      "abstract": -0.86,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.97,
+     "boot_ci95": [
+      0.179,
+      1.381
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 정확하게 인식하기 어려운 경향이 있다. 특히, 시간표현이나 사",
+     "[news] 거래융자 잔고는 줄어드는 경향이 있는데 실제로 지난해 9월 2",
+     "[news] 신용 대출 상품에 치중된 경향이 있다는 것이다. 주택담보대출 "
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak genre-scoped lean in ['essay']; suggest-only",
+   "precision_evidence": "measured_on_11_human_and_20_llm_hits"
+  },
+  {
+   "id": "BP_various_ways",
+   "pattern": "(다양한|여러) (방법|방식|노력)(을|으로|이)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'다양한 방법으로'.",
+   "suggestions": [
+    "(구체화)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 36,
+     "gpt4o/essay": 15,
+     "human/abstract": 0,
+     "llm/abstract": 3,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 9,
+     "klue/klue": 7
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.466,
+     "katfish_gpt4o": 0.509,
+     "news": 0.033,
+     "klue": 0.054,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.666,
+     "llm_abstract": 0.236,
+     "llm_poetry": 0.0,
+     "all_human": 0.038,
+     "human_professional": 0.039
+    },
+    "hits_all_human": 16,
+    "hits_llm": 39,
+    "doc_frac": {
+     "human": 0.0033,
+     "llm": 0.0234
+    },
+    "prior": {
+     "p_bg_per10k": 0.041,
+     "a_w": 0.822,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.6,
+     "z": 2.2,
+     "ratio_x": 4.95,
+     "per_genre_delta": {
+      "essay": 2.951,
+      "abstract": 1.231,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 2.65,
+      "abstract": 1.01,
+      "poetry": -0.28
+     },
+     "z_gpt4o_only": 1.66,
+     "boot_ci95": [
+      1.221,
+      1.863
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news] 안전 선진국 도약을 위한 다양한 노력이 이뤄지고 있습니다. 일하",
+     "[news] 회적 책임을 다하기 위한 다양한 노력을 이어 나갈 것 이라고 말",
+     "[news] 있다 고 말했다. 정부가 다양한 노력을 하고 있는 만큼 정유사들"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.6 (CI [1.221, 1.863]), z=2.2, LLM 0.466 vs human 0.0/10k, pro-human/LLM=0.08",
+   "precision_evidence": "measured_on_16_human_and_39_llm_hits"
+  },
+  {
+   "id": "BP_bridge_between",
+   "pattern": "(과|와) (현재|미래|과거|전통|현대|자연|사람|기술)(을|를)? (잇|연결|이어)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'과거와 현재를 잇다' 은유.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "insufficient evidence (only 0 hits across all corpora)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "BP_beyond_that",
+   "pattern": "(을|를) 넘어(서|선)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~을 넘어서' 상투 구조.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 12,
+     "gpt4o/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 5,
+     "gpt4o/poetry": 2,
+     "news/news": 65,
+     "klue/klue": 15
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.203,
+     "katfish_gpt4o": 0.203,
+     "news": 0.238,
+     "klue": 0.117,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.222,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.295,
+     "all_human": 0.19,
+     "human_professional": 0.197
+    },
+    "hits_all_human": 80,
+    "hits_llm": 17,
+    "doc_frac": {
+     "human": 0.0158,
+     "llm": 0.0105
+    },
+    "prior": {
+     "p_bg_per10k": 0.201,
+     "a_w": 4.012,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.267,
+     "z": 0.76,
+     "ratio_x": 1.31,
+     "per_genre_delta": {
+      "essay": 0.534,
+      "abstract": -0.306,
+      "poetry": 0.374
+     },
+     "per_genre_z": {
+      "essay": 0.96,
+      "abstract": -0.43,
+      "poetry": 0.62
+     },
+     "z_gpt4o_only": 0.78,
+     "boot_ci95": [
+      0.017,
+      0.522
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 5년 단위 국가재정운용계획을 넘어선 재정비전 2050 도 수",
+     "[news] . 교육재정교부금 등 부처를 넘어선 재정 이슈도 이번 재정전",
+     "[news] 을 모두 합쳐도 쿠팡 하나를 넘어서지 못한다는 것입니다. 신"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.267, z=0.76); disabled",
+   "precision_evidence": "measured_on_80_human_and_17_llm_hits"
+  },
+  {
+   "id": "BP_each_other",
+   "pattern": "(서로|함께) (소통|공감|이해|배려|존중|협력|교감|연대)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'서로 배려하고 존중하는' 가치 나열.",
+   "suggestions": [
+    "(구체적 행동)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 38,
+     "gpt4o/essay": 9,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 2,
+     "gpt4o/poetry": 1,
+     "news/news": 7,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.478,
+     "katfish_gpt4o": 0.339,
+     "news": 0.026,
+     "klue": 0.008,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.704,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.118,
+     "all_human": 0.021,
+     "human_professional": 0.02
+    },
+    "hits_all_human": 9,
+    "hits_llm": 40,
+    "doc_frac": {
+     "human": 0.002,
+     "llm": 0.0179
+    },
+    "prior": {
+     "p_bg_per10k": 0.021,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.834,
+     "z": 2.66,
+     "ratio_x": 6.26,
+     "per_genre_delta": {
+      "essay": 2.395,
+      "abstract": -0.306,
+      "poetry": 1.174
+     },
+     "per_genre_z": {
+      "essay": 2.88,
+      "abstract": -0.15,
+      "poetry": 0.76
+     },
+     "z_gpt4o_only": 1.79,
+     "boot_ci95": [
+      1.13,
+      2.097
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 조나단 플러커 석좌교수와 함께 협력해 개발한 영재교육 프로그",
+     "[news] 다. 양측은 면담을 통해 서로 협력해야 할 중요한 동반자로서",
+     "[news] 융 회사와 핀테크 기업이 서로 협력해 시너지를 창출할 수 있"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.834 (CI [1.13, 2.097]), z=2.66, LLM 0.478 vs human 0.051/10k, pro-human/LLM=0.04",
+   "precision_evidence": "measured_on_9_human_and_40_llm_hits"
+  },
+  {
+   "id": "BP_era_phrase",
+   "pattern": "(오늘날|현대 사회|현대사회|급변하는|빠르게 변화하는|디지털 시대|4차 산업혁명)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "시대 진술 도입.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 9,
+     "llm/essay": 197,
+     "gpt4o/essay": 100,
+     "human/abstract": 2,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 4,
+     "gpt4o/poetry": 1,
+     "news/news": 23,
+     "klue/klue": 33
+    },
+    "per10k": {
+     "katfish_human": 0.561,
+     "katfish_llm": 2.402,
+     "katfish_gpt4o": 3.425,
+     "news": 0.084,
+     "klue": 0.257,
+     "human_essay": 0.774,
+     "human_abstract": 0.491,
+     "human_poetry": 0.0,
+     "llm_essay": 3.647,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.236,
+     "all_human": 0.159,
+     "human_professional": 0.143
+    },
+    "hits_all_human": 67,
+    "hits_llm": 201,
+    "doc_frac": {
+     "human": 0.012,
+     "llm": 0.0844
+    },
+    "prior": {
+     "p_bg_per10k": 0.141,
+     "a_w": 2.816,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.438,
+     "z": 5.55,
+     "ratio_x": 4.21,
+     "per_genre_delta": {
+      "essay": 1.978,
+      "abstract": -0.843,
+      "poetry": 0.449
+     },
+     "per_genre_z": {
+      "essay": 6.61,
+      "abstract": -1.12,
+      "poetry": 0.63
+     },
+     "z_gpt4o_only": 5.29,
+     "boot_ci95": [
+      1.11,
+      1.741
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 오늘날 폰트를 디자인하는데 주로",
+     "[human] 현대사회에 존재하는 다양한 시스템",
+     "[news]  대상으로 한 시상식으로 급변하는 영상 시장 속 오리지널 "
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.438 (CI [1.11, 1.741]), z=5.55, LLM 2.402 vs human 0.561/10k, pro-human/LLM=0.06",
+   "precision_evidence": "measured_on_67_human_and_201_llm_hits"
+  },
+  {
+   "id": "BP_realize",
+   "pattern": "(깨닫|느끼|알게)(게|고|며) (되었|되었습니다|됩니다|된다|됐)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'깨닫게 되었다' 성찰형 마무리.",
+   "suggestions": [
+    "깨달았다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 10,
+     "gpt4o/essay": 5,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 2,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.143,
+     "katfish_gpt4o": 0.17,
+     "news": 0.0,
+     "klue": 0.023,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.185,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.118,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 12,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0074
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.276,
+     "z": 1.36,
+     "ratio_x": 3.58,
+     "per_genre_delta": {
+      "essay": 2.194,
+      "abstract": -0.306,
+      "poetry": 1.174
+     },
+     "per_genre_z": {
+      "essay": 1.52,
+      "abstract": -0.15,
+      "poetry": 0.76
+     },
+     "z_gpt4o_only": 1.0,
+     "boot_ci95": [
+      0.718,
+      1.665
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[klue]  세계의 노예'라고 것을 깨닫게 되었다. 또 일본에서 생활해 ",
+     "[klue] 히고설켜 있다는 걸 새삼 깨닫게 됐다”고 말했다.○증설한도도",
+     "[klue] 의 감정이 갖는 중요성을 깨닫게 됐다. 이제는 악역이나 액션"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=1.276, z=1.36); disabled",
+   "precision_evidence": "measured_on_3_human_and_12_llm_hits"
+  },
+  {
+   "id": "BP_essay_conclusion",
+   "pattern": "(앞으로도|앞으로는|이제는|더 나은 (미래|세상|사회))",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "미래 지향 마무리.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 16,
+     "llm/essay": 77,
+     "gpt4o/essay": 25,
+     "human/abstract": 0,
+     "llm/abstract": 2,
+     "gpt4o/abstract": 2,
+     "human/poetry": 7,
+     "llm/poetry": 56,
+     "gpt4o/poetry": 12,
+     "news/news": 249,
+     "klue/klue": 55
+    },
+    "per10k": {
+     "katfish_human": 1.173,
+     "katfish_llm": 1.614,
+     "katfish_gpt4o": 1.323,
+     "news": 0.913,
+     "klue": 0.428,
+     "human_essay": 1.377,
+     "human_abstract": 0.0,
+     "human_poetry": 1.788,
+     "llm_essay": 1.426,
+     "llm_abstract": 0.158,
+     "llm_poetry": 3.302,
+     "all_human": 0.777,
+     "human_professional": 0.75
+    },
+    "hits_all_human": 327,
+    "hits_llm": 135,
+    "doc_frac": {
+     "human": 0.0659,
+     "llm": 0.0696
+    },
+    "prior": {
+     "p_bg_per10k": 0.759,
+     "a_w": 15.175,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.338,
+     "z": 2.35,
+     "ratio_x": 1.4,
+     "per_genre_delta": {
+      "essay": 0.234,
+      "abstract": -0.182,
+      "poetry": 0.731
+     },
+     "per_genre_z": {
+      "essay": 1.13,
+      "abstract": -0.52,
+      "poetry": 3.01
+     },
+     "z_gpt4o_only": 0.54,
+     "boot_ci95": [
+      0.089,
+      0.566
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 천에 기여하길 바란다 며 앞으로도 다양한 탄소중립·환경 프",
+     "[news]  높아질 전망”이라면서 “앞으로도 상당 기간 인플레이션 압",
+     "[news]  김대기 대통령 비서실장 이제는 정치의 힘이 너무 강해진"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['poetry']: per-genre z=[3.01], delta=[0.731]; pooled delta=0.338",
+   "precision_evidence": "measured_on_327_human_and_135_llm_hits"
+  },
+  {
+   "id": "BP_reflect_attitude",
+   "pattern": "(바람직|올바른|건강한|긍정적인) (자세|태도|방향|관계|문화|습관)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'바람직한 태도' 규범형 어구.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 15,
+     "gpt4o/essay": 8,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.179,
+     "katfish_gpt4o": 0.271,
+     "news": 0.004,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.278,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 15,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0092
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.083,
+     "z": 1.07,
+     "ratio_x": 2.95,
+     "per_genre_delta": {
+      "essay": 2.584,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.8,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 1.23,
+     "boot_ci95": [
+      0.827,
+      1.295
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 과 상황을 인식해 얼마나 올바른 자세로 운동하고 있는지 알려주",
+     "[klue] 즉시 친 카스트로를 향해 긍정적인 태도를 더 표현했다. 하지만,"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=1.083, z=1.07); disabled",
+   "precision_evidence": "measured_on_2_human_and_15_llm_hits"
+  },
+  {
+   "id": "BP_ai_hedge",
+   "pattern": "(일반적으로|보통|대체로|대부분의 경우|경우에 따라|상황에 따라|때로는)[ ,]",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "헤지 부사.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 8,
+     "llm/essay": 60,
+     "gpt4o/essay": 21,
+     "human/abstract": 4,
+     "llm/abstract": 5,
+     "gpt4o/abstract": 2,
+     "human/poetry": 2,
+     "llm/poetry": 17,
+     "gpt4o/poetry": 3,
+     "news/news": 78,
+     "klue/klue": 68
+    },
+    "per10k": {
+     "katfish_human": 0.714,
+     "katfish_llm": 0.98,
+     "katfish_gpt4o": 0.882,
+     "news": 0.286,
+     "klue": 0.529,
+     "human_essay": 0.688,
+     "human_abstract": 0.982,
+     "human_poetry": 0.511,
+     "llm_essay": 1.111,
+     "llm_abstract": 0.394,
+     "llm_poetry": 1.002,
+     "all_human": 0.38,
+     "human_professional": 0.37
+    },
+    "hits_all_human": 160,
+    "hits_llm": 82,
+    "doc_frac": {
+     "human": 0.0327,
+     "llm": 0.04
+    },
+    "prior": {
+     "p_bg_per10k": 0.365,
+     "a_w": 7.301,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.402,
+     "z": 2.02,
+     "ratio_x": 1.5,
+     "per_genre_delta": {
+      "essay": 0.631,
+      "abstract": -0.221,
+      "poetry": 0.525
+     },
+     "per_genre_z": {
+      "essay": 2.23,
+      "abstract": -0.54,
+      "poetry": 1.36
+     },
+     "z_gpt4o_only": 0.66,
+     "boot_ci95": [
+      0.088,
+      0.639
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[human] 습하여 문제를 풀어왔다. 보통 개체명 연결 문제의 출력 ",
+     "[human] 디코더로 분할되어 있고, 일반적으로 RNN(recurrent ",
+     "[human] 조화되어 저장되어 있지만 일반적으로 온톨로지가 제공하는 그래프"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "poetry"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak LLM lean: delta=0.402, z=2.02, LLM 0.98 vs human 0.714/10k, pro-human/LLM=0.38; suggest-only",
+   "precision_evidence": "measured_on_160_human_and_82_llm_hits"
+  },
+  {
+   "id": "BP_example_head",
+   "pattern": "(예를 들어|예컨대|가령|이를테면)[ ,]",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "예시 신호어.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 12,
+     "llm/essay": 389,
+     "gpt4o/essay": 191,
+     "human/abstract": 1,
+     "llm/abstract": 4,
+     "gpt4o/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 47,
+     "klue/klue": 35
+    },
+    "per10k": {
+     "katfish_human": 0.663,
+     "katfish_llm": 4.697,
+     "katfish_gpt4o": 6.511,
+     "news": 0.172,
+     "klue": 0.272,
+     "human_essay": 1.033,
+     "human_abstract": 0.245,
+     "human_poetry": 0.0,
+     "llm_essay": 7.202,
+     "llm_abstract": 0.315,
+     "llm_poetry": 0.0,
+     "all_human": 0.226,
+     "human_professional": 0.205
+    },
+    "hits_all_human": 95,
+    "hits_llm": 393,
+    "doc_frac": {
+     "human": 0.02,
+     "llm": 0.1663
+    },
+    "prior": {
+     "p_bg_per10k": 0.206,
+     "a_w": 4.112,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.736,
+     "z": 7.89,
+     "ratio_x": 5.67,
+     "per_genre_delta": {
+      "essay": 2.345,
+      "abstract": 0.156,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 9.22,
+      "abstract": 0.28,
+      "poetry": -0.62
+     },
+     "z_gpt4o_only": 7.56,
+     "boot_ci95": [
+      1.522,
+      1.907
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human]  일치하지 않는 경우들, 가령 문장 전체의 극성을 전환시",
+     "[news] 용자산으로 나눈 값이다. 예컨대 운용자금이 100억원인 펀",
+     "[news] 입력시켜주는 원리입니다. 예를 들어 회원 명부에서 미국 거주자"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.736 (CI [1.522, 1.907]), z=7.89, LLM 4.697 vs human 0.663/10k, pro-human/LLM=0.04",
+   "precision_evidence": "measured_on_95_human_and_393_llm_hits"
+  },
+  {
+   "id": "BP_fosters",
+   "pattern": "(증진|도모|강화|제고|함양|확보|구축|조성)(할|한다|합니다|하고|하며|하는|하기)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "추상 행정 동사.",
+   "suggestions": [
+    "높인다",
+    "만든다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 189,
+     "gpt4o/essay": 92,
+     "human/abstract": 18,
+     "llm/abstract": 54,
+     "gpt4o/abstract": 16,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 588,
+     "klue/klue": 135
+    },
+    "per10k": {
+     "katfish_human": 1.224,
+     "katfish_llm": 2.904,
+     "katfish_gpt4o": 3.663,
+     "news": 2.155,
+     "klue": 1.051,
+     "human_essay": 0.516,
+     "human_abstract": 4.419,
+     "human_poetry": 0.0,
+     "llm_essay": 3.499,
+     "llm_abstract": 4.255,
+     "llm_poetry": 0.0,
+     "all_human": 1.775,
+     "human_professional": 1.828
+    },
+    "hits_all_human": 747,
+    "hits_llm": 243,
+    "doc_frac": {
+     "human": 0.1195,
+     "llm": 0.1065
+    },
+    "prior": {
+     "p_bg_per10k": 1.803,
+     "a_w": 36.057,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.325,
+     "z": 3.04,
+     "ratio_x": 1.38,
+     "per_genre_delta": {
+      "essay": 0.827,
+      "abstract": 0.204,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 4.92,
+      "abstract": 1.19,
+      "poetry": -1.85
+     },
+     "z_gpt4o_only": 2.9,
+     "boot_ci95": [
+      0.199,
+      0.428
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 출하고 의학 인과 관계를 구축한다. 또한, 위키피디아에 나",
+     "[human] 어휘의 의미 표현 벡터를 구축하고 임상 인과 관계를 이용하",
+     "[human] 병 중심 문서 클러스터를 구축한다. 추출한 의학 정보를 이"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak LLM lean: delta=0.325, z=3.04, LLM 2.904 vs human 1.224/10k, pro-human/LLM=0.63; suggest-only",
+   "precision_evidence": "measured_on_747_human_and_243_llm_hits"
+  },
+  {
+   "id": "BP_abstract_nominal",
+   "pattern": "(과정|측면|요소|부분|분야|관점|맥락)에서",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "추상 명사 + 에서.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 10,
+     "llm/essay": 242,
+     "gpt4o/essay": 103,
+     "human/abstract": 18,
+     "llm/abstract": 78,
+     "gpt4o/abstract": 29,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 397,
+     "klue/klue": 143
+    },
+    "per10k": {
+     "katfish_human": 1.428,
+     "katfish_llm": 3.837,
+     "katfish_gpt4o": 4.476,
+     "news": 1.455,
+     "klue": 1.113,
+     "human_essay": 0.861,
+     "human_abstract": 4.419,
+     "human_poetry": 0.0,
+     "llm_essay": 4.48,
+     "llm_abstract": 6.146,
+     "llm_poetry": 0.059,
+     "all_human": 1.349,
+     "human_professional": 1.376
+    },
+    "hits_all_human": 568,
+    "hits_llm": 321,
+    "doc_frac": {
+     "human": 0.1004,
+     "llm": 0.1342
+    },
+    "prior": {
+     "p_bg_per10k": 1.347,
+     "a_w": 26.937,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.624,
+     "z": 5.5,
+     "ratio_x": 1.87,
+     "per_genre_delta": {
+      "essay": 1.135,
+      "abstract": 0.542,
+      "poetry": -0.399
+     },
+     "per_genre_z": {
+      "essay": 6.47,
+      "abstract": 3.04,
+      "poetry": -1.48
+     },
+     "z_gpt4o_only": 4.08,
+     "boot_ci95": [
+      0.498,
+      0.768
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[human] 는 것은 정확성과 효율성 측면에서 매우 중요한 과정이다. ",
+     "[human] 더 언어 모델이 기계학습 분야에서 괄목할만한 성과를 거두고",
+     "[human] 법을 제시한다. 시맨틱웹 분야에서 지식은 흔히 RDF 트리"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "abstract"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=0.624 (CI [0.498, 0.768]), z=5.5, LLM 3.837 vs human 1.428/10k, pro-human/LLM=0.36",
+   "precision_evidence": "measured_on_568_human_and_321_llm_hits"
+  },
+  {
+   "id": "BP_through_exp",
+   "pattern": "(경험|활동|과정|노력|행동|실천|배움)(을|를) 통(해|하여)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'경험을 통해' 성찰 도입.",
+   "suggestions": [
+    "~해서"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 3,
+     "llm/essay": 34,
+     "gpt4o/essay": 22,
+     "human/abstract": 0,
+     "llm/abstract": 2,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 29,
+     "klue/klue": 11
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.442,
+     "katfish_gpt4o": 0.746,
+     "news": 0.106,
+     "klue": 0.086,
+     "human_essay": 0.258,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.629,
+     "llm_abstract": 0.158,
+     "llm_poetry": 0.059,
+     "all_human": 0.102,
+     "human_professional": 0.099
+    },
+    "hits_all_human": 43,
+    "hits_llm": 37,
+    "doc_frac": {
+     "human": 0.0087,
+     "llm": 0.0203
+    },
+    "prior": {
+     "p_bg_per10k": 0.101,
+     "a_w": 2.018,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.777,
+     "z": 2.05,
+     "ratio_x": 2.18,
+     "per_genre_delta": {
+      "essay": 1.121,
+      "abstract": 0.383,
+      "poetry": -0.033
+     },
+     "per_genre_z": {
+      "essay": 2.35,
+      "abstract": 0.44,
+      "poetry": -0.04
+     },
+     "z_gpt4o_only": 2.19,
+     "boot_ci95": [
+      0.363,
+      1.093
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 면에서 체계적인 방법론과 경험을 통해 다양한 민간기업과 공공에",
+     "[news] 으로 다양한 온·오프라인 활동을 통해 배틀그라운드 모바일 팬들",
+     "[news] 터로 프로젝트를 완성하는 과정을 통해 IT 업계에 바로 투입 "
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "weak LLM lean: delta=0.777, z=2.05, LLM 0.442 vs human 0.153/10k, pro-human/LLM=0.22; suggest-only",
+   "precision_evidence": "measured_on_43_human_and_37_llm_hits"
+  },
+  {
+   "id": "BP_beauty_word",
+   "pattern": "아름다(운|움|웠|워|다|우)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "시적 형용사.",
+   "suggestions": [
+    "구체 묘사"
+   ],
+   "legit_use_note_ko": "시에서는 정상.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 7,
+     "gpt4o/essay": 5,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 3,
+     "llm/poetry": 81,
+     "gpt4o/poetry": 3,
+     "news/news": 21,
+     "klue/klue": 21
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 1.052,
+     "katfish_gpt4o": 0.271,
+     "news": 0.077,
+     "klue": 0.163,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.766,
+     "llm_essay": 0.13,
+     "llm_abstract": 0.0,
+     "llm_poetry": 4.776,
+     "all_human": 0.107,
+     "human_professional": 0.104
+    },
+    "hits_all_human": 45,
+    "hits_llm": 88,
+    "doc_frac": {
+     "human": 0.0082,
+     "llm": 0.0425
+    },
+    "prior": {
+     "p_bg_per10k": 0.106,
+     "a_w": 2.118,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.588,
+     "z": 4.38,
+     "ratio_x": 4.89,
+     "per_genre_delta": {
+      "essay": 0.609,
+      "abstract": -0.306,
+      "poetry": 2.352
+     },
+     "per_genre_z": {
+      "essay": 0.8,
+      "abstract": -0.31,
+      "poetry": 5.17
+     },
+     "z_gpt4o_only": 0.67,
+     "boot_ci95": [
+      1.296,
+      1.777
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 력됐다. 이윽고 스크린은 아름다운 노을이 드리운 해변가로 ",
+     "[news] 풍처럼 마을을 감싸 안은 아름다운 산세가 펼쳐지고 땅이 비",
+     "[news]  파크 하얏트가 성문안의 아름다운 자연과 골프 엔터테인먼트"
+    ]
+   },
+   "apply_genres": [
+    "essay",
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.588 (CI [1.296, 1.777]), z=4.38, LLM 1.052 vs human 0.153/10k, pro-human/LLM=0.10",
+   "precision_evidence": "measured_on_45_human_and_88_llm_hits"
+  },
+  {
+   "id": "BP_heart",
+   "pattern": "(마음|가슴|영혼|내면)(속|이|을|에|의)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "정서 명사.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 19,
+     "llm/essay": 54,
+     "gpt4o/essay": 24,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 36,
+     "llm/poetry": 402,
+     "gpt4o/poetry": 57,
+     "news/news": 57,
+     "klue/klue": 68
+    },
+    "per10k": {
+     "katfish_human": 2.805,
+     "katfish_llm": 5.45,
+     "katfish_gpt4o": 2.747,
+     "news": 0.209,
+     "klue": 0.529,
+     "human_essay": 1.635,
+     "human_abstract": 0.0,
+     "human_poetry": 9.198,
+     "llm_essay": 1.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 23.704,
+     "all_human": 0.428,
+     "human_professional": 0.308
+    },
+    "hits_all_human": 180,
+    "hits_llm": 456,
+    "doc_frac": {
+     "human": 0.0296,
+     "llm": 0.1903
+    },
+    "prior": {
+     "p_bg_per10k": 0.313,
+     "a_w": 6.255,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.175,
+     "z": 9.04,
+     "ratio_x": 3.24,
+     "per_genre_delta": {
+      "essay": 0.019,
+      "abstract": -0.306,
+      "poetry": 1.834
+     },
+     "per_genre_z": {
+      "essay": 0.08,
+      "abstract": -0.54,
+      "poetry": 11.35
+     },
+     "z_gpt4o_only": 1.43,
+     "boot_ci95": [
+      0.894,
+      1.436
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 서 보여준 용기에 감사의 마음을 전하기도 했다. bhc치",
+     "[news]  땅이 비옥하고 풍요로워 마음이 편안하고 기운이 화창해졌",
+     "[news]  앵커 경제하는 사람들의 마음을 읽어보는 호모 이코노미쿠"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['poetry']: per-genre z=[11.35], delta=[1.834]; pooled delta=1.175",
+   "precision_evidence": "measured_on_180_human_and_456_llm_hits"
+  },
+  {
+   "id": "BP_dream_hope",
+   "pattern": "(희망|꿈|소망|사랑|행복)(이|을|의|과|으로)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "정서 추상 명사.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 6,
+     "llm/essay": 28,
+     "gpt4o/essay": 7,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "gpt4o/abstract": 1,
+     "human/poetry": 34,
+     "llm/poetry": 443,
+     "gpt4o/poetry": 64,
+     "news/news": 75,
+     "klue/klue": 77
+    },
+    "per10k": {
+     "katfish_human": 2.04,
+     "katfish_llm": 5.642,
+     "katfish_gpt4o": 2.442,
+     "news": 0.275,
+     "klue": 0.599,
+     "human_essay": 0.516,
+     "human_abstract": 0.0,
+     "human_poetry": 8.687,
+     "llm_essay": 0.518,
+     "llm_abstract": 0.079,
+     "llm_poetry": 26.121,
+     "all_human": 0.456,
+     "human_professional": 0.375
+    },
+    "hits_all_human": 192,
+    "hits_llm": 472,
+    "doc_frac": {
+     "human": 0.03,
+     "llm": 0.1749
+    },
+    "prior": {
+     "p_bg_per10k": 0.38,
+     "a_w": 7.6,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.435,
+     "z": 10.34,
+     "ratio_x": 4.2,
+     "per_genre_delta": {
+      "essay": 0.112,
+      "abstract": -0.182,
+      "poetry": 1.948
+     },
+     "per_genre_z": {
+      "essay": 0.35,
+      "abstract": -0.37,
+      "poetry": 12.02
+     },
+     "z_gpt4o_only": 2.2,
+     "boot_ci95": [
+      1.141,
+      1.661
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 소셜 미션을 가진 청년의 꿈을 다방면으로 지원함으로써 ",
+     "[news] 하락했다. 평택은 청북읍 사랑으로부영1차 평택청북지구EGt",
+     "[news] 돌봄이 필요한 아이들에게 사랑과 격려를 보내기 위해 치킨"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.435 (CI [1.141, 1.661]), z=10.34, LLM 5.642 vs human 2.04/10k, pro-human/LLM=0.07",
+   "precision_evidence": "measured_on_192_human_and_472_llm_hits"
+  },
+  {
+   "id": "BP_light_dark",
+   "pattern": "(빛|어둠|그림자|별빛|햇살|달빛)(이|을|의|은|처럼|으로|속)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "빛/어둠 상징.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 3,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 18,
+     "llm/poetry": 334,
+     "gpt4o/poetry": 80,
+     "news/news": 25,
+     "klue/klue": 39
+    },
+    "per10k": {
+     "katfish_human": 0.918,
+     "katfish_llm": 4.028,
+     "katfish_gpt4o": 2.747,
+     "news": 0.092,
+     "klue": 0.304,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 4.599,
+     "llm_essay": 0.056,
+     "llm_abstract": 0.0,
+     "llm_poetry": 19.694,
+     "all_human": 0.195,
+     "human_professional": 0.158
+    },
+    "hits_all_human": 82,
+    "hits_llm": 337,
+    "doc_frac": {
+     "human": 0.0116,
+     "llm": 0.1312
+    },
+    "prior": {
+     "p_bg_per10k": 0.161,
+     "a_w": 3.215,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.927,
+     "z": 9.38,
+     "ratio_x": 6.87,
+     "per_genre_delta": {
+      "essay": -0.191,
+      "abstract": -0.306,
+      "poetry": 2.332
+     },
+     "per_genre_z": {
+      "essay": -0.28,
+      "abstract": -0.39,
+      "poetry": 10.42
+     },
+     "z_gpt4o_only": 5.13,
+     "boot_ci95": [
+      1.572,
+      2.196
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] EUV는 극자외선 파장의 빛을 이용하는 것으로 파장이 ",
+     "[news]  표면에 발생한 흠집에 햇빛을 쬐면 흠집이 사라지는 보",
+     "[news] 광장비다. DUV 장비는 빛을 이용해 웨이퍼에 전자회로"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "LLM-leaning (pooled): delta=1.927 (CI [1.572, 2.196]), z=9.38, LLM 4.028 vs human 0.918/10k, pro-human/LLM=0.04",
+   "precision_evidence": "measured_on_82_human_and_337_llm_hits"
+  },
+  {
+   "id": "BP_remain",
+   "pattern": "(남아|새겨|스며|녹아|피어|번져|물들)(있|진|지는|지고|지며|들)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'스며들다/물들다' 서정 동사.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 10,
+     "llm/essay": 13,
+     "gpt4o/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "gpt4o/abstract": 1,
+     "human/poetry": 3,
+     "llm/poetry": 49,
+     "gpt4o/poetry": 14,
+     "news/news": 24,
+     "klue/klue": 16
+    },
+    "per10k": {
+     "katfish_human": 0.663,
+     "katfish_llm": 0.753,
+     "katfish_gpt4o": 0.577,
+     "news": 0.088,
+     "klue": 0.125,
+     "human_essay": 0.861,
+     "human_abstract": 0.0,
+     "human_poetry": 0.766,
+     "llm_essay": 0.241,
+     "llm_abstract": 0.079,
+     "llm_poetry": 2.889,
+     "all_human": 0.126,
+     "human_professional": 0.099
+    },
+    "hits_all_human": 53,
+    "hits_llm": 63,
+    "doc_frac": {
+     "human": 0.0111,
+     "llm": 0.0357
+    },
+    "prior": {
+     "p_bg_per10k": 0.101,
+     "a_w": 2.018,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.364,
+     "z": 1.28,
+     "ratio_x": 1.44,
+     "per_genre_delta": {
+      "essay": -0.628,
+      "abstract": 0.096,
+      "poetry": 1.884
+     },
+     "per_genre_z": {
+      "essay": -1.62,
+      "abstract": 0.11,
+      "poetry": 4.03
+     },
+     "z_gpt4o_only": 0.3,
+     "boot_ci95": [
+      -0.092,
+      0.869
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 가 있는 것처럼 다채롭게 녹아들어 갔다. 5일 기자가 찾",
+     "[news] 배우 세트장이 자연스럽게 녹아들어 있다. CJ ENM은 ",
+     "[news]  계획 등 복잡한 과정이 남아있다 면서 향후 광주시와 각"
+    ]
+   },
+   "apply_genres": [
+    "poetry"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['poetry']: per-genre z=[4.03], delta=[1.884]; pooled delta=0.364",
+   "precision_evidence": "measured_on_53_human_and_63_llm_hits"
+  },
+  {
+   "id": "BP_hannun_neun",
+   "pattern": "(것입니다|것이다|것이죠|것이며|것으로 보입니다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'~것입니다' 문미.",
+   "suggestions": [
+    "~이다"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 125,
+     "llm/essay": 920,
+     "gpt4o/essay": 340,
+     "human/abstract": 9,
+     "llm/abstract": 35,
+     "gpt4o/abstract": 4,
+     "human/poetry": 14,
+     "llm/poetry": 64,
+     "gpt4o/poetry": 3,
+     "news/news": 525,
+     "klue/klue": 409
+    },
+    "per10k": {
+     "katfish_human": 7.548,
+     "katfish_llm": 12.18,
+     "katfish_gpt4o": 11.768,
+     "news": 1.924,
+     "klue": 3.183,
+     "human_essay": 10.757,
+     "human_abstract": 2.209,
+     "human_poetry": 3.577,
+     "llm_essay": 17.032,
+     "llm_abstract": 2.758,
+     "llm_poetry": 3.774,
+     "all_human": 2.571,
+     "human_professional": 2.326
+    },
+    "hits_all_human": 1082,
+    "hits_llm": 1019,
+    "doc_frac": {
+     "human": 0.1689,
+     "llm": 0.314
+    },
+    "prior": {
+     "p_bg_per10k": 2.329,
+     "a_w": 46.573,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.63,
+     "z": 9.29,
+     "ratio_x": 1.88,
+     "per_genre_delta": {
+      "essay": 0.879,
+      "abstract": 0.078,
+      "poetry": 0.167
+     },
+     "per_genre_z": {
+      "essay": 10.61,
+      "abstract": 0.45,
+      "poetry": 1.04
+     },
+     "z_gpt4o_only": 4.45,
+     "boot_ci95": [
+      0.516,
+      0.736
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human] 로 상호작용 할 수 있을 것이다. 본 논문에서는 시스템이",
+     "[human] 유용하게 사용될 수 있을 것이다.",
+     "[human]  작성하는데 무리가 있을 것이다. 기존 코드에 대한 난이"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['essay']: per-genre z=[10.61], delta=[0.879]; pooled delta=0.63",
+   "precision_evidence": "measured_on_1082_human_and_1019_llm_hits"
+  },
+  {
+   "id": "BP_sentence_start_nominal",
+   "pattern": "(^|[.!?\\n] ?)(이|그|저) (때문에|덕분에|결과|과정에서)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "지시어 문두.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 11,
+     "gpt4o/essay": 4,
+     "human/abstract": 4,
+     "llm/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 2,
+     "news/news": 58,
+     "klue/klue": 49
+    },
+    "per10k": {
+     "katfish_human": 0.255,
+     "katfish_llm": 0.167,
+     "katfish_gpt4o": 0.136,
+     "news": 0.213,
+     "klue": 0.381,
+     "human_essay": 0.086,
+     "human_abstract": 0.982,
+     "human_poetry": 0.0,
+     "llm_essay": 0.204,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.118,
+     "all_human": 0.266,
+     "human_professional": 0.274
+    },
+    "hits_all_human": 112,
+    "hits_llm": 14,
+    "doc_frac": {
+     "human": 0.0236,
+     "llm": 0.0086
+    },
+    "prior": {
+     "p_bg_per10k": 0.268,
+     "a_w": 5.358,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.223,
+     "z": -0.75,
+     "ratio_x": 0.8,
+     "per_genre_delta": {
+      "essay": 0.095,
+      "abstract": -0.693,
+      "poetry": -0.118
+     },
+     "per_genre_z": {
+      "essay": 0.2,
+      "abstract": -1.35,
+      "poetry": -0.21
+     },
+     "z_gpt4o_only": -0.48,
+     "boot_ci95": [
+      -0.508,
+      0.068
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human]  개체명 분포를 이용하였다. 그 결과 사전 학습된 단어 임베딩",
+     "[human] 법론을 적용하고 실험하였다. 그 결과 BLEU 점수가 약 1.",
+     "[human]  부정)을 비교 분석하였다. 그 결과 어절단위, 형태소 분석기"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=-0.223, z=-0.75); disabled",
+   "precision_evidence": "measured_on_112_human_and_14_llm_hits"
+  },
+  {
+   "id": "BP_people_say",
+   "pattern": "(사람들은|많은 사람들이|누구나|우리는 누구나)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "일반화 주어.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 78,
+     "llm/essay": 202,
+     "gpt4o/essay": 82,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 5,
+     "llm/poetry": 16,
+     "gpt4o/poetry": 2,
+     "news/news": 84,
+     "klue/klue": 69
+    },
+    "per10k": {
+     "katfish_human": 4.233,
+     "katfish_llm": 2.606,
+     "katfish_gpt4o": 2.849,
+     "news": 0.308,
+     "klue": 0.537,
+     "human_essay": 6.712,
+     "human_abstract": 0.0,
+     "human_poetry": 1.277,
+     "llm_essay": 3.74,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.943,
+     "all_human": 0.561,
+     "human_professional": 0.377
+    },
+    "hits_all_human": 236,
+    "hits_llm": 218,
+    "doc_frac": {
+     "human": 0.043,
+     "llm": 0.0911
+    },
+    "prior": {
+     "p_bg_per10k": 0.383,
+     "a_w": 7.65,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.043,
+     "z": 0.37,
+     "ratio_x": 1.04,
+     "per_genre_delta": {
+      "essay": 0.045,
+      "abstract": -0.306,
+      "poetry": 0.19
+     },
+     "per_genre_z": {
+      "essay": 0.35,
+      "abstract": -0.6,
+      "poetry": 0.55
+     },
+     "z_gpt4o_only": -1.42,
+     "boot_ci95": [
+      -0.208,
+      0.294
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 위해 마련됐다. 울산시민 누구나 구글플레이 또는 앱스토어",
+     "[news] B다. A와 같은 경우가 많은 사람들이 혼자 떨어져 있는 야생동",
+     "[news] 기 힘들다. 하지만 많은 사람들은 어린 야생동물 새끼가 다"
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.043, z=0.37); disabled",
+   "precision_evidence": "measured_on_236_human_and_218_llm_hits"
+  },
+  {
+   "id": "BP_expect_hope",
+   "pattern": "(기대|기대됩니다|기대합니다|기대해|바랍니다|바랍니다만|바라며)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "기대·당부 마무리.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 3,
+     "llm/essay": 55,
+     "gpt4o/essay": 25,
+     "human/abstract": 7,
+     "llm/abstract": 39,
+     "gpt4o/abstract": 15,
+     "human/poetry": 3,
+     "llm/poetry": 30,
+     "gpt4o/poetry": 16,
+     "news/news": 634,
+     "klue/klue": 141
+    },
+    "per10k": {
+     "katfish_human": 0.663,
+     "katfish_llm": 1.482,
+     "katfish_gpt4o": 1.899,
+     "news": 2.324,
+     "klue": 1.097,
+     "human_essay": 0.258,
+     "human_abstract": 1.718,
+     "human_poetry": 0.766,
+     "llm_essay": 1.018,
+     "llm_abstract": 3.073,
+     "llm_poetry": 1.769,
+     "all_human": 1.872,
+     "human_professional": 1.929
+    },
+    "hits_all_human": 788,
+    "hits_llm": 124,
+    "doc_frac": {
+     "human": 0.1302,
+     "llm": 0.069
+    },
+    "prior": {
+     "p_bg_per10k": 1.932,
+     "a_w": 38.649,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.084,
+     "z": 0.76,
+     "ratio_x": 1.09,
+     "per_genre_delta": {
+      "essay": -0.04,
+      "abstract": 0.225,
+      "poetry": 0.064
+     },
+     "per_genre_z": {
+      "essay": -0.22,
+      "abstract": 1.21,
+      "poetry": 0.33
+     },
+     "z_gpt4o_only": 1.61,
+     "boot_ci95": [
+      -0.025,
+      0.185
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human]  일조할 수 있을 것으로 기대한다.",
+     "[human]  덜어줄 수 있을 것으로 기대한다.",
+     "[human] 의 추가로 정확도 개선을 기대할 수 있다."
+    ]
+   },
+   "apply_genres": [],
+   "tier": "C",
+   "enabled": false,
+   "tier_reason": "no reliable LLM lean (delta=0.084, z=0.76); disabled",
+   "precision_evidence": "measured_on_788_human_and_124_llm_hits"
+  },
+  {
+   "id": "BP_consider_view",
+   "pattern": "(고려(할|해야|하는|하여|한|해|하면)|감안(할|하여|하면)|염두에 두)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "llm_boilerplate",
+   "explanation_ko": "'고려해야 한다'.",
+   "suggestions": [
+    "(삭제)"
+   ],
+   "legit_use_note_ko": "정상적인 용법이 있다. 점수는 KatFish 계측값에 따른다.",
+   "source_url": "https://aclanthology.org/2025.acl-long.1030/",
+   "source_basis": "author_hypothesis_calibrated_on_katfish",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 140,
+     "gpt4o/essay": 59,
+     "human/abstract": 8,
+     "llm/abstract": 22,
+     "gpt4o/abstract": 8,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 236,
+     "klue/klue": 86
+    },
+    "per10k": {
+     "katfish_human": 0.51,
+     "katfish_llm": 1.936,
+     "katfish_gpt4o": 2.272,
+     "news": 0.865,
+     "klue": 0.669,
+     "human_essay": 0.172,
+     "human_abstract": 1.964,
+     "human_poetry": 0.0,
+     "llm_essay": 2.592,
+     "llm_abstract": 1.734,
+     "llm_poetry": 0.0,
+     "all_human": 0.789,
+     "human_professional": 0.814
+    },
+    "hits_all_human": 332,
+    "hits_llm": 162,
+    "doc_frac": {
+     "human": 0.0645,
+     "llm": 0.072
+    },
+    "prior": {
+     "p_bg_per10k": 0.804,
+     "a_w": 16.073,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.51,
+     "z": 3.19,
+     "ratio_x": 1.67,
+     "per_genre_delta": {
+      "essay": 1.306,
+      "abstract": 0.152,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 5.25,
+      "abstract": 0.59,
+      "poetry": -1.23
+     },
+     "z_gpt4o_only": 2.82,
+     "boot_ci95": [
+      0.33,
+      0.682
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[human]  대한 일관성있는 변환을 고려한 새로운 개방형 정보추출 ",
+     "[human] 절의 의미역 태그 분포를 고려한 의미역 결정 모델을 제안",
+     "[human] 절의 의미역 태그 분포를 고려한 의미역 결정 모델은 분포"
+    ]
+   },
+   "apply_genres": [
+    "essay"
+   ],
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "genre-scoped lean in ['essay']: per-genre z=[5.25], delta=[1.306]; pooled delta=0.51",
+   "precision_evidence": "measured_on_332_human_and_162_llm_hits"
+  }
+ ]
+}

@@ -576,7 +576,7 @@ describe("HumanizeEngine", () => {
         onEvent: event => {
           if (event.type !== "warning") return;
           warningEvents.push({ code: event.code, message: event.message });
-          if (event.message === "chunk two warning") {
+          if (event.message.startsWith("2번 구간에 모델 검토")) {
             chunkTwoWarningObserved.resolve();
           }
         }
@@ -593,12 +593,12 @@ describe("HumanizeEngine", () => {
       codex.resolve("AAA", "111", ["chunk one warning"]);
       const result = await resultPromise;
       expect(warningEvents).toEqual([
-        { code: "MODEL_WARNING", message: "chunk two warning" },
-        { code: "MODEL_WARNING", message: "chunk one warning" }
+        { code: "MODEL_WARNING", message: "2번 구간에 모델 검토 주의가 있습니다. 원문과 결과를 확인해 주세요." },
+        { code: "MODEL_WARNING", message: "1번 구간에 모델 검토 주의가 있습니다. 원문과 결과를 확인해 주세요." }
       ]);
       expect(result.warnings).toEqual([
-        { code: "MODEL_WARNING", message: "chunk one warning" },
-        { code: "MODEL_WARNING", message: "chunk two warning" }
+        { code: "MODEL_WARNING", message: "1번 구간에 모델 검토 주의가 있습니다. 원문과 결과를 확인해 주세요." },
+        { code: "MODEL_WARNING", message: "2번 구간에 모델 검토 주의가 있습니다. 원문과 결과를 확인해 주세요." }
       ]);
     } finally {
       await test.workspace.cleanup();
@@ -1066,6 +1066,70 @@ describe("HumanizeEngine", () => {
         })
       ).rejects.toMatchObject({ publicCode: "CLIENT_ABORTED" });
       expect(codex.attempts).toHaveLength(1);
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+});
+
+describe("Super Sejong integration", () => {
+  it("tells split chunks their position and the document speech level, but not a single chunk", async () => {
+    const first = "안내합니다. 신청은 내일까지입니다. ";
+    const second = "문의는 메일로 받습니다.";
+    const test = await setup(first + second);
+    try {
+      const contexts: unknown[] = [];
+      const codex: CodexAdapter = {
+        async transform(inputPath, _outputPath, _attempt, _signal, _settings, _options, _review, chunkContext) {
+          contexts.push(chunkContext);
+          return { rewrittenText: await readFile(inputPath, "utf8"), warnings: [] };
+        }
+      };
+      const a = Array.from(first).length, b = a + Array.from(second).length;
+      const engine = new HumanizeEngine({
+        python: new FakePython(manifest([body(1, 0, a), body(2, a, b)], b, "chunked"), [ok(), ok(), ok()]),
+        codex,
+        chunkConcurrency: 1
+      });
+      await engine.transform({ jobId: "job-1", workspace: test.workspace, signal: new AbortController().signal, onEvent: () => undefined });
+      expect(contexts).toEqual([{ index: 1, total: 2, register: "합쇼체" }, { index: 2, total: 2, register: "합쇼체" }]);
+
+      const single = await setup("AAA");
+      try {
+        contexts.length = 0;
+        await new HumanizeEngine({ python: new FakePython(manifest([body(1, 0, 3)], 3), [ok(), ok()]), codex, chunkConcurrency: 1 })
+          .transform({ jobId: "job-1", workspace: single.workspace, signal: new AbortController().signal, onEvent: () => undefined });
+        expect(contexts).toEqual([undefined]);
+      } finally {
+        await single.workspace.cleanup();
+        await removeTestRoot(single.outer);
+      }
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("reports gate failure codes, shadow codes, particle repairs and style findings without text", async () => {
+    const source = "결론적으로 이를 통해 다양한 효과를 얻는 것이 중요합니다.";
+    const test = await setup(source);
+    try {
+      const engine = new HumanizeEngine({
+        python: new FakePython(
+          manifest([body(1, 0, Array.from(source).length)], Array.from(source).length),
+          [{ ...abort(), hardFailures: ["polarity_changed"] }, { ...ok(), shadowFailures: ["modality_changed"] }, ok()],
+          [{ ...noRestore(), repairedParticles: 1 }, { ...noRestore(), repairedParticles: 2 }]
+        ),
+        codex: new FakeCodex(["첫 시도 결과다.", "그래서 효과를 얻었다."]),
+        chunkConcurrency: 1
+      });
+      const result = await engine.transform({ jobId: "job-1", workspace: test.workspace, signal: new AbortController().signal, onEvent: () => undefined });
+      expect(result.diagnostics.hardFailureCounts).toEqual({ polarity_changed: 1 });
+      expect(result.diagnostics.shadowFailureCounts).toEqual({ modality_changed: 1 });
+      expect(result.diagnostics.repairedParticles).toBe(3);
+      expect(result.diagnostics.styleFindingsBefore).toBeGreaterThanOrEqual(3);
+      expect(result.diagnostics.styleFindingsAfter).toBe(0);
     } finally {
       await test.workspace.cleanup();
       await removeTestRoot(test.outer);

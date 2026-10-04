@@ -1,0 +1,214 @@
+[
+  {
+    "id": "224430121623",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "223831095432",
+    "mutation": "해야 합니다 -> 하지 않아도 됩니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224429088499",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224424763003",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224417487008",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224426833726",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224346212081",
+    "mutation": "아닙니다 -> 입니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224042992615",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224425687796",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224424492063",
+    "mutation": "아닙니다 -> 입니다",
+    "legacyExit": 0,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224203838093",
+    "mutation": "아닙니다 -> 입니다",
+    "legacyExit": 0,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224374972689",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224430442212",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224423687749",
+    "mutation": "해야 합니다 -> 하지 않아도 됩니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224422386089",
+    "mutation": "아닙니다 -> 입니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224423571743",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224428125730",
+    "mutation": "아닙니다 -> 입니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "223773934750",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  },
+  {
+    "id": "224427917810",
+    "mutation": "아닙니다 -> 입니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed"
+    ]
+  },
+  {
+    "id": "224419408694",
+    "mutation": "할 수 있습니다 -> 할 수 없습니다",
+    "legacyExit": 1,
+    "sejongExit": 2,
+    "legacyHard": [],
+    "sejongHard": [
+      "polarity_changed",
+      "modality_changed"
+    ]
+  }
+]

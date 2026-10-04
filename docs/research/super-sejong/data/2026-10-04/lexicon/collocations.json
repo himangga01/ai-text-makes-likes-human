@@ -1,0 +1,4160 @@
+{
+ "resource": "collocations",
+ "meta": {
+  "generated": "2026-10-04",
+  "corpus_stats": {
+   "human/essay": {
+    "docs": 181,
+    "chars": 116208
+   },
+   "llm/essay": {
+    "docs": 590,
+    "chars": 540146
+   },
+   "gpt4o/essay": {
+    "docs": 181,
+    "chars": 203441
+   },
+   "human/abstract": {
+    "docs": 100,
+    "chars": 40736
+   },
+   "llm/abstract": {
+    "docs": 278,
+    "chars": 126908
+   },
+   "gpt4o/abstract": {
+    "docs": 100,
+    "chars": 53071
+   },
+   "human/poetry": {
+    "docs": 189,
+    "chars": 39141
+   },
+   "llm/poetry": {
+    "docs": 756,
+    "chars": 169593
+   },
+   "gpt4o/poetry": {
+    "docs": 189,
+    "chars": 38366
+   },
+   "news/news": {
+    "docs": 2740,
+    "chars": 2728229
+   },
+   "klue/klue": {
+    "docs": 1283,
+    "chars": 1284820
+   }
+  },
+  "method": "Calibrate the Super Sejong lexical resources on real Korean text.\n\nInputs (all local, read-only):\n  KatFish dataset  research/B/katfish_repo/katfish_dataset/{essay,abstract,poetry}.jsonl  (label 0=human, 1=LLM)\n  Naver news       research/B/naver_news_test.csv  (human, professional)\n  KLUE-MRC ctx     research/B/klue_mrc_ctx.json    (human, wiki/news/etc.)\nOutputs: five JSON resource files + calibration_summary.json in --out.\n\nMethod\n  * hits per 10k characters per corpus group (regex finditer, non-overlapping)\n  * log-odds ratio with informative Dirichlet prior (Monroe, Colaresi & Quinn 2008, \"Fightin' Words\"):\n      delta = log((yL+a)/(nL+a0-yL-a)) - log((yH+a)/(nH+a0-yH-a)),  var ~ 1/(yL+a)+1/(yH+a),  z = delta/sqrt(var)\n    exposure n is the number of characters, a_w = a0 * p_bg(w) with p_bg = hits per character in the background\n    (human news + KLUE), a0 = A0 pseudo-characters. Computed per genre and combined by inverse-variance weighting\n    (stratified, so genre mix differences between human and LLM sets do not leak into the score).\n  * document-level bootstrap (resample docs within genre x class) for a 95% interval of the stratified delta",
+  "a0": 200000.0,
+  "bootstrap_reps": 300,
+  "tier_legend": {
+   "A": "enable by default",
+   "B": "suggest-only / needs context guard",
+   "C": "disabled (kept for the record)",
+   "allow": "exemption list entry"
+  }
+ },
+ "entries": [
+  {
+   "id": "CO_gyeoljeong",
+   "pattern": "결정(을|이)? ?(만들|취하|가지|갖)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "결정",
+   "preferred_verbs": [
+    "내리다",
+    "하다",
+    "짓다"
+   ],
+   "explanation_ko": "'결정을 내리다/하다'. 'make a decision' 직역 '결정을 만들다'는 어색.",
+   "suggestions": [
+    "결정을/를 내리다",
+    "결정을/를 하다",
+    "결정을/를 짓다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_gyehoek",
+   "pattern": "계획(을|이)? ?(만들|형성)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "계획",
+   "preferred_verbs": [
+    "세우다",
+    "짜다",
+    "잡다"
+   ],
+   "explanation_ko": "'계획을 세우다'. '계획을 만들다'는 'make a plan' 직역.",
+   "suggestions": [
+    "계획을/를 세우다",
+    "계획을/를 짜다",
+    "계획을/를 잡다"
+   ],
+   "legit_use_note_ko": "'계획안을 만들다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  5년간 국가 재정 운용 계획이 만들어진다. 새 정부 첫 재정전"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_mokpyo",
+   "pattern": "목표(를|가)? ?(만들|형성)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "목표",
+   "preferred_verbs": [
+    "세우다",
+    "정하다",
+    "달성하다"
+   ],
+   "explanation_ko": "'목표를 세우다/정하다'.",
+   "suggestions": [
+    "목표을/를 세우다",
+    "목표을/를 정하다",
+    "목표을/를 달성하다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_yeokhal_have",
+   "pattern": "역할(을|이)? ?(가지|갖|지니)(고|는|었|며|다|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "역할",
+   "preferred_verbs": [
+    "하다",
+    "맡다",
+    "수행하다",
+    "담당하다"
+   ],
+   "explanation_ko": "'역할을 하다/맡다'. 'have a role' 직역.",
+   "suggestions": [
+    "역할을/를 하다",
+    "역할을/를 맡다",
+    "역할을/를 수행하다",
+    "역할을/를 담당하다"
+   ],
+   "legit_use_note_ko": "'역할을 지니다'는 문어에서 쓰인다.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_sajin",
+   "pattern": "사진(을|이)? ?(취하|잡|가지|만들)(았|아|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "사진",
+   "preferred_verbs": [
+    "찍다"
+   ],
+   "explanation_ko": "'사진을 찍다'. 'take a photo' 직역 '사진을 취하다'.",
+   "suggestions": [
+    "사진을/를 찍다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_sigan_have",
+   "pattern": "식사(를|가)? ?(가지|갖|취하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "식사",
+   "preferred_verbs": [
+    "하다",
+    "마치다"
+   ],
+   "explanation_ko": "'식사를 하다'. 'have a meal' 직역.",
+   "suggestions": [
+    "식사을/를 하다",
+    "식사을/를 마치다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_hoeui",
+   "pattern": "회의(를|가)? ?(가지|갖)(었|어|는|다|고|며|면|ㄴ|ㄹ|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "회의",
+   "preferred_verbs": [
+    "하다",
+    "열다",
+    "개최하다"
+   ],
+   "explanation_ko": "'회의를 하다/열다'. 'have a meeting' 직역. 보도문에서는 '회의를 갖다'가 흔하다.",
+   "suggestions": [
+    "회의을/를 하다",
+    "회의을/를 열다",
+    "회의을/를 개최하다"
+   ],
+   "legit_use_note_ko": "뉴스·공문서에서 정착한 표현.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 에서 첫 번째 산업전략원탁회의를 갖고 반도체 소재부품장비업체들",
+     "[news] ‘OPEC ’는 이날 화상회의를 갖고 8월부터 하루 64만80"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.005/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_gihoe",
+   "pattern": "기회(를|가)? ?(취하|가지|받)(았|아|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "기회",
+   "preferred_verbs": [
+    "얻다",
+    "잡다",
+    "놓치다",
+    "주다"
+   ],
+   "explanation_ko": "'기회를 얻다/잡다'. 'take a chance'/'have a chance' 직역.",
+   "suggestions": [
+    "기회을/를 얻다",
+    "기회을/를 잡다",
+    "기회을/를 놓치다",
+    "기회을/를 주다"
+   ],
+   "legit_use_note_ko": "'기회를 갖다'는 사전에도 있음.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 4,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.048,
+     "katfish_gpt4o": 0.034,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.074,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 4,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0025
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.443,
+     "z": 0.43,
+     "ratio_x": 1.56,
+     "per_genre_delta": {
+      "essay": 1.347,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.9,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.33,
+     "boot_ci95": [
+      -0.111,
+      0.804
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 비 지원 및 교육 훈련의 기회를 받는다. 특히 상반기에는 11"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_4_llm_hits"
+  },
+  {
+   "id": "CO_jilmun",
+   "pattern": "질문(을|이)? ?(묻|물어)(었|어|는|다|고|며|면|ㄴ|ㄹ|보)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "질문",
+   "preferred_verbs": [
+    "하다",
+    "던지다",
+    "받다"
+   ],
+   "explanation_ko": "'질문을 하다/던지다'. '질문을 묻다'는 겹말.",
+   "suggestions": [
+    "질문을/를 하다",
+    "질문을/를 던지다",
+    "질문을/를 받다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_ihagi_have",
+   "pattern": "(이야기|대화|토론|논의|상담)(를|가)? ?(가지|갖)(었|어|는|다|고|며|면|ㄴ|ㄹ|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "이야기",
+   "preferred_verbs": [
+    "나누다",
+    "하다",
+    "들려주다"
+   ],
+   "explanation_ko": "'이야기를 나누다/하다'. 'have a talk' 직역.",
+   "suggestions": [
+    "이야기을/를 나누다",
+    "이야기을/를 하다",
+    "이야기을/를 들려주다"
+   ],
+   "legit_use_note_ko": "'시간을 가지다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.046,
+     "z": -0.04,
+     "ratio_x": 0.95,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.541,
+      0.4
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.012/10k (1 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_1_llm_hits"
+  },
+  {
+   "id": "CO_choeseon",
+   "pattern": "최선(을|이)? ?(하|한|합|했|해)(다|고|며|면|는|서|야)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "최선",
+   "preferred_verbs": [
+    "다하다",
+    "다해"
+   ],
+   "explanation_ko": "'최선을 다하다'. '최선을 하다'는 어색.",
+   "suggestions": [
+    "최선을/를 다하다",
+    "최선을/를 다해"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_pihae_batda",
+   "pattern": "피해(를|가)? ?받(았|아|는|다|고|며|으|은|았다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "피해",
+   "preferred_verbs": [
+    "입다",
+    "당하다",
+    "보다"
+   ],
+   "explanation_ko": "'피해를 입다/당하다'. '피해를 받다'는 '영향을 받다'의 유추로 흔하나 어색하다는 지적이 있다.",
+   "suggestions": [
+    "피해을/를 입다",
+    "피해을/를 당하다",
+    "피해을/를 보다"
+   ],
+   "legit_use_note_ko": "구어·보도문에서 널리 쓰인다.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 5,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.06,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.093,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 5,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0025
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.547,
+     "z": 0.54,
+     "ratio_x": 1.73,
+     "per_genre_delta": {
+      "essay": 1.547,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.05,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.104,
+      0.913
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[klue]  중요하다”며 “신고자가 피해받는 일을 피하려면 명확하게 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_5_llm_hits"
+  },
+  {
+   "id": "CO_baksu",
+   "pattern": "박수(를|가)? ?하(였|였다|는|고|며|면|ㄴ|여)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "박수",
+   "preferred_verbs": [
+    "치다",
+    "보내다"
+   ],
+   "explanation_ko": "'박수를 치다'.",
+   "suggestions": [
+    "박수을/를 치다",
+    "박수을/를 보내다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_noryeok_gaul",
+   "pattern": "노력(이|을)? ?기울여지(었|어|는|다|고|며|면|ㄴ|ㄹ|ㅁ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "노력",
+   "preferred_verbs": [
+    "기울이다",
+    "하다"
+   ],
+   "explanation_ko": "'노력을 기울이다'. 피동 '노력이 기울여지다'는 번역투(새국어생활 영한 번역투 예 7).",
+   "suggestions": [
+    "노력을/를 기울이다",
+    "노력을/를 하다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/nkview/nklife/2012_1/22_0105.pdf",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "verification_todo": null,
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_gwansim",
+   "pattern": "관심(을|이)? ?(취하|만들|형성하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "관심",
+   "preferred_verbs": [
+    "가지다",
+    "갖다",
+    "기울이다",
+    "끌다"
+   ],
+   "explanation_ko": "'관심을 가지다/기울이다/끌다'. 이 구성은 사전 용례에 있어 '가지다'를 지적하지 않는다.",
+   "suggestions": [
+    "관심을/를 가지다",
+    "관심을/를 갖다",
+    "관심을/를 기울이다",
+    "관심을/를 끌다"
+   ],
+   "legit_use_note_ko": "'관심을 가지다'는 정상 연어(J 보고서가 확인).",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "category_in_source",
+   "confidence": "low",
+   "verification_todo": null,
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_yeonghyang",
+   "pattern": "영향(을|이)? ?(만들|형성하|가지)(었|어|는|다|고|며|면|ㄴ|ㄹ|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "영향",
+   "preferred_verbs": [
+    "미치다",
+    "주다",
+    "끼치다",
+    "받다"
+   ],
+   "explanation_ko": "'영향을 미치다/주다'. '영향을 만들다/가지다'는 어색. '영향을 미치다'는 사전 정상 연어.",
+   "suggestions": [
+    "영향을/를 미치다",
+    "영향을/를 주다",
+    "영향을/를 끼치다",
+    "영향을/를 받다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "verification_todo": null,
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_gyeolgwa",
+   "pattern": "결론(을|이)? ?(만들|형성하|취하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "결론",
+   "preferred_verbs": [
+    "내리다",
+    "짓다",
+    "나다"
+   ],
+   "explanation_ko": "'결론을 내리다/짓다'. 사전 용례에 있다.",
+   "suggestions": [
+    "결론을/를 내리다",
+    "결론을/를 짓다",
+    "결론을/를 나다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "verification_todo": null,
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_jeongbo",
+   "pattern": "정보(를|가)? ?(취하|만들|생성하)(였|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "정보",
+   "preferred_verbs": [
+    "얻다",
+    "제공하다",
+    "수집하다",
+    "알려주다"
+   ],
+   "explanation_ko": "'정보를 얻다'. '정보를 취하다'는 'obtain' 직역.",
+   "suggestions": [
+    "정보을/를 얻다",
+    "정보을/를 제공하다",
+    "정보을/를 수집하다",
+    "정보을/를 알려주다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 용자들로 하여금 창작자가 정보를 만들어내는 즉시 수신할 수 있도"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_gijeok",
+   "pattern": "기록(을|이)? ?(만들|형성하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "기록",
+   "preferred_verbs": [
+    "세우다",
+    "깨다",
+    "남기다",
+    "작성하다"
+   ],
+   "explanation_ko": "'기록을 세우다/남기다'. '기록을 만들다'는 'set a record' 직역.",
+   "suggestions": [
+    "기록을/를 세우다",
+    "기록을/를 깨다",
+    "기록을/를 남기다",
+    "기록을/를 작성하다"
+   ],
+   "legit_use_note_ko": "'기록을 만들다'는 서류 작성 의미에서는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_yaksok",
+   "pattern": "약속(을|이)? ?(가지|갖)(었|어|는|다|고|며|면|ㄴ|ㄹ|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "약속",
+   "preferred_verbs": [
+    "지키다",
+    "하다",
+    "잡다",
+    "어기다"
+   ],
+   "explanation_ko": "'약속을 하다/잡다'. 'have an appointment' 직역.",
+   "suggestions": [
+    "약속을/를 지키다",
+    "약속을/를 하다",
+    "약속을/를 잡다",
+    "약속을/를 어기다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_insang",
+   "pattern": "인상(을|이)? ?(만들|형성하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "인상",
+   "preferred_verbs": [
+    "주다",
+    "받다",
+    "남기다"
+   ],
+   "explanation_ko": "'인상을 주다/남기다'. '인상을 만들다'는 'make an impression' 직역.",
+   "suggestions": [
+    "인상을/를 주다",
+    "인상을/를 받다",
+    "인상을/를 남기다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_maeum_meok",
+   "pattern": "마음(을|이)? ?(하|한|합|했)(다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "마음",
+   "preferred_verbs": [
+    "먹다",
+    "가지다",
+    "쓰다",
+    "졸이다"
+   ],
+   "explanation_ko": "'마음을 먹다'. '마음을 하다'는 부적절.",
+   "suggestions": [
+    "마음을/를 먹다",
+    "마음을/를 가지다",
+    "마음을/를 쓰다",
+    "마음을/를 졸이다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 곳으로 간다. 자연스럽게 마음이 하고 싶은 것을 하되 조금씩 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_yeoyu",
+   "pattern": "휴식(을|이)? ?(가지|갖)(었|어|는|다|고|며|면|ㄴ|ㄹ|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "휴식",
+   "preferred_verbs": [
+    "취하다",
+    "하다",
+    "즐기다"
+   ],
+   "explanation_ko": "'휴식을 취하다'. 'have a rest' 직역.",
+   "suggestions": [
+    "휴식을/를 취하다",
+    "휴식을/를 하다",
+    "휴식을/를 즐기다"
+   ],
+   "legit_use_note_ko": "'휴식 시간을 가지다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 속 활동을 해왔기 때문에 휴식을 갖고 좋은 음악을 만드는 데에"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_gyeongheom",
+   "pattern": "경험(을|이)? ?(취하|만들)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "경험",
+   "preferred_verbs": [
+    "하다",
+    "쌓다",
+    "겪다"
+   ],
+   "explanation_ko": "'경험을 쌓다/하다'. '경험을 취하다'는 부적절.",
+   "suggestions": [
+    "경험을/를 하다",
+    "경험을/를 쌓다",
+    "경험을/를 겪다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.046,
+     "z": -0.04,
+     "ratio_x": 0.95,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.54,
+      0.463
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[klue] 환대와 함께 맛있는 커피 경험을 만들어나 가겠다.”라고 말했다."
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_1_llm_hits"
+  },
+  {
+   "id": "CO_daedap",
+   "pattern": "대답(을|이)? ?(말하|묻|묻는다)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "대답",
+   "preferred_verbs": [
+    "하다",
+    "듣다",
+    "내놓다"
+   ],
+   "explanation_ko": "'대답을 하다'. '대답을 말하다'는 어색.",
+   "suggestions": [
+    "대답을/를 하다",
+    "대답을/를 듣다",
+    "대답을/를 내놓다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_seoul_gajyeo",
+   "pattern": "문제(를|가)? ?(해결시키|해결되어지)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "문제",
+   "preferred_verbs": [
+    "풀다",
+    "해결하다",
+    "제기하다",
+    "일으키다"
+   ],
+   "explanation_ko": "'문제를 해결하다'. '해결시키다'는 직역형 사역.",
+   "suggestions": [
+    "문제을/를 풀다",
+    "문제을/를 해결하다",
+    "문제을/를 제기하다",
+    "문제을/를 일으키다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_uigyeon",
+   "pattern": "의견(을|이)? ?(만들|형성하|말하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "의견",
+   "preferred_verbs": [
+    "내다",
+    "제시하다",
+    "밝히다",
+    "나누다"
+   ],
+   "explanation_ko": "'의견을 내다/밝히다'. '의견을 만들다'는 어색.",
+   "suggestions": [
+    "의견을/를 내다",
+    "의견을/를 제시하다",
+    "의견을/를 밝히다",
+    "의견을/를 나누다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.172,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.32,
+     "z": -1.26,
+     "ratio_x": 0.27,
+     "per_genre_delta": {
+      "essay": -2.46,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.59,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.82,
+     "boot_ci95": [
+      -1.751,
+      -0.524
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.0/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_goebung",
+   "pattern": "(병|감기|독감|질병|암)(을|이)? ?(가지|갖)(고 있|고|었|는|다|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "병",
+   "preferred_verbs": [
+    "걸리다",
+    "앓다",
+    "나다"
+   ],
+   "explanation_ko": "'병에 걸리다/앓다'. 'have a disease' 직역.",
+   "suggestions": [
+    "병을/를 걸리다",
+    "병을/를 앓다",
+    "병을/를 나다"
+   ],
+   "legit_use_note_ko": "'지병을 가지다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 을 공격한다. 기생충이나 질병을 갖고 있을 수도 있다. 꼭 동물에"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_noraereul",
+   "pattern": "노래(를|가)? ?(연주하|연주한|연주했|말하|말한|말했)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "노래",
+   "preferred_verbs": [
+    "부르다",
+    "하다"
+   ],
+   "explanation_ko": "'노래를 부르다'. '노래를 연주하다'는 악기 연주가 아닌 한 어색.",
+   "suggestions": [
+    "노래을/를 부르다",
+    "노래을/를 하다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_kkum",
+   "pattern": "꿈(을|이)? ?(하|한|합|했|만들)(고|며|다|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "꿈",
+   "preferred_verbs": [
+    "꾸다",
+    "이루다"
+   ],
+   "explanation_ko": "'꿈을 꾸다/이루다'. '꿈을 만들다'는 'make a dream' 직역.",
+   "suggestions": [
+    "꿈을/를 꾸다",
+    "꿈을/를 이루다"
+   ],
+   "legit_use_note_ko": "'꿈을 만들어 가다'는 비유 용법.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 4
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.015,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.01,
+     "human_professional": 0.01
+    },
+    "hits_all_human": 4,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0009,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.011,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  New 아카마이 로 탈바꿈하고 있는 기업이다. 지난해 ",
+     "[news]  포함 대규모 단지로 탈바꿈한다. 잠실역 역세권에 걸쳐진",
+     "[news] 이 청년 창업 허브로 탈바꿈했다. 옛 동남지방통계청 리모"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.01/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_4_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_gyuchik",
+   "pattern": "규칙(을|이)? ?(만족하|충족하|완수하)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "규칙",
+   "preferred_verbs": [
+    "지키다",
+    "어기다",
+    "정하다",
+    "따르다"
+   ],
+   "explanation_ko": "'규칙을 지키다'. '규칙을 만족하다'는 'satisfy' 직역.",
+   "suggestions": [
+    "규칙을/를 지키다",
+    "규칙을/를 어기다",
+    "규칙을/를 정하다",
+    "규칙을/를 따르다"
+   ],
+   "legit_use_note_ko": "수학·논리에서 '조건을 만족하다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_jori",
+   "pattern": "눈물(을|이)? ?(떨어뜨리|떨구|내리)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "눈물",
+   "preferred_verbs": [
+    "흘리다",
+    "닦다",
+    "쏟다"
+   ],
+   "explanation_ko": "'눈물을 흘리다'. '눈물을 떨어뜨리다'는 의도적 비유일 때만.",
+   "suggestions": [
+    "눈물을/를 흘리다",
+    "눈물을/를 닦다",
+    "눈물을/를 쏟다"
+   ],
+   "legit_use_note_ko": "시에서는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_sigan_bonaeda",
+   "pattern": "시간(을|이)? ?(소비하|낭비시키|소모하)(였|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "시간",
+   "preferred_verbs": [
+    "보내다",
+    "쓰다",
+    "들이다"
+   ],
+   "explanation_ko": "'시간을 보내다/쓰다'. '시간을 소비하다'는 'spend time' 직역에 가깝다.",
+   "suggestions": [
+    "시간을/를 보내다",
+    "시간을/를 쓰다",
+    "시간을/를 들이다"
+   ],
+   "legit_use_note_ko": "'시간을 소비하다'는 사전 용례가 있다.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_gachi_chang",
+   "pattern": "가치(를|가)? ?(창출|생성)(하|한|합|했|해|할|시키)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "가치",
+   "preferred_verbs": [
+    "있다",
+    "지니다",
+    "더하다"
+   ],
+   "explanation_ko": "'가치를 만들다/더하다'. '가치 창출'은 경영 용어.",
+   "suggestions": [
+    "가치을/를 있다",
+    "가치을/를 지니다",
+    "가치을/를 더하다"
+   ],
+   "legit_use_note_ko": "경영·경제 문서에서는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 3,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.011,
+     "klue": 0.031,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.017,
+     "human_professional": 0.017
+    },
+    "hits_all_human": 7,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0016,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.019,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.105,
+     "z": -0.1,
+     "ratio_x": 0.9,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.539,
+      0.324
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 발 인력으로 구성해 고부가가치를 창출하고 미래 자동차 시장으로 ",
+     "[news] 로 발전시켜나가며 더 큰 가치를 창출하고자 한다 며 고객사 협력",
+     "[news]  더 높은 수준의 사회적 가치를 창출해내겠다는 취지다. 8일 K"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.017/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_7_human_and_1_llm_hits"
+  },
+  {
+   "id": "CO_byeonhwa",
+   "pattern": "변화(를|가)? ?(창조하|만들어내|야기시키)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "변화",
+   "preferred_verbs": [
+    "가져오다",
+    "일으키다",
+    "겪다",
+    "맞다"
+   ],
+   "explanation_ko": "'변화를 가져오다/일으키다'. '야기시키다'는 이중 사역.",
+   "suggestions": [
+    "변화을/를 가져오다",
+    "변화을/를 일으키다",
+    "변화을/를 겪다",
+    "변화을/를 맞다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue]  대만에서 이러한 문화적 변화를 창조하는 데 역할을 했지만, 이"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_seongjang",
+   "pattern": "성장(을|이)? ?(도모하|추구하)(고|며|는|ㄴ|면)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "성장",
+   "preferred_verbs": [
+    "하다",
+    "이루다",
+    "거듭하다"
+   ],
+   "explanation_ko": "'성장하다/이루다'. '성장을 도모하다'는 관청 어투.",
+   "suggestions": [
+    "성장을/를 하다",
+    "성장을/를 이루다",
+    "성장을/를 거듭하다"
+   ],
+   "legit_use_note_ko": "정책 문서에서는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 2,
+     "gpt4o/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 3
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.024,
+     "katfish_gpt4o": 0.068,
+     "news": 0.011,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.037,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 2,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.143,
+     "z": 0.14,
+     "ratio_x": 1.15,
+     "per_genre_delta": {
+      "essay": 0.759,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.49,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.58,
+     "boot_ci95": [
+      -0.536,
+      0.548
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news]  국내 시장에서 안정적인 성장을 도모하는 한편 해외 시장에서 보폭",
+     "[news] 의 가치를 실현하여 함께 성장을 도모하고 최고의 고객 경험을 선사",
+     "[news] 홍보와 매출 증대 등 기업성장을 도모하고자 상호 협력할 예정이다."
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.007/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_3_human_and_2_llm_hits"
+  },
+  {
+   "id": "CO_chaegim",
+   "pattern": "책임(을|이)? ?(가지|갖)(고 있|었|는|다|며|고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "책임",
+   "preferred_verbs": [
+    "지다",
+    "맡다",
+    "묻다"
+   ],
+   "explanation_ko": "'책임을 지다/맡다'. 'have responsibility' 직역형 '책임을 가지다'.",
+   "suggestions": [
+    "책임을/를 지다",
+    "책임을/를 맡다",
+    "책임을/를 묻다"
+   ],
+   "legit_use_note_ko": "'책임감을 가지다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 3,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.036,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.016,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.056,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.01,
+     "human_professional": 0.01
+    },
+    "hits_all_human": 4,
+    "hits_llm": 3,
+    "doc_frac": {
+     "human": 0.0009,
+     "llm": 0.0018
+    },
+    "prior": {
+     "p_bg_per10k": 0.011,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.314,
+     "z": 0.3,
+     "ratio_x": 1.37,
+     "per_genre_delta": {
+      "essay": 1.095,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.72,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.531,
+      0.71
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": [
+     "[news] 명이다. 에이치시티가 경영책임을 갖는다. 양사는 반복독성 흡입",
+     "[news]  수 있도록 길을 열어줄 책임을 갖고 있다”는 것이다. 박 교수는",
+     "[klue] 요한 모든 조치를 강구할 책임을 가지고 있다. 교육대상이 되는 어린"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.01/10k, LLM 0.036/10k (3 LLM hits, 4 human hits)",
+   "precision_evidence": "measured_on_4_human_and_3_llm_hits"
+  },
+  {
+   "id": "CO_jangseo",
+   "pattern": "자리(를|가)? ?(취하|가지|갖)(고 있|었|는|다|며|고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "자리",
+   "preferred_verbs": [
+    "잡다",
+    "차지하다",
+    "앉다"
+   ],
+   "explanation_ko": "'자리를 잡다/차지하다'.",
+   "suggestions": [
+    "자리을/를 잡다",
+    "자리을/를 차지하다",
+    "자리을/를 앉다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.047,
+     "z": -0.98,
+     "ratio_x": 0.35,
+     "per_genre_delta": {
+      "essay": -1.949,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.19,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.55,
+     "boot_ci95": [
+      -1.632,
+      -0.52
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  잠정 연기됐던 기자회견 자리를 갖는다. 이외에도 △사옥 앞 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_seonggwa",
+   "pattern": "성과(를|가)? ?(만들|이루)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "성과",
+   "preferred_verbs": [
+    "내다",
+    "거두다",
+    "올리다"
+   ],
+   "explanation_ko": "'성과를 내다/거두다/올리다'. '성과를 만들다'는 'make progress' 직역에 가깝다.",
+   "suggestions": [
+    "성과을/를 내다",
+    "성과을/를 거두다",
+    "성과을/를 올리다"
+   ],
+   "legit_use_note_ko": "'성과를 이루다'는 문어에서 쓰이기도 한다.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 4,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.015,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.012,
+     "human_professional": 0.012
+    },
+    "hits_all_human": 5,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0011,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.014,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  의미도 있지만 구체적인 성과를 만들어 석유화학 산업에 성공적인",
+     "[news]  의미도 있지만 구체적인 성과를 만들어 석유화학 산업에 성공적인",
+     "[news] 로그램을 통해 의미 있는 성과를 만들었다. 명품 수선사와 소비자"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.012/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_5_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_gyeolgwa_bada",
+   "pattern": "결과(를|가)? ?(받|취하)(았|아|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "결과",
+   "preferred_verbs": [
+    "얻다",
+    "내다",
+    "나오다",
+    "보이다"
+   ],
+   "explanation_ko": "'결과를 얻다/내다'. '결과를 받다'는 시험 결과 문맥에서는 정상.",
+   "suggestions": [
+    "결과을/를 얻다",
+    "결과을/를 내다",
+    "결과을/를 나오다",
+    "결과을/를 보이다"
+   ],
+   "legit_use_note_ko": "'성적 결과를 받다'는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.105,
+     "z": -0.1,
+     "ratio_x": 0.9,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.539,
+      0.32
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 있다. 10분 안에 검사 결과를 받아볼 수 있기 때문에 현장에",
+     "[news] 다. 확인요청과 확인보상 결과를 받아들이기 어려울 경우 이의신"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.005/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_1_llm_hits"
+  },
+  {
+   "id": "CO_seontaek",
+   "pattern": "선택(을|이)? ?(만들|취하|가지)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "선택",
+   "preferred_verbs": [
+    "하다",
+    "내리다"
+   ],
+   "explanation_ko": "'선택을 하다'. 'make a choice' 직역 '선택을 만들다'.",
+   "suggestions": [
+    "선택을/를 하다",
+    "선택을/를 내리다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_jigeop",
+   "pattern": "일(을|이)? ?(수행해내|취하)(였|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "일",
+   "preferred_verbs": [
+    "하다",
+    "맡다"
+   ],
+   "explanation_ko": "'일을 하다/해내다'.",
+   "suggestions": [
+    "일을/를 하다",
+    "일을/를 맡다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_yeonghwa",
+   "pattern": "영화(를|가)? ?(시청하|시청한|시청했)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "영화",
+   "preferred_verbs": [
+    "보다",
+    "찍다",
+    "만들다"
+   ],
+   "explanation_ko": "'영화를 보다'. 영화는 '시청'이 아니라 '관람'.",
+   "suggestions": [
+    "영화을/를 보다",
+    "영화을/를 찍다",
+    "영화을/를 만들다"
+   ],
+   "legit_use_note_ko": "OTT 스트리밍 문맥에서는 '시청'도 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 가 늘면서 집에서 유료로 영화를 시청하는 습관이 생겨나고 있는 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CO_pyeonji",
+   "pattern": "편지(를|가)? ?(만들|제작하)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "편지",
+   "preferred_verbs": [
+    "쓰다",
+    "보내다",
+    "부치다"
+   ],
+   "explanation_ko": "'편지를 쓰다'.",
+   "suggestions": [
+    "편지을/를 쓰다",
+    "편지을/를 보내다",
+    "편지을/를 부치다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_jeonhwa",
+   "pattern": "전화(를|가)? ?(만들|가지|갖|치)(었|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "전화",
+   "preferred_verbs": [
+    "걸다",
+    "하다",
+    "받다"
+   ],
+   "explanation_ko": "'전화를 걸다/하다'.",
+   "suggestions": [
+    "전화을/를 걸다",
+    "전화을/를 하다",
+    "전화을/를 받다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_daehwa",
+   "pattern": "인사(를|가)? ?(가지|갖|취하)(었|어|는|다|고|며|면|ㄴ|ㄹ|게)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "인사",
+   "preferred_verbs": [
+    "하다",
+    "나누다",
+    "드리다"
+   ],
+   "explanation_ko": "'인사를 하다/나누다'.",
+   "suggestions": [
+    "인사을/를 하다",
+    "인사을/를 나누다",
+    "인사을/를 드리다"
+   ],
+   "legit_use_note_ko": "'인사를 갖다'는 비문.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CO_gisul_baeuda",
+   "pattern": "기술(을|이)? ?(취득하|획득하)(였|어|는|다|고|며|면|ㄴ|ㄹ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "noun_verb_collocation",
+   "noun": "기술",
+   "preferred_verbs": [
+    "익히다",
+    "배우다",
+    "쓰다"
+   ],
+   "explanation_ko": "'기술을 익히다/배우다'.",
+   "suggestions": [
+    "기술을/를 익히다",
+    "기술을/를 배우다",
+    "기술을/를 쓰다"
+   ],
+   "legit_use_note_ko": "자격·특허 문맥에서는 정상.",
+   "source_url": "https://krdict.korean.go.kr/kor/openApi/openApiInfo",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "verification_todo": "krdict Open API(search/view)에서 연어·용례 확인 후 source_basis를 dictionary_attested로 승격",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  }
+ ]
+}

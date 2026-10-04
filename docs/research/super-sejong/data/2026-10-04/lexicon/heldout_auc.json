@@ -1,0 +1,98 @@
+{
+ "even-calibrated tier A": {
+  "n_patterns": 29,
+  "essay": {
+   "auroc": 0.966,
+   "mean_human_per_1k": 5.99,
+   "mean_llm_per_1k": 16.19,
+   "n_human": 90,
+   "n_llm": 295
+  },
+  "abstract": {
+   "auroc": 0.535,
+   "mean_human_per_1k": 3.74,
+   "mean_llm_per_1k": 4.18,
+   "n_human": 50,
+   "n_llm": 139
+  },
+  "poetry": {
+   "auroc": 0.757,
+   "mean_human_per_1k": 3.72,
+   "mean_llm_per_1k": 11.36,
+   "n_human": 94,
+   "n_llm": 378
+  }
+ },
+ "even-calibrated tier A+B": {
+  "n_patterns": 39,
+  "essay": {
+   "auroc": 0.966,
+   "mean_human_per_1k": 6.7,
+   "mean_llm_per_1k": 17.93,
+   "n_human": 90,
+   "n_llm": 295
+  },
+  "abstract": {
+   "auroc": 0.569,
+   "mean_human_per_1k": 4.4,
+   "mean_llm_per_1k": 5.52,
+   "n_human": 50,
+   "n_llm": 139
+  },
+  "poetry": {
+   "auroc": 0.757,
+   "mean_human_per_1k": 3.99,
+   "mean_llm_per_1k": 11.93,
+   "n_human": 94,
+   "n_llm": 378
+  }
+ },
+ "all-data tier A (optimistic)": {
+  "n_patterns": 39,
+  "essay": {
+   "auroc": 0.969,
+   "mean_human_per_1k": 6.2,
+   "mean_llm_per_1k": 16.75,
+   "n_human": 90,
+   "n_llm": 295
+  },
+  "abstract": {
+   "auroc": 0.55,
+   "mean_human_per_1k": 3.74,
+   "mean_llm_per_1k": 4.4,
+   "n_human": 50,
+   "n_llm": 139
+  },
+  "poetry": {
+   "auroc": 0.757,
+   "mean_human_per_1k": 4.18,
+   "mean_llm_per_1k": 12.4,
+   "n_human": 94,
+   "n_llm": 378
+  }
+ },
+ "all 63 candidates (no selection)": {
+  "n_patterns": 63,
+  "essay": {
+   "auroc": 0.956,
+   "mean_human_per_1k": 8.4,
+   "mean_llm_per_1k": 19.73,
+   "n_human": 90,
+   "n_llm": 295
+  },
+  "abstract": {
+   "auroc": 0.594,
+   "mean_human_per_1k": 4.74,
+   "mean_llm_per_1k": 6.31,
+   "n_human": 50,
+   "n_llm": 139
+  },
+  "poetry": {
+   "auroc": 0.754,
+   "mean_human_per_1k": 4.44,
+   "mean_llm_per_1k": 12.95,
+   "n_human": 94,
+   "n_llm": 378
+  }
+ }
+}

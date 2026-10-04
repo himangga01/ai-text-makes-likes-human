@@ -14,10 +14,16 @@ DEFAULT_VENDOR = Path(__file__).resolve().parent.parent / "vendor/humanize-engin
 
 try:
     from .quantities import fold_width, number_words, signed_quantities
+    from .super_sejong import changed_polarity, changed_participant_roles, changed_sentence_modality, changed_lexical_polarity
+    from .super_sejong import mode as super_sejong_mode
+    from . import super_sejong_josa as josa
 except ImportError:  # Executed as a standalone gateway script.
     # Windows embedded Python's ._pth isolation omits the script directory.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from quantities import fold_width, number_words, signed_quantities
+    from super_sejong import changed_polarity, changed_participant_roles, changed_sentence_modality, changed_lexical_polarity
+    from super_sejong import mode as super_sejong_mode
+    import super_sejong_josa as josa
 
 # 라틴 문자 단어(Apple, AI)와 한자열(李文學)은 고유명사·용어로 보고 개수까지 보존한다.
 _NAME_TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[.'’\-][A-Za-z0-9]+)*"
@@ -255,6 +261,24 @@ def verify(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR, attempt: in
         codes.append("name_changed")
     if dropped_sentences(source, output, checks, modality):
         codes.append("sentence_dropped")
+    sejong_mode, sejong = super_sejong_mode(), []
+    if sejong_mode != "off":
+        before_sentences = [s.strip() for s in modality._m._split_sentences(checks.strip_summary_block(source)) if s.strip()]
+        after_sentences = [s.strip() for s in modality._m._split_sentences(checks.strip_summary_block(output)) if s.strip()]
+        aligned = modality.align(before_sentences, after_sentences)
+        if changed_polarity(source, output, aligned):
+            sejong.append("polarity_changed")
+        if changed_sentence_modality(source, output, aligned):
+            sejong.append("modality_changed")
+        if changed_lexical_polarity(source, output, aligned):
+            sejong.append("lexical_polarity_changed")
+        if changed_participant_roles(source, output, aligned):
+            sejong.append("participant_role_changed")
+        # restore() already repaired introduced particle mismatches; one that remains is certain.
+        if josa.gate(source, output, None, "certain"):
+            sejong.append("josa_mismatch")
+    if sejong_mode == "enforce":
+        codes += sejong
     stdout, stderr = io.StringIO(), io.StringIO()
     with redirect_stdout(stdout), redirect_stderr(stderr):
         code = gate.main(["--before", str(before), "--after", str(after), "--genre", "essay", "--json"])
@@ -270,8 +294,11 @@ def verify(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR, attempt: in
         code = 3
     if codes and code != 3:
         code = 2
-    return {"gate": {"exit_code": code}, "hardFailures": codes,
-            "warningReasons": reasons, "policy": decision(code, attempt)}
+    result = {"gate": {"exit_code": code}, "hardFailures": codes,
+              "warningReasons": reasons, "policy": decision(code, attempt)}
+    if sejong_mode == "shadow" and sejong:
+        result["shadowFailures"] = sejong
+    return result
 
 
 def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
@@ -282,9 +309,15 @@ def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
         output = file.read()
     output, restored, skipped = modality.restore(source, output)
     output, report = commas.strip_injected(source, output, all_sentences=False)
+    # Super Sejong: an edit that changes a noun can leave the wrong particle allomorph behind
+    # (회의을, URL를, 10%으로). Repair only mismatches the rewrite introduced.
+    repaired = josa.gate(source, output, None, "likely") if super_sejong_mode() != "off" else []
+    if repaired:
+        output = josa.repair(output, repaired)
     with after.open("w", encoding="utf-8", newline="") as file:
         file.write(output)
-    return {"restoredSentences": len(restored), "skippedSentences": len(skipped), "removedCommas": report["commas_removed"]}
+    return {"restoredSentences": len(restored), "skippedSentences": len(skipped), "removedCommas": report["commas_removed"],
+            "repairedParticles": len(repaired)}
 
 
 def validate_response(value: object) -> dict:

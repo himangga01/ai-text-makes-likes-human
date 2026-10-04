@@ -27,6 +27,7 @@ let saving = Promise.resolve();
 const children = new Set<number>();
 // The TXT/MD file the current text came from; saving a result over it is refused.
 let textSource: string | undefined;
+let pendingSource: { token: string; path: string | undefined } | undefined;
 const pending = new Map<string, { resolve(value: any): void; reject(reason: Error): void; timer?: NodeJS.Timeout }>();
 
 function stopChildren() {
@@ -138,14 +139,23 @@ function registerIpc() {
     if(activeId)throw new Error('변환 중입니다.');
     const selected = await dialog.showOpenDialog(window!, { properties: ["openFile"], filters: [{ name: "지원 문서", extensions: ["txt", "md", "docx", "pptx"] }] });
     const file = selected.filePaths[0]; if (selected.canceled || !file) return null;
-    if(/\.(docx|pptx)$/i.test(file)){textSource=undefined;return {document:await request('document-import',{file})};}
+    if(/\.(docx|pptx)$/i.test(file)){
+      const document=await request('document-import',{file});
+      const sourceToken=randomUUID();pendingSource={token:sourceToken,path:undefined};
+      return {document,sourceToken};
+    }
     if (!/\.(txt|md)$/i.test(file)) throw new Error("TXT, MD, DOCX 또는 PPTX 파일을 선택해 주세요.");
     // Refuse before reading: the renderer would otherwise receive the whole file.
     if ((await stat(file)).size > MAX_TEXT_FILE_BYTES) throw new Error("TXT·MD 파일은 1 MiB 이하만 불러올 수 있습니다.");
     const bytes = new Uint8Array(await readFile(file));
-    textSource = path.resolve(file);
-    return { name: path.basename(file), bytes };
+    const sourceToken=randomUUID();pendingSource={token:sourceToken,path:path.resolve(file)};
+    return { name: path.basename(file), bytes, sourceToken };
   });
+  handle("commit-source", value => {
+    if (!pendingSource || value?.sourceToken !== pendingSource.token) throw new Error("파일 선택 상태가 만료되었습니다.");
+    textSource=pendingSource.path;pendingSource=undefined;
+  });
+  handle("clear-source", () => { textSource=undefined;pendingSource=undefined; });
   handle("save-text", async value => {
     const content = text(value?.text);
     const name = path.basename(text(value?.name)).replace(/[<>:"/\\|?*]/g, "-");

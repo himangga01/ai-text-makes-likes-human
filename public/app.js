@@ -224,7 +224,13 @@ function setStatus(kind, label, message) {
   statusShown = { kind, label, message };
 }
 
-function overInputLimit() { return countCharacters(elements.source.value) > inputLimits.maxInputChars; }
+// Office previews include location labels. The parser already enforces its own
+// content limit; UI decoration is neither source text nor a text-input budget.
+function sourceCharacterCount() {
+  return officeDocument && Number.isInteger(officeDocument.sourceChars)
+    ? officeDocument.sourceChars : countCharacters(elements.source.value);
+}
+function overInputLimit() { return !officeDocument && countCharacters(elements.source.value) > inputLimits.maxInputChars; }
 
 function showIdleStatus() {
   const hasSource = Boolean(elements.source.value.trim());
@@ -350,7 +356,7 @@ function refreshControls() {
   const hasSource = elements.source.value.trim().length > 0;
   const canDownload = Boolean(resultDownloadName && finalText);
   const showRewriteControls = directTextInput();
-  const sourceChars = countCharacters(elements.source.value), overLimit = sourceChars > inputLimits.maxInputChars;
+  const sourceChars = sourceCharacterCount(), overLimit = overInputLimit();
   elements.sourceCount.textContent = overLimit
     ? `${sourceChars.toLocaleString("ko-KR")} / ${inputLimits.maxInputChars.toLocaleString("ko-KR")}자`
     : `${sourceChars.toLocaleString("ko-KR")}자`;
@@ -520,11 +526,15 @@ elements.fileButton.addEventListener("click", async () => {
   importing=true;refreshControls();
   try {
     const selected = await window.humanizeDesktop.openText();
-    if(selected?.document) await loadOffice(selected.document);
+    if(selected?.document) {
+      await loadOffice(selected.document);
+      await window.humanizeDesktop.commitSource(selected.sourceToken);
+    }
     else if (selected) {
       // Transfer ownership synchronously to the common text import path.
       importing=false;
-      await loadFile(new File([selected.bytes], selected.name));
+      if(await loadFile(new File([selected.bytes], selected.name)))
+        await window.humanizeDesktop.commitSource(selected.sourceToken);
     }
   } catch (error) { setStatus("error", "파일 오류", error.message); }
   finally {importing=false;refreshControls();}
@@ -554,6 +564,7 @@ async function loadFile(file) {
     elements.fileName.hidden = false;
     setStatus("ready", "파일 준비", "파일 내용을 확인한 뒤 변환 버튼을 눌러주세요.");
     refreshControls();
+    return true;
   } catch (error) {
     elements.source.value = previous;
     const message =
@@ -562,6 +573,7 @@ async function loadFile(file) {
         : error.message || "파일을 읽지 못했습니다.";
     setStatus("error", "파일 오류", message);
     refreshControls();
+    return false;
   } finally {
     importing=false;refreshControls();
     elements.fileInput.value = "";
@@ -579,6 +591,7 @@ async function loadOffice(info) {
 elements.transform.addEventListener("click", startTransform);
 elements.cancel.addEventListener("click", () => controller?.abort());
 elements.reset.addEventListener("click", () => {
+  if (desktop) void window.humanizeDesktop.clearSource();
   void closeDocument(officeDocument);officeDocument=undefined;documentResult=undefined;documentFailed=false;
   clearCompletedResult(); clearWarnings();
   elements.source.value = "";

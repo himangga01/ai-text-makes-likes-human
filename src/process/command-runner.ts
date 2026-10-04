@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 
-export type CommandTermination = "exit" | "timeout" | "aborted";
+export type CommandTermination = "exit" | "timeout" | "aborted" | "output-limit";
 
 export interface CommandRequest {
   command: string;
@@ -8,6 +8,7 @@ export interface CommandRequest {
   cwd: string;
   stdin?: string;
   timeoutMs: number;
+  maxOutputBytes?: number;
   signal?: AbortSignal;
   env?: NodeJS.ProcessEnv;
 }
@@ -97,17 +98,25 @@ export class SpawnCommandRunner implements CommandRunner {
       });
       let stdout = "";
       let stderr = "";
+      let outputBytes = 0;
       let termination: CommandTermination = "exit";
       let terminationStarted = false;
 
+      const capture = (chunk: string, stream: "stdout" | "stderr"): void => {
+        const limit = request.maxOutputBytes ?? 4 * 1024 * 1024;
+        const encoded = Buffer.from(chunk, "utf8");
+        const available = Math.max(0, limit - outputBytes);
+        const kept = encoded.subarray(0, available);
+        outputBytes += kept.length;
+        if (stream === "stdout") stdout += kept.toString("utf8");
+        else stderr += kept.toString("utf8");
+        if (encoded.length > available) terminate("output-limit");
+      };
+
       child.stdout.setEncoding("utf8");
       child.stderr.setEncoding("utf8");
-      child.stdout.on("data", chunk => {
-        stdout += String(chunk);
-      });
-      child.stderr.on("data", chunk => {
-        stderr += String(chunk);
-      });
+      child.stdout.on("data", chunk => capture(String(chunk), "stdout"));
+      child.stderr.on("data", chunk => capture(String(chunk), "stderr"));
 
       const terminate = (reason: Exclude<CommandTermination, "exit">): void => {
         if (terminationStarted) return;

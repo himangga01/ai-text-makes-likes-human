@@ -1,0 +1,10370 @@
+{
+ "_meta": {
+  "source": "KatFish (Park et al., ACL 2025) human texts only for ranges; LLM columns summarise GPT-4o/Solar/Qwen2-72B/Llama3.1-70B outputs. Kiwi (kiwipiepy 0.24.0) morphology.",
+  "unit_notes": "sentence unit = Kiwi sentence (essay, abstract) or line (poetry). *_per_sent: per unit. *_per100m: per 100 Kiwi morphemes. rates in 0..1.",
+  "natural_range_definition": "natural_range = [p25, p75] of HUMAN documents in that genre. p10/p90 give a wider tolerance band. Ranges describe the KatFish human populations (school students for essay, 2016-2018 NLP-paper authors for abstract, hobby/student poets for poetry) -- NOT a norm for adult professional prose.",
+  "status": "separates = CI excludes 0.5 (doc and cluster bootstrap), |AUC-0.5|>=0.10, survives length stratification and caliper matching, same direction vs all generators; noise = otherwise weak; length / length-confounded / generator-inconsistent as named.",
+  "use_policy": "Diagnostic ranges for source-anchored, meaning-preserving edits only. Do NOT use as detector-evasion targets and do not push a text towards the median (human medians for rates such as comma_* are 0 in poetry).",
+  "licence_note": "Only aggregate statistics are included; no KatFish text. The KatFish repository declares no licence (api.github.com license:null as recorded in docs/research/super-sejong/B-ai-korean-features.md); upstream corpora (AI-Hub essays, NIKL poems, KISS/KCI abstracts) have their own terms. Clear with the authors before shipping derived data.",
+  "n_docs": {
+   "essay": {
+    "human": 181,
+    "llm": 590
+   },
+   "abstract": {
+    "human": 100,
+    "llm": 278
+   },
+   "poetry": {
+    "human": 189,
+    "llm": 756
+   }
+  }
+ },
+ "essay": {
+  "n_chars": {
+   "human_n": 181,
+   "natural_range": [
+    468.0,
+    821.0
+   ],
+   "human_p10_p90": [
+    346.0,
+    887.0
+   ],
+   "human_median": 663.0,
+   "human_mean": 642.0331,
+   "llm_median": 904.0,
+   "llm_iqr": [
+    779.25,
+    1078.5
+   ],
+   "auc_llm_gt_human": 0.805,
+   "auc_ci95": [
+    0.773,
+    0.835
+   ],
+   "auc_length_stratified": 0.647,
+   "auc_length_matched": 0.502,
+   "cliffs_delta": 0.61,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     856.75,
+     929.0
+    ],
+    "중등": [
+     606.0,
+     797.0
+    ],
+    "초등": [
+     346.0,
+     501.0
+    ]
+   }
+  },
+  "n_sent": {
+   "human_n": 181,
+   "natural_range": [
+    9.0,
+    14.0
+   ],
+   "human_p10_p90": [
+    7.0,
+    17.0
+   ],
+   "human_median": 12.0,
+   "human_mean": 12.0166,
+   "llm_median": 17.0,
+   "llm_iqr": [
+    14.0,
+    20.0
+   ],
+   "auc_llm_gt_human": 0.801,
+   "auc_ci95": [
+    0.761,
+    0.838
+   ],
+   "auc_length_stratified": 0.64,
+   "auc_length_matched": 0.604,
+   "cliffs_delta": 0.602,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     12.0,
+     16.0
+    ],
+    "중등": [
+     10.0,
+     14.0
+    ],
+    "초등": [
+     7.0,
+     12.0
+    ]
+   }
+  },
+  "n_eojeol": {
+   "human_n": 181,
+   "natural_range": [
+    109.0,
+    196.0
+   ],
+   "human_p10_p90": [
+    79.0,
+    219.0
+   ],
+   "human_median": 157.0,
+   "human_mean": 153.0773,
+   "llm_median": 212.5,
+   "llm_iqr": [
+    182.0,
+    254.0
+   ],
+   "auc_llm_gt_human": 0.789,
+   "auc_ci95": [
+    0.756,
+    0.825
+   ],
+   "auc_length_stratified": 0.578,
+   "auc_length_matched": 0.467,
+   "cliffs_delta": 0.579,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     199.25,
+     225.25
+    ],
+    "중등": [
+     145.25,
+     189.75
+    ],
+    "초등": [
+     79.0,
+     118.0
+    ]
+   }
+  },
+  "sent_eo_mean": {
+   "human_n": 181,
+   "natural_range": [
+    10.0,
+    15.6
+   ],
+   "human_p10_p90": [
+    8.2222,
+    18.6364
+   ],
+   "human_median": 13.0,
+   "human_mean": 13.3502,
+   "llm_median": 12.8333,
+   "llm_iqr": [
+    11.6111,
+    14.2375
+   ],
+   "auc_llm_gt_human": 0.509,
+   "auc_ci95": [
+    0.448,
+    0.567
+   ],
+   "auc_length_stratified": 0.408,
+   "auc_length_matched": 0.362,
+   "cliffs_delta": 0.017,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     13.3208,
+     17.256
+    ],
+    "중등": [
+     11.4638,
+     16.2964
+    ],
+    "초등": [
+     8.7368,
+     12.8333
+    ]
+   }
+  },
+  "sent_eo_sd": {
+   "human_n": 181,
+   "natural_range": [
+    4.3547,
+    7.3037
+   ],
+   "human_p10_p90": [
+    3.3194,
+    9.4443
+   ],
+   "human_median": 5.8386,
+   "human_mean": 6.1593,
+   "llm_median": 4.2687,
+   "llm_iqr": [
+    3.6483,
+    5.0135
+   ],
+   "auc_llm_gt_human": 0.258,
+   "auc_ci95": [
+    0.212,
+    0.311
+   ],
+   "auc_length_stratified": 0.178,
+   "auc_length_matched": 0.153,
+   "cliffs_delta": -0.484,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     5.7018,
+     6.9583
+    ],
+    "중등": [
+     4.9595,
+     8.7479
+    ],
+    "초등": [
+     3.5879,
+     6.2106
+    ]
+   }
+  },
+  "sent_eo_cv": {
+   "human_n": 181,
+   "natural_range": [
+    0.3754,
+    0.5447
+   ],
+   "human_p10_p90": [
+    0.3153,
+    0.6703
+   ],
+   "human_median": 0.4552,
+   "human_mean": 0.4702,
+   "llm_median": 0.3341,
+   "llm_iqr": [
+    0.2867,
+    0.3784
+   ],
+   "auc_llm_gt_human": 0.179,
+   "auc_ci95": [
+    0.142,
+    0.22
+   ],
+   "auc_length_stratified": 0.168,
+   "auc_length_matched": 0.165,
+   "cliffs_delta": -0.642,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.3688,
+     0.4986
+    ],
+    "중등": [
+     0.3807,
+     0.5667
+    ],
+    "초등": [
+     0.3795,
+     0.5447
+    ]
+   }
+  },
+  "sent_syl_mean": {
+   "human_n": 181,
+   "natural_range": [
+    33.1667,
+    50.1429
+   ],
+   "human_p10_p90": [
+    27.68,
+    56.25
+   ],
+   "human_median": 41.625,
+   "human_mean": 42.7661,
+   "llm_median": 41.8885,
+   "llm_iqr": [
+    38.1053,
+    45.9173
+   ],
+   "auc_llm_gt_human": 0.524,
+   "auc_ci95": [
+    0.461,
+    0.58
+   ],
+   "auc_length_stratified": 0.434,
+   "auc_length_matched": 0.391,
+   "cliffs_delta": 0.048,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     42.6812,
+     55.6307
+    ],
+    "중등": [
+     37.5092,
+     50.6042
+    ],
+    "초등": [
+     28.8182,
+     40.375
+    ]
+   }
+  },
+  "sent_syl_sd": {
+   "human_n": 181,
+   "natural_range": [
+    13.2612,
+    21.7141
+   ],
+   "human_p10_p90": [
+    10.9036,
+    29.5753
+   ],
+   "human_median": 17.4269,
+   "human_mean": 18.5718,
+   "llm_median": 13.1776,
+   "llm_iqr": [
+    11.1188,
+    15.314
+   ],
+   "auc_llm_gt_human": 0.264,
+   "auc_ci95": [
+    0.222,
+    0.312
+   ],
+   "auc_length_stratified": 0.194,
+   "auc_length_matched": 0.176,
+   "cliffs_delta": -0.473,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     17.2482,
+     23.9151
+    ],
+    "중등": [
+     14.7261,
+     24.2086
+    ],
+    "초등": [
+     11.208,
+     18.1485
+    ]
+   }
+  },
+  "sent_syl_cv": {
+   "human_n": 181,
+   "natural_range": [
+    0.3464,
+    0.4974
+   ],
+   "human_p10_p90": [
+    0.29,
+    0.6362
+   ],
+   "human_median": 0.4341,
+   "human_mean": 0.4401,
+   "llm_median": 0.3114,
+   "llm_iqr": [
+    0.2696,
+    0.3562
+   ],
+   "auc_llm_gt_human": 0.184,
+   "auc_ci95": [
+    0.144,
+    0.224
+   ],
+   "auc_length_stratified": 0.172,
+   "auc_length_matched": 0.167,
+   "cliffs_delta": -0.631,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.3472,
+     0.4727
+    ],
+    "중등": [
+     0.3489,
+     0.5086
+    ],
+    "초등": [
+     0.3463,
+     0.5191
+    ]
+   }
+  },
+  "eo_len_syl": {
+   "human_n": 181,
+   "natural_range": [
+    3.0637,
+    3.3511
+   ],
+   "human_p10_p90": [
+    2.9576,
+    3.538
+   ],
+   "human_median": 3.2135,
+   "human_mean": 3.2334,
+   "llm_median": 3.244,
+   "llm_iqr": [
+    3.1641,
+    3.3429
+   ],
+   "auc_llm_gt_human": 0.565,
+   "auc_ci95": [
+    0.509,
+    0.622
+   ],
+   "auc_length_stratified": 0.628,
+   "auc_length_matched": 0.654,
+   "cliffs_delta": 0.129,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     3.0958,
+     3.2738
+    ],
+    "중등": [
+     3.0653,
+     3.3186
+    ],
+    "초등": [
+     3.0533,
+     3.4912
+    ]
+   }
+  },
+  "comma_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0588,
+    0.4444
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.619
+   ],
+   "human_median": 0.16,
+   "human_mean": 0.2799,
+   "llm_median": 0.7692,
+   "llm_iqr": [
+    0.6,
+    0.9493
+   ],
+   "auc_llm_gt_human": 0.897,
+   "auc_ci95": [
+    0.858,
+    0.933
+   ],
+   "auc_length_stratified": 0.892,
+   "auc_length_matched": 0.907,
+   "cliffs_delta": 0.795,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0667,
+     0.4481
+    ],
+    "중등": [
+     0.0156,
+     0.3138
+    ],
+    "초등": [
+     0.0,
+     0.5
+    ]
+   }
+  },
+  "comma_sent_share": {
+   "human_n": 181,
+   "natural_range": [
+    0.0526,
+    0.3077
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5
+   ],
+   "human_median": 0.125,
+   "human_mean": 0.1977,
+   "llm_median": 0.6056,
+   "llm_iqr": [
+    0.5,
+    0.7202
+   ],
+   "auc_llm_gt_human": 0.932,
+   "auc_ci95": [
+    0.905,
+    0.954
+   ],
+   "auc_length_stratified": 0.927,
+   "auc_length_matched": 0.939,
+   "cliffs_delta": 0.864,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0667,
+     0.2964
+    ],
+    "중등": [
+     0.0132,
+     0.2727
+    ],
+    "초등": [
+     0.0,
+     0.3636
+    ]
+   }
+  },
+  "comma_per_100eo": {
+   "human_n": 181,
+   "natural_range": [
+    0.4184,
+    3.2051
+   ],
+   "human_p10_p90": [
+    0.0,
+    4.908
+   ],
+   "human_median": 1.2987,
+   "human_mean": 2.1628,
+   "llm_median": 5.848,
+   "llm_iqr": [
+    4.7489,
+    7.2505
+   ],
+   "auc_llm_gt_human": 0.91,
+   "auc_ci95": [
+    0.881,
+    0.941
+   ],
+   "auc_length_stratified": 0.914,
+   "auc_length_matched": 0.933,
+   "cliffs_delta": 0.82,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.4831,
+     2.6162
+    ],
+    "중등": [
+     0.1068,
+     2.66
+    ],
+    "초등": [
+     0.0,
+     4.0
+    ]
+   }
+  },
+  "n_morph": {
+   "human_n": 181,
+   "natural_range": [
+    254.0,
+    443.0
+   ],
+   "human_p10_p90": [
+    191.0,
+    476.0
+   ],
+   "human_median": 365.0,
+   "human_mean": 348.7569,
+   "llm_median": 489.5,
+   "llm_iqr": [
+    417.25,
+    575.75
+   ],
+   "auc_llm_gt_human": 0.803,
+   "auc_ci95": [
+    0.766,
+    0.836
+   ],
+   "auc_length_stratified": 0.638,
+   "auc_length_matched": 0.503,
+   "cliffs_delta": 0.606,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     451.5,
+     501.75
+    ],
+    "중등": [
+     323.75,
+     435.5
+    ],
+    "초등": [
+     191.0,
+     264.0
+    ]
+   }
+  },
+  "ui_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.6711,
+    2.0134
+   ],
+   "human_p10_p90": [
+    0.3922,
+    2.6667
+   ],
+   "human_median": 1.1952,
+   "human_mean": 1.4137,
+   "llm_median": 2.0232,
+   "llm_iqr": [
+    1.528,
+    2.5631
+   ],
+   "auc_llm_gt_human": 0.713,
+   "auc_ci95": [
+    0.667,
+    0.763
+   ],
+   "auc_length_stratified": 0.693,
+   "auc_length_matched": 0.691,
+   "cliffs_delta": 0.426,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     1.1322,
+     2.2706
+    ],
+    "중등": [
+     0.7082,
+     2.1774
+    ],
+    "초등": [
+     0.4202,
+     1.5564
+    ]
+   }
+  },
+  "ui_chain_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2874
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0683,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.48,
+   "auc_ci95": [
+    0.446,
+    0.514
+   ],
+   "auc_length_stratified": 0.479,
+   "auc_length_matched": 0.477,
+   "cliffs_delta": -0.039,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.1967
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "ui_chain_share": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1429
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0331,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.479,
+   "auc_ci95": [
+    0.448,
+    0.51
+   ],
+   "auc_length_stratified": 0.477,
+   "auc_length_matched": 0.471,
+   "cliffs_delta": -0.042,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.1
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_jeok_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.7463
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.3304
+   ],
+   "human_median": 0.2433,
+   "human_mean": 0.4857,
+   "llm_median": 1.2473,
+   "llm_iqr": [
+    0.6504,
+    2.1521
+   ],
+   "auc_llm_gt_human": 0.812,
+   "auc_ci95": [
+    0.777,
+    0.846
+   ],
+   "auc_length_stratified": 0.754,
+   "auc_length_matched": 0.73,
+   "cliffs_delta": 0.625,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.4093,
+     1.0781
+    ],
+    "중등": [
+     0.2033,
+     1.0124
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_seong_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3817
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.111,
+   "llm_median": 0.2088,
+   "llm_iqr": [
+    0.0,
+    0.5328
+   ],
+   "auc_llm_gt_human": 0.707,
+   "auc_ci95": [
+    0.666,
+    0.743
+   ],
+   "auc_length_stratified": 0.654,
+   "auc_length_matched": 0.672,
+   "cliffs_delta": 0.414,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.2092
+    ],
+    "중등": [
+     0.0,
+     0.2282
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_hwa_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2191
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0621,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.1501
+   ],
+   "auc_llm_gt_human": 0.558,
+   "auc_ci95": [
+    0.524,
+    0.594
+   ],
+   "auc_length_stratified": 0.52,
+   "auc_length_matched": 0.508,
+   "cliffs_delta": 0.116,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.2107
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_jsh_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    1.0373
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.7032
+   ],
+   "human_median": 0.4219,
+   "human_mean": 0.6588,
+   "llm_median": 1.6975,
+   "llm_iqr": [
+    0.8412,
+    2.9448
+   ],
+   "auc_llm_gt_human": 0.814,
+   "auc_ci95": [
+    0.778,
+    0.849
+   ],
+   "auc_length_stratified": 0.757,
+   "auc_length_matched": 0.738,
+   "cliffs_delta": 0.627,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.4857,
+     1.4355
+    ],
+    "중등": [
+     0.2567,
+     1.3254
+    ],
+    "초등": [
+     0.0,
+     0.2695
+    ]
+   }
+  },
+  "deul_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.6079,
+    1.8519
+   ],
+   "human_p10_p90": [
+    0.2075,
+    2.6042
+   ],
+   "human_median": 1.1211,
+   "human_mean": 1.2978,
+   "llm_median": 0.9883,
+   "llm_iqr": [
+    0.4638,
+    1.6536
+   ],
+   "auc_llm_gt_human": 0.448,
+   "auc_ci95": [
+    0.393,
+    0.493
+   ],
+   "auc_length_stratified": 0.445,
+   "auc_length_matched": 0.457,
+   "cliffs_delta": -0.105,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.7798,
+     1.6962
+    ],
+    "중등": [
+     0.6051,
+     1.9371
+    ],
+    "초등": [
+     0.4773,
+     1.8797
+    ]
+   }
+  },
+  "geot_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.1667,
+    0.5385
+   ],
+   "human_p10_p90": [
+    0.05,
+    0.8
+   ],
+   "human_median": 0.3571,
+   "human_mean": 0.4151,
+   "llm_median": 0.2857,
+   "llm_iqr": [
+    0.1667,
+    0.4
+   ],
+   "auc_llm_gt_human": 0.424,
+   "auc_ci95": [
+    0.365,
+    0.476
+   ],
+   "auc_length_stratified": 0.396,
+   "auc_length_matched": 0.364,
+   "cliffs_delta": -0.151,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.2244,
+     0.5215
+    ],
+    "중등": [
+     0.2857,
+     0.6364
+    ],
+    "초등": [
+     0.0833,
+     0.4118
+    ]
+   }
+  },
+  "geot_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.6042,
+    1.7279
+   ],
+   "human_p10_p90": [
+    0.2217,
+    2.7778
+   ],
+   "human_median": 1.1416,
+   "human_mean": 1.3176,
+   "llm_median": 0.9689,
+   "llm_iqr": [
+    0.6102,
+    1.3603
+   ],
+   "auc_llm_gt_human": 0.419,
+   "auc_ci95": [
+    0.369,
+    0.47
+   ],
+   "auc_length_stratified": 0.418,
+   "auc_length_matched": 0.392,
+   "cliffs_delta": -0.162,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.6263,
+     1.4496
+    ],
+    "중등": [
+     0.9048,
+     1.9644
+    ],
+    "초등": [
+     0.3891,
+     1.6484
+    ]
+   }
+  },
+  "geot_ida_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.1
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2105
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0737,
+   "llm_median": 0.0714,
+   "llm_iqr": [
+    0.0,
+    0.1304
+   ],
+   "auc_llm_gt_human": 0.592,
+   "auc_ci95": [
+    0.536,
+    0.64
+   ],
+   "auc_length_stratified": 0.56,
+   "auc_length_matched": 0.539,
+   "cliffs_delta": 0.184,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.1083
+    ],
+    "중등": [
+     0.0,
+     0.0909
+    ],
+    "초등": [
+     0.0,
+     0.1667
+    ]
+   }
+  },
+  "etn_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    0.3676,
+    1.0949
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.5209
+   ],
+   "human_median": 0.6803,
+   "human_mean": 0.7802,
+   "llm_median": 0.4996,
+   "llm_iqr": [
+    0.2994,
+    0.7779
+   ],
+   "auc_llm_gt_human": 0.399,
+   "auc_ci95": [
+    0.343,
+    0.454
+   ],
+   "auc_length_stratified": 0.372,
+   "auc_length_matched": 0.357,
+   "cliffs_delta": -0.202,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.4565,
+     1.1241
+    ],
+    "중등": [
+     0.365,
+     1.071
+    ],
+    "초등": [
+     0.0,
+     1.0471
+    ]
+   }
+  },
+  "reul_su_itda_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0625,
+    0.3
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.4286
+   ],
+   "human_median": 0.1667,
+   "human_mean": 0.206,
+   "llm_median": 0.2697,
+   "llm_iqr": [
+    0.1818,
+    0.3889
+   ],
+   "auc_llm_gt_human": 0.676,
+   "auc_ci95": [
+    0.63,
+    0.723
+   ],
+   "auc_length_stratified": 0.617,
+   "auc_length_matched": 0.627,
+   "cliffs_delta": 0.352,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0728,
+     0.2768
+    ],
+    "중등": [
+     0.0785,
+     0.3333
+    ],
+    "초등": [
+     0.0,
+     0.2727
+    ]
+   }
+  },
+  "go_itda_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.1667
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2857
+   ],
+   "human_median": 0.0667,
+   "human_mean": 0.1086,
+   "llm_median": 0.0742,
+   "llm_iqr": [
+    0.0,
+    0.1579
+   ],
+   "auc_llm_gt_human": 0.537,
+   "auc_ci95": [
+    0.484,
+    0.586
+   ],
+   "auc_length_stratified": 0.501,
+   "auc_length_matched": 0.502,
+   "cliffs_delta": 0.074,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0635,
+     0.1969
+    ],
+    "중등": [
+     0.0,
+     0.1511
+    ],
+    "초등": [
+     0.0,
+     0.1667
+    ]
+   }
+  },
+  "passive_doe_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.1538
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3077
+   ],
+   "human_median": 0.0625,
+   "human_mean": 0.1003,
+   "llm_median": 0.1481,
+   "llm_iqr": [
+    0.0667,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.694,
+   "auc_ci95": [
+    0.646,
+    0.736
+   ],
+   "auc_length_stratified": 0.636,
+   "auc_length_matched": 0.624,
+   "cliffs_delta": 0.388,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0667,
+     0.2838
+    ],
+    "중등": [
+     0.0,
+     0.1335
+    ],
+    "초등": [
+     0.0,
+     0.0833
+    ]
+   }
+  },
+  "passive_jida_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.1333
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2222
+   ],
+   "human_median": 0.0556,
+   "human_mean": 0.0896,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0526
+   ],
+   "auc_llm_gt_human": 0.354,
+   "auc_ci95": [
+    0.311,
+    0.402
+   ],
+   "auc_length_stratified": 0.359,
+   "auc_length_matched": 0.355,
+   "cliffs_delta": -0.292,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.1333
+    ],
+    "중등": [
+     0.0,
+     0.1215
+    ],
+    "초등": [
+     0.0,
+     0.1429
+    ]
+   }
+  },
+  "passive_by_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0024,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.524,
+   "auc_ci95": [
+    0.511,
+    0.537
+   ],
+   "auc_length_stratified": 0.513,
+   "auc_length_matched": 0.519,
+   "cliffs_delta": 0.047,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "passive_any_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0588,
+    0.25
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.4444
+   ],
+   "human_median": 0.125,
+   "human_mean": 0.1923,
+   "llm_median": 0.1875,
+   "llm_iqr": [
+    0.1,
+    0.2794
+   ],
+   "auc_llm_gt_human": 0.578,
+   "auc_ci95": [
+    0.525,
+    0.621
+   ],
+   "auc_length_stratified": 0.542,
+   "auc_length_matched": 0.53,
+   "cliffs_delta": 0.155,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.1271,
+     0.3878
+    ],
+    "중등": [
+     0.0728,
+     0.2231
+    ],
+    "초등": [
+     0.0,
+     0.25
+    ]
+   }
+  },
+  "gae_doeda_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0833
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1667
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0554,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0526
+   ],
+   "auc_llm_gt_human": 0.46,
+   "auc_ci95": [
+    0.416,
+    0.504
+   ],
+   "auc_length_stratified": 0.431,
+   "auc_length_matched": 0.416,
+   "cliffs_delta": -0.08,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0792
+    ],
+    "중등": [
+     0.0,
+     0.1083
+    ],
+    "초등": [
+     0.0,
+     0.0625
+    ]
+   }
+  },
+  "np_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.2174,
+    0.6
+   ],
+   "human_p10_p90": [
+    0.0909,
+    0.8571
+   ],
+   "human_median": 0.375,
+   "human_mean": 0.4383,
+   "llm_median": 0.458,
+   "llm_iqr": [
+    0.2872,
+    0.6667
+   ],
+   "auc_llm_gt_human": 0.567,
+   "auc_ci95": [
+    0.521,
+    0.616
+   ],
+   "auc_length_stratified": 0.569,
+   "auc_length_matched": 0.544,
+   "cliffs_delta": 0.134,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.2151,
+     0.5906
+    ],
+    "중등": [
+     0.2857,
+     0.6859
+    ],
+    "초등": [
+     0.125,
+     0.5714
+    ]
+   }
+  },
+  "np3_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.125
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1818
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0687,
+   "llm_median": 0.2105,
+   "llm_iqr": [
+    0.125,
+    0.3125
+   ],
+   "auc_llm_gt_human": 0.829,
+   "auc_ci95": [
+    0.797,
+    0.857
+   ],
+   "auc_length_stratified": 0.779,
+   "auc_length_matched": 0.761,
+   "cliffs_delta": 0.658,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0482,
+     0.1232
+    ],
+    "중등": [
+     0.0,
+     0.1429
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "np12_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.1,
+    0.4444
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.6364
+   ],
+   "human_median": 0.25,
+   "human_mean": 0.3035,
+   "llm_median": 0.1962,
+   "llm_iqr": [
+    0.0667,
+    0.3884
+   ],
+   "auc_llm_gt_human": 0.45,
+   "auc_ci95": [
+    0.402,
+    0.498
+   ],
+   "auc_length_stratified": 0.49,
+   "auc_length_matched": 0.464,
+   "cliffs_delta": -0.099,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0769,
+     0.3333
+    ],
+    "중등": [
+     0.1195,
+     0.4587
+    ],
+    "초등": [
+     0.1,
+     0.4444
+    ]
+   }
+  },
+  "topic_init_rate": {
+   "human_n": 181,
+   "natural_range": [
+    0.0833,
+    0.25
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3846
+   ],
+   "human_median": 0.1538,
+   "human_mean": 0.1797,
+   "llm_median": 0.1667,
+   "llm_iqr": [
+    0.1,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.531,
+   "auc_ci95": [
+    0.482,
+    0.581
+   ],
+   "auc_length_stratified": 0.556,
+   "auc_length_matched": 0.547,
+   "cliffs_delta": 0.063,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0744,
+     0.2107
+    ],
+    "중등": [
+     0.0932,
+     0.2944
+    ],
+    "초등": [
+     0.0,
+     0.25
+    ]
+   }
+  },
+  "topic_marker_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.5,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.3333,
+    1.25
+   ],
+   "human_median": 0.7273,
+   "human_mean": 0.7624,
+   "llm_median": 0.8235,
+   "llm_iqr": [
+    0.6923,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.589,
+   "auc_ci95": [
+    0.535,
+    0.644
+   ],
+   "auc_length_stratified": 0.576,
+   "auc_length_matched": 0.527,
+   "cliffs_delta": 0.177,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.6063,
+     1.0
+    ],
+    "중등": [
+     0.6875,
+     1.0714
+    ],
+    "초등": [
+     0.3333,
+     0.7273
+    ]
+   }
+  },
+  "conj_init_rate": {
+   "human_n": 181,
+   "natural_range": [
+    0.0833,
+    0.25
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.375
+   ],
+   "human_median": 0.1667,
+   "human_mean": 0.1823,
+   "llm_median": 0.1429,
+   "llm_iqr": [
+    0.0728,
+    0.221
+   ],
+   "auc_llm_gt_human": 0.465,
+   "auc_ci95": [
+    0.416,
+    0.512
+   ],
+   "auc_length_stratified": 0.517,
+   "auc_length_matched": 0.532,
+   "cliffs_delta": -0.069,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.1028,
+     0.2286
+    ],
+    "중등": [
+     0.0769,
+     0.2286
+    ],
+    "초등": [
+     0.0909,
+     0.25
+    ]
+   }
+  },
+  "light_verb_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0115,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0625
+   ],
+   "auc_llm_gt_human": 0.636,
+   "auc_ci95": [
+    0.608,
+    0.666
+   ],
+   "auc_length_stratified": 0.593,
+   "auc_length_matched": 0.598,
+   "cliffs_delta": 0.273,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "sino_ha_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    1.8223,
+    3.4591
+   ],
+   "human_p10_p90": [
+    1.3477,
+    4.4728
+   ],
+   "human_median": 2.5918,
+   "human_mean": 2.7378,
+   "llm_median": 3.69,
+   "llm_iqr": [
+    3.0559,
+    4.2907
+   ],
+   "auc_llm_gt_human": 0.748,
+   "auc_ci95": [
+    0.703,
+    0.79
+   ],
+   "auc_length_stratified": 0.738,
+   "auc_length_matched": 0.75,
+   "cliffs_delta": 0.496,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     2.71,
+     3.9889
+    ],
+    "중등": [
+     1.7219,
+     3.2901
+    ],
+    "초등": [
+     1.5789,
+     3.3195
+    ]
+   }
+  },
+  "ec_comma_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.1538
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3636
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1215,
+   "llm_median": 0.3604,
+   "llm_iqr": [
+    0.2667,
+    0.4696
+   ],
+   "auc_llm_gt_human": 0.871,
+   "auc_ci95": [
+    0.831,
+    0.903
+   ],
+   "auc_length_stratified": 0.86,
+   "auc_length_matched": 0.868,
+   "cliffs_delta": 0.742,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.174
+    ],
+    "중등": [
+     0.0,
+     0.1384
+    ],
+    "초등": [
+     0.0,
+     0.1667
+    ]
+   }
+  },
+  "enum_word_rate": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0833
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0228,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0825
+   ],
+   "auc_llm_gt_human": 0.661,
+   "auc_ci95": [
+    0.625,
+    0.693
+   ],
+   "auc_length_stratified": 0.589,
+   "auc_length_matched": 0.618,
+   "cliffs_delta": 0.322,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "boiler_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0833
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0611,
+   "llm_median": 0.25,
+   "llm_iqr": [
+    0.1538,
+    0.3571
+   ],
+   "auc_llm_gt_human": 0.891,
+   "auc_ci95": [
+    0.859,
+    0.917
+   ],
+   "auc_length_stratified": 0.861,
+   "auc_length_matched": 0.86,
+   "cliffs_delta": 0.782,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.1278
+    ],
+    "중등": [
+     0.0,
+     0.1017
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_ae_daehae_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.125
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2308
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0801,
+   "llm_median": 0.1111,
+   "llm_iqr": [
+    0.05,
+    0.1897
+   ],
+   "auc_llm_gt_human": 0.675,
+   "auc_ci95": [
+    0.628,
+    0.719
+   ],
+   "auc_length_stratified": 0.63,
+   "auc_length_matched": 0.647,
+   "cliffs_delta": 0.35,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.1667
+    ],
+    "중등": [
+     0.0,
+     0.1538
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_reul_tonghae_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0769
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0177,
+   "llm_median": 0.0625,
+   "llm_iqr": [
+    0.0,
+    0.125
+   ],
+   "auc_llm_gt_human": 0.747,
+   "auc_ci95": [
+    0.712,
+    0.782
+   ],
+   "auc_length_stratified": 0.685,
+   "auc_length_matched": 0.695,
+   "cliffs_delta": 0.493,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0656
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_ae_isseoseo_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0034,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.499,
+   "auc_ci95": [
+    0.481,
+    0.513
+   ],
+   "auc_length_stratified": 0.49,
+   "auc_length_matched": 0.482,
+   "cliffs_delta": -0.002,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_gajigo_itda_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0625
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0128,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.551,
+   "auc_ci95": [
+    0.522,
+    0.58
+   ],
+   "auc_length_stratified": 0.527,
+   "auc_length_matched": 0.539,
+   "cliffs_delta": 0.102,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_neomeo_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0026,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.518,
+   "auc_ci95": [
+    0.502,
+    0.536
+   ],
+   "auc_length_stratified": 0.502,
+   "auc_length_matched": 0.501,
+   "cliffs_delta": 0.037,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_anira_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0833
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0192,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0556
+   ],
+   "auc_llm_gt_human": 0.576,
+   "auc_ci95": [
+    0.536,
+    0.612
+   ],
+   "auc_length_stratified": 0.536,
+   "auc_length_matched": 0.518,
+   "cliffs_delta": 0.152,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0441
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_deo_isang_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0071,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.485,
+   "auc_ci95": [
+    0.464,
+    0.505
+   ],
+   "auc_length_stratified": 0.493,
+   "auc_length_matched": 0.481,
+   "cliffs_delta": -0.03,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_gwanhayeo_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0025,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.513,
+   "auc_ci95": [
+    0.498,
+    0.527
+   ],
+   "auc_length_stratified": 0.508,
+   "auc_length_matched": 0.515,
+   "cliffs_delta": 0.026,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_ui_haeyo_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0011,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.524,
+   "auc_ci95": [
+    0.512,
+    0.537
+   ],
+   "auc_length_stratified": 0.515,
+   "auc_length_matched": 0.521,
+   "cliffs_delta": 0.048,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_d1_conclusion_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0833
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0191,
+   "llm_median": 0.0833,
+   "llm_iqr": [
+    0.0526,
+    0.1538
+   ],
+   "auc_llm_gt_human": 0.843,
+   "auc_ci95": [
+    0.812,
+    0.871
+   ],
+   "auc_length_stratified": 0.805,
+   "auc_length_matched": 0.831,
+   "cliffs_delta": 0.686,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0755
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_d2_significance_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0008,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.544,
+   "auc_ci95": [
+    0.53,
+    0.558
+   ],
+   "auc_length_stratified": 0.535,
+   "auc_length_matched": 0.54,
+   "cliffs_delta": 0.088,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "enum_numbered_per_sent": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0016,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.492,
+   "auc_ci95": [
+    0.481,
+    0.5
+   ],
+   "auc_length_stratified": 0.491,
+   "auc_length_matched": 0.491,
+   "cliffs_delta": -0.017,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "enum_any_rate": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0833
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0244,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0825
+   ],
+   "auc_llm_gt_human": 0.652,
+   "auc_ci95": [
+    0.614,
+    0.69
+   ],
+   "auc_length_stratified": 0.58,
+   "auc_length_matched": 0.608,
+   "cliffs_delta": 0.305,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "ef_entropy": {
+   "human_n": 181,
+   "natural_range": [
+    0.896,
+    1.2988
+   ],
+   "human_p10_p90": [
+    0.6962,
+    1.8113
+   ],
+   "human_median": 0.9852,
+   "human_mean": 1.125,
+   "llm_median": 0.9263,
+   "llm_iqr": [
+    0.7748,
+    0.9968
+   ],
+   "auc_llm_gt_human": 0.357,
+   "auc_ci95": [
+    0.312,
+    0.406
+   ],
+   "auc_length_stratified": 0.334,
+   "auc_length_matched": 0.331,
+   "cliffs_delta": -0.285,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.8176,
+     1.4127
+    ],
+    "중등": [
+     0.9183,
+     1.2358
+    ],
+    "초등": [
+     0.8631,
+     1.4183
+    ]
+   }
+  },
+  "ef_types_ratio": {
+   "human_n": 181,
+   "natural_range": [
+    0.1667,
+    0.3077
+   ],
+   "human_p10_p90": [
+    0.1429,
+    0.3846
+   ],
+   "human_median": 0.2222,
+   "human_mean": 0.2473,
+   "llm_median": 0.1333,
+   "llm_iqr": [
+    0.1111,
+    0.1667
+   ],
+   "auc_llm_gt_human": 0.156,
+   "auc_ci95": [
+    0.126,
+    0.19
+   ],
+   "auc_length_stratified": 0.264,
+   "auc_length_matched": 0.282,
+   "cliffs_delta": -0.688,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.1561,
+     0.2342
+    ],
+    "중등": [
+     0.1538,
+     0.25
+    ],
+    "초등": [
+     0.2143,
+     0.3333
+    ]
+   }
+  },
+  "ef_top_share": {
+   "human_n": 181,
+   "natural_range": [
+    0.5385,
+    0.7143
+   ],
+   "human_p10_p90": [
+    0.4444,
+    0.8125
+   ],
+   "human_median": 0.625,
+   "human_mean": 0.623,
+   "llm_median": 0.6842,
+   "llm_iqr": [
+    0.6,
+    0.7778
+   ],
+   "auc_llm_gt_human": 0.636,
+   "auc_ci95": [
+    0.588,
+    0.681
+   ],
+   "auc_length_stratified": 0.652,
+   "auc_length_matched": 0.644,
+   "cliffs_delta": 0.272,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.5573,
+     0.75
+    ],
+    "중등": [
+     0.5714,
+     0.6667
+    ],
+    "초등": [
+     0.5,
+     0.7143
+    ]
+   }
+  },
+  "ef_all_entropy": {
+   "human_n": 181,
+   "natural_range": [
+    0.9183,
+    1.371
+   ],
+   "human_p10_p90": [
+    0.7219,
+    1.823
+   ],
+   "human_median": 1.0,
+   "human_mean": 1.1741,
+   "llm_median": 0.9367,
+   "llm_iqr": [
+    0.7808,
+    0.9986
+   ],
+   "auc_llm_gt_human": 0.334,
+   "auc_ci95": [
+    0.284,
+    0.386
+   ],
+   "auc_length_stratified": 0.312,
+   "auc_length_matched": 0.311,
+   "cliffs_delta": -0.332,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.8478,
+     1.3575
+    ],
+    "중등": [
+     0.9183,
+     1.2706
+    ],
+    "초등": [
+     0.9183,
+     1.5466
+    ]
+   }
+  },
+  "ef_all_top_share": {
+   "human_n": 181,
+   "natural_range": [
+    0.5333,
+    0.7143
+   ],
+   "human_p10_p90": [
+    0.4286,
+    0.8
+   ],
+   "human_median": 0.6154,
+   "human_mean": 0.6147,
+   "llm_median": 0.6842,
+   "llm_iqr": [
+    0.5909,
+    0.7778
+   ],
+   "auc_llm_gt_human": 0.648,
+   "auc_ci95": [
+    0.599,
+    0.694
+   ],
+   "auc_length_stratified": 0.663,
+   "auc_length_matched": 0.653,
+   "cliffs_delta": 0.296,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.5556,
+     0.7458
+    ],
+    "중등": [
+     0.5402,
+     0.6667
+    ],
+    "초등": [
+     0.5,
+     0.7143
+    ]
+   }
+  },
+  "ef_share_plain_da": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.0
+   ],
+   "human_median": 0.5,
+   "human_mean": 0.4954,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.261,
+   "auc_ci95": [
+    0.221,
+    0.303
+   ],
+   "auc_length_stratified": 0.239,
+   "auc_length_matched": 0.238,
+   "cliffs_delta": -0.478,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     1.0
+    ],
+    "중등": [
+     0.0,
+     1.0
+    ],
+    "초등": [
+     0.0,
+     0.8889
+    ]
+   }
+  },
+  "ef_share_hapsyo": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.0
+   ],
+   "human_median": 0.2778,
+   "human_mean": 0.4588,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    0.9506,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.749,
+   "auc_ci95": [
+    0.712,
+    0.786
+   ],
+   "auc_length_stratified": 0.77,
+   "auc_length_matched": 0.775,
+   "cliffs_delta": 0.498,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.9272
+    ],
+    "중등": [
+     0.0,
+     1.0
+    ],
+    "초등": [
+     0.0,
+     1.0
+    ]
+   }
+  },
+  "ef_share_yo": {
+   "human_n": 181,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0588
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0232,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.518,
+   "auc_ci95": [
+    0.491,
+    0.548
+   ],
+   "auc_length_stratified": 0.515,
+   "auc_length_matched": 0.514,
+   "cliffs_delta": 0.037,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0,
+     0.0
+    ],
+    "중등": [
+     0.0,
+     0.0
+    ],
+    "초등": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "bn_space_rate": {
+   "human_n": 179,
+   "natural_range": [
+    0.5476,
+    0.9621
+   ],
+   "human_p10_p90": [
+    0.25,
+    1.0
+   ],
+   "human_median": 0.8,
+   "human_mean": 0.7094,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    1.0,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.833,
+   "auc_ci95": [
+    0.795,
+    0.868
+   ],
+   "auc_length_stratified": 0.822,
+   "auc_length_matched": 0.82,
+   "cliffs_delta": 0.666,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.6739,
+     0.9292
+    ],
+    "중등": [
+     0.7,
+     1.0
+    ],
+    "초등": [
+     0.25,
+     0.8661
+    ]
+   }
+  },
+  "mmn_bn_space_rate": {
+   "human_n": 33,
+   "natural_range": [
+    0.0,
+    0.375
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.0
+   ],
+   "human_median": 0.25,
+   "human_mean": 0.2942,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    0.6667,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.822,
+   "auc_ci95": [
+    0.719,
+    0.914
+   ],
+   "auc_length_stratified": 0.8,
+   "auc_length_matched": 0.781,
+   "cliffs_delta": 0.643,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.1667,
+     0.3875
+    ],
+    "중등": [
+     0.0,
+     0.4167
+    ],
+    "초등": [
+     0.0,
+     0.1875
+    ]
+   }
+  },
+  "vx_space_rate": {
+   "human_n": 170,
+   "natural_range": [
+    0.5,
+    0.8571
+   ],
+   "human_p10_p90": [
+    0.4,
+    1.0
+   ],
+   "human_median": 0.7386,
+   "human_mean": 0.7024,
+   "llm_median": 0.9,
+   "llm_iqr": [
+    0.8,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.746,
+   "auc_ci95": [
+    0.702,
+    0.788
+   ],
+   "auc_length_stratified": 0.754,
+   "auc_length_matched": 0.761,
+   "cliffs_delta": 0.493,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.5591,
+     0.8333
+    ],
+    "중등": [
+     0.5667,
+     0.875
+    ],
+    "초등": [
+     0.5,
+     0.8571
+    ]
+   }
+  },
+  "su_space_rate": {
+   "human_n": 77,
+   "natural_range": [
+    0.8889,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.12,
+    1.0
+   ],
+   "human_median": 1.0,
+   "human_mean": 0.8199,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    1.0,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.63,
+   "auc_ci95": [
+    0.582,
+    0.681
+   ],
+   "auc_length_stratified": 0.622,
+   "auc_length_matched": 0.59,
+   "cliffs_delta": 0.26,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     1.0,
+     1.0
+    ],
+    "중등": [
+     1.0,
+     1.0
+    ],
+    "초등": [
+     0.0625,
+     1.0
+    ]
+   }
+  },
+  "bn_per100m": {
+   "human_n": 181,
+   "natural_range": [
+    2.5761,
+    4.5113
+   ],
+   "human_p10_p90": [
+    2.069,
+    5.53
+   ],
+   "human_median": 3.4557,
+   "human_mean": 3.6015,
+   "llm_median": 2.8297,
+   "llm_iqr": [
+    2.2789,
+    3.3595
+   ],
+   "auc_llm_gt_human": 0.337,
+   "auc_ci95": [
+    0.289,
+    0.386
+   ],
+   "auc_length_stratified": 0.342,
+   "auc_length_matched": 0.34,
+   "cliffs_delta": -0.326,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     2.3268,
+     3.4964
+    ],
+    "중등": [
+     2.7782,
+     4.5872
+    ],
+    "초등": [
+     2.6042,
+     4.5872
+    ]
+   }
+  },
+  "space_missing_rate": {
+   "human_n": 181,
+   "natural_range": [
+    0.0508,
+    0.129
+   ],
+   "human_p10_p90": [
+    0.0345,
+    0.2077
+   ],
+   "human_median": 0.0878,
+   "human_mean": 0.1041,
+   "llm_median": 0.0314,
+   "llm_iqr": [
+    0.0167,
+    0.0587
+   ],
+   "auc_llm_gt_human": 0.169,
+   "auc_ci95": [
+    0.136,
+    0.204
+   ],
+   "auc_length_stratified": 0.19,
+   "auc_length_matched": 0.204,
+   "cliffs_delta": -0.661,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0498,
+     0.1044
+    ],
+    "중등": [
+     0.0424,
+     0.1035
+    ],
+    "초등": [
+     0.0735,
+     0.2069
+    ]
+   }
+  },
+  "space_extra_rate": {
+   "human_n": 181,
+   "natural_range": [
+    0.0151,
+    0.0457
+   ],
+   "human_p10_p90": [
+    0.0065,
+    0.0667
+   ],
+   "human_median": 0.029,
+   "human_mean": 0.0336,
+   "llm_median": 0.0281,
+   "llm_iqr": [
+    0.0178,
+    0.0393
+   ],
+   "auc_llm_gt_human": 0.483,
+   "auc_ci95": [
+    0.437,
+    0.534
+   ],
+   "auc_length_stratified": 0.526,
+   "auc_length_matched": 0.572,
+   "cliffs_delta": -0.034,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0093,
+     0.0325
+    ],
+    "중등": [
+     0.0126,
+     0.0355
+    ],
+    "초등": [
+     0.0278,
+     0.0615
+    ]
+   }
+  },
+  "mattr25": {
+   "human_n": 181,
+   "natural_range": [
+    0.7897,
+    0.8621
+   ],
+   "human_p10_p90": [
+    0.7193,
+    0.8924
+   ],
+   "human_median": 0.8271,
+   "human_mean": 0.8198,
+   "llm_median": 0.8931,
+   "llm_iqr": [
+    0.858,
+    0.9226
+   ],
+   "auc_llm_gt_human": 0.787,
+   "auc_ci95": [
+    0.75,
+    0.817
+   ],
+   "auc_length_stratified": 0.731,
+   "auc_length_matched": 0.694,
+   "cliffs_delta": 0.573,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.8352,
+     0.8877
+    ],
+    "중등": [
+     0.7855,
+     0.8593
+    ],
+    "초등": [
+     0.763,
+     0.8513
+    ]
+   }
+  },
+  "mattr50": {
+   "human_n": 179,
+   "natural_range": [
+    0.6904,
+    0.7801
+   ],
+   "human_p10_p90": [
+    0.6227,
+    0.8136
+   ],
+   "human_median": 0.735,
+   "human_mean": 0.7261,
+   "llm_median": 0.806,
+   "llm_iqr": [
+    0.7462,
+    0.8424
+   ],
+   "auc_llm_gt_human": 0.73,
+   "auc_ci95": [
+    0.685,
+    0.772
+   ],
+   "auc_length_stratified": 0.654,
+   "auc_length_matched": 0.613,
+   "cliffs_delta": 0.46,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length-confounded",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.7384,
+     0.8107
+    ],
+    "중등": [
+     0.6902,
+     0.774
+    ],
+    "초등": [
+     0.6585,
+     0.7626
+    ]
+   }
+  },
+  "mtld": {
+   "human_n": 179,
+   "natural_range": [
+    32.6726,
+    64.4532
+   ],
+   "human_p10_p90": [
+    25.2218,
+    84.6193
+   ],
+   "human_median": 44.2117,
+   "human_mean": 51.2634,
+   "llm_median": 80.101,
+   "llm_iqr": [
+    52.255,
+    103.4809
+   ],
+   "auc_llm_gt_human": 0.753,
+   "auc_ci95": [
+    0.712,
+    0.79
+   ],
+   "auc_length_stratified": 0.676,
+   "auc_length_matched": 0.633,
+   "cliffs_delta": 0.507,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     50.0312,
+     93.0791
+    ],
+    "중등": [
+     31.439,
+     60.9198
+    ],
+    "초등": [
+     28.9995,
+     48.4406
+    ]
+   }
+  },
+  "content_ttr": {
+   "human_n": 181,
+   "natural_range": [
+    0.5321,
+    0.6429
+   ],
+   "human_p10_p90": [
+    0.4909,
+    0.6849
+   ],
+   "human_median": 0.5985,
+   "human_mean": 0.5919,
+   "llm_median": 0.59,
+   "llm_iqr": [
+    0.5203,
+    0.6427
+   ],
+   "auc_llm_gt_human": 0.469,
+   "auc_ci95": [
+    0.422,
+    0.516
+   ],
+   "auc_length_stratified": 0.515,
+   "auc_length_matched": 0.498,
+   "cliffs_delta": -0.062,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.5349,
+     0.6504
+    ],
+    "중등": [
+     0.5302,
+     0.6217
+    ],
+    "초등": [
+     0.5517,
+     0.6623
+    ]
+   }
+  },
+  "pos1_distinct_ratio": {
+   "human_n": 181,
+   "natural_range": [
+    0.0678,
+    0.1098
+   ],
+   "human_p10_p90": [
+    0.0628,
+    0.1325
+   ],
+   "human_median": 0.0836,
+   "human_mean": 0.0914,
+   "llm_median": 0.0604,
+   "llm_iqr": [
+    0.0522,
+    0.0711
+   ],
+   "auc_llm_gt_human": 0.187,
+   "auc_ci95": [
+    0.157,
+    0.219
+   ],
+   "auc_length_stratified": 0.354,
+   "auc_length_matched": 0.446,
+   "cliffs_delta": -0.627,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "length-confounded",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.0585,
+     0.0683
+    ],
+    "중등": [
+     0.0682,
+     0.0885
+    ],
+    "초등": [
+     0.1008,
+     0.1322
+    ]
+   }
+  },
+  "pos2_distinct_ratio": {
+   "human_n": 181,
+   "natural_range": [
+    0.2584,
+    0.3347
+   ],
+   "human_p10_p90": [
+    0.2401,
+    0.3913
+   ],
+   "human_median": 0.296,
+   "human_mean": 0.3062,
+   "llm_median": 0.2192,
+   "llm_iqr": [
+    0.1933,
+    0.2522
+   ],
+   "auc_llm_gt_human": 0.133,
+   "auc_ci95": [
+    0.107,
+    0.161
+   ],
+   "auc_length_stratified": 0.236,
+   "auc_length_matched": 0.297,
+   "cliffs_delta": -0.734,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.2322,
+     0.2668
+    ],
+    "중등": [
+     0.2554,
+     0.3071
+    ],
+    "초등": [
+     0.3162,
+     0.3913
+    ]
+   }
+  },
+  "pos3_distinct_ratio": {
+   "human_n": 181,
+   "natural_range": [
+    0.5321,
+    0.623
+   ],
+   "human_p10_p90": [
+    0.5024,
+    0.6726
+   ],
+   "human_median": 0.5745,
+   "human_mean": 0.5808,
+   "llm_median": 0.4633,
+   "llm_iqr": [
+    0.4091,
+    0.5138
+   ],
+   "auc_llm_gt_human": 0.115,
+   "auc_ci95": [
+    0.09,
+    0.14
+   ],
+   "auc_length_stratified": 0.206,
+   "auc_length_matched": 0.225,
+   "cliffs_delta": -0.77,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.5035,
+     0.5641
+    ],
+    "중등": [
+     0.532,
+     0.5924
+    ],
+    "초등": [
+     0.583,
+     0.6713
+    ]
+   }
+  },
+  "pos4_distinct_ratio": {
+   "human_n": 181,
+   "natural_range": [
+    0.7528,
+    0.8126
+   ],
+   "human_p10_p90": [
+    0.717,
+    0.8632
+   ],
+   "human_median": 0.7911,
+   "human_mean": 0.7854,
+   "llm_median": 0.6847,
+   "llm_iqr": [
+    0.6247,
+    0.7308
+   ],
+   "auc_llm_gt_human": 0.124,
+   "auc_ci95": [
+    0.097,
+    0.152
+   ],
+   "auc_length_stratified": 0.198,
+   "auc_length_matched": 0.191,
+   "cliffs_delta": -0.752,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.722,
+     0.794
+    ],
+    "중등": [
+     0.7547,
+     0.8072
+    ],
+    "초등": [
+     0.7809,
+     0.8465
+    ]
+   }
+  },
+  "pos5_distinct_ratio": {
+   "human_n": 181,
+   "natural_range": [
+    0.8713,
+    0.9225
+   ],
+   "human_p10_p90": [
+    0.8386,
+    0.9486
+   ],
+   "human_median": 0.8987,
+   "human_mean": 0.8954,
+   "llm_median": 0.8277,
+   "llm_iqr": [
+    0.7701,
+    0.8666
+   ],
+   "auc_llm_gt_human": 0.158,
+   "auc_ci95": [
+    0.126,
+    0.188
+   ],
+   "auc_length_stratified": 0.209,
+   "auc_length_matched": 0.193,
+   "cliffs_delta": -0.685,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     0.8621,
+     0.9116
+    ],
+    "중등": [
+     0.8743,
+     0.9197
+    ],
+    "초등": [
+     0.8721,
+     0.9381
+    ]
+   }
+  },
+  "pos3_entropy": {
+   "human_n": 181,
+   "natural_range": [
+    6.9859,
+    7.5118
+   ],
+   "human_p10_p90": [
+    6.6996,
+    7.6562
+   ],
+   "human_median": 7.3047,
+   "human_mean": 7.2314,
+   "llm_median": 7.4087,
+   "llm_iqr": [
+    7.1195,
+    7.5557
+   ],
+   "auc_llm_gt_human": 0.569,
+   "auc_ci95": [
+    0.521,
+    0.616
+   ],
+   "auc_length_stratified": 0.314,
+   "auc_length_matched": 0.261,
+   "cliffs_delta": 0.138,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     7.4541,
+     7.7014
+    ],
+    "중등": [
+     7.2476,
+     7.5341
+    ],
+    "초등": [
+     6.6996,
+     7.1337
+    ]
+   }
+  },
+  "pos3_entropy_win100": {
+   "human_n": 181,
+   "natural_range": [
+    6.104,
+    6.2368
+   ],
+   "human_p10_p90": [
+    6.0182,
+    6.2891
+   ],
+   "human_median": 6.1851,
+   "human_mean": 6.1678,
+   "llm_median": 6.1648,
+   "llm_iqr": [
+    6.0911,
+    6.232
+   ],
+   "auc_llm_gt_human": 0.454,
+   "auc_ci95": [
+    0.409,
+    0.502
+   ],
+   "auc_length_stratified": 0.418,
+   "auc_length_matched": 0.385,
+   "cliffs_delta": -0.093,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     6.1477,
+     6.2365
+    ],
+    "중등": [
+     6.1367,
+     6.2546
+    ],
+    "초등": [
+     6.0507,
+     6.2288
+    ]
+   }
+  },
+  "pos1_entropy": {
+   "human_n": 181,
+   "natural_range": [
+    4.0488,
+    4.1897
+   ],
+   "human_p10_p90": [
+    3.9915,
+    4.2226
+   ],
+   "human_median": 4.1106,
+   "human_mean": 4.1081,
+   "llm_median": 4.0912,
+   "llm_iqr": [
+    4.0235,
+    4.1662
+   ],
+   "auc_llm_gt_human": 0.449,
+   "auc_ci95": [
+    0.398,
+    0.492
+   ],
+   "auc_length_stratified": 0.408,
+   "auc_length_matched": 0.358,
+   "cliffs_delta": -0.103,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_grade": {
+    "고등": [
+     4.0693,
+     4.1895
+    ],
+    "중등": [
+     4.0785,
+     4.1993
+    ],
+    "초등": [
+     4.001,
+     4.1472
+    ]
+   }
+  }
+ },
+ "abstract": {
+  "n_chars": {
+   "human_n": 100,
+   "natural_range": [
+    319.25,
+    497.5
+   ],
+   "human_p10_p90": [
+    271.8,
+    575.8
+   ],
+   "human_median": 373.0,
+   "human_mean": 407.36,
+   "llm_median": 444.0,
+   "llm_iqr": [
+    325.0,
+    552.0
+   ],
+   "auc_llm_gt_human": 0.573,
+   "auc_ci95": [
+    0.511,
+    0.635
+   ],
+   "auc_length_stratified": 0.468,
+   "auc_length_matched": 0.452,
+   "cliffs_delta": 0.145,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "n_sent": {
+   "human_n": 100,
+   "natural_range": [
+    4.0,
+    6.0
+   ],
+   "human_p10_p90": [
+    3.0,
+    7.0
+   ],
+   "human_median": 5.0,
+   "human_mean": 5.06,
+   "llm_median": 6.0,
+   "llm_iqr": [
+    4.0,
+    7.0
+   ],
+   "auc_llm_gt_human": 0.611,
+   "auc_ci95": [
+    0.561,
+    0.667
+   ],
+   "auc_length_stratified": 0.554,
+   "auc_length_matched": 0.513,
+   "cliffs_delta": 0.222,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "n_eojeol": {
+   "human_n": 100,
+   "natural_range": [
+    71.0,
+    109.0
+   ],
+   "human_p10_p90": [
+    59.9,
+    132.1
+   ],
+   "human_median": 85.5,
+   "human_mean": 91.66,
+   "llm_median": 100.5,
+   "llm_iqr": [
+    74.25,
+    125.75
+   ],
+   "auc_llm_gt_human": 0.586,
+   "auc_ci95": [
+    0.528,
+    0.653
+   ],
+   "auc_length_stratified": 0.512,
+   "auc_length_matched": 0.464,
+   "cliffs_delta": 0.172,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "sent_eo_mean": {
+   "human_n": 100,
+   "natural_range": [
+    15.1917,
+    21.3125
+   ],
+   "human_p10_p90": [
+    13.75,
+    24.1
+   ],
+   "human_median": 18.1,
+   "human_mean": 18.7455,
+   "llm_median": 17.8167,
+   "llm_iqr": [
+    15.75,
+    20.0
+   ],
+   "auc_llm_gt_human": 0.466,
+   "auc_ci95": [
+    0.403,
+    0.547
+   ],
+   "auc_length_stratified": 0.438,
+   "auc_length_matched": 0.443,
+   "cliffs_delta": -0.069,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "sent_eo_sd": {
+   "human_n": 100,
+   "natural_range": [
+    4.2139,
+    8.2363
+   ],
+   "human_p10_p90": [
+    3.1875,
+    9.7129
+   ],
+   "human_median": 5.9545,
+   "human_mean": 6.2495,
+   "llm_median": 4.7577,
+   "llm_iqr": [
+    3.5461,
+    6.364
+   ],
+   "auc_llm_gt_human": 0.374,
+   "auc_ci95": [
+    0.317,
+    0.445
+   ],
+   "auc_length_stratified": 0.347,
+   "auc_length_matched": 0.357,
+   "cliffs_delta": -0.251,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true
+  },
+  "sent_eo_cv": {
+   "human_n": 100,
+   "natural_range": [
+    0.2705,
+    0.3913
+   ],
+   "human_p10_p90": [
+    0.1902,
+    0.4623
+   ],
+   "human_median": 0.3302,
+   "human_mean": 0.3311,
+   "llm_median": 0.2716,
+   "llm_iqr": [
+    0.2117,
+    0.3506
+   ],
+   "auc_llm_gt_human": 0.366,
+   "auc_ci95": [
+    0.304,
+    0.432
+   ],
+   "auc_length_stratified": 0.35,
+   "auc_length_matched": 0.355,
+   "cliffs_delta": -0.269,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false
+  },
+  "sent_syl_mean": {
+   "human_n": 100,
+   "natural_range": [
+    52.2,
+    72.875
+   ],
+   "human_p10_p90": [
+    46.2341,
+    84.525
+   ],
+   "human_median": 62.875,
+   "human_mean": 65.2271,
+   "llm_median": 59.6667,
+   "llm_iqr": [
+    52.3125,
+    68.4048
+   ],
+   "auc_llm_gt_human": 0.46,
+   "auc_ci95": [
+    0.386,
+    0.525
+   ],
+   "auc_length_stratified": 0.439,
+   "auc_length_matched": 0.447,
+   "cliffs_delta": -0.08,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "sent_syl_sd": {
+   "human_n": 100,
+   "natural_range": [
+    15.5174,
+    28.5941
+   ],
+   "human_p10_p90": [
+    10.9063,
+    36.512
+   ],
+   "human_median": 20.8086,
+   "human_mean": 22.7643,
+   "llm_median": 16.4073,
+   "llm_iqr": [
+    12.4479,
+    22.0805
+   ],
+   "auc_llm_gt_human": 0.366,
+   "auc_ci95": [
+    0.304,
+    0.434
+   ],
+   "auc_length_stratified": 0.345,
+   "auc_length_matched": 0.355,
+   "cliffs_delta": -0.268,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false
+  },
+  "sent_syl_cv": {
+   "human_n": 100,
+   "natural_range": [
+    0.259,
+    0.4087
+   ],
+   "human_p10_p90": [
+    0.2083,
+    0.4967
+   ],
+   "human_median": 0.3425,
+   "human_mean": 0.3447,
+   "llm_median": 0.2764,
+   "llm_iqr": [
+    0.2112,
+    0.3654
+   ],
+   "auc_llm_gt_human": 0.365,
+   "auc_ci95": [
+    0.305,
+    0.427
+   ],
+   "auc_length_stratified": 0.349,
+   "auc_length_matched": 0.355,
+   "cliffs_delta": -0.27,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false
+  },
+  "eo_len_syl": {
+   "human_n": 100,
+   "natural_range": [
+    3.2582,
+    3.6122
+   ],
+   "human_p10_p90": [
+    3.081,
+    3.941
+   ],
+   "human_median": 3.3769,
+   "human_mean": 3.4713,
+   "llm_median": 3.3558,
+   "llm_iqr": [
+    3.2028,
+    3.5342
+   ],
+   "auc_llm_gt_human": 0.453,
+   "auc_ci95": [
+    0.39,
+    0.523
+   ],
+   "auc_length_stratified": 0.46,
+   "auc_length_matched": 0.466,
+   "cliffs_delta": -0.095,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false
+  },
+  "comma_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.2,
+    0.875
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.25
+   ],
+   "human_median": 0.5714,
+   "human_mean": 0.6465,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    0.7,
+    1.2
+   ],
+   "auc_llm_gt_human": 0.72,
+   "auc_ci95": [
+    0.664,
+    0.783
+   ],
+   "auc_length_stratified": 0.714,
+   "auc_length_matched": 0.699,
+   "cliffs_delta": 0.44,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true
+  },
+  "comma_sent_share": {
+   "human_n": 100,
+   "natural_range": [
+    0.2,
+    0.5786
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.75
+   ],
+   "human_median": 0.4,
+   "human_mean": 0.3936,
+   "llm_median": 0.6667,
+   "llm_iqr": [
+    0.5,
+    0.8
+   ],
+   "auc_llm_gt_human": 0.766,
+   "auc_ci95": [
+    0.711,
+    0.822
+   ],
+   "auc_length_stratified": 0.768,
+   "auc_length_matched": 0.761,
+   "cliffs_delta": 0.532,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true
+  },
+  "comma_per_100eo": {
+   "human_n": 100,
+   "natural_range": [
+    1.2461,
+    4.9816
+   ],
+   "human_p10_p90": [
+    0.0,
+    5.9778
+   ],
+   "human_median": 3.2967,
+   "human_mean": 3.4451,
+   "llm_median": 5.074,
+   "llm_iqr": [
+    3.819,
+    6.4905
+   ],
+   "auc_llm_gt_human": 0.729,
+   "auc_ci95": [
+    0.667,
+    0.789
+   ],
+   "auc_length_stratified": 0.738,
+   "auc_length_matched": 0.711,
+   "cliffs_delta": 0.458,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true
+  },
+  "n_morph": {
+   "human_n": 100,
+   "natural_range": [
+    154.5,
+    236.25
+   ],
+   "human_p10_p90": [
+    126.9,
+    277.4
+   ],
+   "human_median": 179.0,
+   "human_mean": 197.1,
+   "llm_median": 218.5,
+   "llm_iqr": [
+    157.25,
+    274.0
+   ],
+   "auc_llm_gt_human": 0.585,
+   "auc_ci95": [
+    0.526,
+    0.64
+   ],
+   "auc_length_stratified": 0.512,
+   "auc_length_matched": 0.464,
+   "cliffs_delta": 0.17,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "ui_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    1.6065,
+    3.2455
+   ],
+   "human_p10_p90": [
+    0.8107,
+    4.7712
+   ],
+   "human_median": 2.3302,
+   "human_mean": 2.5035,
+   "llm_median": 2.2489,
+   "llm_iqr": [
+    1.6819,
+    2.9979
+   ],
+   "auc_llm_gt_human": 0.487,
+   "auc_ci95": [
+    0.421,
+    0.557
+   ],
+   "auc_length_stratified": 0.464,
+   "auc_length_matched": 0.451,
+   "cliffs_delta": -0.026,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false
+  },
+  "ui_chain_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5787
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1065,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.446,
+   "auc_ci95": [
+    0.402,
+    0.484
+   ],
+   "auc_length_stratified": 0.444,
+   "auc_length_matched": 0.435,
+   "cliffs_delta": -0.109,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "ui_chain_share": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.144
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0293,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.447,
+   "auc_ci95": [
+    0.405,
+    0.486
+   ],
+   "auc_length_stratified": 0.446,
+   "auc_length_matched": 0.437,
+   "cliffs_delta": -0.106,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "suf_jeok_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.9043
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.3579
+   ],
+   "human_median": 0.4751,
+   "human_mean": 0.5987,
+   "llm_median": 0.5019,
+   "llm_iqr": [
+    0.0,
+    0.9081
+   ],
+   "auc_llm_gt_human": 0.512,
+   "auc_ci95": [
+    0.442,
+    0.582
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.487,
+   "cliffs_delta": 0.024,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "suf_seong_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5742
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1693,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.4711
+   ],
+   "auc_llm_gt_human": 0.615,
+   "auc_ci95": [
+    0.564,
+    0.661
+   ],
+   "auc_length_stratified": 0.585,
+   "auc_length_matched": 0.593,
+   "cliffs_delta": 0.23,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false
+  },
+  "suf_hwa_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5858
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1627,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.334
+   ],
+   "auc_llm_gt_human": 0.528,
+   "auc_ci95": [
+    0.482,
+    0.575
+   ],
+   "auc_length_stratified": 0.523,
+   "auc_length_matched": 0.513,
+   "cliffs_delta": 0.056,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "suf_jsh_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.2344,
+    1.3571
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.8843
+   ],
+   "human_median": 0.678,
+   "human_mean": 0.9308,
+   "llm_median": 0.9112,
+   "llm_iqr": [
+    0.5391,
+    1.5132
+   ],
+   "auc_llm_gt_human": 0.566,
+   "auc_ci95": [
+    0.499,
+    0.634
+   ],
+   "auc_length_stratified": 0.555,
+   "auc_length_matched": 0.55,
+   "cliffs_delta": 0.132,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "deul_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.6717
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.9753
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.3608,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.4301
+   ],
+   "auc_llm_gt_human": 0.436,
+   "auc_ci95": [
+    0.38,
+    0.494
+   ],
+   "auc_length_stratified": 0.419,
+   "auc_length_matched": 0.412,
+   "cliffs_delta": -0.128,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "geot_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.2
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3333
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1016,
+   "llm_median": 0.1,
+   "llm_iqr": [
+    0.0,
+    0.2431
+   ],
+   "auc_llm_gt_human": 0.57,
+   "auc_ci95": [
+    0.508,
+    0.627
+   ],
+   "auc_length_stratified": 0.57,
+   "auc_length_matched": 0.566,
+   "cliffs_delta": 0.141,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "geot_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.4995
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.7737
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.2519,
+   "llm_median": 0.2621,
+   "llm_iqr": [
+    0.0,
+    0.6196
+   ],
+   "auc_llm_gt_human": 0.574,
+   "auc_ci95": [
+    0.508,
+    0.636
+   ],
+   "auc_length_stratified": 0.584,
+   "auc_length_matched": 0.574,
+   "cliffs_delta": 0.147,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "geot_ida_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0177,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.506,
+   "auc_ci95": [
+    0.473,
+    0.534
+   ],
+   "auc_length_stratified": 0.503,
+   "auc_length_matched": 0.503,
+   "cliffs_delta": 0.012,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "etn_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.8538
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.2255
+   ],
+   "human_median": 0.5739,
+   "human_mean": 0.5946,
+   "llm_median": 0.4631,
+   "llm_iqr": [
+    0.0,
+    0.8939
+   ],
+   "auc_llm_gt_human": 0.48,
+   "auc_ci95": [
+    0.417,
+    0.545
+   ],
+   "auc_length_stratified": 0.474,
+   "auc_length_matched": 0.474,
+   "cliffs_delta": -0.041,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "reul_su_itda_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.2857
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5
+   ],
+   "human_median": 0.1667,
+   "human_mean": 0.1957,
+   "llm_median": 0.1429,
+   "llm_iqr": [
+    0.0,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.484,
+   "auc_ci95": [
+    0.423,
+    0.546
+   ],
+   "auc_length_stratified": 0.476,
+   "auc_length_matched": 0.485,
+   "cliffs_delta": -0.032,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "go_itda_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.25
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.34
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1141,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.403,
+   "auc_ci95": [
+    0.343,
+    0.461
+   ],
+   "auc_length_stratified": 0.39,
+   "auc_length_matched": 0.379,
+   "cliffs_delta": -0.194,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "passive_doe_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.1667,
+    0.5
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.8333
+   ],
+   "human_median": 0.3333,
+   "human_mean": 0.3912,
+   "llm_median": 0.3542,
+   "llm_iqr": [
+    0.2,
+    0.5692
+   ],
+   "auc_llm_gt_human": 0.531,
+   "auc_ci95": [
+    0.466,
+    0.603
+   ],
+   "auc_length_stratified": 0.526,
+   "auc_length_matched": 0.503,
+   "cliffs_delta": 0.062,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "passive_jida_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0091
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0197,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.482,
+   "auc_ci95": [
+    0.449,
+    0.512
+   ],
+   "auc_length_stratified": 0.475,
+   "auc_length_matched": 0.476,
+   "cliffs_delta": -0.035,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "passive_by_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0053,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.497,
+   "auc_ci95": [
+    0.479,
+    0.511
+   ],
+   "auc_length_stratified": 0.494,
+   "auc_length_matched": 0.495,
+   "cliffs_delta": -0.006,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "passive_any_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.2,
+    0.5
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.85
+   ],
+   "human_median": 0.3333,
+   "human_mean": 0.4163,
+   "llm_median": 0.4,
+   "llm_iqr": [
+    0.2,
+    0.6
+   ],
+   "auc_llm_gt_human": 0.525,
+   "auc_ci95": [
+    0.454,
+    0.587
+   ],
+   "auc_length_stratified": 0.516,
+   "auc_length_matched": 0.494,
+   "cliffs_delta": 0.05,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "gae_doeda_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0067,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.494,
+   "auc_ci95": [
+    0.475,
+    0.51
+   ],
+   "auc_length_stratified": 0.493,
+   "auc_length_matched": 0.493,
+   "cliffs_delta": -0.012,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "np_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.2
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3333
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1072,
+   "llm_median": 0.1181,
+   "llm_iqr": [
+    0.0,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.586,
+   "auc_ci95": [
+    0.523,
+    0.643
+   ],
+   "auc_length_stratified": 0.555,
+   "auc_length_matched": 0.544,
+   "cliffs_delta": 0.171,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false
+  },
+  "np3_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.1667
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.3333
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.088,
+   "llm_median": 0.1111,
+   "llm_iqr": [
+    0.0,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.611,
+   "auc_ci95": [
+    0.553,
+    0.669
+   ],
+   "auc_length_stratified": 0.581,
+   "auc_length_matched": 0.563,
+   "cliffs_delta": 0.222,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true
+  },
+  "np12_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0091,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.487,
+   "auc_ci95": [
+    0.462,
+    0.509
+   ],
+   "auc_length_stratified": 0.48,
+   "auc_length_matched": 0.476,
+   "cliffs_delta": -0.025,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false
+  },
+  "topic_init_rate": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1667
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0352,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.125
+   ],
+   "auc_llm_gt_human": 0.555,
+   "auc_ci95": [
+    0.511,
+    0.601
+   ],
+   "auc_length_stratified": 0.542,
+   "auc_length_matched": 0.534,
+   "cliffs_delta": 0.111,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "topic_marker_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.5,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.325,
+    1.0
+   ],
+   "human_median": 0.75,
+   "human_mean": 0.7434,
+   "llm_median": 0.8571,
+   "llm_iqr": [
+    0.6667,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.609,
+   "auc_ci95": [
+    0.539,
+    0.666
+   ],
+   "auc_length_stratified": 0.602,
+   "auc_length_matched": 0.596,
+   "cliffs_delta": 0.219,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "abstract only",
+   "editing_target": false
+  },
+  "conj_init_rate": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.1667
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2022
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0674,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0977
+   ],
+   "auc_llm_gt_human": 0.463,
+   "auc_ci95": [
+    0.414,
+    0.517
+   ],
+   "auc_length_stratified": 0.451,
+   "auc_length_matched": 0.457,
+   "cliffs_delta": -0.075,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "light_verb_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.1667
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.25
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0739,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.1667
+   ],
+   "auc_llm_gt_human": 0.524,
+   "auc_ci95": [
+    0.462,
+    0.58
+   ],
+   "auc_length_stratified": 0.513,
+   "auc_length_matched": 0.529,
+   "cliffs_delta": 0.048,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "sino_ha_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    4.0713,
+    5.8969
+   ],
+   "human_p10_p90": [
+    3.2513,
+    7.1668
+   ],
+   "human_median": 5.074,
+   "human_mean": 5.1593,
+   "llm_median": 5.4054,
+   "llm_iqr": [
+    4.6806,
+    6.1924
+   ],
+   "auc_llm_gt_human": 0.578,
+   "auc_ci95": [
+    0.504,
+    0.648
+   ],
+   "auc_length_stratified": 0.59,
+   "auc_length_matched": 0.593,
+   "cliffs_delta": 0.156,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ec_comma_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.4
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5
+   ],
+   "human_median": 0.2,
+   "human_mean": 0.2327,
+   "llm_median": 0.4722,
+   "llm_iqr": [
+    0.2589,
+    0.6667
+   ],
+   "auc_llm_gt_human": 0.741,
+   "auc_ci95": [
+    0.681,
+    0.799
+   ],
+   "auc_length_stratified": 0.732,
+   "auc_length_matched": 0.732,
+   "cliffs_delta": 0.481,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true
+  },
+  "enum_word_rate": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0166,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.5,
+   "auc_ci95": [
+    0.474,
+    0.524
+   ],
+   "auc_length_stratified": 0.493,
+   "auc_length_matched": 0.492,
+   "cliffs_delta": -0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "boiler_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.2
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.4
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.121,
+   "llm_median": 0.125,
+   "llm_iqr": [
+    0.0,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.553,
+   "auc_ci95": [
+    0.489,
+    0.61
+   ],
+   "auc_length_stratified": 0.545,
+   "auc_length_matched": 0.534,
+   "cliffs_delta": 0.106,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "p_ae_daehae_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.25
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.4
+   ],
+   "human_median": 0.0812,
+   "human_mean": 0.1507,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.2
+   ],
+   "auc_llm_gt_human": 0.441,
+   "auc_ci95": [
+    0.386,
+    0.495
+   ],
+   "auc_length_stratified": 0.437,
+   "auc_length_matched": 0.434,
+   "cliffs_delta": -0.118,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "p_reul_tonghae_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.1667
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2583
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0876,
+   "llm_median": 0.1111,
+   "llm_iqr": [
+    0.0,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.601,
+   "auc_ci95": [
+    0.545,
+    0.662
+   ],
+   "auc_length_stratified": 0.583,
+   "auc_length_matched": 0.579,
+   "cliffs_delta": 0.203,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true
+  },
+  "p_ae_isseoseo_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.006,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.508,
+   "auc_ci95": [
+    0.486,
+    0.525
+   ],
+   "auc_length_stratified": 0.502,
+   "auc_length_matched": 0.495,
+   "cliffs_delta": 0.016,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_gajigo_itda_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0031,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.503,
+   "auc_ci95": [
+    0.484,
+    0.519
+   ],
+   "auc_length_stratified": 0.503,
+   "auc_length_matched": 0.498,
+   "cliffs_delta": 0.005,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_neomeo_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.502,
+   "auc_ci95": [
+    0.5,
+    0.507
+   ],
+   "auc_length_stratified": 0.501,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.004,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_anira_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0108,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.501,
+   "auc_ci95": [
+    0.475,
+    0.522
+   ],
+   "auc_length_stratified": 0.503,
+   "auc_length_matched": 0.512,
+   "cliffs_delta": 0.002,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_deo_isang_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.502,
+   "auc_ci95": [
+    0.5,
+    0.505
+   ],
+   "auc_length_stratified": 0.501,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.004,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_gwanhayeo_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0087,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.508,
+   "auc_ci95": [
+    0.486,
+    0.529
+   ],
+   "auc_length_stratified": 0.506,
+   "auc_length_matched": 0.514,
+   "cliffs_delta": 0.016,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_ui_haeyo_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0033,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.5,
+   "auc_ci95": [
+    0.486,
+    0.511
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "p_d1_conclusion_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1667
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0255,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.534,
+   "auc_ci95": [
+    0.489,
+    0.573
+   ],
+   "auc_length_stratified": 0.518,
+   "auc_length_matched": 0.52,
+   "cliffs_delta": 0.069,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "p_d2_significance_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.009,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.485,
+   "auc_ci95": [
+    0.463,
+    0.502
+   ],
+   "auc_length_stratified": 0.486,
+   "auc_length_matched": 0.488,
+   "cliffs_delta": -0.03,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "enum_numbered_per_sent": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.2
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1291,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.1607
+   ],
+   "auc_llm_gt_human": 0.485,
+   "auc_ci95": [
+    0.427,
+    0.542
+   ],
+   "auc_length_stratified": 0.484,
+   "auc_length_matched": 0.479,
+   "cliffs_delta": -0.03,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "enum_any_rate": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.2
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1457,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.1917
+   ],
+   "auc_llm_gt_human": 0.486,
+   "auc_ci95": [
+    0.434,
+    0.54
+   ],
+   "auc_length_stratified": 0.479,
+   "auc_length_matched": 0.475,
+   "cliffs_delta": -0.028,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ef_entropy": {
+   "human_n": 100,
+   "natural_range": [
+    0.7219,
+    0.971
+   ],
+   "human_p10_p90": [
+    -0.0,
+    1.0
+   ],
+   "human_median": 0.8113,
+   "human_mean": 0.7606,
+   "llm_median": 0.8113,
+   "llm_iqr": [
+    0.6063,
+    0.9544
+   ],
+   "auc_llm_gt_human": 0.462,
+   "auc_ci95": [
+    0.395,
+    0.526
+   ],
+   "auc_length_stratified": 0.454,
+   "auc_length_matched": 0.442,
+   "cliffs_delta": -0.076,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ef_types_ratio": {
+   "human_n": 100,
+   "natural_range": [
+    0.3333,
+    0.5
+   ],
+   "human_p10_p90": [
+    0.25,
+    0.6667
+   ],
+   "human_median": 0.4,
+   "human_mean": 0.4111,
+   "llm_median": 0.3333,
+   "llm_iqr": [
+    0.25,
+    0.4
+   ],
+   "auc_llm_gt_human": 0.359,
+   "auc_ci95": [
+    0.298,
+    0.418
+   ],
+   "auc_length_stratified": 0.375,
+   "auc_length_matched": 0.445,
+   "cliffs_delta": -0.281,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "length-confounded",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ef_top_share": {
+   "human_n": 100,
+   "natural_range": [
+    0.6,
+    0.8
+   ],
+   "human_p10_p90": [
+    0.5,
+    1.0
+   ],
+   "human_median": 0.75,
+   "human_mean": 0.7289,
+   "llm_median": 0.75,
+   "llm_iqr": [
+    0.625,
+    0.8512
+   ],
+   "auc_llm_gt_human": 0.535,
+   "auc_ci95": [
+    0.473,
+    0.596
+   ],
+   "auc_length_stratified": 0.543,
+   "auc_length_matched": 0.551,
+   "cliffs_delta": 0.071,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ef_all_entropy": {
+   "human_n": 100,
+   "natural_range": [
+    0.7219,
+    0.971
+   ],
+   "human_p10_p90": [
+    -0.0,
+    1.0
+   ],
+   "human_median": 0.8113,
+   "human_mean": 0.7606,
+   "llm_median": 0.8113,
+   "llm_iqr": [
+    0.6063,
+    0.9544
+   ],
+   "auc_llm_gt_human": 0.462,
+   "auc_ci95": [
+    0.398,
+    0.522
+   ],
+   "auc_length_stratified": 0.454,
+   "auc_length_matched": 0.442,
+   "cliffs_delta": -0.076,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ef_all_top_share": {
+   "human_n": 100,
+   "natural_range": [
+    0.6,
+    0.8
+   ],
+   "human_p10_p90": [
+    0.5,
+    1.0
+   ],
+   "human_median": 0.75,
+   "human_mean": 0.7289,
+   "llm_median": 0.75,
+   "llm_iqr": [
+    0.625,
+    0.8512
+   ],
+   "auc_llm_gt_human": 0.535,
+   "auc_ci95": [
+    0.469,
+    0.599
+   ],
+   "auc_length_stratified": 0.542,
+   "auc_length_matched": 0.551,
+   "cliffs_delta": 0.071,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "ef_share_plain_da": {
+   "human_n": 100,
+   "natural_range": [
+    1.0,
+    1.0
+   ],
+   "human_p10_p90": [
+    1.0,
+    1.0
+   ],
+   "human_median": 1.0,
+   "human_mean": 0.9989,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    0.0,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.307,
+   "auc_ci95": [
+    0.278,
+    0.336
+   ],
+   "auc_length_stratified": 0.293,
+   "auc_length_matched": 0.26,
+   "cliffs_delta": -0.386,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true
+  },
+  "ef_share_hapsyo": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0011,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.691,
+   "auc_ci95": [
+    0.66,
+    0.72
+   ],
+   "auc_length_stratified": 0.706,
+   "auc_length_matched": 0.74,
+   "cliffs_delta": 0.382,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true
+  },
+  "ef_share_yo": {
+   "human_n": 100,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.5,
+   "auc_ci95": [
+    0.5,
+    0.5
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.0,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "bn_space_rate": {
+   "human_n": 52,
+   "natural_range": [
+    0.6,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.5,
+    1.0
+   ],
+   "human_median": 0.8333,
+   "human_mean": 0.7732,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    0.7143,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.589,
+   "auc_ci95": [
+    0.505,
+    0.677
+   ],
+   "auc_length_stratified": 0.613,
+   "auc_length_matched": 0.63,
+   "cliffs_delta": 0.178,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false
+  },
+  "vx_space_rate": {
+   "human_n": 22,
+   "natural_range": [
+    0.7625,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.6667,
+    1.0
+   ],
+   "human_median": 1.0,
+   "human_mean": 0.8908,
+   "llm_median": 0.775,
+   "llm_iqr": [
+    0.6667,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.373,
+   "auc_ci95": [
+    0.257,
+    0.502
+   ],
+   "auc_length_stratified": 0.489,
+   "auc_length_matched": 0.393,
+   "cliffs_delta": -0.255,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "bn_per100m": {
+   "human_n": 100,
+   "natural_range": [
+    0.73,
+    2.3511
+   ],
+   "human_p10_p90": [
+    0.3695,
+    2.9725
+   ],
+   "human_median": 1.4496,
+   "human_mean": 1.5976,
+   "llm_median": 1.4688,
+   "llm_iqr": [
+    0.8439,
+    2.2618
+   ],
+   "auc_llm_gt_human": 0.496,
+   "auc_ci95": [
+    0.43,
+    0.569
+   ],
+   "auc_length_stratified": 0.482,
+   "auc_length_matched": 0.48,
+   "cliffs_delta": -0.008,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "space_missing_rate": {
+   "human_n": 100,
+   "natural_range": [
+    0.0533,
+    0.1375
+   ],
+   "human_p10_p90": [
+    0.0353,
+    0.1803
+   ],
+   "human_median": 0.0944,
+   "human_mean": 0.1022,
+   "llm_median": 0.0739,
+   "llm_iqr": [
+    0.0417,
+    0.1051
+   ],
+   "auc_llm_gt_human": 0.377,
+   "auc_ci95": [
+    0.312,
+    0.434
+   ],
+   "auc_length_stratified": 0.372,
+   "auc_length_matched": 0.374,
+   "cliffs_delta": -0.247,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": false
+  },
+  "space_extra_rate": {
+   "human_n": 100,
+   "natural_range": [
+    0.0163,
+    0.0665
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1335
+   ],
+   "human_median": 0.0364,
+   "human_mean": 0.057,
+   "llm_median": 0.0356,
+   "llm_iqr": [
+    0.0143,
+    0.065
+   ],
+   "auc_llm_gt_human": 0.477,
+   "auc_ci95": [
+    0.405,
+    0.54
+   ],
+   "auc_length_stratified": 0.475,
+   "auc_length_matched": 0.473,
+   "cliffs_delta": -0.045,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "poetry only",
+   "editing_target": false
+  },
+  "mattr25": {
+   "human_n": 100,
+   "natural_range": [
+    0.7721,
+    0.8567
+   ],
+   "human_p10_p90": [
+    0.7369,
+    0.8935
+   ],
+   "human_median": 0.8213,
+   "human_mean": 0.8135,
+   "llm_median": 0.8577,
+   "llm_iqr": [
+    0.8287,
+    0.8933
+   ],
+   "auc_llm_gt_human": 0.696,
+   "auc_ci95": [
+    0.636,
+    0.753
+   ],
+   "auc_length_stratified": 0.684,
+   "auc_length_matched": 0.691,
+   "cliffs_delta": 0.391,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "abstract only",
+   "editing_target": true
+  },
+  "mattr50": {
+   "human_n": 96,
+   "natural_range": [
+    0.6607,
+    0.7652
+   ],
+   "human_p10_p90": [
+    0.5957,
+    0.7866
+   ],
+   "human_median": 0.7138,
+   "human_mean": 0.7046,
+   "llm_median": 0.7536,
+   "llm_iqr": [
+    0.7033,
+    0.796
+   ],
+   "auc_llm_gt_human": 0.659,
+   "auc_ci95": [
+    0.598,
+    0.723
+   ],
+   "auc_length_stratified": 0.643,
+   "auc_length_matched": 0.658,
+   "cliffs_delta": 0.317,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "abstract only",
+   "editing_target": false
+  },
+  "mtld": {
+   "human_n": 96,
+   "natural_range": [
+    32.9475,
+    57.9717
+   ],
+   "human_p10_p90": [
+    25.9215,
+    74.4749
+   ],
+   "human_median": 45.85,
+   "human_mean": 47.6375,
+   "llm_median": 57.5876,
+   "llm_iqr": [
+    44.924,
+    74.9616
+   ],
+   "auc_llm_gt_human": 0.68,
+   "auc_ci95": [
+    0.619,
+    0.737
+   ],
+   "auc_length_stratified": 0.675,
+   "auc_length_matched": 0.681,
+   "cliffs_delta": 0.361,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "abstract only",
+   "editing_target": false
+  },
+  "content_ttr": {
+   "human_n": 100,
+   "natural_range": [
+    0.5725,
+    0.7102
+   ],
+   "human_p10_p90": [
+    0.5153,
+    0.7403
+   ],
+   "human_median": 0.6325,
+   "human_mean": 0.6368,
+   "llm_median": 0.64,
+   "llm_iqr": [
+    0.5824,
+    0.702
+   ],
+   "auc_llm_gt_human": 0.519,
+   "auc_ci95": [
+    0.449,
+    0.582
+   ],
+   "auc_length_stratified": 0.569,
+   "auc_length_matched": 0.588,
+   "cliffs_delta": 0.038,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "pos1_distinct_ratio": {
+   "human_n": 100,
+   "natural_range": [
+    0.1183,
+    0.1709
+   ],
+   "human_p10_p90": [
+    0.1065,
+    0.1922
+   ],
+   "human_median": 0.1499,
+   "human_mean": 0.1482,
+   "llm_median": 0.1299,
+   "llm_iqr": [
+    0.1086,
+    0.1664
+   ],
+   "auc_llm_gt_human": 0.41,
+   "auc_ci95": [
+    0.351,
+    0.479
+   ],
+   "auc_length_stratified": 0.477,
+   "auc_length_matched": 0.528,
+   "cliffs_delta": -0.18,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "pos2_distinct_ratio": {
+   "human_n": 100,
+   "natural_range": [
+    0.3274,
+    0.4016
+   ],
+   "human_p10_p90": [
+    0.2884,
+    0.4341
+   ],
+   "human_median": 0.3664,
+   "human_mean": 0.3639,
+   "llm_median": 0.3397,
+   "llm_iqr": [
+    0.3006,
+    0.3953
+   ],
+   "auc_llm_gt_human": 0.417,
+   "auc_ci95": [
+    0.358,
+    0.473
+   ],
+   "auc_length_stratified": 0.499,
+   "auc_length_matched": 0.529,
+   "cliffs_delta": -0.165,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "pos3_distinct_ratio": {
+   "human_n": 100,
+   "natural_range": [
+    0.5554,
+    0.652
+   ],
+   "human_p10_p90": [
+    0.5221,
+    0.6824
+   ],
+   "human_median": 0.607,
+   "human_mean": 0.6034,
+   "llm_median": 0.5756,
+   "llm_iqr": [
+    0.5301,
+    0.6304
+   ],
+   "auc_llm_gt_human": 0.399,
+   "auc_ci95": [
+    0.333,
+    0.463
+   ],
+   "auc_length_stratified": 0.454,
+   "auc_length_matched": 0.487,
+   "cliffs_delta": -0.202,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "length-confounded",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "pos4_distinct_ratio": {
+   "human_n": 100,
+   "natural_range": [
+    0.7387,
+    0.8265
+   ],
+   "human_p10_p90": [
+    0.7173,
+    0.8617
+   ],
+   "human_median": 0.7867,
+   "human_mean": 0.7816,
+   "llm_median": 0.756,
+   "llm_iqr": [
+    0.7103,
+    0.7986
+   ],
+   "auc_llm_gt_human": 0.375,
+   "auc_ci95": [
+    0.313,
+    0.438
+   ],
+   "auc_length_stratified": 0.416,
+   "auc_length_matched": 0.444,
+   "cliffs_delta": -0.25,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "length-confounded",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "pos5_distinct_ratio": {
+   "human_n": 100,
+   "natural_range": [
+    0.8559,
+    0.926
+   ],
+   "human_p10_p90": [
+    0.8282,
+    0.9511
+   ],
+   "human_median": 0.8934,
+   "human_mean": 0.8865,
+   "llm_median": 0.8691,
+   "llm_iqr": [
+    0.8273,
+    0.9006
+   ],
+   "auc_llm_gt_human": 0.369,
+   "auc_ci95": [
+    0.314,
+    0.428
+   ],
+   "auc_length_stratified": 0.398,
+   "auc_length_matched": 0.422,
+   "cliffs_delta": -0.261,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "essay only",
+   "editing_target": false
+  },
+  "pos3_entropy": {
+   "human_n": 100,
+   "natural_range": [
+    6.2313,
+    6.6662
+   ],
+   "human_p10_p90": [
+    6.0949,
+    6.8539
+   ],
+   "human_median": 6.5083,
+   "human_mean": 6.4703,
+   "llm_median": 6.5369,
+   "llm_iqr": [
+    6.209,
+    6.7908
+   ],
+   "auc_llm_gt_human": 0.527,
+   "auc_ci95": [
+    0.461,
+    0.589
+   ],
+   "auc_length_stratified": 0.439,
+   "auc_length_matched": 0.433,
+   "cliffs_delta": 0.054,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "pos3_entropy_win100": {
+   "human_n": 99,
+   "natural_range": [
+    5.8369,
+    6.0373
+   ],
+   "human_p10_p90": [
+    5.7187,
+    6.1531
+   ],
+   "human_median": 5.9367,
+   "human_mean": 5.9292,
+   "llm_median": 5.9288,
+   "llm_iqr": [
+    5.8056,
+    6.0352
+   ],
+   "auc_llm_gt_human": 0.463,
+   "auc_ci95": [
+    0.395,
+    0.532
+   ],
+   "auc_length_stratified": 0.448,
+   "auc_length_matched": 0.442,
+   "cliffs_delta": -0.074,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  },
+  "pos1_entropy": {
+   "human_n": 100,
+   "natural_range": [
+    3.569,
+    3.823
+   ],
+   "human_p10_p90": [
+    3.4771,
+    3.9142
+   ],
+   "human_median": 3.7114,
+   "human_mean": 3.6957,
+   "llm_median": 3.7271,
+   "llm_iqr": [
+    3.6061,
+    3.8658
+   ],
+   "auc_llm_gt_human": 0.548,
+   "auc_ci95": [
+    0.484,
+    0.614
+   ],
+   "auc_length_stratified": 0.524,
+   "auc_length_matched": 0.513,
+   "cliffs_delta": 0.097,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false
+  }
+ },
+ "poetry": {
+  "n_chars": {
+   "human_n": 189,
+   "natural_range": [
+    84.0,
+    257.0
+   ],
+   "human_p10_p90": [
+    65.0,
+    396.0
+   ],
+   "human_median": 136.0,
+   "human_mean": 207.0952,
+   "llm_median": 213.0,
+   "llm_iqr": [
+    136.75,
+    293.0
+   ],
+   "auc_llm_gt_human": 0.635,
+   "auc_ci95": [
+    0.583,
+    0.686
+   ],
+   "auc_length_stratified": 0.438,
+   "auc_length_matched": 0.446,
+   "cliffs_delta": 0.27,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     66.5,
+     110.0
+    ],
+    "10s": [
+     95.5,
+     248.0
+    ],
+    "2030s": [
+     81.0,
+     308.5
+    ],
+    "40s~": [
+     116.25,
+     331.25
+    ]
+   }
+  },
+  "n_sent": {
+   "human_n": 189,
+   "natural_range": [
+    6.0,
+    12.0
+   ],
+   "human_p10_p90": [
+    4.0,
+    22.0
+   ],
+   "human_median": 9.0,
+   "human_mean": 10.9101,
+   "llm_median": 12.0,
+   "llm_iqr": [
+    8.0,
+    16.0
+   ],
+   "auc_llm_gt_human": 0.642,
+   "auc_ci95": [
+    0.597,
+    0.686
+   ],
+   "auc_length_stratified": 0.503,
+   "auc_length_matched": 0.51,
+   "cliffs_delta": 0.284,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     6.5,
+     10.0
+    ],
+    "10s": [
+     6.0,
+     12.0
+    ],
+    "2030s": [
+     5.0,
+     14.25
+    ],
+    "40s~": [
+     11.25,
+     21.5
+    ]
+   }
+  },
+  "n_eojeol": {
+   "human_n": 189,
+   "natural_range": [
+    22.0,
+    61.0
+   ],
+   "human_p10_p90": [
+    16.0,
+    100.2
+   ],
+   "human_median": 34.0,
+   "human_mean": 52.8201,
+   "llm_median": 56.0,
+   "llm_iqr": [
+    36.0,
+    76.0
+   ],
+   "auc_llm_gt_human": 0.648,
+   "auc_ci95": [
+    0.6,
+    0.697
+   ],
+   "auc_length_stratified": 0.487,
+   "auc_length_matched": 0.46,
+   "cliffs_delta": 0.295,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     18.0,
+     27.0
+    ],
+    "10s": [
+     23.75,
+     60.25
+    ],
+    "2030s": [
+     20.75,
+     85.5
+    ],
+    "40s~": [
+     30.75,
+     83.0
+    ]
+   }
+  },
+  "sent_eo_mean": {
+   "human_n": 189,
+   "natural_range": [
+    2.9333,
+    5.9
+   ],
+   "human_p10_p90": [
+    2.2786,
+    9.8952
+   ],
+   "human_median": 4.2143,
+   "human_mean": 5.9521,
+   "llm_median": 4.5505,
+   "llm_iqr": [
+    3.625,
+    5.5
+   ],
+   "auc_llm_gt_human": 0.545,
+   "auc_ci95": [
+    0.491,
+    0.596
+   ],
+   "auc_length_stratified": 0.482,
+   "auc_length_matched": 0.461,
+   "cliffs_delta": 0.09,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     1.9962,
+     3.3214
+    ],
+    "10s": [
+     3.1083,
+     5.9817
+    ],
+    "2030s": [
+     3.5854,
+     6.625
+    ],
+    "40s~": [
+     2.5625,
+     5.2414
+    ]
+   }
+  },
+  "sent_eo_sd": {
+   "human_n": 183,
+   "natural_range": [
+    0.9577,
+    2.0169
+   ],
+   "human_p10_p90": [
+    0.6029,
+    4.0692
+   ],
+   "human_median": 1.3801,
+   "human_mean": 2.3152,
+   "llm_median": 1.1645,
+   "llm_iqr": [
+    0.8864,
+    1.6583
+   ],
+   "auc_llm_gt_human": 0.42,
+   "auc_ci95": [
+    0.372,
+    0.466
+   ],
+   "auc_length_stratified": 0.365,
+   "auc_length_matched": 0.337,
+   "cliffs_delta": -0.16,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.801,
+     1.2428
+    ],
+    "10s": [
+     0.9529,
+     1.9091
+    ],
+    "2030s": [
+     1.2808,
+     3.0047
+    ],
+    "40s~": [
+     1.0023,
+     1.6164
+    ]
+   }
+  },
+  "sent_eo_cv": {
+   "human_n": 183,
+   "natural_range": [
+    0.293,
+    0.4617
+   ],
+   "human_p10_p90": [
+    0.2067,
+    0.5873
+   ],
+   "human_median": 0.3726,
+   "human_mean": 0.3974,
+   "llm_median": 0.2746,
+   "llm_iqr": [
+    0.215,
+    0.3464
+   ],
+   "auc_llm_gt_human": 0.307,
+   "auc_ci95": [
+    0.261,
+    0.356
+   ],
+   "auc_length_stratified": 0.319,
+   "auc_length_matched": 0.298,
+   "cliffs_delta": -0.385,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.3413,
+     0.4281
+    ],
+    "10s": [
+     0.2576,
+     0.4318
+    ],
+    "2030s": [
+     0.3506,
+     0.5053
+    ],
+    "40s~": [
+     0.3146,
+     0.458
+    ]
+   }
+  },
+  "sent_syl_mean": {
+   "human_n": 189,
+   "natural_range": [
+    8.7917,
+    18.25
+   ],
+   "human_p10_p90": [
+    6.3727,
+    31.181
+   ],
+   "human_median": 12.4677,
+   "human_mean": 17.7735,
+   "llm_median": 12.8452,
+   "llm_iqr": [
+    10.1667,
+    15.5
+   ],
+   "auc_llm_gt_human": 0.516,
+   "auc_ci95": [
+    0.464,
+    0.569
+   ],
+   "auc_length_stratified": 0.449,
+   "auc_length_matched": 0.43,
+   "cliffs_delta": 0.032,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     6.0417,
+     11.1042
+    ],
+    "10s": [
+     9.3,
+     18.525
+    ],
+    "2030s": [
+     10.1979,
+     19.225
+    ],
+    "40s~": [
+     7.1743,
+     13.8828
+    ]
+   }
+  },
+  "sent_syl_sd": {
+   "human_n": 183,
+   "natural_range": [
+    2.2875,
+    5.5705
+   ],
+   "human_p10_p90": [
+    1.6239,
+    11.5144
+   ],
+   "human_median": 3.5111,
+   "human_mean": 6.3415,
+   "llm_median": 2.7614,
+   "llm_iqr": [
+    1.9227,
+    4.1656
+   ],
+   "auc_llm_gt_human": 0.392,
+   "auc_ci95": [
+    0.345,
+    0.441
+   ],
+   "auc_length_stratified": 0.341,
+   "auc_length_matched": 0.309,
+   "cliffs_delta": -0.215,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     1.9108,
+     3.4224
+    ],
+    "10s": [
+     2.2409,
+     5.4557
+    ],
+    "2030s": [
+     2.8182,
+     8.102
+    ],
+    "40s~": [
+     2.7649,
+     4.9619
+    ]
+   }
+  },
+  "sent_syl_cv": {
+   "human_n": 183,
+   "natural_range": [
+    0.2431,
+    0.4307
+   ],
+   "human_p10_p90": [
+    0.1523,
+    0.5565
+   ],
+   "human_median": 0.3182,
+   "human_mean": 0.3585,
+   "llm_median": 0.2326,
+   "llm_iqr": [
+    0.1718,
+    0.3045
+   ],
+   "auc_llm_gt_human": 0.312,
+   "auc_ci95": [
+    0.265,
+    0.359
+   ],
+   "auc_length_stratified": 0.313,
+   "auc_length_matched": 0.284,
+   "cliffs_delta": -0.376,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.2614,
+     0.451
+    ],
+    "10s": [
+     0.2179,
+     0.3977
+    ],
+    "2030s": [
+     0.2899,
+     0.4522
+    ],
+    "40s~": [
+     0.2722,
+     0.4207
+    ]
+   }
+  },
+  "eo_len_syl": {
+   "human_n": 189,
+   "natural_range": [
+    2.7667,
+    3.1579
+   ],
+   "human_p10_p90": [
+    2.5967,
+    3.419
+   ],
+   "human_median": 2.9645,
+   "human_mean": 2.979,
+   "llm_median": 2.8441,
+   "llm_iqr": [
+    2.6873,
+    3.0
+   ],
+   "auc_llm_gt_human": 0.376,
+   "auc_ci95": [
+    0.33,
+    0.428
+   ],
+   "auc_length_stratified": 0.381,
+   "auc_length_matched": 0.378,
+   "cliffs_delta": -0.248,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     2.845,
+     3.5227
+    ],
+    "10s": [
+     2.7702,
+     3.2061
+    ],
+    "2030s": [
+     2.6989,
+     3.0898
+    ],
+    "40s~": [
+     2.7405,
+     3.0164
+    ]
+   }
+  },
+  "comma_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.2308
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5399
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1833,
+   "llm_median": 0.4,
+   "llm_iqr": [
+    0.0625,
+    0.625
+   ],
+   "auc_llm_gt_human": 0.716,
+   "auc_ci95": [
+    0.673,
+    0.757
+   ],
+   "auc_length_stratified": 0.662,
+   "auc_length_matched": 0.648,
+   "cliffs_delta": 0.432,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.2341
+    ],
+    "2030s": [
+     0.0,
+     0.2907
+    ],
+    "40s~": [
+     0.0,
+     0.0789
+    ]
+   }
+  },
+  "comma_sent_share": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.1818
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.5
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.1403,
+   "llm_median": 0.375,
+   "llm_iqr": [
+    0.0625,
+    0.55
+   ],
+   "auc_llm_gt_human": 0.725,
+   "auc_ci95": [
+    0.688,
+    0.761
+   ],
+   "auc_length_stratified": 0.673,
+   "auc_length_matched": 0.659,
+   "cliffs_delta": 0.45,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.2
+    ],
+    "2030s": [
+     0.0,
+     0.2857
+    ],
+    "40s~": [
+     0.0,
+     0.0395
+    ]
+   }
+  },
+  "comma_per_100eo": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    4.1667
+   ],
+   "human_p10_p90": [
+    0.0,
+    7.2768
+   ],
+   "human_median": 0.0,
+   "human_mean": 2.4339,
+   "llm_median": 7.9596,
+   "llm_iqr": [
+    1.4817,
+    12.1527
+   ],
+   "auc_llm_gt_human": 0.753,
+   "auc_ci95": [
+    0.723,
+    0.784
+   ],
+   "auc_length_stratified": 0.709,
+   "auc_length_matched": 0.69,
+   "cliffs_delta": 0.506,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     4.2614
+    ],
+    "2030s": [
+     0.0,
+     4.9603
+    ],
+    "40s~": [
+     0.0,
+     1.4085
+    ]
+   }
+  },
+  "n_morph": {
+   "human_n": 189,
+   "natural_range": [
+    46.0,
+    147.0
+   ],
+   "human_p10_p90": [
+    36.0,
+    234.4
+   ],
+   "human_median": 75.0,
+   "human_mean": 118.1852,
+   "llm_median": 121.5,
+   "llm_iqr": [
+    76.0,
+    166.0
+   ],
+   "auc_llm_gt_human": 0.636,
+   "auc_ci95": [
+    0.585,
+    0.688
+   ],
+   "auc_length_stratified": 0.451,
+   "auc_length_matched": 0.45,
+   "cliffs_delta": 0.271,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     33.5,
+     62.5
+    ],
+    "10s": [
+     51.75,
+     147.25
+    ],
+    "2030s": [
+     46.0,
+     174.25
+    ],
+    "40s~": [
+     61.75,
+     187.0
+    ]
+   }
+  },
+  "ui_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    2.381
+   ],
+   "human_p10_p90": [
+    0.0,
+    4.2256
+   ],
+   "human_median": 1.1494,
+   "human_mean": 1.5112,
+   "llm_median": 2.8437,
+   "llm_iqr": [
+    1.7241,
+    4.2105
+   ],
+   "auc_llm_gt_human": 0.743,
+   "auc_ci95": [
+    0.698,
+    0.782
+   ],
+   "auc_length_stratified": 0.721,
+   "auc_length_matched": 0.733,
+   "cliffs_delta": 0.486,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     1.3022
+    ],
+    "10s": [
+     0.0,
+     2.3955
+    ],
+    "2030s": [
+     0.0,
+     2.3692
+    ],
+    "40s~": [
+     1.4668,
+     3.008
+    ]
+   }
+  },
+  "ui_chain_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0608,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.564,
+   "auc_ci95": [
+    0.542,
+    0.583
+   ],
+   "auc_length_stratified": 0.545,
+   "auc_length_matched": 0.563,
+   "cliffs_delta": 0.128,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "ui_chain_share": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.017,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.563,
+   "auc_ci95": [
+    0.542,
+    0.584
+   ],
+   "auc_length_stratified": 0.543,
+   "auc_length_matched": 0.563,
+   "cliffs_delta": 0.126,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_jeok_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0483,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.479,
+   "auc_ci95": [
+    0.459,
+    0.495
+   ],
+   "auc_length_stratified": 0.473,
+   "auc_length_matched": 0.468,
+   "cliffs_delta": -0.043,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_seong_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.509,
+   "auc_ci95": [
+    0.504,
+    0.514
+   ],
+   "auc_length_stratified": 0.508,
+   "auc_length_matched": 0.51,
+   "cliffs_delta": 0.017,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_hwa_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0027,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.498,
+   "auc_ci95": [
+    0.492,
+    0.502
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.496,
+   "cliffs_delta": -0.004,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "suf_jsh_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0511,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.487,
+   "auc_ci95": [
+    0.468,
+    0.506
+   ],
+   "auc_length_stratified": 0.48,
+   "auc_length_matched": 0.477,
+   "cliffs_delta": -0.027,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "deul_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    1.087
+   ],
+   "human_p10_p90": [
+    0.0,
+    2.5641
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.7585,
+   "llm_median": 0.5115,
+   "llm_iqr": [
+    0.0,
+    1.4761
+   ],
+   "auc_llm_gt_human": 0.57,
+   "auc_ci95": [
+    0.529,
+    0.617
+   ],
+   "auc_length_stratified": 0.546,
+   "auc_length_matched": 0.538,
+   "cliffs_delta": 0.141,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     1.053
+    ],
+    "2030s": [
+     0.0,
+     1.3889
+    ],
+    "40s~": [
+     0.1078,
+     1.6439
+    ]
+   }
+  },
+  "geot_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.1
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.25
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0908,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0833
+   ],
+   "auc_llm_gt_human": 0.488,
+   "auc_ci95": [
+    0.448,
+    0.532
+   ],
+   "auc_length_stratified": 0.448,
+   "auc_length_matched": 0.456,
+   "cliffs_delta": -0.023,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0932
+    ],
+    "2030s": [
+     0.0,
+     0.1357
+    ],
+    "40s~": [
+     0.0,
+     0.0909
+    ]
+   }
+  },
+  "geot_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.8499
+   ],
+   "human_p10_p90": [
+    0.0,
+    2.0662
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.578,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.6861
+   ],
+   "auc_llm_gt_human": 0.496,
+   "auc_ci95": [
+    0.457,
+    0.535
+   ],
+   "auc_length_stratified": 0.457,
+   "auc_length_matched": 0.463,
+   "cliffs_delta": -0.008,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.6431
+    ],
+    "2030s": [
+     0.0,
+     0.9693
+    ],
+    "40s~": [
+     0.0,
+     1.0025
+    ]
+   }
+  },
+  "geot_ida_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0113,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.494,
+   "auc_ci95": [
+    0.472,
+    0.514
+   ],
+   "auc_length_stratified": 0.484,
+   "auc_length_matched": 0.487,
+   "cliffs_delta": -0.011,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "etn_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.8621
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.8753
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.5541,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.8197
+   ],
+   "auc_llm_gt_human": 0.516,
+   "auc_ci95": [
+    0.475,
+    0.557
+   ],
+   "auc_length_stratified": 0.483,
+   "auc_length_matched": 0.464,
+   "cliffs_delta": 0.032,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.5653
+    ],
+    "2030s": [
+     0.0,
+     1.2353
+    ],
+    "40s~": [
+     0.0,
+     0.8792
+    ]
+   }
+  },
+  "reul_su_itda_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0909
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0251,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0421
+   ],
+   "auc_llm_gt_human": 0.54,
+   "auc_ci95": [
+    0.504,
+    0.57
+   ],
+   "auc_length_stratified": 0.517,
+   "auc_length_matched": 0.496,
+   "cliffs_delta": 0.08,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0203
+    ]
+   }
+  },
+  "go_itda_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0515
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0262,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.535,
+   "auc_ci95": [
+    0.507,
+    0.562
+   ],
+   "auc_length_stratified": 0.513,
+   "auc_length_matched": 0.515,
+   "cliffs_delta": 0.071,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "passive_doe_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0242,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.514,
+   "auc_ci95": [
+    0.49,
+    0.538
+   ],
+   "auc_length_stratified": 0.504,
+   "auc_length_matched": 0.511,
+   "cliffs_delta": 0.029,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "passive_jida_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0244
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1667
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0504,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0714
+   ],
+   "auc_llm_gt_human": 0.547,
+   "auc_ci95": [
+    0.508,
+    0.585
+   ],
+   "auc_length_stratified": 0.514,
+   "auc_length_matched": 0.492,
+   "cliffs_delta": 0.094,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0061
+    ],
+    "2030s": [
+     0.0,
+     0.0608
+    ],
+    "40s~": [
+     0.0,
+     0.0341
+    ]
+   }
+  },
+  "passive_by_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.501,
+   "auc_ci95": [
+    0.5,
+    0.502
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "passive_any_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0667
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2222
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0746,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0909
+   ],
+   "auc_llm_gt_human": 0.55,
+   "auc_ci95": [
+    0.507,
+    0.592
+   ],
+   "auc_length_stratified": 0.512,
+   "auc_length_matched": 0.491,
+   "cliffs_delta": 0.099,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0476
+    ],
+    "2030s": [
+     0.0,
+     0.1488
+    ],
+    "40s~": [
+     0.0,
+     0.0341
+    ]
+   }
+  },
+  "gae_doeda_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0204,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.49,
+   "auc_ci95": [
+    0.469,
+    0.513
+   ],
+   "auc_length_stratified": 0.48,
+   "auc_length_matched": 0.492,
+   "cliffs_delta": -0.019,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "np_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.1111,
+    0.6364
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.02
+   ],
+   "human_median": 0.3,
+   "human_mean": 0.5249,
+   "llm_median": 0.5,
+   "llm_iqr": [
+    0.2857,
+    0.8421
+   ],
+   "auc_llm_gt_human": 0.631,
+   "auc_ci95": [
+    0.581,
+    0.68
+   ],
+   "auc_length_stratified": 0.592,
+   "auc_length_matched": 0.604,
+   "cliffs_delta": 0.262,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.3167
+    ],
+    "10s": [
+     0.1667,
+     0.7515
+    ],
+    "2030s": [
+     0.1312,
+     0.6523
+    ],
+    "40s~": [
+     0.1332,
+     0.2721
+    ]
+   }
+  },
+  "np3_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.125
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.054,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.484,
+   "auc_ci95": [
+    0.454,
+    0.516
+   ],
+   "auc_length_stratified": 0.474,
+   "auc_length_matched": 0.473,
+   "cliffs_delta": -0.031,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "np12_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.5
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.0
+   ],
+   "human_median": 0.2222,
+   "human_mean": 0.4039,
+   "llm_median": 0.45,
+   "llm_iqr": [
+    0.25,
+    0.75
+   ],
+   "auc_llm_gt_human": 0.659,
+   "auc_ci95": [
+    0.614,
+    0.708
+   ],
+   "auc_length_stratified": 0.626,
+   "auc_length_matched": 0.643,
+   "cliffs_delta": 0.317,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.2864
+    ],
+    "10s": [
+     0.0977,
+     0.625
+    ],
+    "2030s": [
+     0.0,
+     0.3949
+    ],
+    "40s~": [
+     0.0653,
+     0.2545
+    ]
+   }
+  },
+  "topic_init_rate": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.1452
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2222
+   ],
+   "human_median": 0.0417,
+   "human_mean": 0.0928,
+   "llm_median": 0.0851,
+   "llm_iqr": [
+    0.0,
+    0.2
+   ],
+   "auc_llm_gt_human": 0.582,
+   "auc_ci95": [
+    0.539,
+    0.622
+   ],
+   "auc_length_stratified": 0.56,
+   "auc_length_matched": 0.561,
+   "cliffs_delta": 0.164,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0417
+    ],
+    "10s": [
+     0.0,
+     0.1538
+    ],
+    "2030s": [
+     0.0,
+     0.1667
+    ],
+    "40s~": [
+     0.0,
+     0.0998
+    ]
+   }
+  },
+  "topic_marker_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.3659
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.6667
+   ],
+   "human_median": 0.1842,
+   "human_mean": 0.2963,
+   "llm_median": 0.25,
+   "llm_iqr": [
+    0.1111,
+    0.4286
+   ],
+   "auc_llm_gt_human": 0.567,
+   "auc_ci95": [
+    0.518,
+    0.61
+   ],
+   "auc_length_stratified": 0.526,
+   "auc_length_matched": 0.524,
+   "cliffs_delta": 0.134,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.1181
+    ],
+    "10s": [
+     0.0632,
+     0.3946
+    ],
+    "2030s": [
+     0.1165,
+     0.4464
+    ],
+    "40s~": [
+     0.0583,
+     0.2126
+    ]
+   }
+  },
+  "conj_init_rate": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1139
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0308,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0833
+   ],
+   "auc_llm_gt_human": 0.569,
+   "auc_ci95": [
+    0.533,
+    0.603
+   ],
+   "auc_length_stratified": 0.54,
+   "auc_length_matched": 0.534,
+   "cliffs_delta": 0.139,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0857
+    ]
+   }
+  },
+  "light_verb_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.501,
+   "auc_ci95": [
+    0.5,
+    0.502
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "sino_ha_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    1.5385
+   ],
+   "human_p10_p90": [
+    0.0,
+    2.5128
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.9248,
+   "llm_median": 0.7246,
+   "llm_iqr": [
+    0.0,
+    1.5152
+   ],
+   "auc_llm_gt_human": 0.547,
+   "auc_ci95": [
+    0.502,
+    0.591
+   ],
+   "auc_length_stratified": 0.517,
+   "auc_length_matched": 0.505,
+   "cliffs_delta": 0.094,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     1.6854
+    ],
+    "2030s": [
+     0.0,
+     1.4515
+    ],
+    "40s~": [
+     0.0,
+     0.8347
+    ]
+   }
+  },
+  "ec_comma_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.027
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.25
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0734,
+   "llm_median": 0.0833,
+   "llm_iqr": [
+    0.0,
+    0.25
+   ],
+   "auc_llm_gt_human": 0.67,
+   "auc_ci95": [
+    0.632,
+    0.708
+   ],
+   "auc_length_stratified": 0.618,
+   "auc_length_matched": 0.61,
+   "cliffs_delta": 0.34,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0635
+    ],
+    "2030s": [
+     0.0,
+     0.096
+    ],
+    "40s~": [
+     0.0,
+     0.0197
+    ]
+   }
+  },
+  "enum_word_rate": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0011,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.499,
+   "auc_ci95": [
+    0.493,
+    0.504
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.497,
+   "cliffs_delta": -0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "boiler_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.507,
+   "auc_ci95": [
+    0.503,
+    0.512
+   ],
+   "auc_length_stratified": 0.507,
+   "auc_length_matched": 0.508,
+   "cliffs_delta": 0.015,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_ae_daehae_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0005,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.509,
+   "auc_ci95": [
+    0.501,
+    0.515
+   ],
+   "auc_length_stratified": 0.505,
+   "auc_length_matched": 0.503,
+   "cliffs_delta": 0.017,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_reul_tonghae_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.505,
+   "auc_ci95": [
+    0.502,
+    0.509
+   ],
+   "auc_length_stratified": 0.503,
+   "auc_length_matched": 0.503,
+   "cliffs_delta": 0.011,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_ae_isseoseo_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.507,
+   "auc_ci95": [
+    0.503,
+    0.511
+   ],
+   "auc_length_stratified": 0.505,
+   "auc_length_matched": 0.508,
+   "cliffs_delta": 0.013,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_gajigo_itda_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0002,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.505,
+   "auc_ci95": [
+    0.498,
+    0.511
+   ],
+   "auc_length_stratified": 0.503,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.011,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_neomeo_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0005,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.511,
+   "auc_ci95": [
+    0.504,
+    0.519
+   ],
+   "auc_length_stratified": 0.509,
+   "auc_length_matched": 0.506,
+   "cliffs_delta": 0.022,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_anira_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0038,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.493,
+   "auc_ci95": [
+    0.478,
+    0.506
+   ],
+   "auc_length_stratified": 0.489,
+   "auc_length_matched": 0.492,
+   "cliffs_delta": -0.013,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_deo_isang_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0035,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.508,
+   "auc_ci95": [
+    0.494,
+    0.525
+   ],
+   "auc_length_stratified": 0.502,
+   "auc_length_matched": 0.505,
+   "cliffs_delta": 0.017,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_gwanhayeo_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.5,
+   "auc_ci95": [
+    0.5,
+    0.5
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.0,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_ui_haeyo_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.501,
+   "auc_ci95": [
+    0.5,
+    0.502
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_d1_conclusion_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0004,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.499,
+   "auc_ci95": [
+    0.492,
+    0.503
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.497,
+   "cliffs_delta": -0.003,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "p_d2_significance_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.501,
+   "auc_ci95": [
+    0.5,
+    0.502
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "enum_numbered_per_sent": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.5,
+   "auc_ci95": [
+    0.5,
+    0.5
+   ],
+   "auc_length_stratified": 0.5,
+   "auc_length_matched": 0.5,
+   "cliffs_delta": 0.0,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "enum_any_rate": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0011,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.499,
+   "auc_ci95": [
+    0.493,
+    0.504
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.497,
+   "cliffs_delta": -0.001,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "ef_entropy": {
+   "human_n": 177,
+   "natural_range": [
+    0.0,
+    1.5
+   ],
+   "human_p10_p90": [
+    -0.0,
+    2.0161
+   ],
+   "human_median": 1.0,
+   "human_mean": 0.9974,
+   "llm_median": 1.1488,
+   "llm_iqr": [
+    0.7219,
+    1.585
+   ],
+   "auc_llm_gt_human": 0.555,
+   "auc_ci95": [
+    0.509,
+    0.603
+   ],
+   "auc_length_stratified": 0.509,
+   "auc_length_matched": 0.498,
+   "cliffs_delta": 0.111,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     -0.0,
+     0.9183
+    ],
+    "10s": [
+     0.0,
+     1.438
+    ],
+    "2030s": [
+     0.9183,
+     1.9143
+    ],
+    "40s~": [
+     1.1588,
+     1.4898
+    ]
+   }
+  },
+  "ef_types_ratio": {
+   "human_n": 189,
+   "natural_range": [
+    0.3333,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.1905,
+    1.0
+   ],
+   "human_median": 0.5556,
+   "human_mean": 0.5933,
+   "llm_median": 0.5,
+   "llm_iqr": [
+    0.3333,
+    0.75
+   ],
+   "auc_llm_gt_human": 0.47,
+   "auc_ci95": [
+    0.418,
+    0.517
+   ],
+   "auc_length_stratified": 0.508,
+   "auc_length_matched": 0.503,
+   "cliffs_delta": -0.06,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.2917,
+     0.6667
+    ],
+    "10s": [
+     0.3333,
+     1.0
+    ],
+    "2030s": [
+     0.375,
+     1.0
+    ],
+    "40s~": [
+     0.4325,
+     0.6667
+    ]
+   }
+  },
+  "ef_top_share": {
+   "human_n": 177,
+   "natural_range": [
+    0.5,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.3333,
+    1.0
+   ],
+   "human_median": 0.6,
+   "human_mean": 0.6585,
+   "llm_median": 0.6,
+   "llm_iqr": [
+    0.5,
+    0.8
+   ],
+   "auc_llm_gt_human": 0.465,
+   "auc_ci95": [
+    0.425,
+    0.511
+   ],
+   "auc_length_stratified": 0.492,
+   "auc_length_matched": 0.506,
+   "cliffs_delta": -0.069,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.6667,
+     1.0
+    ],
+    "10s": [
+     0.5,
+     1.0
+    ],
+    "2030s": [
+     0.4,
+     0.75
+    ],
+    "40s~": [
+     0.5,
+     0.7024
+    ]
+   }
+  },
+  "ef_all_entropy": {
+   "human_n": 177,
+   "natural_range": [
+    0.5436,
+    1.5
+   ],
+   "human_p10_p90": [
+    -0.0,
+    2.194
+   ],
+   "human_median": 1.0,
+   "human_mean": 1.0734,
+   "llm_median": 1.2516,
+   "llm_iqr": [
+    0.8113,
+    1.6645
+   ],
+   "auc_llm_gt_human": 0.541,
+   "auc_ci95": [
+    0.49,
+    0.593
+   ],
+   "auc_length_stratified": 0.49,
+   "auc_length_matched": 0.488,
+   "cliffs_delta": 0.082,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     -0.0,
+     0.9183
+    ],
+    "10s": [
+     0.5556,
+     1.5
+    ],
+    "2030s": [
+     0.9852,
+     1.8987
+    ],
+    "40s~": [
+     1.4372,
+     1.6183
+    ]
+   }
+  },
+  "ef_all_top_share": {
+   "human_n": 177,
+   "natural_range": [
+    0.5,
+    0.875
+   ],
+   "human_p10_p90": [
+    0.3333,
+    1.0
+   ],
+   "human_median": 0.6,
+   "human_mean": 0.6465,
+   "llm_median": 0.5774,
+   "llm_iqr": [
+    0.4444,
+    0.7778
+   ],
+   "auc_llm_gt_human": 0.471,
+   "auc_ci95": [
+    0.422,
+    0.517
+   ],
+   "auc_length_stratified": 0.498,
+   "auc_length_matched": 0.506,
+   "cliffs_delta": -0.058,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.6667,
+     1.0
+    ],
+    "10s": [
+     0.5,
+     0.8705
+    ],
+    "2030s": [
+     0.4444,
+     0.6667
+    ],
+    "40s~": [
+     0.5,
+     0.621
+    ]
+   }
+  },
+  "ef_share_plain_da": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.9167
+   ],
+   "human_p10_p90": [
+    0.0,
+    1.0
+   ],
+   "human_median": 0.4,
+   "human_mean": 0.448,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.5786
+   ],
+   "auc_llm_gt_human": 0.386,
+   "auc_ci95": [
+    0.341,
+    0.424
+   ],
+   "auc_length_stratified": 0.382,
+   "auc_length_matched": 0.371,
+   "cliffs_delta": -0.229,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": true,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.6667
+    ],
+    "10s": [
+     0.0,
+     0.9659
+    ],
+    "2030s": [
+     0.075,
+     1.0
+    ],
+    "40s~": [
+     0.0,
+     0.6667
+    ]
+   }
+  },
+  "ef_share_hapsyo": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.0366,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.487,
+   "auc_ci95": [
+    0.468,
+    0.502
+   ],
+   "auc_length_stratified": 0.482,
+   "auc_length_matched": 0.482,
+   "cliffs_delta": -0.027,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "ef_share_yo": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.0
+   ],
+   "human_median": 0.0,
+   "human_mean": 0.057,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.0
+   ],
+   "auc_llm_gt_human": 0.486,
+   "auc_ci95": [
+    0.464,
+    0.508
+   ],
+   "auc_length_stratified": 0.49,
+   "auc_length_matched": 0.496,
+   "cliffs_delta": -0.028,
+   "sparse_human_p75_is_zero": true,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.0
+    ],
+    "10s": [
+     0.0,
+     0.0
+    ],
+    "2030s": [
+     0.0,
+     0.0
+    ],
+    "40s~": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "bn_space_rate": {
+   "human_n": 75,
+   "natural_range": [
+    0.5,
+    1.0
+   ],
+   "human_p10_p90": [
+    0.2643,
+    1.0
+   ],
+   "human_median": 0.8,
+   "human_mean": 0.7191,
+   "llm_median": 1.0,
+   "llm_iqr": [
+    0.875,
+    1.0
+   ],
+   "auc_llm_gt_human": 0.685,
+   "auc_ci95": [
+    0.622,
+    0.754
+   ],
+   "auc_length_stratified": 0.675,
+   "auc_length_matched": 0.65,
+   "cliffs_delta": 0.371,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "separates",
+   "cross_genre": "consistent in 2 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.3,
+     0.75
+    ],
+    "10s": [
+     0.5714,
+     1.0
+    ],
+    "2030s": [
+     0.4481,
+     1.0
+    ],
+    "40s~": [
+     0.6667,
+     0.7368
+    ]
+   }
+  },
+  "vx_space_rate": {
+   "human_n": 74,
+   "natural_range": [
+    0.2976,
+    0.75
+   ],
+   "human_p10_p90": [
+    0.1873,
+    1.0
+   ],
+   "human_median": 0.5774,
+   "human_mean": 0.538,
+   "llm_median": 0.6,
+   "llm_iqr": [
+    0.3333,
+    0.7778
+   ],
+   "auc_llm_gt_human": 0.535,
+   "auc_ci95": [
+    0.454,
+    0.609
+   ],
+   "auc_length_stratified": 0.529,
+   "auc_length_matched": 0.547,
+   "cliffs_delta": 0.07,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.5,
+     0.8333
+    ],
+    "10s": [
+     0.3333,
+     0.75
+    ],
+    "2030s": [
+     0.25,
+     0.6923
+    ],
+    "40s~": [
+     0.1818,
+     0.6667
+    ]
+   }
+  },
+  "bn_per100m": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    3.6827
+   ],
+   "human_p10_p90": [
+    0.0,
+    5.2085
+   ],
+   "human_median": 1.8519,
+   "human_mean": 2.2602,
+   "llm_median": 1.3514,
+   "llm_iqr": [
+    0.0,
+    2.4024
+   ],
+   "auc_llm_gt_human": 0.425,
+   "auc_ci95": [
+    0.376,
+    0.476
+   ],
+   "auc_length_stratified": 0.38,
+   "auc_length_matched": 0.378,
+   "cliffs_delta": -0.149,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     3.1676
+    ],
+    "10s": [
+     0.0,
+     3.1842
+    ],
+    "2030s": [
+     0.959,
+     3.9376
+    ],
+    "40s~": [
+     1.2627,
+     2.8862
+    ]
+   }
+  },
+  "space_missing_rate": {
+   "human_n": 189,
+   "natural_range": [
+    0.0462,
+    0.1818
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.2679
+   ],
+   "human_median": 0.1,
+   "human_mean": 0.1308,
+   "llm_median": 0.0517,
+   "llm_iqr": [
+    0.0242,
+    0.0802
+   ],
+   "auc_llm_gt_human": 0.312,
+   "auc_ci95": [
+    0.261,
+    0.358
+   ],
+   "auc_length_stratified": 0.329,
+   "auc_length_matched": 0.334,
+   "cliffs_delta": -0.375,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "consistent in 3 genres",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.1807,
+     0.3019
+    ],
+    "10s": [
+     0.0455,
+     0.172
+    ],
+    "2030s": [
+     0.0205,
+     0.1214
+    ],
+    "40s~": [
+     0.1061,
+     0.1342
+    ]
+   }
+  },
+  "space_extra_rate": {
+   "human_n": 189,
+   "natural_range": [
+    0.0,
+    0.0541
+   ],
+   "human_p10_p90": [
+    0.0,
+    0.1064
+   ],
+   "human_median": 0.0185,
+   "human_mean": 0.0426,
+   "llm_median": 0.0,
+   "llm_iqr": [
+    0.0,
+    0.022
+   ],
+   "auc_llm_gt_human": 0.369,
+   "auc_ci95": [
+    0.32,
+    0.415
+   ],
+   "auc_length_stratified": 0.355,
+   "auc_length_matched": 0.365,
+   "cliffs_delta": -0.263,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "separates",
+   "cross_genre": "poetry only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.0,
+     0.1111
+    ],
+    "10s": [
+     0.0,
+     0.0502
+    ],
+    "2030s": [
+     0.0,
+     0.04
+    ],
+    "40s~": [
+     0.0136,
+     0.0694
+    ]
+   }
+  },
+  "mattr25": {
+   "human_n": 104,
+   "natural_range": [
+    0.7983,
+    0.9365
+   ],
+   "human_p10_p90": [
+    0.6953,
+    0.9716
+   ],
+   "human_median": 0.8786,
+   "human_mean": 0.8541,
+   "llm_median": 0.931,
+   "llm_iqr": [
+    0.872,
+    0.9641
+   ],
+   "auc_llm_gt_human": 0.646,
+   "auc_ci95": [
+    0.588,
+    0.706
+   ],
+   "auc_length_stratified": 0.652,
+   "auc_length_matched": 0.604,
+   "cliffs_delta": 0.292,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.8,
+     0.895
+    ],
+    "10s": [
+     0.7825,
+     0.9303
+    ],
+    "2030s": [
+     0.8472,
+     0.9551
+    ],
+    "40s~": [
+     0.9138,
+     0.9481
+    ]
+   }
+  },
+  "mattr50": {
+   "human_n": 53,
+   "natural_range": [
+    0.7408,
+    0.8875
+   ],
+   "human_p10_p90": [
+    0.6946,
+    0.9362
+   ],
+   "human_median": 0.84,
+   "human_mean": 0.8221,
+   "llm_median": 0.8672,
+   "llm_iqr": [
+    0.7983,
+    0.9178
+   ],
+   "auc_llm_gt_human": 0.58,
+   "auc_ci95": [
+    0.497,
+    0.662
+   ],
+   "auc_length_stratified": 0.601,
+   "auc_length_matched": 0.522,
+   "cliffs_delta": 0.16,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     null,
+     null
+    ],
+    "10s": [
+     0.7222,
+     0.8713
+    ],
+    "2030s": [
+     0.7457,
+     0.9237
+    ],
+    "40s~": [
+     0.8755,
+     0.9017
+    ]
+   }
+  },
+  "mtld": {
+   "human_n": 53,
+   "natural_range": [
+    54.0,
+    153.09
+   ],
+   "human_p10_p90": [
+    32.0656,
+    217.5653
+   ],
+   "human_median": 91.0707,
+   "human_mean": 155.2747,
+   "llm_median": 108.58,
+   "llm_iqr": [
+    66.1218,
+    169.4
+   ],
+   "auc_llm_gt_human": 0.568,
+   "auc_ci95": [
+    0.486,
+    0.657
+   ],
+   "auc_length_stratified": 0.597,
+   "auc_length_matched": 0.548,
+   "cliffs_delta": 0.137,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "abstract only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     null,
+     null
+    ],
+    "10s": [
+     47.9683,
+     144.5682
+    ],
+    "2030s": [
+     60.6282,
+     159.3937
+    ],
+    "40s~": [
+     125.6353,
+     152.1508
+    ]
+   }
+  },
+  "content_ttr": {
+   "human_n": 189,
+   "natural_range": [
+    0.6923,
+    0.8837
+   ],
+   "human_p10_p90": [
+    0.6,
+    0.9603
+   ],
+   "human_median": 0.7931,
+   "human_mean": 0.7846,
+   "llm_median": 0.8583,
+   "llm_iqr": [
+    0.7692,
+    0.9177
+   ],
+   "auc_llm_gt_human": 0.611,
+   "auc_ci95": [
+    0.566,
+    0.656
+   ],
+   "auc_length_stratified": 0.657,
+   "auc_length_matched": 0.644,
+   "cliffs_delta": 0.222,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "generator-inconsistent",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.6667,
+     0.8865
+    ],
+    "10s": [
+     0.6725,
+     0.8709
+    ],
+    "2030s": [
+     0.7258,
+     0.919
+    ],
+    "40s~": [
+     0.7738,
+     0.8514
+    ]
+   }
+  },
+  "pos1_distinct_ratio": {
+   "human_n": 189,
+   "natural_range": [
+    0.1613,
+    0.3455
+   ],
+   "human_p10_p90": [
+    0.1066,
+    0.4059
+   ],
+   "human_median": 0.2529,
+   "human_mean": 0.2563,
+   "llm_median": 0.1857,
+   "llm_iqr": [
+    0.1419,
+    0.2555
+   ],
+   "auc_llm_gt_human": 0.376,
+   "auc_ci95": [
+    0.329,
+    0.428
+   ],
+   "auc_length_stratified": 0.565,
+   "auc_length_matched": 0.557,
+   "cliffs_delta": -0.248,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "length-confounded",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.2732,
+     0.3767
+    ],
+    "10s": [
+     0.1633,
+     0.3208
+    ],
+    "2030s": [
+     0.1404,
+     0.3597
+    ],
+    "40s~": [
+     0.1368,
+     0.2807
+    ]
+   }
+  },
+  "pos2_distinct_ratio": {
+   "human_n": 189,
+   "natural_range": [
+    0.4421,
+    0.6667
+   ],
+   "human_p10_p90": [
+    0.3521,
+    0.7461
+   ],
+   "human_median": 0.5581,
+   "human_mean": 0.5526,
+   "llm_median": 0.4873,
+   "llm_iqr": [
+    0.4138,
+    0.5867
+   ],
+   "auc_llm_gt_human": 0.403,
+   "auc_ci95": [
+    0.357,
+    0.455
+   ],
+   "auc_length_stratified": 0.557,
+   "auc_length_matched": 0.562,
+   "cliffs_delta": -0.194,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.5702,
+     0.7014
+    ],
+    "10s": [
+     0.4468,
+     0.6561
+    ],
+    "2030s": [
+     0.426,
+     0.6862
+    ],
+    "40s~": [
+     0.3985,
+     0.5774
+    ]
+   }
+  },
+  "pos3_distinct_ratio": {
+   "human_n": 189,
+   "natural_range": [
+    0.6959,
+    0.8676
+   ],
+   "human_p10_p90": [
+    0.5882,
+    0.9201
+   ],
+   "human_median": 0.773,
+   "human_mean": 0.7657,
+   "llm_median": 0.75,
+   "llm_iqr": [
+    0.6727,
+    0.825
+   ],
+   "auc_llm_gt_human": 0.444,
+   "auc_ci95": [
+    0.393,
+    0.487
+   ],
+   "auc_length_stratified": 0.561,
+   "auc_length_matched": 0.568,
+   "cliffs_delta": -0.111,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.7897,
+     0.9066
+    ],
+    "10s": [
+     0.6806,
+     0.8506
+    ],
+    "2030s": [
+     0.6814,
+     0.872
+    ],
+    "40s~": [
+     0.689,
+     0.8186
+    ]
+   }
+  },
+  "pos4_distinct_ratio": {
+   "human_n": 189,
+   "natural_range": [
+    0.8396,
+    0.9524
+   ],
+   "human_p10_p90": [
+    0.741,
+    0.9911
+   ],
+   "human_median": 0.8957,
+   "human_mean": 0.8794,
+   "llm_median": 0.8944,
+   "llm_iqr": [
+    0.8333,
+    0.9406
+   ],
+   "auc_llm_gt_human": 0.48,
+   "auc_ci95": [
+    0.429,
+    0.524
+   ],
+   "auc_length_stratified": 0.56,
+   "auc_length_matched": 0.574,
+   "cliffs_delta": -0.041,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.8776,
+     0.9688
+    ],
+    "10s": [
+     0.83,
+     0.945
+    ],
+    "2030s": [
+     0.8509,
+     0.9686
+    ],
+    "40s~": [
+     0.8836,
+     0.9411
+    ]
+   }
+  },
+  "pos5_distinct_ratio": {
+   "human_n": 189,
+   "natural_range": [
+    0.9055,
+    0.9913
+   ],
+   "human_p10_p90": [
+    0.8488,
+    1.0
+   ],
+   "human_median": 0.9579,
+   "human_mean": 0.9342,
+   "llm_median": 0.9594,
+   "llm_iqr": [
+    0.9194,
+    0.9857
+   ],
+   "auc_llm_gt_human": 0.492,
+   "auc_ci95": [
+    0.448,
+    0.537
+   ],
+   "auc_length_stratified": 0.563,
+   "auc_length_matched": 0.57,
+   "cliffs_delta": -0.016,
+   "sparse_human_p75_is_zero": false,
+   "direction": "human higher",
+   "status": "noise",
+   "cross_genre": "essay only",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     0.9388,
+     1.0
+    ],
+    "10s": [
+     0.8958,
+     0.9834
+    ],
+    "2030s": [
+     0.9197,
+     1.0
+    ],
+    "40s~": [
+     0.9595,
+     0.9948
+    ]
+   }
+  },
+  "pos3_entropy": {
+   "human_n": 189,
+   "natural_range": [
+    5.0719,
+    6.4662
+   ],
+   "human_p10_p90": [
+    4.6734,
+    7.0209
+   ],
+   "human_median": 5.7382,
+   "human_mean": 5.8034,
+   "llm_median": 6.2242,
+   "llm_iqr": [
+    5.7333,
+    6.6262
+   ],
+   "auc_llm_gt_human": 0.627,
+   "auc_ci95": [
+    0.577,
+    0.675
+   ],
+   "auc_length_stratified": 0.483,
+   "auc_length_matched": 0.454,
+   "cliffs_delta": 0.254,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length-confounded",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     4.6345,
+     5.502
+    ],
+    "10s": [
+     5.2241,
+     6.4194
+    ],
+    "2030s": [
+     4.973,
+     6.7597
+    ],
+    "40s~": [
+     5.4599,
+     6.8388
+    ]
+   }
+  },
+  "pos3_entropy_win100": {
+   "human_n": 69,
+   "natural_range": [
+    6.0358,
+    6.241
+   ],
+   "human_p10_p90": [
+    5.9332,
+    6.3018
+   ],
+   "human_median": 6.1262,
+   "human_mean": 6.1163,
+   "llm_median": 6.1503,
+   "llm_iqr": [
+    6.012,
+    6.2578
+   ],
+   "auc_llm_gt_human": 0.518,
+   "auc_ci95": [
+    0.448,
+    0.583
+   ],
+   "auc_length_stratified": 0.532,
+   "auc_length_matched": 0.508,
+   "cliffs_delta": 0.036,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "noise",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     null,
+     null
+    ],
+    "10s": [
+     5.9883,
+     6.2401
+    ],
+    "2030s": [
+     6.1332,
+     6.2492
+    ],
+    "40s~": [
+     6.1057,
+     6.162
+    ]
+   }
+  },
+  "pos1_entropy": {
+   "human_n": 189,
+   "natural_range": [
+    3.5792,
+    4.0469
+   ],
+   "human_p10_p90": [
+    3.331,
+    4.211
+   ],
+   "human_median": 3.8586,
+   "human_mean": 3.8011,
+   "llm_median": 3.9778,
+   "llm_iqr": [
+    3.7921,
+    4.1163
+   ],
+   "auc_llm_gt_human": 0.606,
+   "auc_ci95": [
+    0.559,
+    0.656
+   ],
+   "auc_length_stratified": 0.519,
+   "auc_length_matched": 0.49,
+   "cliffs_delta": 0.212,
+   "sparse_human_p75_is_zero": false,
+   "direction": "LLM higher",
+   "status": "length-confounded",
+   "cross_genre": "none",
+   "editing_target": false,
+   "human_iqr_by_author_age": {
+    "0s": [
+     3.3023,
+     3.7048
+    ],
+    "10s": [
+     3.642,
+     4.0587
+    ],
+    "2030s": [
+     3.5913,
+     4.1132
+    ],
+    "40s~": [
+     3.6182,
+     4.1121
+    ]
+   }
+  }
+ }
+}

@@ -4,8 +4,12 @@ import json
 from .package import W, A, P, R, E, XMLSPACE, Package, DocumentError, local, ns, digest
 try:
     from ..quantities import signed_quantities
+    from ..super_sejong import document_sentence_drift, mode as super_sejong_mode
+    from .. import super_sejong_josa as josa
 except ImportError:  # Gateway imports documents as a top-level package.
     from quantities import signed_quantities
+    from super_sejong import document_sentence_drift, mode as super_sejong_mode
+    import super_sejong_josa as josa
 
 PROTECTED = {'hyperlink', 'fldSimple', 'fldChar', 'instrText', 'fld', 'bookmarkStart', 'bookmarkEnd',
              'commentRangeStart', 'commentRangeEnd', 'ins', 'del', 'moveFrom', 'moveTo', 'sdt',
@@ -209,12 +213,20 @@ def apply_edits(block, edits):
     from difflib import SequenceMatcher
     if 1-SequenceMatcher(None,source,result,autojunk=False).ratio()>=0.5:
         raise DocumentError('문장 변경률이 50% 이상입니다.')
-    if MODAL.findall(source)!=MODAL.findall(result):
+    # In enforce mode Super Sejong's sentence-aligned comparison replaces these ordered list checks,
+    # which also rejected harmless clause reordering. Shadow and off keep them, so shadow is never weaker.
+    sejong = super_sejong_mode()
+    if sejong != 'enforce' and MODAL.findall(source)!=MODAL.findall(result):
         raise DocumentError('부정·당위·추측 표현 변화가 감지되었습니다.')
-    if SHORT_NEGATION.findall(source)!=SHORT_NEGATION.findall(result):
+    if sejong != 'enforce' and SHORT_NEGATION.findall(source)!=SHORT_NEGATION.findall(result):
         raise DocumentError('짧은 부정 표현 변화가 감지되었습니다.')
     if signed_quantities(source)!=signed_quantities(result):
         raise DocumentError('숫자·부호·단위가 추가되거나 변경되었습니다.')
+    if sejong == 'enforce' and document_sentence_drift(source, result):
+        raise DocumentError('문장이 사라지거나 부정·당위의 문장별 의미가 바뀌었습니다.')
+    # Office runs map edits to formatting spans, so an introduced particle mismatch is rejected, not repaired.
+    if sejong == 'enforce' and josa.gate(source, result, None, 'certain'):
+        raise DocumentError('수정한 낱말 뒤의 조사 형태가 맞지 않습니다.')
     return result
 
 def export(pkg, manifest, accepted, output):

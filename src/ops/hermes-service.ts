@@ -599,10 +599,14 @@ export class NodeServicePlatform implements ServicePlatform {
 
   async getHealth(): Promise<ServiceHealth | null> {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:${this.options.port}/api/health`,
+      let response = await fetch(
+        `http://127.0.0.1:${this.options.port}/api/status`,
         { signal: AbortSignal.timeout(3_000) }
       );
+      // A server built before /api/status answers 404; its /api/health still identifies it.
+      if (response.status === 404) {
+        response = await fetch(`http://127.0.0.1:${this.options.port}/api/health`, { signal: AbortSignal.timeout(3_000) });
+      }
       const value = (await response.json()) as Partial<ServiceHealth>;
       if (
         (value.status !== "ready" && value.status !== "degraded") ||

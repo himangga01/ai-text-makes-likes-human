@@ -38,3 +38,16 @@ export function isAllowedClientAddress(
     /^fe[89ab]/u.test(normalized)
   );
 }
+
+/** Reject DNS names that an external site could rebind to the private listener. */
+export function isAllowedHostHeader(value: string | undefined): boolean {
+  if (!value) return false;
+  try {
+    const parsed = new URL(`http://${value}`);
+    if (parsed.username || parsed.password || parsed.pathname !== "/" || parsed.search || parsed.hash) return false;
+    const hostname = parsed.hostname.replace(/^\[|\]$/gu, "").toLowerCase();
+    return hostname === "localhost" || isAllowedClientAddress(hostname);
+  } catch {
+    return false;
+  }
+}

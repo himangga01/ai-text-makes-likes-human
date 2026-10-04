@@ -89,7 +89,8 @@ describe("PythonEngine integration", () => {
       expect(report).toEqual({
         restoredSentences: 0,
         skippedSentences: 0,
-        removedCommas: 0
+        removedCommas: 0,
+        repairedParticles: 0
       });
       expect(await readFile(afterPath, "utf8")).toBe(text);
     } finally {

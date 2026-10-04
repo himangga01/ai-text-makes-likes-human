@@ -316,7 +316,7 @@ test("malformed Office file keeps the existing source", async ({ page }) => {
 
   await expect(page.locator("#source-text")).toHaveValue("기존 문구");
   await expect(page.locator("#status")).toContainText(
-    "DOCX/PPTX ZIP 문서를 읽지 못했습니다."
+    "DOCX 또는 PPTX 파일 형식을 확인해 주세요."
   );
 });
 

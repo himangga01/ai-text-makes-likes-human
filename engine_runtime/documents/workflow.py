@@ -40,8 +40,13 @@ def prepare(input_path, root, vendor, job_id=None):
         raise
 
 def next_batch(job,state,manifest):
+    output_chars = manifest['sourceChars'] + sum(
+        len(edit['after']) - len(edit['before'])
+        for edits in state['accepted'].values() for edit in edits
+    )
     base={'job':job.name,'kind':'document','format':state['format'],'name':state['name'],
           'sourceHash':state['sourceHash'],'warnings':state['warnings'], 'sourceChars':manifest['sourceChars'],
+          'outputChars':output_chars,
           'totalChunks':len(manifest['batches']),'editableBlocks':sum(b['editable'] for b in manifest['blocks']),
           'preservedBlocks':sum(not b['editable'] for b in manifest['blocks']), 'slides':manifest['slides']}
     # The preview can be ~100k chars; it goes last so a host that truncates long
@@ -89,8 +94,8 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
     warnings=value.get('warnings')
     if not isinstance(warnings,list) or any(not isinstance(w,str) for w in warnings):
         raise DocumentError('경고 응답 형식이 잘못되었습니다.')
-    # Warnings are advisory: clip an over-long reply (schema: 20 items, 300 chars) instead of failing the job.
-    warnings=[w[:300] for w in warnings[:20]]
+    # Model text is untrusted document content and must not become a public warning.
+    warnings=['모델이 검토 주의 사항을 제시했습니다. 원문과 결과를 확인해 주세요.'] if warnings else []
     by_id={b['id']:b for b in manifest['blocks']}
     pending={id:[] for id in ids if id not in item_ids}; failures=[]
     for item in items:

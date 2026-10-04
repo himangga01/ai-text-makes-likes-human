@@ -1,4 +1,4 @@
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { DocumentEngine } from '../../src/documents/document-engine.js';
@@ -56,10 +56,35 @@ for(const format of ['docx','pptx'])for(const cli of ['codex','claude'])officeIt
  expect(t.store.records.size).toBe(0);
  expect((await fetch(`${t.baseUrl}/api/documents/${doc.id}/result`,{headers})).status).toBe(404);
 },30000);
-it('rejects foreign origins, malformed packages and extension spoofing before a model call',async()=>{
+officeIt('rejects foreign origins, malformed packages and extension spoofing before a model call',async()=>{
  const t=await setup();
  expect((await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{origin:'https://other.example','x-file-name':'a.docx'},body:'bad'})).status).toBe(403);
- expect((await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.docx'},body:'bad'})).status).toBe(400);
+ const malformed=await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.docx'},body:'bad'});
+ expect(malformed.status).toBe(400);expect(await malformed.json()).toMatchObject({code:'DOCUMENT_FORMAT_INVALID'});
  expect((await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.pptx'},body:await readFile('tests/fixtures/documents/mixed.docx')})).status).toBe(400);
  expect(t.calls).toEqual([]);expect(t.store.records.size).toBe(0);
+});
+it('does not reveal internal paths from failed Office imports',async()=>{
+ const t=await setup();
+ vi.spyOn(t.store.engine,'prepare').mockRejectedValue(new Error('비밀 경로 /private/auth.json'));
+ const response=await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.docx'},body:'PK'});
+ const body=await response.text();
+ expect(response.status).toBe(500);
+ expect(body).not.toContain('/private/auth.json');
+ expect(body).toContain('DOCUMENT_IMPORT_FAILED');
+});
+
+it('keeps known Office import failures actionable without exposing Python text',async()=>{
+ for(const [failure,status,code] of [
+   ['문서 압축 해제 크기 제한을 초과했습니다.',413,'DOCUMENT_TOO_LARGE'],
+   ['암호화된 문서는 지원하지 않습니다.',400,'DOCUMENT_PROTECTED'],
+   ['편집 보호가 설정된 문서는 지원하지 않습니다.',400,'DOCUMENT_PROTECTED'],
+   ['문서를 처리할 디스크 공간이 부족합니다.',507,'INSUFFICIENT_DISK']
+ ] as const){
+   const t=await setup();
+   vi.spyOn(t.store.engine,'prepare').mockRejectedValue(new Error(failure));
+   const response=await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.docx'},body:'PK'});
+   expect(response.status).toBe(status);
+   expect(await response.json()).toMatchObject({code});
+ }
 });

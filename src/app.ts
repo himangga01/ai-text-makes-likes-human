@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import express, { type Express } from "express";
+import express, { type ErrorRequestHandler, type Express } from "express";
 import type { AppConfig } from "./config.js";
 import { EngineError } from "./engine/errors.js";
 import {
@@ -14,7 +14,8 @@ import {
   type HumanizeResult
 } from "./engine/humanize-engine.js";
 import { JobWorkspace } from "./engine/workspace.js";
-import { isAllowedClientAddress } from "./network/private-address.js";
+import { isAllowedClientAddress, isAllowedHostHeader } from "./network/private-address.js";
+import { listLanUrls } from "./network/lan-addresses.js";
 export { createProductionRuntime, type ProductionRuntime } from "./runtime/create-runtime.js";
 import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
@@ -89,6 +90,17 @@ export function createApp(dependencies: AppDependencies): Express {
       });
       return;
     }
+    if (!isAllowedHostHeader(request.headers.host)) {
+      const message = "허용되지 않은 접속 주소입니다. 서버 PC에 표시된 IP 주소(예: http://192.168.0.10:7882)로 접속해 주세요.";
+      if (request.path.startsWith("/api")) {
+        response.status(403).json({ code: "HOST_NOT_ALLOWED", message });
+        return;
+      }
+      // A bookmarked host name (mac.local, a PC name) reaches the page itself: explain instead of raw JSON.
+      const addresses = listLanUrls(config.port).map(url => `<li>${url}</li>`).join("");
+      response.status(403).type("html").send(`<!doctype html><html lang="ko"><meta charset="utf-8"><title>접속 주소 확인</title><p>${message}</p>${addresses ? `<ul>${addresses}</ul>` : ""}</html>`);
+      return;
+    }
     next();
   });
 
@@ -100,6 +112,15 @@ export function createApp(dependencies: AppDependencies): Express {
       response.status(403).json({code:'ORIGIN_NOT_ALLOWED',message:'허용되지 않은 Origin입니다.'});return;
     }
     next();
+  });
+
+  // Process supervision must not depend on external CLI/authentication latency.
+  // The UI's health endpoint below still performs an explicit readiness refresh.
+  app.get('/api/status', (_request, response) => {
+    const stats = queue.stats();
+    response.setHeader('Cache-Control', 'no-store');
+    response.json({ status: preflight.ready ? 'ready' : 'degraded', pid: process.pid,
+      activeJobs: stats.active, queuedJobs: stats.queued });
   });
 
   app.get("/api/health", async (_request, response) => {
@@ -305,6 +326,12 @@ export function createApp(dependencies: AppDependencies): Express {
     maxAge: 0,
     setHeaders: response => response.setHeader("Cache-Control", "no-store")
   }));
+
+  const publicErrorHandler: ErrorRequestHandler = (_error, _request, response, _next) => {
+    if (response.headersSent) { response.end(); return; }
+    response.status(500).json({ code: "INTERNAL_ERROR", message: PUBLIC_MESSAGES.INTERNAL_ERROR });
+  };
+  app.use(publicErrorHandler);
 
   return app;
 }

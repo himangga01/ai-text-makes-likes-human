@@ -159,10 +159,11 @@ describe("PythonEngine", () => {
     expect(result).not.toHaveProperty("stdout");
   });
 
-  it("restores modality and strips injected commas in place", async () => {
+  it("restores modality, strips injected commas and repairs particles in place", async () => {
     const runner = new FakeCommandRunner([
       exited("", 0, '{\n "restored": 1,\n "skipped": 2,\n "details": {}\n}\n'),
-      exited("", 0, '{"commas_removed": 3, "sentences_touched": 1}\n')
+      exited("", 0, '{"commas_removed": 3, "sentences_touched": 1}\n'),
+      exited("", 0, '{"repaired": 4}\n')
     ]);
     const engine = new PythonEngine({
       pythonCommand: "python",
@@ -179,12 +180,14 @@ describe("PythonEngine", () => {
     expect(report).toEqual({
       restoredSentences: 1,
       skippedSentences: 2,
-      removedCommas: 3
+      removedCommas: 3,
+      repairedParticles: 4
     });
     const after = path.resolve("C:/job/after.txt");
     expect(runner.calls.map(call => call.args[0])).toEqual([
       path.join(vendorRoot, "scripts", "restore_modality.py"),
-      path.join(vendorRoot, "scripts", "strip_injected_commas.py")
+      path.join(vendorRoot, "scripts", "strip_injected_commas.py"),
+      path.resolve(vendorRoot, "../../engine_runtime/super_sejong_josa.py")
     ]);
     for (const call of runner.calls) {
       expect(call.args).toEqual(

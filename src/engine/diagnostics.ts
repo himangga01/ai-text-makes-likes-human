@@ -21,6 +21,15 @@ export interface TransformDiagnostics {
   fidelityGuardFailures?: number;
   rolledBackChunks?: number;
   unusableModelOutputs?: number;
+  /** Fixed gate failure codes per job (no text), e.g. {"polarity_changed": 2}. */
+  hardFailureCounts?: Record<string, number>;
+  /** Codes Super Sejong would have blocked on in enforce mode (shadow mode only). */
+  shadowFailureCounts?: Record<string, number>;
+  /** Super Sejong style findings in the source chunks and in the delivered chunks. */
+  styleFindingsBefore?: number;
+  styleFindingsAfter?: number;
+  /** Particle allomorph mismatches introduced by the rewrite and repaired deterministically. */
+  repairedParticles?: number;
   protectedSentences?: number;
   restoredProtectedSentences?: number;
   fullSourceRollbacks?: number;

@@ -1,0 +1,522 @@
+{
+  "studyDate": "2026-10-03",
+  "armDefinition": "Current service path; existing-engine ablation disables only Super Sejong style finding prompt block and four Super Sejong semantic checks; all other current safeguards shared.",
+  "sourceManifest": "2026-10-03-super-sejong-blog-sample.json",
+  "rawTextIncluded": false,
+  "summary": {
+    "legacy": {
+      "completed": 20,
+      "medianElapsedMs": 69425,
+      "meanElapsedMs": 86327,
+      "totalElapsedMs": 1726549,
+      "codexCalls": 29,
+      "retries": 9,
+      "rolledBackChunks": 3,
+      "finalChanged": 17,
+      "medianCharacterEditDistancePercent": 0.67,
+      "finalOutputsWithSuperSejongReplayFlags": 4
+    },
+    "sejong": {
+      "completed": 20,
+      "medianElapsedMs": 76698,
+      "meanElapsedMs": 82113,
+      "totalElapsedMs": 1642254,
+      "codexCalls": 33,
+      "retries": 13,
+      "rolledBackChunks": 3,
+      "finalChanged": 17,
+      "medianCharacterEditDistancePercent": 0.368,
+      "finalOutputsWithSuperSejongReplayFlags": 0
+    },
+    "paired": {
+      "sejongFaster": 11,
+      "legacyFaster": 9,
+      "medianSejongMinusLegacyElapsedMs": -10020,
+      "meanSejongMinusLegacyElapsedMs": -4215,
+      "bothChanged": 15,
+      "onlyLegacyChanged": 2,
+      "onlySejongChanged": 2,
+      "neitherChanged": 1
+    }
+  },
+  "perPost": [
+    {
+      "postId": "224430121623",
+      "sourceChars": 2765,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 19375,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99946,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 67985,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99928,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "223831095432",
+      "sourceChars": 2834,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 96300,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.95033,
+        "superSejongReplayFlags": [
+          "polarity_changed",
+          "modality_changed"
+        ]
+      },
+      "sejong": {
+        "elapsedMs": 108171,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.94875,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224429088499",
+      "sourceChars": 3027,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 50659,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99901,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 87843,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 1,
+        "finalChanged": false,
+        "sequenceSimilarity": 1.0,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224424763003",
+      "sourceChars": 2955,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 76603,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99966,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 65487,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99983,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224417487008",
+      "sourceChars": 2863,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 53265,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.98549,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 89043,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99406,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224426833726",
+      "sourceChars": 2874,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 193308,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 1,
+        "finalChanged": false,
+        "sequenceSimilarity": 1.0,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 92877,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99878,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224346212081",
+      "sourceChars": 2275,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 154826,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 1,
+        "finalChanged": false,
+        "sequenceSimilarity": 1.0,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 131801,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99293,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224042992615",
+      "sourceChars": 2741,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 162248,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 1,
+        "finalChanged": false,
+        "sequenceSimilarity": 1.0,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 199417,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 1,
+        "finalChanged": false,
+        "sequenceSimilarity": 1.0,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224425687796",
+      "sourceChars": 3015,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 153235,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.98731,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 137575,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.98494,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224424492063",
+      "sourceChars": 2955,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 51827,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.97941,
+        "superSejongReplayFlags": [
+          "polarity_changed",
+          "modality_changed"
+        ]
+      },
+      "sejong": {
+        "elapsedMs": 27497,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99848,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224203838093",
+      "sourceChars": 1914,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 54083,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.96097,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 45158,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.9932,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224374972689",
+      "sourceChars": 2983,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 103825,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.97789,
+        "superSejongReplayFlags": [
+          "polarity_changed"
+        ]
+      },
+      "sejong": {
+        "elapsedMs": 108278,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99631,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224430442212",
+      "sourceChars": 3051,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 32559,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.98224,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 33869,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99112,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224423687749",
+      "sourceChars": 2800,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 85367,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99839,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 54326,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99374,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224422386089",
+      "sourceChars": 3155,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 24981,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99794,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 54156,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99889,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224423571743",
+      "sourceChars": 2985,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 50143,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99128,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 24527,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99632,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224428125730",
+      "sourceChars": 2559,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 125364,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.9959,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 85410,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 1,
+        "finalChanged": false,
+        "sequenceSimilarity": 1.0,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "223773934750",
+      "sourceChars": 2063,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 125385,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.91286,
+        "superSejongReplayFlags": [
+          "polarity_changed",
+          "modality_changed"
+        ]
+      },
+      "sejong": {
+        "elapsedMs": 150545,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.9966,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224427917810",
+      "sourceChars": 2817,
+      "styleFindings": 1,
+      "legacy": {
+        "elapsedMs": 62247,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99466,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 45869,
+        "codexCalls": 2,
+        "retries": 1,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99556,
+        "superSejongReplayFlags": []
+      }
+    },
+    {
+      "postId": "224419408694",
+      "sourceChars": 3052,
+      "styleFindings": 0,
+      "legacy": {
+        "elapsedMs": 50949,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.99195,
+        "superSejongReplayFlags": []
+      },
+      "sejong": {
+        "elapsedMs": 32420,
+        "codexCalls": 1,
+        "retries": 0,
+        "rolledBackChunks": 0,
+        "finalChanged": true,
+        "sequenceSimilarity": 0.98938,
+        "superSejongReplayFlags": []
+      }
+    }
+  ],
+  "implementationSha256": {
+    "engine_runtime/super_sejong.py": "650ce18082f7075d063b645cacb4b507510382600fd8ab6d83c49eba56b098c6",
+    "engine_runtime/workflow.py": "7b9c19e588f1b24ec10ce58aea86868983bc8460c2f994f853a32ef648e6c02a",
+    "src/engine/super-sejong.ts": "2d4fb2095b61a928f609a57996d4a9eb6db1493fb3fa232c7167d3ff2e344938",
+    "src/engine/prompt-builder.ts": "79c2197a2911d329c949d1e923bcc0fa192587c41a607bf3a3e91f2bc9dc5d0d",
+    "src/engine/humanize-engine.ts": "acbc57b4880cf825c10040a2b55b55bb663b864ca16d2cd9f1c0a4d6610406e5"
+  }
+}

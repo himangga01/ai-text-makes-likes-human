@@ -42,6 +42,8 @@ export interface ChunkManifest {
 export interface GateResult {
   warningReasons?: GateReasonMetadata;
   hardFailures?: string[];
+  /** Super Sejong codes that would have blocked in enforce mode (SUPER_SEJONG_MODE=shadow). */
+  shadowFailures?: string[];
   status: "ok" | "warn" | "abort" | "error";
   exitCode: 0 | 1 | 2 | 3;
   gateCodes: GateCode[];
@@ -52,6 +54,8 @@ export interface RestoreReport {
   restoredSentences: number;
   skippedSentences: number;
   removedCommas: number;
+  /** Particle allomorphs (회의을 → 회의를) the Super Sejong josa step repaired after the rewrite. */
+  repairedParticles?: number;
 }
 
 export interface PythonEngineOptions {
@@ -273,6 +277,9 @@ export class PythonEngine {
     if (result.termination === "aborted") {
       throw new EngineError("CLIENT_ABORTED", true, "Python engine was cancelled");
     }
+    if (result.termination === "output-limit") {
+      throw invalid("Python engine output exceeded the limit");
+    }
     return result;
   }
 
@@ -359,6 +366,9 @@ export class PythonEngine {
       ...(Array.isArray(report.hardFailures) && report.hardFailures.length <= 100 &&
         report.hardFailures.every(code => typeof code === 'string' && code.length <= 100)
         ? { hardFailures: report.hardFailures as string[] } : {}),
+      ...(Array.isArray(report.shadowFailures) && report.shadowFailures.length <= 100 &&
+        report.shadowFailures.every(code => typeof code === 'string' && /^[a-z_]{1,60}$/.test(code))
+        ? { shadowFailures: report.shadowFailures as string[] } : {}),
       ...(typeof report.policy === "string" ? { policy: report.policy as GateResult["policy"] } : {})
     };
   }
@@ -401,6 +411,16 @@ export class PythonEngine {
     }
     const commaReport = parseJsonReport(commas.stderr, "comma strip");
 
+    const particles = await this.run(
+      [path.resolve(this.vendorRoot, "../../engine_runtime/super_sejong_josa.py"), ...inPlace],
+      cwd,
+      signal
+    );
+    if (particles.exitCode !== 0) {
+      throw invalid("Python particle repair failed");
+    }
+    const particleReport = parseJsonReport(particles.stderr, "particle repair");
+
     return {
       restoredSentences: integer(
         modalityReport.restored,
@@ -413,7 +433,8 @@ export class PythonEngine {
       removedCommas: integer(
         commaReport.commas_removed,
         "comma strip report.commas_removed"
-      )
+      ),
+      repairedParticles: integer(particleReport.repaired, "particle repair report.repaired")
     };
   }
 

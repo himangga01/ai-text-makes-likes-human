@@ -12,6 +12,7 @@ import {
 import { EngineError, engineFailed, modelUnavailable } from "./errors.js";
 import { CLAUDE_MODEL, CLAUDE_REASONING_EFFORT } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
+import type { ChunkPromptContext } from "./super-sejong.js";
 import { parseTextResult } from './text-edits.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
@@ -131,7 +132,8 @@ export class ClaudeRunner {
     signal: AbortSignal,
     settings?: ModelSettings,
     rewriteOptions?: RewriteOptions,
-    candidateReview?: CandidateReview
+    candidateReview?: CandidateReview,
+    chunkContext?: ChunkPromptContext
   ): Promise<CodexResult> {
     const options = parseRewriteOptions(rewriteOptions?.inputKind, rewriteOptions?.strength);
     const sourcePath = path.resolve(inputPath);
@@ -149,7 +151,7 @@ export class ClaudeRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
 
     await rm(resultPath, { force: true });
     const command = await this.options.permitPool.run(signal, () =>
@@ -184,6 +186,9 @@ export class ClaudeRunner {
     }
     if (command.termination === "aborted") {
       throw new EngineError("CLIENT_ABORTED", true, "Claude was cancelled");
+    }
+    if (command.termination === "output-limit") {
+      throw engineFailed("Claude", "CLI output limit exceeded");
     }
     const rejection = modelRejection(command.exitCode, command.stdout, command.stderr);
     if (rejection) throw modelUnavailable("Claude", rejection);

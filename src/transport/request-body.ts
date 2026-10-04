@@ -161,8 +161,8 @@ export async function streamRequestBody(
   } catch (error) {
     await handle?.close();
     if (created) await removePartial(destination);
-    if (options.signal.aborted) throw aborted();
     if (error instanceof EngineError) throw error;
+    if (options.signal.aborted) throw aborted();
     throw new EngineError(
       "INTERNAL_ERROR",
       false,

@@ -1,0 +1,3850 @@
+{
+"description": "Korean source/rewrite pairs labelled meaning-preserving or meaning-changing, written by three authors on 2026-10-04 for the Super Sejong guard evaluation. 'lead' was used to tune the shipped guards; 'res1' was not; 'code1' tuned the v2 baseline. Constructed examples, not production text.",
+"pairs": [
+{
+"set": "lead",
+"source": "이 일은 어렵다.",
+"rewrite": "이 일은 쉽지 않다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "비용을 줄이지 않으면 안 됩니다.",
+"rewrite": "비용을 줄여야 합니다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "비용뿐만 아니라 시간도 든다.",
+"rewrite": "비용은 물론 시간도 든다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 그 사실을 알지 못했다.",
+"rewrite": "그는 그 사실을 몰랐다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그 방법은 불가능하다.",
+"rewrite": "그 방법은 가능하지 않다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "회의에 참석할 필요가 없다.",
+"rewrite": "회의에 참석하지 않아도 된다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 끊임없이 노력했다.",
+"rewrite": "그는 쉬지 않고 노력했다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 틀림없이 온다.",
+"rewrite": "그는 반드시 온다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "결과를 확인할 수 있다.",
+"rewrite": "결과를 확인할 수가 있다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 학교에 가지 않았다.",
+"rewrite": "그는 학교에 안 갔다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "비가 와서 가지 못했다.",
+"rewrite": "비가 와서 못 갔다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "이 기능은 쓸 수 없다.",
+"rewrite": "이 기능은 쓸 수가 없다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "참석자는 많지 않았다.",
+"rewrite": "참석자가 많지 않았다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "위험이 없는 것은 아니다.",
+"rewrite": "위험이 아예 없지는 않다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 잘못을 인정했다.",
+"rewrite": "그는 실수를 인정했다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "이 제도는 누구나 이용할 수 있다.",
+"rewrite": "누구든 이 제도를 이용할 수 있다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "아직 결정하지 않았다.",
+"rewrite": "아직 정하지 않았다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 거의 말하지 않았다.",
+"rewrite": "그는 말을 거의 하지 않았다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "보고서를 내일까지 제출해야 한다.",
+"rewrite": "내일까지 보고서를 내야 한다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그 결정은 쉽게 바뀌지 않는다.",
+"rewrite": "그 결정은 좀처럼 바뀌지 않는다.",
+"label": "preserve"
+},
+{
+"set": "lead",
+"source": "그는 학교에 안 갔어.",
+"rewrite": "그는 학교에 갔어.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "비가 와서 안 가니까 괜찮다.",
+"rewrite": "비가 와서 가니까 괜찮다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "그건 안 해도 된다.",
+"rewrite": "그건 해도 된다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "신청서를 제출해야 한다.",
+"rewrite": "신청서를 제출할 수 있다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "가격이 올랐다.",
+"rewrite": "가격이 내렸다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "요청을 승인했다.",
+"rewrite": "요청을 반려했다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "그 방법은 가능하다.",
+"rewrite": "그 방법은 불가능하다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "참석이 필요하다.",
+"rewrite": "참석이 불필요하다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "실내 흡연을 허용한다.",
+"rewrite": "실내 흡연을 금지한다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "매출이 증가했다.",
+"rewrite": "매출이 감소했다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "모든 직원이 참석했다.",
+"rewrite": "일부 직원이 참석했다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "18세 이상만 신청할 수 있다.",
+"rewrite": "18세 이하만 신청할 수 있다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "회의 전에 자료를 보낸다.",
+"rewrite": "회의 후에 자료를 보낸다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "그는 반드시 참석해야 한다.",
+"rewrite": "그는 가급적 참석하는 것이 좋다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "이 약은 효과가 있다.",
+"rewrite": "이 약은 효과가 없다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "그는 그 사실을 알았다.",
+"rewrite": "그는 그 사실을 몰랐다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "우리 팀이 상대 팀을 이겼다.",
+"rewrite": "상대 팀이 우리 팀을 이겼다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "계획은 성공했다.",
+"rewrite": "계획은 실패했다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "내년 예산을 늘린다.",
+"rewrite": "내년 예산을 줄인다.",
+"label": "change"
+},
+{
+"set": "lead",
+"source": "이 기능은 쓸 수 있다.",
+"rewrite": "이 기능은 쓸 수 없다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "민수는 안 먹는다.",
+"rewrite": "민수는 먹지 않는다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 못 간다.",
+"rewrite": "그는 가지 못한다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 오지 못했다.",
+"rewrite": "그는 못 왔다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "서버에 자료가 없다.",
+"rewrite": "서버에 자료가 존재하지 않는다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "이 방법은 불가능하다.",
+"rewrite": "이 방법은 사용할 수 없다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "확인할 필요가 없습니다.",
+"rewrite": "확인하지 않아도 됩니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 설명 없이 떠났다.",
+"rewrite": "그는 설명하지 않고 떠났다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "이것뿐만 아니라 저것도 필요합니다.",
+"rewrite": "이것은 물론 저것도 필요합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "틀림없이 내일 도착합니다.",
+"rewrite": "분명히 내일 도착합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "잘못 입력된 값을 고쳤다.",
+"rewrite": "틀리게 입력된 값을 고쳤다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "그에 못지않게 동생도 열심히 한다.",
+"rewrite": "그만큼 동생도 열심히 한다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "그 문서가 최신본이 아닌가?",
+"rewrite": "그 문서가 최신본이 아닌가요?",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 학생이 아니라 교사다.",
+"rewrite": "그는 학생이 아닌 교사다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "반드시 신청해야 합니다.",
+"rewrite": "반드시 신청하셔야 합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "이 일은 오늘 끝내야 한다.",
+"rewrite": "오늘 안에 이 일을 끝내야 합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "회의는 비공개로 진행한다.",
+"rewrite": "회의는 공개하지 않고 진행한다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-modal",
+"source": "지금은 신청할 수 있습니다.",
+"rewrite": "지금 신청이 가능합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "문을 열지 마라.",
+"rewrite": "문을 열지 마세요.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "담당자가 요청을 거절했다.",
+"rewrite": "담당자는 요청을 받아주지 않았다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "매출은 지난해보다 늘었다.",
+"rewrite": "매출이 지난해에 비해 증가했다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "이 제품은 어린이가 사용할 수 없다.",
+"rewrite": "어린이는 이 제품을 사용하지 못한다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 아직 안 왔다.",
+"rewrite": "그는 아직 오지 않았다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "상자 안 자료를 읽었다.",
+"rewrite": "상자 속 자료를 읽었다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "내일은 비가 올 것입니다.",
+"rewrite": "내일은 비가 오겠습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "그는 질문에 대답하지 않았다.",
+"rewrite": "그는 질문에 답하지 않았다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "이 정책은 효과가 없다.",
+"rewrite": "이 정책은 효과가 없습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "결과는 확정되지 않았다.",
+"rewrite": "결과는 아직 미확정 상태였다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "double-neg",
+"source": "변화가 없지는 않다.",
+"rewrite": "변화가 아주 없지는 않다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "double-neg",
+"source": "그것은 불가능한 일이 아니다.",
+"rewrite": "그것은 불가능하지 않은 일이다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "모든 직원은 회의에 참석해야 한다.",
+"rewrite": "모든 직원이 회의에 참석해야 합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "민수는 신청하지 않았다.",
+"rewrite": "민수는 신청했다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그는 못 간다.",
+"rewrite": "그는 간다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "modal",
+"source": "이 방법은 가능하다.",
+"rewrite": "이 방법은 불가능하다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "modal",
+"source": "지금 결제할 수 있습니다.",
+"rewrite": "지금 결제할 수 없습니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "환불은 반드시 해야 합니다.",
+"rewrite": "환불은 하지 않아도 됩니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "이 구역은 출입할 수 있습니다.",
+"rewrite": "이 구역은 출입하면 안 됩니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "위원회는 계획을 승인했다.",
+"rewrite": "위원회는 계획을 거절했다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "매출이 증가했다.",
+"rewrite": "매출이 감소했다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그는 학생이다.",
+"rewrite": "그는 학생이 아니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "scope",
+"source": "그는 학생이 아니라 교사다.",
+"rewrite": "그는 교사가 아니라 학생이다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "scope",
+"source": "사과는 먹지만 배는 먹지 않는다.",
+"rewrite": "사과는 먹지 않지만 배는 먹는다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "scope",
+"source": "민수는 안 가지만 지영은 간다.",
+"rewrite": "민수는 가지만 지영은 안 간다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "time",
+"source": "회의는 오늘 열리지 않는다.",
+"rewrite": "회의는 내일 열리지 않는다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "이 약은 먹어야 한다.",
+"rewrite": "이 약은 먹지 말아야 한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "sentence-type",
+"source": "문을 열어라.",
+"rewrite": "문을 열지 마라.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "tense",
+"source": "그는 내일 올 것이다.",
+"rewrite": "그는 어제 왔다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "modal",
+"source": "결과가 확실하다.",
+"rewrite": "결과가 불확실하다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "이 제품은 환불된다.",
+"rewrite": "이 제품은 환불되지 않는다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "scope",
+"source": "민수는 읽고 쓴다.",
+"rewrite": "민수는 읽고 안 쓴다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "tense",
+"source": "서류를 제출했다.",
+"rewrite": "서류를 제출하겠다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "그는 답을 안다.",
+"rewrite": "그는 답을 모른다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "modal",
+"source": "이 일은 누구나 할 수 있다.",
+"rewrite": "이 일은 아무나 할 수 없다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "이 길은 위험하지 않다.",
+"rewrite": "이 길은 위험하다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "신청할 필요가 있습니다.",
+"rewrite": "신청할 필요가 없습니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "승인하지 않아도 됩니다.",
+"rewrite": "승인해야 합니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "sentence-type",
+"source": "그는 올까?",
+"rewrite": "그는 온다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "sentence-type",
+"source": "그가 왔다.",
+"rewrite": "그가 왔는가?",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "규정은 사용을 금지한다.",
+"rewrite": "규정은 사용을 허용한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "우리는 반대하지 않는다.",
+"rewrite": "우리는 반대한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg-prefix",
+"source": "비용을 공개한다.",
+"rewrite": "비용을 비공개로 한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "나는 커피를 안 마신다.",
+"rewrite": "나는 커피를 마시지 않는다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그녀는 운전을 못 한다.",
+"rewrite": "그녀는 운전을 하지 못한다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "이번 달에는 휴가를 쓰지 못했습니다.",
+"rewrite": "이번 달에는 휴가를 못 썼습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "남은 예산이 없습니다.",
+"rewrite": "남은 예산이 하나도 없어요.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "오늘은 외출하지 않겠습니다.",
+"rewrite": "오늘은 밖에 나가지 않겠습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "이 앱은 로그인하지 않아도 이용할 수 있다.",
+"rewrite": "로그인 없이도 이 앱을 이용할 수 있다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "그것이 아니라 이것이 문제다.",
+"rewrite": "문제는 그것이 아니라 이것이다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "이 일은 그뿐만 아니라 다른 사람에게도 영향을 준다.",
+"rewrite": "이 일은 그는 물론 다른 사람에게도 영향을 준다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "어김없이 봄이 온다.",
+"rewrite": "해마다 틀림없이 봄이 온다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 말없이 자리를 떠났다.",
+"rewrite": "그는 아무 말도 하지 않고 자리를 떠났다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "이 가방은 저것보다 못하다.",
+"rewrite": "이 가방은 저것보다 품질이 떨어진다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "실수로 잘못된 파일을 보냈다.",
+"rewrite": "실수로 틀린 파일을 보냈다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그 소식은 아직 알려지지 않았다.",
+"rewrite": "그 소식은 아직 알려지지 않은 상태였다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-oblig",
+"source": "사용자는 비밀번호를 공유해서는 안 된다.",
+"rewrite": "사용자는 비밀번호를 공유하면 안 됩니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-oblig",
+"source": "모든 자료는 사전에 확인해야 한다.",
+"rewrite": "모든 자료를 사전에 확인할 필요가 있다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-modal",
+"source": "신청서는 우편으로도 낼 수 있습니다.",
+"rewrite": "신청서는 우편으로도 제출이 가능합니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "이 제품은 불량이 아닙니다.",
+"rewrite": "이 제품은 불량이 아니에요.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 약속을 지키지 않는 사람이 아니다.",
+"rewrite": "그는 약속을 어기는 사람이 아니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "질문이 있으면 언제든지 문의하세요.",
+"rewrite": "질문이 있으시면 언제든지 문의해 주세요.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "회의 자료를 미리 읽어 오세요.",
+"rewrite": "회의 자료를 미리 읽어 오십시오.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "이 시스템은 오류가 거의 없다.",
+"rewrite": "이 시스템에는 오류가 거의 존재하지 않는다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그는 어제 학교에 가지 않았다.",
+"rewrite": "어제 그는 학교에 안 갔다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-modal",
+"source": "누구나 참여할 수 있습니다.",
+"rewrite": "참여는 누구에게나 열려 있습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-neg",
+"source": "그 제안은 현실적이지 않다.",
+"rewrite": "그 제안은 비현실적이다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "서버를 재시작해야 합니다. 그렇지 않으면 오류가 계속됩니다.",
+"rewrite": "서버를 재시작해야 합니다. 그러지 않으면 오류가 계속됩니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "그가 이 일에 책임이 없다고 말했다.",
+"rewrite": "그는 이 일에 책임이 없다고 말했다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "reword-modal",
+"source": "환불은 7일 이내에만 가능합니다.",
+"rewrite": "환불은 7일 이내에만 할 수 있습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "이 길은 차가 다닐 수 없다.",
+"rewrite": "이 길로는 차가 다닐 수 없습니다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "style",
+"source": "우리는 내일 출발할 것이다.",
+"rewrite": "우리는 내일 출발하겠다.",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "trap",
+"source": "그것은 사실이 아닌가?",
+"rewrite": "그것이 사실이지 않은가?",
+"label": "preserve"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "나는 커피를 마시지 않는다.",
+"rewrite": "나는 커피를 마신다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그녀는 운전을 못 한다.",
+"rewrite": "그녀는 운전을 한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "이번 달에는 휴가를 쓰지 못했습니다.",
+"rewrite": "이번 달에는 휴가를 쓰지 않았습니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "남은 예산이 있습니다.",
+"rewrite": "남은 예산이 없습니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "오늘은 외출하겠습니다.",
+"rewrite": "오늘은 외출하지 않겠습니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "이 앱은 로그인해야 이용할 수 있다.",
+"rewrite": "이 앱은 로그인하지 않아도 이용할 수 있다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그것이 문제다.",
+"rewrite": "그것이 문제가 아니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그 일은 나에게만 영향을 준다.",
+"rewrite": "그 일은 나에게 영향을 주지 않는다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "modal",
+"source": "신청서는 우편으로 낼 수 있습니다.",
+"rewrite": "신청서는 우편으로 낼 수 없습니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그는 약속을 지켰다.",
+"rewrite": "그는 약속을 지키지 않았다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "비밀번호를 공유해도 됩니다.",
+"rewrite": "비밀번호를 공유해서는 안 됩니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "out-of-scope",
+"source": "이 앱은 유료다.",
+"rewrite": "이 앱은 무료다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "자료를 확인했다. 문제는 없었다.",
+"rewrite": "자료를 확인했다. 문제는 있었다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "담당자는 요청을 수락했다.",
+"rewrite": "담당자는 요청을 거부했다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "모든 자료는 사전에 확인해야 한다.",
+"rewrite": "모든 자료는 사전에 확인하지 말아야 한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "modal",
+"source": "내일부터 결제할 수 있다.",
+"rewrite": "내일부터 결제할 수 없다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "이 제품은 불량이 아닙니다.",
+"rewrite": "이 제품은 불량입니다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그는 약속을 지키지 않는 사람이다.",
+"rewrite": "그는 약속을 지키는 사람이다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "oblig",
+"source": "이 문서는 수정할 필요가 있다.",
+"rewrite": "이 문서는 수정할 필요가 없다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "sentence-type",
+"source": "지금 출발해라.",
+"rewrite": "지금 출발하지 마라.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "tense",
+"source": "그는 학교에 갔다.",
+"rewrite": "그는 학교에 간다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg-prefix",
+"source": "서버가 정상 작동한다.",
+"rewrite": "서버가 비정상 작동한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "scope",
+"source": "철수는 안 오고 영희는 온다.",
+"rewrite": "철수는 오고 영희는 안 온다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "이 정책은 환영받지 못했다.",
+"rewrite": "이 정책은 환영받았다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "time",
+"source": "다음 주에는 회의가 열릴 것이다.",
+"rewrite": "지난주에는 회의가 열렸다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "비용이 늘었다. 이익은 줄었다.",
+"rewrite": "비용이 줄었다. 이익은 늘었다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "neg",
+"source": "그 소식은 알려졌다.",
+"rewrite": "그 소식은 알려지지 않았다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "lexical",
+"source": "우리는 그 안을 찬성한다.",
+"rewrite": "우리는 그 안을 반대한다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "time",
+"source": "오늘은 비가 오지 않는다.",
+"rewrite": "내일은 비가 오지 않는다.",
+"label": "change"
+},
+{
+"set": "res1",
+"category": "out-of-scope",
+"source": "제출은 선택이다.",
+"rewrite": "제출은 필수다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 방식으로는 문제를 해결하는 것이 불가능하다.",
+"rewrite": "이 방식으로는 문제를 해결하는 것이 가능하지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "올해 안에 완공하기는 어렵다.",
+"rewrite": "올해 안에 완공하기는 쉽지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 일은 혼자 하기 어렵다.",
+"rewrite": "이 일은 혼자 하기에 쉽지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "현재로서는 일정을 맞출 수 없다.",
+"rewrite": "현재로서는 일정을 맞추기 불가능하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 기능은 지원되지 않는다.",
+"rewrite": "이 기능은 지원하지 않는다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "로그인하지 않으면 글을 쓸 수 없다.",
+"rewrite": "로그인을 해야만 글을 쓸 수 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "설명 없이 결정이 내려졌다.",
+"rewrite": "설명하지 않고 결정이 내려졌다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그는 인사도 없이 자리를 떠났다.",
+"rewrite": "그는 인사도 하지 않고 자리를 떠났다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "허락 없이 사진을 찍으면 안 된다.",
+"rewrite": "허락을 받지 않고 사진을 찍어서는 안 된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 일은 쉬운 일이 아니다.",
+"rewrite": "그 일은 쉽지 않은 일이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 주장은 사실이 아니다.",
+"rewrite": "그 주장은 사실과 다르다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 문서는 공개하지 않는다.",
+"rewrite": "이 문서는 비공개이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 가능성은 배제할 수 없다.",
+"rewrite": "그 가능성도 열려 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 문제는 간단하지 않다.",
+"rewrite": "이 문제는 복잡하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "사용자는 이 설정을 변경할 수 없다.",
+"rewrite": "사용자는 이 설정을 바꿀 수 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "회원이 아니면 이용할 수 없다.",
+"rewrite": "회원만 이용할 수 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "비용이 적지 않게 들었다.",
+"rewrite": "비용이 상당히 들었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 계획은 실현 가능성이 없다.",
+"rewrite": "이 계획은 실현할 가능성이 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그의 말이 틀리지 않았다.",
+"rewrite": "그의 말이 옳았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 앱은 속도뿐만 아니라 안정성도 좋다.",
+"rewrite": "이 앱은 속도에 더해 안정성도 좋다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 영어뿐만 아니라 중국어도 한다.",
+"rewrite": "그는 영어와 함께 중국어도 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 제도는 학생뿐 아니라 교사에게도 영향을 준다.",
+"rewrite": "이 제도는 학생은 물론 교사에게도 영향을 준다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그의 실력은 프로 못지않다.",
+"rewrite": "그의 실력은 프로 수준이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 노트북은 데스크톱 못지않게 빠르다.",
+"rewrite": "이 노트북은 데스크톱만큼 빠르다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "잘못 입력된 값은 자동으로 수정된다.",
+"rewrite": "오입력된 값은 자동으로 수정된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 어쩔 수 없이 계약을 받아들였다.",
+"rewrite": "그는 불가피하게 계약을 받아들였다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그 팀은 틀림없이 이길 것이다.",
+"rewrite": "그 팀이 이길 것은 확실하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그녀는 소리 없이 문을 열었다.",
+"rewrite": "그녀는 조용히 문을 열었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 쉴 새 없이 일했다.",
+"rewrite": "그는 계속해서 일했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 일은 끝없이 반복된다.",
+"rewrite": "이 일은 계속 반복된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 분명히 어제 왔고 아니라고 말하지 않았다.",
+"rewrite": "그는 분명히 어제 왔고 부인하지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 쓸데없이 화를 냈다.",
+"rewrite": "그는 괜히 화를 냈다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 방은 쓸모없이 크다.",
+"rewrite": "이 방은 쓸데없이 크다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 근거 없이 소문을 퍼뜨렸다.",
+"rewrite": "그는 근거도 없이 소문을 퍼뜨렸다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "나는 아직 못다 한 말이 있다.",
+"rewrite": "나는 아직 하지 못한 말이 남아 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그의 행동은 다름 아닌 책임감의 표현이다.",
+"rewrite": "그의 행동은 바로 책임감의 표현이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이것은 단순한 실수가 아니라 구조적 문제다.",
+"rewrite": "이것은 단순한 실수가 아닌 구조적 문제다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 의사가 아니라 간호사다.",
+"rewrite": "그는 의사가 아닌 간호사다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 정책은 환영받지 못하는 정책이다.",
+"rewrite": "이 정책은 환영받지 못한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "아닌 게 아니라 그의 말이 맞았다.",
+"rewrite": "정말로 그의 말이 맞았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "더 이상 지체할 수 없어 바로 출발했다.",
+"rewrite": "더는 지체할 수 없어 바로 출발했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이 문제가 없었던 것은 아니다.",
+"rewrite": "이 문제가 없었던 것은 아니었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "서울은 한국의 수도이다.",
+"rewrite": "서울이 한국의 수도이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "이 책은 두께가 얇다.",
+"rewrite": "이 책이 두께가 얇다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "민수는 어제 학교에 갔다.",
+"rewrite": "민수가 어제 학교에 갔다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "회사에서는 새 제품을 공개했다.",
+"rewrite": "회사는 새 제품을 공개했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "그는 노래를 잘 부른다.",
+"rewrite": "그가 노래를 잘 부른다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "그 영화는 재미가 있다.",
+"rewrite": "그 영화가 재미가 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "이번 행사는 많은 사람이 참석했다.",
+"rewrite": "이번 행사에는 많은 사람이 참석했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "올해는 눈이 많이 내렸다.",
+"rewrite": "올해에는 눈이 많이 내렸다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "그녀는 책을 읽는다.",
+"rewrite": "그녀는 책을 읽고 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "아이가 공을 던졌다.",
+"rewrite": "아이는 공을 던졌다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "경찰이 범인을 체포했다.",
+"rewrite": "범인이 경찰에게 체포되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "팀원들이 새 규칙을 만들었다.",
+"rewrite": "새 규칙은 팀원들에 의해 만들어졌다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "정부가 보고서를 발표했다.",
+"rewrite": "보고서가 정부에 의해 발표되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "고양이가 쥐를 쫓았다.",
+"rewrite": "쥐가 고양이에게 쫓겼다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "선생님이 학생을 칭찬했다.",
+"rewrite": "학생이 선생님에게 칭찬을 받았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "연구진이 신약을 개발했다.",
+"rewrite": "신약이 연구진에 의해 개발되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "시민들이 광장을 가득 메웠다.",
+"rewrite": "광장이 시민들로 가득 찼다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "위원회가 안건을 의결했다.",
+"rewrite": "안건이 위원회에서 의결되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "어제 민수가 영희에게 책을 주었다.",
+"rewrite": "민수가 어제 영희에게 책을 주었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "민수가 영희에게 책을 주었다.",
+"rewrite": "민수가 책을 영희에게 주었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "그 회사는 작년에 공장을 세웠다.",
+"rewrite": "그 회사는 공장을 작년에 세웠다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "오늘 아침 팀장이 회의를 소집했다.",
+"rewrite": "팀장이 오늘 아침 회의를 소집했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "그는 서울에서 태어나 부산에서 자랐다.",
+"rewrite": "그는 부산에서 자랐지만 태어난 곳은 서울이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "비가 와서 행사가 취소되었다.",
+"rewrite": "행사는 비 때문에 취소되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "수요가 늘어서 가격이 올랐다.",
+"rewrite": "가격이 올랐는데 수요가 늘었기 때문이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그는 매우 빠르게 달렸다.",
+"rewrite": "그는 아주 빠르게 달렸다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "우리는 새로운 방법을 시도했다.",
+"rewrite": "우리는 새 방법을 시도했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그 일은 곧 끝난다.",
+"rewrite": "그 일은 머지않아 끝난다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "연구자들은 결과를 분석했다.",
+"rewrite": "연구자들은 결과를 살펴보았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "회사는 이익을 높이기 위해 노력했다.",
+"rewrite": "회사는 수익을 높이려고 노력했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그는 갑자기 말을 멈췄다.",
+"rewrite": "그는 불쑥 말을 멈췄다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "새 정책은 즉시 시행된다.",
+"rewrite": "새 정책은 바로 시행된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "이번 조사는 지난해보다 규모가 크다.",
+"rewrite": "이번 조사는 지난해에 비해 규모가 크다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "비용이 늘었다.",
+"rewrite": "비용이 증가했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "수요가 줄었다.",
+"rewrite": "수요가 감소했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그 안건은 승인되었다.",
+"rewrite": "그 안건은 통과되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그는 제안을 받아들였다.",
+"rewrite": "그는 제안을 수락했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "점수가 올랐다.",
+"rewrite": "점수가 상승했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "경기는 오후에 시작한다.",
+"rewrite": "경기는 오후에 개시된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그는 문제를 깨달았다.",
+"rewrite": "그는 문제를 알아차렸다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "비가 올 가능성이 크다.",
+"rewrite": "비가 올 공산이 크다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "그 계획은 성공할 가능성이 있다.",
+"rewrite": "그 계획이 성공할 수도 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "사용자는 파일을 삭제할 수 있다.",
+"rewrite": "사용자가 파일을 삭제하는 것이 가능하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "그는 범인으로 추정된다.",
+"rewrite": "그는 범인으로 추측된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "이 방법이 가장 확실하다.",
+"rewrite": "이 방법이 제일 확실하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "이 문제는 풀기 어렵다.",
+"rewrite": "이 문제는 풀기가 어렵다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "모든 직원은 교육을 받아야 한다.",
+"rewrite": "모든 직원은 교육을 이수해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "보고서를 제출해야 한다.",
+"rewrite": "보고서의 제출이 필요하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "비밀번호를 변경해야 합니다.",
+"rewrite": "비밀번호 변경이 필요합니다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "수수료를 내야 한다.",
+"rewrite": "수수료를 납부해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "서명이 필요하다.",
+"rewrite": "서명을 해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "신청은 온라인으로 해야 한다.",
+"rewrite": "신청은 반드시 온라인으로 해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "마스크 착용은 금지되어 있다.",
+"rewrite": "마스크를 착용해서는 안 된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "흡연은 금지된다.",
+"rewrite": "흡연을 해서는 안 된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_quantity",
+"source": "참가자는 10명 이상이어야 한다.",
+"rewrite": "참가자는 열 명 이상이어야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_quantity",
+"source": "가격은 5만 원 이하이다.",
+"rewrite": "가격은 50,000원 이하이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_quantity",
+"source": "기온이 영하 5도까지 내려갔다.",
+"rewrite": "기온이 영하 5도까지 떨어졌다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "30분 이상 걸린다.",
+"rewrite": "30분 넘게 걸린다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "p_quantity",
+"source": "합격선은 70점 이상이다.",
+"rewrite": "합격선은 70점 이상으로 정해져 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "하지만 그는 포기하지 않았다.",
+"rewrite": "그러나 그는 포기하지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "또는 다른 방법을 선택할 수 있다.",
+"rewrite": "혹은 다른 방법을 택할 수도 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "이는 중요한 문제이다.",
+"rewrite": "이것은 중요한 문제이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "사실은 그가 먼저 연락했다.",
+"rewrite": "사실 그가 먼저 연락했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "예를 들면 사과나 배가 있다.",
+"rewrite": "예컨대 사과나 배가 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "그러나 결과는 달랐다.",
+"rewrite": "하지만 결과는 달랐다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "다시는 그런 일이 없을 것이다.",
+"rewrite": "두 번 다시 그런 일은 없을 것이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "아직도 그는 오지 않았다.",
+"rewrite": "그는 아직도 오지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "그래도 우리는 계속 갔다.",
+"rewrite": "그럼에도 우리는 계속 갔다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "다만 예외가 있다.",
+"rewrite": "단 예외가 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "그는 아침에 일어나 운동하고 샤워한 뒤 출근했다.",
+"rewrite": "그는 아침에 일어나 운동했다. 샤워한 뒤에는 출근했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "비가 왔다. 그래서 행사가 취소되었다.",
+"rewrite": "비가 와서 행사가 취소되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "이 앱은 빠르고 가볍지만 기능이 적다.",
+"rewrite": "이 앱은 빠르고 가볍다. 다만 기능은 적다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "회의가 길어졌다. 결론은 나지 않았다.",
+"rewrite": "회의가 길어졌지만 결론은 나지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "그는 책을 읽고 영희는 영화를 보았다.",
+"rewrite": "그는 책을 읽었다. 영희는 영화를 보았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "새 제품을 출시했다. 반응이 좋았다.",
+"rewrite": "새 제품을 출시했는데 반응이 좋았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "그는 오래 기다렸다. 하지만 아무도 오지 않았다.",
+"rewrite": "그는 오래 기다렸다. 그러나 아무도 오지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "서버가 멈췄다. 원인을 아직 찾지 못했다.",
+"rewrite": "서버가 멈췄다. 원인은 아직 찾지 못한 상태다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "시험은 어렵지 않았다. 학생들은 대부분 통과했다.",
+"rewrite": "시험은 어렵지 않았다. 대부분의 학생이 통과했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "이 약은 효과가 있다. 하지만 부작용도 있다.",
+"rewrite": "이 약은 효과가 있다. 그렇지만 부작용도 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "새 규칙이 적용된다. 위반하면 벌금을 내야 한다.",
+"rewrite": "새 규칙이 적용된다. 어기면 벌금을 내야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "서버가 정상적으로 작동한다.",
+"rewrite": "서버가 정상적으로 작동하지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "그는 이 계획에 동의하지 않았다.",
+"rewrite": "그는 이 계획에 동의했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이 약은 부작용이 있다.",
+"rewrite": "이 약은 부작용이 없다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이 기능은 지원된다.",
+"rewrite": "이 기능은 지원되지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "그는 회의에 참석했다.",
+"rewrite": "그는 회의에 참석하지 않았다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "자료는 공개되어 있다.",
+"rewrite": "자료는 공개되어 있지 않다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "그 말은 사실이다.",
+"rewrite": "그 말은 사실이 아니다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이번 조치는 필요하다.",
+"rewrite": "이번 조치는 필요하지 않다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "다리가 안전하다.",
+"rewrite": "다리가 안전하지 않다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "답이 틀리지 않았다.",
+"rewrite": "답이 틀렸다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "그는 안 간다.",
+"rewrite": "그는 간다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "오늘은 안 바쁘다.",
+"rewrite": "오늘은 바쁘다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그는 술을 마시지 않는다.",
+"rewrite": "그는 술을 마시지 못한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그는 오지 않았다.",
+"rewrite": "그는 오지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "나는 가지 못한다.",
+"rewrite": "나는 가지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그는 안 먹는다.",
+"rewrite": "그는 못 먹는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그녀는 대답하지 않았다.",
+"rewrite": "그녀는 대답하지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "모든 학생이 합격하지 않았다.",
+"rewrite": "모든 학생이 합격했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "학생 모두가 합격한 것은 아니다.",
+"rewrite": "학생 모두가 합격하지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "그는 항상 늦는 것은 아니다.",
+"rewrite": "그는 항상 늦는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "회사는 직원 일부만 해고했다.",
+"rewrite": "회사는 직원 모두를 해고했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "그는 사과만 샀다.",
+"rewrite": "그는 사과도 샀다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "민수만 시험에 합격했다.",
+"rewrite": "민수도 시험에 합격했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "그는 대부분의 질문에 답했다.",
+"rewrite": "그는 모든 질문에 답했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "일부 지역에서 비가 내렸다.",
+"rewrite": "전 지역에서 비가 내렸다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "그는 가끔 지각한다.",
+"rewrite": "그는 자주 지각한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "아무도 오지 않았다.",
+"rewrite": "누군가 왔다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "그는 범인일 수 있다.",
+"rewrite": "그는 범인이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "결과는 좋을 것으로 예상된다.",
+"rewrite": "결과는 좋다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "그 약은 효과가 있을 수 있다.",
+"rewrite": "그 약은 효과가 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "내일 눈이 올 가능성이 높다.",
+"rewrite": "내일 눈이 올 가능성이 낮다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "이 방법은 확실하다.",
+"rewrite": "이 방법은 불확실하다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "그는 곧 올 것이다.",
+"rewrite": "그는 곧 올 수도 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "사업이 성공할 것이 분명하다.",
+"rewrite": "사업이 성공할지는 불분명하다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "이 작업은 쉽다.",
+"rewrite": "이 작업은 어렵다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "그 계획은 가능하다.",
+"rewrite": "그 계획은 불가능하다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "그 계획은 실현 가능성이 높다.",
+"rewrite": "그 계획은 실현 가능성이 거의 없다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "직원은 보고서를 작성해야 한다.",
+"rewrite": "직원은 보고서를 작성할 수 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "주차는 허용된다.",
+"rewrite": "주차는 금지된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "수강을 권장한다.",
+"rewrite": "수강을 의무화한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "학생은 교복을 입어야 한다.",
+"rewrite": "학생은 교복을 입어도 된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "참석은 선택 사항이다.",
+"rewrite": "참석은 필수 사항이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "서류를 가져오면 좋다.",
+"rewrite": "서류를 가져와야 한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "영희가 민수를 도왔다.",
+"rewrite": "민수가 영희를 도왔다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "회사가 노조에 사과했다.",
+"rewrite": "노조가 회사에 사과했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "의사가 환자를 진찰했다.",
+"rewrite": "환자가 의사를 진찰했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "경찰이 범인을 쫓았다.",
+"rewrite": "범인이 경찰을 쫓았다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "경찰이 범인을 체포했다.",
+"rewrite": "경찰이 범인에게 체포되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "민수가 영희에게 책을 빌렸다.",
+"rewrite": "민수가 영희에게 책을 빌려주었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "팀장이 팀원에게 보고했다.",
+"rewrite": "팀원이 팀장에게 보고했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "A사가 B사를 인수했다.",
+"rewrite": "B사가 A사를 인수했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "A사가 B사에 인수되었다.",
+"rewrite": "A사가 B사를 인수했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "누나가 동생에게 배웠다.",
+"rewrite": "누나가 동생을 가르쳤다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "주가가 상승했다.",
+"rewrite": "주가가 하락했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "정부는 지원을 확대했다.",
+"rewrite": "정부는 지원을 축소했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "위원회는 계획에 찬성했다.",
+"rewrite": "위원회는 계획에 반대했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "당국은 외출을 허용했다.",
+"rewrite": "당국은 외출을 금지했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "실험은 성공했다.",
+"rewrite": "실험은 실패했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "건강 상태가 개선되었다.",
+"rewrite": "건강 상태가 악화되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "회사는 흑자를 기록했다.",
+"rewrite": "회사는 적자를 기록했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "요금이 인상되었다.",
+"rewrite": "요금이 인하되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "금리를 인상했다.",
+"rewrite": "금리를 인하했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 주식을 매수했다.",
+"rewrite": "그는 주식을 매도했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 시험에 합격했다.",
+"rewrite": "그는 시험에 불합격했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "이 항목은 비용에 포함된다.",
+"rewrite": "이 항목은 비용에서 제외된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "상점은 아침에 문을 열었다.",
+"rewrite": "상점은 아침에 문을 닫았다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "공연이 시작되었다.",
+"rewrite": "공연이 종료되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "팀이 경기에서 승리했다.",
+"rewrite": "팀이 경기에서 패배했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "피고인은 유죄 판결을 받았다.",
+"rewrite": "피고인은 무죄 판결을 받았다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 혐의를 인정했다.",
+"rewrite": "그는 혐의를 부인했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 제안을 수락했다.",
+"rewrite": "그는 제안을 거부했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "비행기가 서울에 도착했다.",
+"rewrite": "비행기가 서울에서 출발했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "기온이 올랐다.",
+"rewrite": "기온이 내렸다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "승인이 났다.",
+"rewrite": "거절이 났다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "물가가 증가했다.",
+"rewrite": "물가가 감소했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 의견에 동의했다.",
+"rewrite": "그는 의견에 반박했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "소음이 커졌다.",
+"rewrite": "소음이 작아졌다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "참가자는 10명 이상이어야 한다.",
+"rewrite": "참가자는 10명 이하여야 한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "점수가 70점 이상이면 합격이다.",
+"rewrite": "점수가 70점 초과이면 합격이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "만 18세 미만은 입장할 수 없다.",
+"rewrite": "만 18세 이하는 입장할 수 없다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "무게는 5kg 이하여야 한다.",
+"rewrite": "무게는 5kg 이상이어야 한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "온도가 30도 초과하면 경보가 울린다.",
+"rewrite": "온도가 30도 미만이면 경보가 울린다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "가격은 최대 1만 원이다.",
+"rewrite": "가격은 최소 1만 원이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "최대 3명까지 가능하다.",
+"rewrite": "최소 3명이 필요하다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "하루 2시간 이내로 사용한다.",
+"rewrite": "하루 2시간 이상 사용한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "올해 매출이 작년보다 높다.",
+"rewrite": "올해 매출이 작년보다 낮다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "이 길이 저 길보다 빠르다.",
+"rewrite": "저 길이 이 길보다 빠르다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "서울이 부산보다 크다.",
+"rewrite": "서울이 부산보다 작다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "이 모델이 가장 비싸다.",
+"rewrite": "이 모델이 가장 싸다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "그는 더 많이 일했다.",
+"rewrite": "그는 덜 일했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "이 제품은 경쟁 제품보다 무겁다.",
+"rewrite": "이 제품은 경쟁 제품보다 가볍다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "식사 전에 약을 먹는다.",
+"rewrite": "식사 후에 약을 먹는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "그는 회의 이후에 떠났다.",
+"rewrite": "그는 회의 이전에 떠났다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "가입하기 전에 약관을 읽었다.",
+"rewrite": "가입한 뒤에 약관을 읽었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "먼저 신청하고 나중에 결제한다.",
+"rewrite": "먼저 결제하고 나중에 신청한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "수술 이후 열이 났다.",
+"rewrite": "수술 이전 열이 났다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "그는 졸업하기 전에 취직했다.",
+"rewrite": "그는 졸업한 후에 취직했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_multi",
+"source": "서버가 멈췄다. 원인을 찾았다.",
+"rewrite": "서버가 멈췄다. 원인을 찾지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_multi",
+"source": "시험이 쉬웠다. 학생들이 합격했다.",
+"rewrite": "시험이 쉬웠다. 학생들이 합격하지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_multi",
+"source": "회의가 열렸다. 안건이 통과되었다.",
+"rewrite": "회의가 열렸다. 안건이 부결되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_multi",
+"source": "그는 약속했다. 반드시 지키겠다고 했다.",
+"rewrite": "그는 약속했다. 지킬 수도 있다고 했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 계획은 지금으로서는 실현이 불가능하다.",
+"rewrite": "그 계획은 지금으로서는 실현이 가능하지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 문제는 혼자서 풀기에는 어렵다.",
+"rewrite": "이 문제는 혼자서 풀기에는 쉽지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그는 아무 말 없이 방을 나갔다.",
+"rewrite": "그는 아무 말도 하지 않고 방을 나갔다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 제도는 비용만 줄이는 것이 아니라 속도도 높인다.",
+"rewrite": "이 제도는 비용을 줄이는 데 더해 속도도 높인다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그의 설명은 다른 전문가 못지않게 정확했다.",
+"rewrite": "그의 설명은 다른 전문가와 같은 수준으로 정확했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "이번 사고는 운전자의 잘못으로 일어났다.",
+"rewrite": "이번 사고는 운전자의 과실로 일어났다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그녀가 틀림없이 올 것이다.",
+"rewrite": "그녀는 분명히 올 것이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "오늘은 날씨가 맑다.",
+"rewrite": "오늘 날씨가 맑다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "시청이 새 공원을 조성했다.",
+"rewrite": "새 공원은 시청에 의해 조성되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "지난주에 팀장이 보고서를 검토했다.",
+"rewrite": "팀장이 지난주에 보고서를 검토했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "우리는 회의에서 예산안을 논의했다.",
+"rewrite": "우리는 회의에서 예산안을 의논했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "내일 비가 올 가능성이 높다.",
+"rewrite": "내일 비가 올 확률이 높다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "참가자는 신분증을 지참해야 한다.",
+"rewrite": "참가자는 신분증을 반드시 지참해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "신청서는 금요일까지 제출해야 합니다.",
+"rewrite": "신청서를 금요일까지 내야 합니다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "그는 일찍 일어나 운동을 하고 아침을 먹은 뒤 출근했다.",
+"rewrite": "그는 일찍 일어나 운동을 했다. 아침을 먹은 뒤에는 출근했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "보고서를 마무리했다. 그리고 팀에 공유했다.",
+"rewrite": "보고서를 마무리해 팀에 공유했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_negation_keep",
+"source": "이 약은 어린이에게 권장되지 않는다.",
+"rewrite": "어린이에게는 이 약을 권장하지 않는다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_negation_keep",
+"source": "그 사실을 아는 사람은 없다.",
+"rewrite": "그 사실을 아는 사람이 아무도 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_quantity_reword",
+"source": "참가비는 1만 원 이상이다.",
+"rewrite": "참가비는 10,000원 이상이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그 회사는 올해 직원을 늘릴 계획이다.",
+"rewrite": "그 회사는 올해 인력을 늘릴 계획이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "서버는 요청을 처리한다.",
+"rewrite": "서버는 요청을 처리하지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이 방법은 효과가 없다.",
+"rewrite": "이 방법은 효과가 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그는 약속을 지키지 않았다.",
+"rewrite": "그는 약속을 지키지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "이 증상은 암일 수 있다.",
+"rewrite": "이 증상은 암이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "결과는 내일 발표될 것으로 보인다.",
+"rewrite": "결과는 내일 발표된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "학생은 수업에 참석해야 한다.",
+"rewrite": "학생은 수업에 참석할 수 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "보안 점검을 권장한다.",
+"rewrite": "보안 점검을 의무화한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "김 과장이 박 대리를 칭찬했다.",
+"rewrite": "박 대리가 김 과장을 칭찬했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "이번 분기 영업이익이 흑자로 돌아섰다.",
+"rewrite": "이번 분기 영업이익이 적자로 돌아섰다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "정부는 규제를 강화했다.",
+"rewrite": "정부는 규제를 완화했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "의회는 법안에 찬성했다.",
+"rewrite": "의회는 법안에 반대했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "신청 자격은 만 19세 이상이다.",
+"rewrite": "신청 자격은 만 19세 이하이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "재고가 100개 미만이면 주문한다.",
+"rewrite": "재고가 100개 이하이면 주문한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "올해 매출은 작년보다 많다.",
+"rewrite": "올해 매출은 작년보다 적다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "A 제품이 B 제품보다 빠르다.",
+"rewrite": "B 제품이 A 제품보다 빠르다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "수술 전에 약을 복용해야 한다.",
+"rewrite": "수술 후에 약을 복용해야 한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "회의 이후에 결과를 공유한다.",
+"rewrite": "회의 이전에 결과를 공유한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "학생 모두가 시험에 합격하지는 않았다.",
+"rewrite": "학생 모두가 시험에 합격했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "그는 사과만 먹었다.",
+"rewrite": "그는 사과도 먹었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_direction",
+"source": "지난달 방문자 수가 증가했다.",
+"rewrite": "지난달 방문자 수가 줄었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이번 학기에는 수강 신청을 변경하는 것이 허락되지 않는다.",
+"rewrite": "이번 학기에는 수강 신청을 변경할 수 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 설비는 아직 가동되지 않는다.",
+"rewrite": "그 설비는 아직 돌아가지 않는다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 서식은 인쇄본으로 받지 않습니다.",
+"rewrite": "이 서식은 인쇄본으로는 접수하지 않습니다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 정도의 지식으로는 이 시험을 통과하기 힘들다.",
+"rewrite": "그 정도의 지식으로는 이 시험을 통과하기가 쉽지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "현장에 안전모 없이 들어갈 수 없다.",
+"rewrite": "현장에는 안전모를 쓰지 않고 들어갈 수 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "사정을 모르는 사람은 이 글을 이해하지 못한다.",
+"rewrite": "사정을 모르는 사람에게는 이 글이 이해되지 않는다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그의 노력은 천재 못지않았다.",
+"rewrite": "그의 노력은 천재에 버금갔다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 아무런 거리낌 없이 사실을 털어놓았다.",
+"rewrite": "그는 거리낌 없이 사실을 말했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그 변호사는 의뢰인뿐만 아니라 가족에게도 연락했다.",
+"rewrite": "그 변호사는 의뢰인은 물론 가족에게도 연락했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "잘못된 주소로 보낸 우편물이 반송되었다.",
+"rewrite": "틀린 주소로 보낸 우편물이 반송되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "그 도서관은 평일에만 연다.",
+"rewrite": "그 도서관은 평일에만 문을 연다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "새 규정은 다음 달에 적용된다.",
+"rewrite": "새 규정이 다음 달에 적용된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "시장이 조례안을 서명했다.",
+"rewrite": "조례안은 시장에 의해 서명되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "검사가 피의자를 조사했다.",
+"rewrite": "피의자가 검사에게 조사를 받았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "집배원이 소포를 배달했다.",
+"rewrite": "소포가 집배원에 의해 배달되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "김 박사는 지난해 학회에서 논문을 발표했다.",
+"rewrite": "지난해 학회에서 김 박사는 논문을 발표했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "연구소는 두 가지 방안을 제시했다.",
+"rewrite": "연구소가 제시한 방안은 두 가지다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그 상점은 연휴 동안 영업하지 않는다.",
+"rewrite": "그 상점은 연휴 동안 쉰다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "담당자가 서류를 검토한 뒤 결재했다.",
+"rewrite": "담당자는 서류를 살펴본 후 결재했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그는 갑작스러운 소식에 놀랐다.",
+"rewrite": "그는 뜻밖의 소식에 놀랐다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "이 현상은 기후 변화 때문일 수 있다.",
+"rewrite": "이 현상은 기후 변화 때문일 수도 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "경기가 회복될 것으로 전망된다.",
+"rewrite": "경기가 회복될 것으로 예상된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "운전자는 안전벨트를 착용해야 한다.",
+"rewrite": "운전자는 안전벨트를 매야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "계약서에는 서명이 필요합니다.",
+"rewrite": "계약서에는 서명해야 합니다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "여기서 담배를 피우면 안 된다.",
+"rewrite": "여기서는 흡연할 수 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_quantity",
+"source": "정원은 40명이다.",
+"rewrite": "정원은 마흔 명이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_connective",
+"source": "이처럼 변화는 불가피하다.",
+"rewrite": "이렇듯 변화는 불가피하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "그는 서류를 정리하고 도장을 찍은 뒤 창구에 제출했다.",
+"rewrite": "그는 서류를 정리하고 도장을 찍었다. 그런 뒤 창구에 제출했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "회의가 끝났다. 참석자들이 자리를 떴다.",
+"rewrite": "회의가 끝나자 참석자들이 자리를 떴다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "공사는 3월에 시작되었다. 완공은 12월로 예정되어 있다.",
+"rewrite": "공사는 3월에 시작되었다. 완공 예정일은 12월이다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이 앱은 오프라인에서도 동작한다.",
+"rewrite": "이 앱은 오프라인에서는 동작하지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "보고서에는 출처가 표기되어 있지 않다.",
+"rewrite": "보고서에는 출처가 표기되어 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이 모델은 한국어를 지원한다.",
+"rewrite": "이 모델은 한국어를 지원하지 못한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "그 직원은 규정을 위반한 적이 없다.",
+"rewrite": "그 직원은 규정을 위반한 적이 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그는 사실을 말하지 않았다.",
+"rewrite": "그는 사실을 말하지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "그 주장은 사실로 확인되었다.",
+"rewrite": "그 주장은 사실일 가능성이 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "신제품은 다음 주에 나올 예정이다.",
+"rewrite": "신제품은 다음 주에 나올 수도 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "이 처방은 아마 효과가 있을 것이다.",
+"rewrite": "이 처방은 효과가 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "회원은 연회비를 납부해야 한다.",
+"rewrite": "회원은 연회비를 납부하지 않아도 된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "제출 기한을 지키는 것이 좋다.",
+"rewrite": "제출 기한을 지켜야 한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "이 구역에서는 촬영이 허용된다.",
+"rewrite": "이 구역에서는 촬영이 금지된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "검사가 변호사를 신문했다.",
+"rewrite": "변호사가 검사를 신문했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "원청이 하청업체에 대금을 지급했다.",
+"rewrite": "하청업체가 원청에 대금을 지급했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "매니저가 직원에게 지시했다.",
+"rewrite": "직원이 매니저에게 지시했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "당 대표는 합당을 수용했다.",
+"rewrite": "당 대표는 합당을 거절했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "공장 가동률이 올랐다.",
+"rewrite": "공장 가동률이 떨어졌다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "이 처방은 증상을 완화한다.",
+"rewrite": "이 처방은 증상을 악화한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "정부는 수입을 확대했다.",
+"rewrite": "정부는 수입을 제한했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 이사회에서 선임되었다.",
+"rewrite": "그는 이사회에서 해임되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "이 도로는 개통되었다.",
+"rewrite": "이 도로는 폐쇄되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "새 학설이 널리 받아들여졌다.",
+"rewrite": "새 학설이 널리 배척되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "은행은 대출 문턱을 높였다.",
+"rewrite": "은행은 대출 문턱을 낮췄다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "주민들은 재개발을 환영했다.",
+"rewrite": "주민들은 재개발을 우려했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "지원 대상은 소득이 월 300만 원 이하인 가구다.",
+"rewrite": "지원 대상은 소득이 월 300만 원 이상인 가구다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "정원이 20명 이내로 제한된다.",
+"rewrite": "정원이 20명 이상으로 제한된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "이번 모델은 이전 모델보다 배터리가 오래간다.",
+"rewrite": "이번 모델은 이전 모델보다 배터리가 빨리 닳는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "동부 지역이 서부 지역보다 인구가 많다.",
+"rewrite": "서부 지역이 동부 지역보다 인구가 많다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "점검을 마치기 전에 서버를 재시작한다.",
+"rewrite": "점검을 마친 뒤에 서버를 재시작한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "직원 전원이 교육을 이수했다.",
+"rewrite": "직원 일부가 교육을 이수했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "그 정책은 노인에게만 혜택을 준다.",
+"rewrite": "그 정책은 노인에게도 혜택을 준다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 쿠폰은 중복해서 사용할 수 없습니다.",
+"rewrite": "이 쿠폰은 중복 사용이 불가능합니다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "그 규정은 현실과 맞지 않는다.",
+"rewrite": "그 규정은 현실에 어울리지 않는다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "시청 앞 광장은 주말에 개방되지 않는다.",
+"rewrite": "시청 앞 광장은 주말에 열지 않는다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이번 일정은 결코 간단하지 않다.",
+"rewrite": "이번 일정은 결코 만만하지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그 가게는 대형 마트 못지않게 물건이 다양하다.",
+"rewrite": "그 가게는 대형 마트만큼 물건이 다양하다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그는 조건 없이 도움을 주었다.",
+"rewrite": "그는 아무 조건도 없이 도움을 주었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "주민들은 공청회에서 의견을 냈다.",
+"rewrite": "공청회에서 주민들이 의견을 냈다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "그 단체는 지난해 보고서를 냈다.",
+"rewrite": "그 단체가 지난해 보고서를 냈다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "위원회가 보조금을 지급했다.",
+"rewrite": "보조금이 위원회에 의해 지급되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "기자가 총리를 인터뷰했다.",
+"rewrite": "총리가 기자에게 인터뷰를 받았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "농민들은 가뭄 때문에 큰 피해를 입었다.",
+"rewrite": "가뭄 때문에 농민들은 큰 피해를 입었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "그는 퇴근 후에 학원에 다닌다.",
+"rewrite": "그는 학원에 퇴근 후에 다닌다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "그 자료는 아직 정리되지 않았다.",
+"rewrite": "그 자료는 아직 정돈되지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "시험은 오전 아홉 시에 시작한다.",
+"rewrite": "시험은 오전 9시에 시작한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "그 사건의 배후가 있을 수 있다.",
+"rewrite": "그 사건에는 배후가 있을 가능성이 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "방문객은 입구에서 이름을 적어야 한다.",
+"rewrite": "방문객은 입구에서 이름을 기재해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_obligation",
+"source": "보호자의 동의가 필요하다.",
+"rewrite": "보호자의 동의를 받아야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "그녀는 짐을 풀고 차를 한 잔 마신 뒤에 잠자리에 들었다.",
+"rewrite": "그녀는 짐을 풀고 차를 한 잔 마셨다. 그리고 잠자리에 들었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "열차가 연착했다. 승객들이 항의했다.",
+"rewrite": "열차가 연착하자 승객들이 항의했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_multi",
+"source": "새 건물은 5월에 문을 열었다. 이용객은 꾸준히 찾고 있다.",
+"rewrite": "새 건물은 5월에 문을 열었다. 이용객이 꾸준히 찾고 있다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "피해자는 사고 현장에 있었다.",
+"rewrite": "피해자는 사고 현장에 있지 않았다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "그 서비스는 무료로 제공되지 않는다.",
+"rewrite": "그 서비스는 무료로 제공된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "이 규칙은 모든 경우에 적용된다.",
+"rewrite": "이 규칙은 모든 경우에 적용되지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "그 사람은 약속을 잊지 않았다.",
+"rewrite": "그 사람은 약속을 잊지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "검찰은 그를 기소할 방침이다.",
+"rewrite": "검찰은 그를 기소할 수도 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "조사 결과 원인은 노후 배관으로 드러났다.",
+"rewrite": "조사 결과 원인은 노후 배관으로 추정된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "수강생은 출석부에 서명해야 한다.",
+"rewrite": "수강생은 출석부에 서명해도 된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "반려동물 동반은 허용된다.",
+"rewrite": "반려동물 동반은 금지된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "구청이 주민에게 안내문을 보냈다.",
+"rewrite": "주민이 구청에 안내문을 보냈다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "의원이 장관을 비판했다.",
+"rewrite": "장관이 의원을 비판했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그는 회사의 신제품 계획을 지지했다.",
+"rewrite": "그는 회사의 신제품 계획을 반대했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "이번 정책으로 실업률이 하락했다.",
+"rewrite": "이번 정책으로 실업률이 상승했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "기업의 영업이익이 증가했다.",
+"rewrite": "기업의 영업이익이 감소했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "두 나라는 무역 장벽을 낮췄다.",
+"rewrite": "두 나라는 무역 장벽을 높였다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "주요 도시에서 교통 혼잡이 완화되었다.",
+"rewrite": "주요 도시에서 교통 혼잡이 심화되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "이 병원은 야간 진료를 시작했다.",
+"rewrite": "이 병원은 야간 진료를 중단했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "대출 한도는 연 소득의 3배 이내이다.",
+"rewrite": "대출 한도는 연 소득의 3배 이상이다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_comparative",
+"source": "이 방법이 저 방법보다 안전하다.",
+"rewrite": "저 방법이 이 방법보다 안전하다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "퇴근 전에 일정을 공유했다.",
+"rewrite": "퇴근 후에 일정을 공유했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_scope",
+"source": "주민 대부분이 계획에 찬성했다.",
+"rewrite": "주민 일부가 계획에 찬성했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "환자는 이 약을 임의로 중단해서는 안 됩니다.",
+"rewrite": "환자는 이 약을 마음대로 끊으면 안 됩니다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "해당 항목은 이번 심사에서 고려되지 않았다.",
+"rewrite": "해당 항목은 이번 심사에서 반영되지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "이 변경 사항은 기존 고객에게 영향을 미치지 않는다.",
+"rewrite": "이 변경 사항이 기존 고객에게 미치는 영향은 없다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "현재 버전에서는 이 형식을 읽을 수 없다.",
+"rewrite": "현재 버전은 이 형식을 읽지 못한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_neg_reword",
+"source": "납기를 맞추기는 현실적으로 어렵다.",
+"rewrite": "납기를 맞추기는 현실적으로 쉽지 않다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "재판부가 청구를 기각했다.",
+"rewrite": "청구는 재판부에 의해 기각되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_voice",
+"source": "회계팀이 비용을 승인했다.",
+"rewrite": "비용은 회계팀에서 승인되었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "보험사는 보험금을 지급하겠다고 밝혔다.",
+"rewrite": "보험사는 보험금을 주겠다고 말했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_synonym",
+"source": "보고서는 다음 주 월요일까지 제출해야 한다.",
+"rewrite": "보고서를 다음 주 월요일까지 내야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_particle",
+"source": "이 소프트웨어는 윈도우에서 동작한다.",
+"rewrite": "이 소프트웨어가 윈도우에서 동작한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_reorder",
+"source": "담당 교수는 지난 학기에 성적을 정정했다.",
+"rewrite": "지난 학기에 담당 교수가 성적을 정정했다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_modality_reword",
+"source": "환율이 다음 달에 하락할 것으로 보인다.",
+"rewrite": "환율이 다음 달에 하락할 것으로 예측된다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_quantity",
+"source": "최소 두 명이 서명해야 한다.",
+"rewrite": "최소 2명이 서명해야 한다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_fp_word",
+"source": "그의 발표는 어느 교수 못지않게 설득력 있었다.",
+"rewrite": "그의 발표는 어느 교수와 견줄 만큼 설득력 있었다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_split",
+"source": "그는 계약서를 읽고 수정 사항을 표시한 뒤 법무팀에 보냈다.",
+"rewrite": "그는 계약서를 읽고 수정 사항을 표시했다. 이어서 법무팀에 보냈다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "p_merge",
+"source": "시스템을 점검했다. 오류는 발견되지 않았다.",
+"rewrite": "시스템을 점검했으나 오류는 발견되지 않았다.",
+"label": "preserve"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "시스템은 로그를 저장한다.",
+"rewrite": "시스템은 로그를 저장하지 않는다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_flip",
+"source": "계약서에는 위약금 조항이 없다.",
+"rewrite": "계약서에는 위약금 조항이 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_neg_type",
+"source": "담당자는 요청을 거절하지 않았다.",
+"rewrite": "담당자는 요청을 거절하지 못했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "피고인이 범행을 저질렀다.",
+"rewrite": "피고인이 범행을 저질렀을 수 있다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_modality",
+"source": "이번 조치로 물가가 안정될 것으로 기대한다.",
+"rewrite": "이번 조치로 물가가 안정된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "임차인은 보증금을 반환받을 수 있다.",
+"rewrite": "임차인은 보증금을 반환해야 한다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_obligation",
+"source": "정기 점검을 의무화했다.",
+"rewrite": "정기 점검을 권장했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "원고가 피고를 고소했다.",
+"rewrite": "피고가 원고를 고소했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_role",
+"source": "본사가 지사에 예산을 배정했다.",
+"rewrite": "지사가 본사에 예산을 배정했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "의회는 예산안을 가결했다.",
+"rewrite": "의회는 예산안을 부결했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "회원 수가 급증했다.",
+"rewrite": "회원 수가 급감했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "당국은 수출을 허용했다.",
+"rewrite": "당국은 수출을 불허했다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "그 기업은 신규 투자를 늘렸다.",
+"rewrite": "그 기업은 신규 투자를 줄였다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_antonym",
+"source": "보안이 강화되었다.",
+"rewrite": "보안이 약화되었다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_bound",
+"source": "수강 인원은 15명 이상이면 개설된다.",
+"rewrite": "수강 인원은 15명 이하이면 개설된다.",
+"label": "change"
+},
+{
+"set": "code1",
+"category": "c_temporal",
+"source": "결제 후에 상품을 발송한다.",
+"rewrite": "결제 전에 상품을 발송한다.",
+"label": "change"
+}
+]
+}

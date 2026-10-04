@@ -1,0 +1,3565 @@
+{
+ "resource": "confusables",
+ "meta": {
+  "generated": "2026-10-04",
+  "corpus_stats": {
+   "human/essay": {
+    "docs": 181,
+    "chars": 116208
+   },
+   "llm/essay": {
+    "docs": 590,
+    "chars": 540146
+   },
+   "gpt4o/essay": {
+    "docs": 181,
+    "chars": 203441
+   },
+   "human/abstract": {
+    "docs": 100,
+    "chars": 40736
+   },
+   "llm/abstract": {
+    "docs": 278,
+    "chars": 126908
+   },
+   "gpt4o/abstract": {
+    "docs": 100,
+    "chars": 53071
+   },
+   "human/poetry": {
+    "docs": 189,
+    "chars": 39141
+   },
+   "llm/poetry": {
+    "docs": 756,
+    "chars": 169593
+   },
+   "gpt4o/poetry": {
+    "docs": 189,
+    "chars": 38366
+   },
+   "news/news": {
+    "docs": 2740,
+    "chars": 2728229
+   },
+   "klue/klue": {
+    "docs": 1283,
+    "chars": 1284820
+   }
+  },
+  "method": "Calibrate the Super Sejong lexical resources on real Korean text.\n\nInputs (all local, read-only):\n  KatFish dataset  research/B/katfish_repo/katfish_dataset/{essay,abstract,poetry}.jsonl  (label 0=human, 1=LLM)\n  Naver news       research/B/naver_news_test.csv  (human, professional)\n  KLUE-MRC ctx     research/B/klue_mrc_ctx.json    (human, wiki/news/etc.)\nOutputs: five JSON resource files + calibration_summary.json in --out.\n\nMethod\n  * hits per 10k characters per corpus group (regex finditer, non-overlapping)\n  * log-odds ratio with informative Dirichlet prior (Monroe, Colaresi & Quinn 2008, \"Fightin' Words\"):\n      delta = log((yL+a)/(nL+a0-yL-a)) - log((yH+a)/(nH+a0-yH-a)),  var ~ 1/(yL+a)+1/(yH+a),  z = delta/sqrt(var)\n    exposure n is the number of characters, a_w = a0 * p_bg(w) with p_bg = hits per character in the background\n    (human news + KLUE), a0 = A0 pseudo-characters. Computed per genre and combined by inverse-variance weighting\n    (stratified, so genre mix differences between human and LLM sets do not leak into the score).\n  * document-level bootstrap (resample docs within genre x class) for a 95% interval of the stratified delta",
+  "a0": 200000.0,
+  "bootstrap_reps": 300,
+  "tier_legend": {
+   "A": "enable by default",
+   "B": "suggest-only / needs context guard",
+   "C": "disabled (kept for the record)",
+   "allow": "exemption list entry"
+  }
+ },
+ "entries": [
+  {
+   "id": "CF_doeyo_dwaeyo",
+   "pattern": "(?<![가-힣])(되요|됬|됬어|안되요|되서|됬다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "되요/돼요",
+   "detection_context_ko": "어미 '-요/-어'가 붙는 자리에 '되'가 쓰인 경우",
+   "explanation_ko": "'되어'의 준말은 '돼'. '되요'는 틀리고 '돼요'가 맞다. '됬'도 '됐'.",
+   "suggestions": [
+    "돼요",
+    "됐",
+    "돼서"
+   ],
+   "legit_use_note_ko": "'되'에 '-ㄴ다' 등이 이어지는 것은 정상('된다').",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 1,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.659,
+     "z": -0.74,
+     "ratio_x": 0.52,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.74,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.55,
+     "boot_ci95": [
+      -1.408,
+      0.311
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.012/10k (1 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_1_llm_hits"
+  },
+  {
+   "id": "CF_an_anh",
+   "pattern": "지 안(?=[ 는았다습으]|$)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "안/않",
+   "detection_context_ko": "'-지' 뒤 보조용언 자리",
+   "explanation_ko": "'안'은 부사, '않-'은 용언 어간. '~지 안 ~'은 '~지 않~'이어야 한다.",
+   "suggestions": [
+    "~지 않다"
+   ],
+   "legit_use_note_ko": "'안'이 부사로 용언 앞에 오는 문장은 정상.",
+   "source_url": "https://www.korean.go.kr/front/mcfaq/mcfaqView.do?mcfaq_seq=5649",
+   "source_basis": "category_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 3,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.988,
+     "z": -0.92,
+     "ratio_x": 0.37,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -1.534
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.94
+     },
+     "z_gpt4o_only": -0.52,
+     "boot_ci95": [
+      -1.427,
+      -0.521
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 거나 시장 실적이 그렇게까지 안 좋지 않다는 데 공감대 ",
+     "[news] 이 질병이 어떻게 확산하는지 안다. 또 감염자를 식별할 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.005/10k, LLM 0.0/10k (0 LLM hits, 3 human hits)",
+   "precision_evidence": "measured_on_3_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_anh_an",
+   "pattern": "(?<![가-힣])않 ?(했|가|먹|먹었|좋|하|해|돼|된|되|올|와|갔|간|사|봤|본)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "않/안",
+   "detection_context_ko": "용언 앞 부정 부사 자리",
+   "explanation_ko": "'않'을 부사 '안' 자리에 쓴 오류. '않'은 용언 어간.",
+   "suggestions": [
+    "안"
+   ],
+   "legit_use_note_ko": "'않-' 뒤에 어미가 바로 붙는 형태는 정상.",
+   "source_url": "https://www.korean.go.kr/front/mcfaq/mcfaqView.do?mcfaq_seq=5649",
+   "source_basis": "category_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 4,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.204,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.344,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.012,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 5,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0011,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.639,
+     "z": -1.6,
+     "ratio_x": 0.19,
+     "per_genre_delta": {
+      "essay": -3.048,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -2.04,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -1.14,
+     "boot_ci95": [
+      -2.034,
+      -1.041
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 했다. 매장 손님은 받지 않되 해당 매장을 포장·배송 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 5 human hits)",
+   "precision_evidence": "measured_on_5_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_rose_rosseo",
+   "pattern": "(학생|부모|아버지|어머니|국민|시민|인간|친구|전문가|리더|교사|사람|어른|회원|대표|일원)(으)?로써",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "로서/로써",
+   "detection_context_ko": "자격·신분 명사 직후",
+   "explanation_ko": "자격·지위를 나타내면 '로서', 수단·도구면 '로써'.",
+   "suggestions": [
+    "로서"
+   ],
+   "legit_use_note_ko": "'~로써'가 수단일 때는 정상('말로써').",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.047,
+     "z": -0.98,
+     "ratio_x": 0.35,
+     "per_genre_delta": {
+      "essay": -1.949,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.19,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.55,
+     "boot_ci95": [
+      -1.508,
+      -0.522
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_rosseo_rose",
+   "pattern": "(이것|이를|그것|방법|수단|도구|노력|행동|대화|힘|말|법|칼|돈)(으)?로서",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "로써/로서",
+   "detection_context_ko": "수단·도구 명사 직후",
+   "explanation_ko": "수단·도구면 '로써'.",
+   "suggestions": [
+    "로써"
+   ],
+   "legit_use_note_ko": "'~로서'가 자격일 때는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 6,
+     "gpt4o/essay": 3,
+     "human/abstract": 0,
+     "llm/abstract": 1,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.084,
+     "katfish_gpt4o": 0.102,
+     "news": 0.004,
+     "klue": 0.039,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.111,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.0,
+     "all_human": 0.014,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 6,
+    "hits_llm": 7,
+    "doc_frac": {
+     "human": 0.0011,
+     "llm": 0.0043
+    },
+    "prior": {
+     "p_bg_per10k": 0.016,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.904,
+     "z": 0.94,
+     "ratio_x": 2.47,
+     "per_genre_delta": {
+      "essay": 1.715,
+      "abstract": 0.793,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 1.17,
+      "abstract": 0.49,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.76,
+     "boot_ci95": [
+      0.144,
+      1.335
+     ]
+    },
+    "signal_genres": [
+     "essay",
+     "abstract"
+    ],
+    "human_professional_examples": [
+     "[news] 자들의 보조 역할을 하는 도구로서 자리를 잡을 것이란 관측",
+     "[klue] 만 최근의 국제표준은 경쟁법으로서 시장경쟁의 공정성 창달을",
+     "[klue] 고 \"하나같이 요사스러운 말로서 입에 담기도 어렵다\"고 "
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.015/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_6_human_and_7_llm_hits"
+  },
+  {
+   "id": "CF_deonji_deunji",
+   "pattern": "(했|갔|었|았|겠)든(지|가)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "든지/던지",
+   "detection_context_ko": "과거 어미 + 든지/든가",
+   "explanation_ko": "과거 회상은 '던지', 선택은 '든지'. 과거 어미 뒤 '든지'는 오류.",
+   "suggestions": [
+    "던지"
+   ],
+   "legit_use_note_ko": "'했든 안 했든'은 '든' 정상이므로 '든지' 형태만 대상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_barae_bareo",
+   "pattern": "(행복|성공|건강|합격|무사|안녕|평안|사랑|소망|소원|희망|기쁨)[을를이가]? ?(하길|하기를)? ?바래(요|서|야|)|(?<![색빛사진옷글씨])바랬(다|어|습니다|는데)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "바라다/바래다",
+   "detection_context_ko": "소망 명사 뒤 '바래'",
+   "explanation_ko": "소망은 '바라다'(바라요, 바랐다), 색이 날리는 것은 '바래다'.",
+   "suggestions": [
+    "바라요",
+    "바랐다"
+   ],
+   "legit_use_note_ko": "'색이 바랬다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.988,
+     "z": -0.92,
+     "ratio_x": 0.37,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -1.534
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.94
+     },
+     "z_gpt4o_only": -0.52,
+     "boot_ci95": [
+      -1.426,
+      -0.521
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_nat_nah",
+   "pattern": "(병|감기|상처|몸|독감|염증|환자)[이가을를]? ?(다|빨리|금방|얼른)? ?낳(았|아|은|는|겠|고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "낫다/낳다/낮다",
+   "detection_context_ko": "병·상처 명사 직후",
+   "explanation_ko": "병이 '낫다'. '낳다'는 출산.",
+   "suggestions": [
+    "낫다"
+   ],
+   "legit_use_note_ko": "'아이를 낳다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_matchuda_machida",
+   "pattern": "(정답|답|문제|퀴즈|과녁|정체)[을를] ?맞추",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "맞추다/맞히다",
+   "detection_context_ko": "정답·과녁 명사 직후",
+   "explanation_ko": "정답·과녁은 '맞히다', 시간·간격은 '맞추다'.",
+   "suggestions": [
+    "맞히다"
+   ],
+   "legit_use_note_ko": "'답을 맞춰 보다'(대조)는 '맞추다'가 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 문을 하고 가려진 카드의 답을 맞추는 것이었다. 논리적 문제"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_matchida_matchuda",
+   "pattern": "(시간|약속|호흡|양복|입|퍼즐|조각|보조|속도|간격|초점)[을를] ?맞히",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "맞히다/맞추다",
+   "detection_context_ko": "시간·퍼즐 명사 직후",
+   "explanation_ko": "시간·퍼즐 등은 '맞추다'.",
+   "suggestions": [
+    "맞추다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_eotteokhae",
+   "pattern": "어떻해|어떡게|어떻게 ?해(?=야[ ]?할지)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "어떡해/어떻게",
+   "detection_context_ko": "'어떻해' 표기",
+   "explanation_ko": "'어떡해'는 '어떻게 해'의 준말. '어떻해'는 오류.",
+   "suggestions": [
+    "어떡해",
+    "어떻게 해"
+   ],
+   "legit_use_note_ko": "'어떻게 해야'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.024,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.037,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 2,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.143,
+     "z": 0.14,
+     "ratio_x": 1.15,
+     "per_genre_delta": {
+      "essay": 0.759,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.49,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.536,
+      0.547
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.024/10k (2 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_2_llm_hits"
+  },
+  {
+   "id": "CF_wen_waen",
+   "pattern": "왠(?!지)|웬지",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "웬/왠",
+   "detection_context_ko": "'왠' + 지 이외",
+   "explanation_ko": "'왠지'만 '왜인지'의 준말. 나머지 관형사는 '웬'.",
+   "suggestions": [
+    "웬",
+    "왠지"
+   ],
+   "legit_use_note_ko": "'왠지'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_geumse",
+   "pattern": "금새",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "금세/금새",
+   "detection_context_ko": "부사 용법",
+   "explanation_ko": "'금시에'의 준말은 '금세'. '금새'는 물건의 값.",
+   "suggestions": [
+    "금세"
+   ],
+   "legit_use_note_ko": "'금새'(값)가 쓰이는 문맥은 매우 드묾.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.988,
+     "z": -0.92,
+     "ratio_x": 0.37,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -1.534
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.94
+     },
+     "z_gpt4o_only": -0.52,
+     "boot_ci95": [
+      -1.539,
+      -0.523
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 에서 최근 웹툰이 뜨니까 금새 피봇한 거 아니냐고요 그"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 2 human hits)",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_myeochil",
+   "pattern": "몇 ?일(?!간|째)|몇일",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "며칠/몇일",
+   "detection_context_ko": "날수를 묻는 문맥",
+   "explanation_ko": "표기는 '며칠'.",
+   "suggestions": [
+    "며칠"
+   ],
+   "legit_use_note_ko": "'몇 일'은 '몇 일(日)'의 띄어쓰기 용례가 없다. '몇 일간'은 규범상 '며칠간'.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.047,
+     "z": -0.98,
+     "ratio_x": 0.35,
+     "per_genre_delta": {
+      "essay": -1.949,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.19,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.55,
+     "boot_ci95": [
+      -1.503,
+      -0.521
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_seolem",
+   "pattern": "설레임",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "설렘/설레임",
+   "detection_context_ko": "명사형",
+   "explanation_ko": "'설레다'의 명사형은 '설렘'.",
+   "suggestions": [
+    "설렘"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 3,
+     "gpt4o/poetry": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.036,
+     "katfish_gpt4o": 0.068,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.177,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 3,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0018
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.397,
+     "z": 0.38,
+     "ratio_x": 1.49,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 1.511
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 1.0
+     },
+     "z_gpt4o_only": 0.63,
+     "boot_ci95": [
+      -0.533,
+      0.8
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.036/10k (3 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_3_llm_hits"
+  },
+  {
+   "id": "CF_yeokhal",
+   "pattern": "역활",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "역할/역활",
+   "detection_context_ko": "표기",
+   "explanation_ko": "한자 役割. 표기는 '역할'.",
+   "suggestions": [
+    "역할"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 3
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.011,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 점 이다. 유명체인점은 지역활성화의 성공지표로 거론된다",
+     "[news] 새 정부 출범과 동시에 지역활성화 약속을 헌신짝 취급한",
+     "[news] 기금을 관리하고 운용할 지역활력지원단을 출범했습니다."
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.007/10k, LLM 0.0/10k (0 LLM hits, 3 human hits)",
+   "precision_evidence": "measured_on_3_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_huihan",
+   "pattern": "희안(하|한|해|히)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "희한/희안",
+   "detection_context_ko": "표기",
+   "explanation_ko": "'희한(稀罕)하다'.",
+   "suggestions": [
+    "희한하다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_yul_ryul_err",
+   "pattern": "(합격|성공|취업|실업|경쟁|사망|이용|가입|진학|응답|출석|감염|발병|시청|입학|합계|적중)율",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "율/률",
+   "detection_context_ko": "받침 있는 명사 + 율",
+   "explanation_ko": "받침이 있는 앞말 뒤(ㄴ 제외)에는 '률'.",
+   "suggestions": [
+    "~률"
+   ],
+   "legit_use_note_ko": "'백분율', '비율'은 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_ryul_yul_err",
+   "pattern": "(출산|증가|감소|이자|참여|실패|투표|득표|전환|점유|흡수|연체|환율)률",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "률/율",
+   "detection_context_ko": "모음/ㄴ 뒤 률",
+   "explanation_ko": "모음 또는 ㄴ 받침 뒤에는 '율'.",
+   "suggestions": [
+    "~율"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_buchida_buchida",
+   "pattern": "(우표|딱지|스티커|포스터|이름|불|조건|벽보|별명)[을를] ?부치(다|고|며|면|었|어|는|ㄴ|지)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "부치다/붙이다",
+   "detection_context_ko": "접착 명사 직후",
+   "explanation_ko": "접착·점화는 '붙이다'. '부치다'는 우편·논의·부침개.",
+   "suggestions": [
+    "붙이다"
+   ],
+   "legit_use_note_ko": "'편지를 부치다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_buchida_err2",
+   "pattern": "(편지|소포|우편|택배|전보|돈|편지를)[을를]? ?붙이(다|고|며|면|었|어|는|ㄴ|지)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "붙이다/부치다",
+   "detection_context_ko": "우편 명사 직후",
+   "explanation_ko": "우편은 '부치다'.",
+   "suggestions": [
+    "부치다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_gareuchi",
+   "pattern": "가르키",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "가르치다/가리키다",
+   "detection_context_ko": "표기",
+   "explanation_ko": "'가르키'는 없는 형태. '가르치다'(교육), '가리키다'(지시).",
+   "suggestions": [
+    "가르치다",
+    "가리키다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.046,
+     "z": -0.04,
+     "ratio_x": 0.95,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.541,
+      0.408
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.012/10k (1 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_1_llm_hits"
+  },
+  {
+   "id": "CF_teullida",
+   "pattern": "([가-힣]+)(와|과|이랑|하고) ?(틀리|틀려|틀린|틀렸)(다|지|게|며|면|고)?(?=[ .,])",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "틀리다/다르다",
+   "detection_context_ko": "'와/과' 비교 뒤 틀리",
+   "explanation_ko": "'다르다'가 비교, '틀리다'는 오답.",
+   "suggestions": [
+    "다르다"
+   ],
+   "legit_use_note_ko": "'답이 틀리다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_jorida",
+   "pattern": "(마음|가슴|속)[을를] ?조리(다|고|며|면|었|어|는|ㄴ)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "졸이다/조리다",
+   "detection_context_ko": "마음 명사 직후",
+   "explanation_ko": "'마음을 졸이다'. '조리다'는 음식.",
+   "suggestions": [
+    "졸이다"
+   ],
+   "legit_use_note_ko": "'생선을 조리다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_jorida2",
+   "pattern": "(생선|감자|고기|멸치|두부|갈치)[을를] ?졸이",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "조리다/졸이다",
+   "detection_context_ko": "음식 명사 직후",
+   "explanation_ko": "음식을 양념에 '조리다'.",
+   "suggestions": [
+    "조리다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_bandeusi",
+   "pattern": "반듯이 (해야|지켜|필요|성공|합격|이루|돌아|하겠|올)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "반드시/반듯이",
+   "detection_context_ko": "'꼭' 뜻 문맥",
+   "explanation_ko": "'반드시'(꼭), '반듯이'(똑바로).",
+   "suggestions": [
+    "반드시"
+   ],
+   "legit_use_note_ko": "'반듯이 앉다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_itdaga",
+   "pattern": "(집에|여기에|거기에|학교에|밖에|방에) ?(이따가|이따)(?= ?(가|오|나|올|갈))",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "이따가/있다가",
+   "detection_context_ko": "장소 뒤",
+   "explanation_ko": "'있다가'는 있다+가, '이따가'는 조금 뒤.",
+   "suggestions": [
+    "있다가"
+   ],
+   "legit_use_note_ko": "'이따가 보자'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_neulida",
+   "pattern": "(체중|재산|수|양|규모|시간|예산|인원|속도|횟수|거리)[을를] ?늘이",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "늘리다/늘이다",
+   "detection_context_ko": "수량 명사 직후",
+   "explanation_ko": "수량·규모는 '늘리다', 길이는 '늘이다'.",
+   "suggestions": [
+    "늘리다"
+   ],
+   "legit_use_note_ko": "'고무줄을 늘이다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_neulida2",
+   "pattern": "(고무줄|엿가락|줄|바지|치마|용수철|끈)[을를] ?늘리",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "늘이다/늘리다",
+   "detection_context_ko": "길이 명사 직후",
+   "explanation_ko": "길이는 '늘이다'.",
+   "suggestions": [
+    "늘이다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_isseum",
+   "pattern": "(있|없|했|갔|왔|봤|됐|많|좋|같|맞|먹|입)슴",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "있음/있슴",
+   "detection_context_ko": "'-슴' 명사형",
+   "explanation_ko": "명사형은 '-음/-ㅁ'. '-슴'은 오류('~습니다'는 정상).",
+   "suggestions": [
+    "있음",
+    "없음"
+   ],
+   "legit_use_note_ko": "'습니다'는 정상이므로 '슴' 뒤가 '니'가 아닐 때만.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_halge",
+   "pattern": "(할|갈|볼|올|줄|먹을|사줄|있을|도울|쓸|말할|기다릴)께(요|(?![가-힣]))",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "할게/할께",
+   "detection_context_ko": "의지·약속 어미",
+   "explanation_ko": "'-ㄹ게'는 평서·약속 어미. '께'는 틀림.",
+   "suggestions": [
+    "~ㄹ게"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_haryeogo",
+   "pattern": "(할|갈|볼|올|먹을|살|쓸|만날|보낼|말할)려고",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "하려고/할려고",
+   "detection_context_ko": "의도 어미",
+   "explanation_ko": "'-(으)려고'의 'ㄹ' 받침 추가 오류.",
+   "suggestions": [
+    "~(으)려고"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  옆에 클라운과 똑같이 해볼려고 내밀어 본겁니다. 진짜일"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_boeyo_bwaeyo",
+   "pattern": "뵈요|뵜",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "뵈요/봬요",
+   "detection_context_ko": "'뵈' + 요",
+   "explanation_ko": "'뵈어'의 준말은 '봬'. '뵈요'는 오류.",
+   "suggestions": [
+    "봬요",
+    "뵈어요"
+   ],
+   "legit_use_note_ko": "'뵙겠습니다'는 정상.",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_wenmanhi",
+   "pattern": "왠만",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "웬만하다/왠만하다",
+   "detection_context_ko": "표기",
+   "explanation_ko": "'웬만하다'가 표준.",
+   "suggestions": [
+    "웬만하다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_eoiopda",
+   "pattern": "어의 ?없",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "어이없다/어의없다",
+   "detection_context_ko": "표기",
+   "explanation_ko": "'어이없다'가 표준.",
+   "suggestions": [
+    "어이없다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_chireuda",
+   "pattern": "치루(다|고|며|면|었|어|는|ㄴ|지)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "치르다/치루다",
+   "detection_context_ko": "활용",
+   "explanation_ko": "기본형은 '치르다'.",
+   "suggestions": [
+    "치르다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.016,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 도 똑같이 장엄한 장례를 치루고 조의를 표했다.",
+     "[klue] 과 건곤일척의 대 전투를 치루었으며 고구려 군을 크게 패"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.005/10k, LLM 0.0/10k (0 LLM hits, 2 human hits)",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_jamgeuda",
+   "pattern": "잠궈|잠궜|잠구(다|고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "잠그다/잠구다",
+   "detection_context_ko": "활용",
+   "explanation_ko": "기본형 '잠그다'. '잠가/잠갔'.",
+   "suggestions": [
+    "잠가",
+    "잠갔"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_damgeuda",
+   "pattern": "담궈|담궜|담구(다|고)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "담그다/담구다",
+   "detection_context_ko": "활용",
+   "explanation_ko": "'담가/담갔'.",
+   "suggestions": [
+    "담가",
+    "담갔"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_jjajipgi",
+   "pattern": "짜집기",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "짜깁기/짜집기",
+   "detection_context_ko": "표기",
+   "explanation_ko": "'짜깁기'가 표준.",
+   "suggestions": [
+    "짜깁기"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_orae_manm",
+   "pattern": "오랫만",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "오랜만/오랫만",
+   "detection_context_ko": "표기",
+   "explanation_ko": "'오랜만'.",
+   "suggestions": [
+    "오랜만"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_andoeda_spacing",
+   "pattern": "(?<![가-힣])(그러면|이러면|그렇게 하면|하면|그럴 때|그러다가) 안되",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "안 되다/안되다",
+   "detection_context_ko": "금지·불허 의미",
+   "explanation_ko": "'안 되다'(허용되지 않음)와 '안되다'(안타깝다)는 의미가 다르다.",
+   "suggestions": [
+    "안 되다"
+   ],
+   "legit_use_note_ko": "'안됐다/안되다'(딱하다) 의미면 붙여 쓴다.",
+   "source_url": "https://korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=216&pageIndex=1&qna_seq=322400",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "CF_su_isseo",
+   "pattern": "[가-힣]+(할|갈|볼|먹을|쓸|올|있을)수 ?(있|없)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "수/ 수 spacing",
+   "detection_context_ko": "의존명사 띄어쓰기",
+   "explanation_ko": "의존명사 '수'는 앞말과 띄어 쓴다.",
+   "suggestions": [
+    "~ㄹ 수 있다"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=27&pageIndex=1&qna_seq=326244",
+   "source_basis": "category_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 20,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 1.02,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.023,
+     "human_essay": 1.721,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.057,
+     "human_professional": 0.01
+    },
+    "hits_all_human": 24,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0042,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.011,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -2.442,
+     "z": -2.43,
+     "ratio_x": 0.09,
+     "per_genre_delta": {
+      "essay": -4.564,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -3.19,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -1.95,
+     "boot_ci95": [
+      -2.669,
+      -2.085
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 견의 건강정보를 24시간 확인할수 있는 반려견 헬스케어 디바이",
+     "[klue] 은 서양의 기술과 문화를 배워올수 있었다. 19세기 들어 한국",
+     "[klue] 군주가 행사해왔던 권리를 포기할수 없었다.  1075년 하인리"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.01/10k, LLM 0.0/10k (0 LLM hits, 24 human hits)",
+   "precision_evidence": "measured_on_24_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_geot_spacing",
+   "pattern": "(하는|된|한|할|될|있는|없는|좋은|같은|이런|그런)것(은|이|을|도|으로|처럼|같다)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "것/ 것 spacing",
+   "detection_context_ko": "의존명사 띄어쓰기",
+   "explanation_ko": "의존명사 '것'은 띄어 쓴다.",
+   "suggestions": [
+    "~ㄴ 것"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=27&pageIndex=1&qna_seq=326244",
+   "source_basis": "category_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 26,
+     "llm/essay": 0,
+     "human/abstract": 1,
+     "llm/abstract": 0,
+     "human/poetry": 4,
+     "llm/poetry": 0,
+     "klue/klue": 4
+    },
+    "per10k": {
+     "katfish_human": 1.581,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.031,
+     "human_essay": 2.237,
+     "human_abstract": 0.245,
+     "human_poetry": 1.022,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.083,
+     "human_professional": 0.012
+    },
+    "hits_all_human": 35,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0056,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.011,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -3.099,
+     "z": -3.55,
+     "ratio_x": 0.05,
+     "per_genre_delta": {
+      "essay": -4.821,
+      "abstract": -1.405,
+      "poetry": -2.633
+     },
+     "per_genre_z": {
+      "essay": -3.38,
+      "abstract": -0.86,
+      "poetry": -1.77
+     },
+     "z_gpt4o_only": -3.04,
+     "boot_ci95": [
+      -3.498,
+      -2.575
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human]  추출하여 그 종류를 결정하는것을 의미한다. Bidirec",
+     "[klue] .그러나, 대용재료로 조악한것을 사용하고, 원래는 리벳2",
+     "[klue] 6년 하인리히 4세를 파문하는것으로 대응했다. 황제가 교황을"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.012/10k, LLM 0.0/10k (0 LLM hits, 35 human hits)",
+   "precision_evidence": "measured_on_35_human_and_0_llm_hits"
+  },
+  {
+   "id": "CF_deus_hae",
+   "pattern": "(어떻게|무엇을|누가|언제|어디서)(든지|든)(?=[ ,.][가-힣]*?(했|이었|였)던)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "confusable_pair",
+   "pair": "했던/했든",
+   "detection_context_ko": "의문사 + 든",
+   "explanation_ko": "의문사 뒤 선택은 '든지'. 회상은 '던지'.",
+   "suggestions": [
+    "든지"
+   ],
+   "legit_use_note_ko": "(없음)",
+   "source_url": "https://www.korean.go.kr/kornorms/regltn/popup/regltnNtfcView.do?ntfc_hist_no=1001&ntfc_no=6&regltn_code=0001",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  }
+ ]
+}

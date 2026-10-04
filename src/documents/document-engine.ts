@@ -15,7 +15,7 @@ import { parseModelSettings, type ModelSettings } from '../engine/model-policy.j
 export interface DocumentState {
   job: string; kind: 'document'; format: 'docx'|'pptx'; name: string; sourceHash: string;
   status: string; chunk: number; attempt: 1|2; inputPath: string; responsePath: string;
-  preview: string; sourceChars: number; editableBlocks: number; preservedBlocks: number;
+  preview: string; sourceChars: number; outputChars: number; editableBlocks: number; preservedBlocks: number;
   totalChunks: number; slides: number; warnings: string[]; outputPath?: string;
 }
 export class DocumentEngine {

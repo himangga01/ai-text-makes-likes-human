@@ -1,6 +1,7 @@
 import { candidateReviewInstructions, MAX_REVIEW_CHARS, type CandidateReview } from './candidate-review.js';
 import { sourceSentences } from './direct-text-fidelity.js';
 import { parseRewriteOptions, rewriteInstructions, type RewriteOptions } from './rewrite-policy.js';
+import { diagnoseKoreanStyle, STYLE_RULE_GUIDANCE, superSejongEnabled, type ChunkPromptContext } from './super-sejong.js';
 export interface PromptInput {
   candidateReview?: CandidateReview;
   rewriteOptions?: RewriteOptions;
@@ -8,6 +9,7 @@ export interface PromptInput {
   quickRules: string;
   attempt: 1 | 2;
   nonce: string;
+  chunkContext?: ChunkPromptContext;
 }
 
 export function buildHumanizePrompt(input: PromptInput): string {
@@ -28,6 +30,16 @@ export function buildHumanizePrompt(input: PromptInput): string {
 
   const sentenceMap = options?.inputKind === 'direct-text'
     ? `${fullFirstAttempt || review ? '아래 원문 문장의 ID·순서·범위를 새로 만들거나 이동하지 않는다.' : '각 edit의 실제 변경은 아래 원문 문장 하나 안에 한정한다. 유일한 before를 만들기 위한 이웃 문맥은 그대로 둔다. 문장 ID·순서·범위를 새로 만들거나 이동하지 않는다. 범위는 UTF-16 기준이며 출력에는 오프셋 대신 정확한 before/after를 사용한다.'} 보호 문장은 유지한다.\n<source_sentence_spans>\n${JSON.stringify(sourceSentences(input.source).map((sentence, index) => ({id:index + 1,start:sentence.start,end:sentence.end,protected:sentence.protected})))}\n</source_sentence_spans>`
+    : '';
+  // Style hints invite edits, so the conservative retry and candidate review never get them.
+  const styleFindings = superSejongEnabled() && input.attempt === 1 && !review ? diagnoseKoreanStyle(input.source) : [];
+  const styleRules = [...new Set(styleFindings.map(finding => finding.ruleId))];
+  const styleHints = styleFindings.length
+    ? `슈퍼세종엔진이 표시한 위치는 한국어 문체 점검 후보이며 오류 판정이나 자동 수정 명령이 아니다. 문맥·장르·말투를 확인해 의미를 유지하는 수정에만 활용하고, 고칠 이유가 없으면 그대로 둔다. text는 원문 블록에서 해당 위치의 실제 문자열이고, start/end는 원문 블록 기준 UTF-16 범위다. 여러 위치를 묶은 항목은 그 구간 안에 표현이 몰려 있다는 뜻이다.\n<super_sejong_rule_guide>\n${styleRules.map(rule => `${rule}: ${STYLE_RULE_GUIDANCE[rule]}`).join('\n')}\n</super_sejong_rule_guide>\n<super_sejong_style_findings>\n${JSON.stringify(styleFindings.map(finding => ({ ...finding, text: input.source.slice(finding.start, finding.end) })))}\n</super_sejong_style_findings>`
+    : '';
+  const chunk = input.chunkContext;
+  const chunkNote = chunk && chunk.total > 1
+    ? `이 원문은 한 문서를 나눈 ${chunk.total}개 구간 중 ${chunk.index}번째다. 문서 전체가 아니므로 서두·결말·전환 문구를 새로 만들지 말고, 경계가 잘린 듯 보여도 그대로 둔다.${chunk.register ? ` 문서 본문의 주된 문체는 ${chunk.register}이다. 인용문이 아닌 본문 문장의 문체를 바꾸지 않는다.` : ''}`
     : '';
   const retry =
     input.attempt === 2
@@ -52,6 +64,8 @@ ${input.quickRules}
 </quick_rules>
 ${rewriteInstructions(options, input.attempt, Boolean(review))}
 ${sentenceMap}
+${chunkNote}
+${styleHints}
 
 출력은 제공된 JSON 스키마를 정확히 따른다.
 ${responseInstructions}

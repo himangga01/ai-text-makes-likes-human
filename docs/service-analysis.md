@@ -1,10 +1,18 @@
 # Service Analysis
 
-Analysis date: October 2, 2026 (Asia/Seoul).
+Baseline analysis: October 2, 2026 (Asia/Seoul). Reviewed and updated: October 3, 2026.
 
 Inspected source revision: `d9df30ee495b1e97764410e16785c245d77d25ff` on `main`. Application version: `0.4.0`; Humanize label: `2.3.2`, pinned commit `9747f036cdc28a1a8aea4dc71fef1f7846eb96f7`.
 
-This describes the current source, with historical execution evidence attributed to its records. Product-fit statements are implementation-based inferences, not customer research. No running-service inspection, build, test, model call, benchmark or deployment was performed during this documentation update. The September 5 analysis of `2ada4fb` is superseded; its old PID/runtime/deployment observations are not current state.
+The body below records the October 2 source at `d9df30e`; the October 3 addendum records the reviewed working tree. Product-fit statements remain implementation-based inferences, not customer research. The October 2 pass ran no tests; the October 3 pass ran automated and live-fixture checks. The September 5 analysis of `2ada4fb` is superseded.
+
+## October 3 service review addendum
+
+The portal now requires a localhost or literal private-IP Host as well as the existing socket and Origin checks. DNS and mDNS names are unsupported. This limits exposure but remains a network trust boundary, not user authentication. Codex text runs with its tool features disabled inside a disposable working directory; model-supplied warnings no longer appear verbatim in user-facing events. CLI output and Office XML decompression have explicit budgets. Import failures distinguish known size, protection, format, capacity, and disk conditions with fixed messages; unexpected internals are concealed.
+
+The user-visible Office character count now follows accepted edit length; import source state is committed after a successful desktop load. These address concrete misleading progress and incorrect save-target scenarios found in review. The Super Sejong prototype contributes conservative meaning checks in TXT/MD and Office, plus bounded source-position style hints for model attention. It does not yet include a shipped morphology model, learned naturalness scorer, genre detector, or human-evaluated Korean-quality guarantee. The 14-axis [research synthesis](research/super-sejong/RESEARCH-SYNTHESIS.md) and [review report](reports/2026-10-03-two-round-review.md) separate the implemented rules from untested hypotheses. Isolated live Codex samples, the browser E2E suite, and automated suites passed on this host; the Windows-only desktop regression still requires Windows CI.
+
+A later [20-post paired benchmark](reports/2026-10-03-super-sejong-blog-benchmark.md) found 17 final edits in each arm and a style finding in only one source. It documents an ablation of the current service, not an older release, and does not establish a naturalness or speed advantage. The [Codex handoff](HANDOFF-2026-10-04.md) records the later negation correction, verification checkpoint, and uncommitted workspace state.
 
 ## 1. Service Purpose and Practical Fit
 
@@ -89,7 +97,7 @@ Sources: [config](../src/config.ts), [queue](../src/queue/transform-queue.ts), [
 
 ## 6. Access, Data Flow and Retention
 
-The portal permits loopback/private socket addresses and compares supplied browser Origin with protocol/Host. This is address-based scope, not user authentication or proof of same-Wi-Fi membership. There is no application TLS, per-user quota or account separation. A proxy changes the visible socket address; Host allowlisting is not implemented.
+The portal permits loopback/private socket addresses, restricts Host to localhost or allowed local/private IP literals, and compares supplied browser Origin with protocol/Host. This is address-based scope, not user authentication or proof of same-Wi-Fi membership. There is no application TLS, per-user quota or account separation. A proxy changes the visible socket address and needs a deliberate trust policy.
 
 | Data | Lifetime/scope |
 | --- | --- |

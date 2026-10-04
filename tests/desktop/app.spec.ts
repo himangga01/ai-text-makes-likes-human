@@ -122,6 +122,30 @@ test("isolated renderer uses only the selected CLI and supports native save/copy
   } finally { await close(app); }
 });
 
+test('failed second import cannot remove the first source overwrite guard', async () => {
+  const {app,page,data}=await launch();
+  try {
+    const original=path.join(data,'original.md');
+    const damaged=path.join(data,'damaged.md');
+    const source='원문을 그대로 둔다. 자연스러운 문장을 보존한다. 내용을 확인했다.';
+    await writeFile(original,source,'utf8');
+    await writeFile(damaged,Buffer.from([0xef,0xbb,0xbf,0xff]));
+    await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},original);
+    await page.locator('#text-file-button').click();
+    await expect(page.locator('#source-text')).toHaveValue(source);
+    await page.locator('#transform-button').click();
+    await expect(page.locator('#status-chip')).toContainText('완료');
+    await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},damaged);
+    await page.locator('#text-file-button').click();
+    await expect(page.locator('#source-text')).toHaveValue(source);
+    await expect(page.locator('#status-chip')).toContainText('파일 오류');
+    await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},original);
+    await page.locator('#download-button').click();
+    await expect(page.locator('#status-message')).toContainText('원본과 다른 새 파일 이름');
+    expect(await readFile(original,'utf8')).toBe(source);
+  } finally {await close(app);}
+});
+
 for (const choice of ["claude", "codex"] as const) test(`${choice} works when the other CLI is absent`, async () => {
   const { app, page } = await launch(choice);
   try {

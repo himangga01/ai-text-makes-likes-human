@@ -1,0 +1,6534 @@
+{
+ "resource": "redundancy",
+ "meta": {
+  "generated": "2026-10-04",
+  "corpus_stats": {
+   "human/essay": {
+    "docs": 181,
+    "chars": 116208
+   },
+   "llm/essay": {
+    "docs": 590,
+    "chars": 540146
+   },
+   "gpt4o/essay": {
+    "docs": 181,
+    "chars": 203441
+   },
+   "human/abstract": {
+    "docs": 100,
+    "chars": 40736
+   },
+   "llm/abstract": {
+    "docs": 278,
+    "chars": 126908
+   },
+   "gpt4o/abstract": {
+    "docs": 100,
+    "chars": 53071
+   },
+   "human/poetry": {
+    "docs": 189,
+    "chars": 39141
+   },
+   "llm/poetry": {
+    "docs": 756,
+    "chars": 169593
+   },
+   "gpt4o/poetry": {
+    "docs": 189,
+    "chars": 38366
+   },
+   "news/news": {
+    "docs": 2740,
+    "chars": 2728229
+   },
+   "klue/klue": {
+    "docs": 1283,
+    "chars": 1284820
+   }
+  },
+  "method": "Calibrate the Super Sejong lexical resources on real Korean text.\n\nInputs (all local, read-only):\n  KatFish dataset  research/B/katfish_repo/katfish_dataset/{essay,abstract,poetry}.jsonl  (label 0=human, 1=LLM)\n  Naver news       research/B/naver_news_test.csv  (human, professional)\n  KLUE-MRC ctx     research/B/klue_mrc_ctx.json    (human, wiki/news/etc.)\nOutputs: five JSON resource files + calibration_summary.json in --out.\n\nMethod\n  * hits per 10k characters per corpus group (regex finditer, non-overlapping)\n  * log-odds ratio with informative Dirichlet prior (Monroe, Colaresi & Quinn 2008, \"Fightin' Words\"):\n      delta = log((yL+a)/(nL+a0-yL-a)) - log((yH+a)/(nH+a0-yH-a)),  var ~ 1/(yL+a)+1/(yH+a),  z = delta/sqrt(var)\n    exposure n is the number of characters, a_w = a0 * p_bg(w) with p_bg = hits per character in the background\n    (human news + KLUE), a0 = A0 pseudo-characters. Computed per genre and combined by inverse-variance weighting\n    (stratified, so genre mix differences between human and LLM sets do not leak into the score).\n  * document-level bootstrap (resample docs within genre x class) for a 95% interval of the stratified delta",
+  "a0": 200000.0,
+  "bootstrap_reps": 300,
+  "tier_legend": {
+   "A": "enable by default",
+   "B": "suggest-only / needs context guard",
+   "C": "disabled (kept for the record)",
+   "allow": "exemption list entry"
+  }
+ },
+ "entries": [
+  {
+   "id": "RD_yeokjeon_ap",
+   "pattern": "역전 ?앞",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'역전(驛前)'에 이미 '앞'의 뜻이 있다. 표준국어대사전은 '역전앞'을 '역전의 잘못'으로 처리한다.",
+   "suggestions": [
+    "역전",
+    "역 앞"
+   ],
+   "legit_use_note_ko": "'역 앞'은 겹말이 아니다.",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_dasi_jae",
+   "pattern": "다시 ?(재|재차)(?=[가-힣])",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'재(再)'에 '다시'의 뜻이 있다(다시 재계약, 다시 재검토).",
+   "suggestions": [
+    "재~"
+   ],
+   "legit_use_note_ko": "'다시 한 번 재확인하다'처럼 강조 구어는 흔하다.",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 대환대출 플랫폼’ 구축이 다시 재논의된다. 대출금리 고공 ",
+     "[news] 코로나 2년 공백 딛고 다시 재개 대구치맥페스티벌 모습."
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.005/10k, LLM 0.0/10k (0 LLM hits, 2 human hits)",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_hamkke_cheombu",
+   "pattern": "함께 ?첨부",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'첨부'는 함께 붙인다는 뜻.",
+   "suggestions": [
+    "첨부"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_dwit_baegyeong",
+   "pattern": "뒷 ?배경",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'배경(背景)'에 '뒤'가 들어 있다.",
+   "suggestions": [
+    "배경",
+    "뒷사정"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_haemuk_sukwon",
+   "pattern": "해묵은 ?숙원",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'숙원(宿願)'은 오래 품은 소원.",
+   "suggestions": [
+    "숙원"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_heulleo_yuip",
+   "pattern": "흘러드는 ?유입",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'유입(流入)'이 흘러든다는 뜻.",
+   "suggestions": [
+    "유입"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_ilneun_sonsil",
+   "pattern": "잃는 ?손실",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'손실(損失)'이 잃음을 뜻한다.",
+   "suggestions": [
+    "손실"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_ttatteuthan_onjeong",
+   "pattern": "따뜻한 ?온정",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'온정(溫情)'에 '따뜻함'이 들어 있다.",
+   "suggestions": [
+    "온정",
+    "따뜻한 정"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_saeroun_sinjepum",
+   "pattern": "새로운 ?신(제품|상품|기록|입|설|간|인|곡|제도)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'신(新)'에 '새롭다'가 들어 있다.",
+   "suggestions": [
+    "신~"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_nopeun_goon",
+   "pattern": "높은 ?고온",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'고온(高溫)'이 높은 온도.",
+   "suggestions": [
+    "고온"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_areumdaun_mi",
+   "pattern": "아름다운 ?미(녀|인)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'미녀(美女)'가 아름다운 여자.",
+   "suggestions": [
+    "미녀",
+    "아름다운 여인"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gesok_sokchul",
+   "pattern": "계속 ?속출",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'속출(續出)'이 계속 나온다는 뜻.",
+   "suggestions": [
+    "속출",
+    "잇따라 나오다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_geuttae_dangsi",
+   "pattern": "그때 ?당시|당시 ?그때",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'당시(當時)'가 그때.",
+   "suggestions": [
+    "당시",
+    "그때"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_mae_sigan_maju",
+   "pattern": "매 ?(시간|일|주|달|년|분|초)마다",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'매(每)'에 '~마다'의 뜻이 있다.",
+   "suggestions": [
+    "매시간",
+    "시간마다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 1,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.086,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 3,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.383,
+     "z": -1.38,
+     "ratio_x": 0.25,
+     "per_genre_delta": {
+      "essay": -1.949,
+      "abstract": -0.306,
+      "poetry": -1.534
+     },
+     "per_genre_z": {
+      "essay": -1.19,
+      "abstract": -0.15,
+      "poetry": -0.94
+     },
+     "z_gpt4o_only": -0.93,
+     "boot_ci95": [
+      -1.813,
+      -0.526
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 17세기 조선 시대였다. 매년마다 황제는 중국에 특사 대사"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 3 human hits)",
+   "precision_evidence": "measured_on_3_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_haebyeon_ga",
+   "pattern": "해변가",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'해변(海邊)'의 '변'이 가장자리.",
+   "suggestions": [
+    "해변",
+    "바닷가"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "gpt4o/poetry": 1,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.034,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.046,
+     "z": -0.04,
+     "ratio_x": 0.95,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": 0.36,
+     "boot_ci95": [
+      -0.538,
+      0.526
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news]  아름다운 노을이 드리운 해변가로 검붉은 낙엽이 흐트러진",
+     "[news] 이드 팬츠와 함께 코디해 해변가를 거닐면 누구보다 트렌디"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.005/10k, LLM 0.012/10k (1 LLM hits, 2 human hits)",
+   "precision_evidence": "measured_on_2_human_and_1_llm_hits"
+  },
+  {
+   "id": "RD_gyeyak_maetda",
+   "pattern": "계약을 ?맺",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'계약하다'가 맺는다는 뜻을 포함. 법조신문 칼럼이 겹말 예로 든다.",
+   "suggestions": [
+    "계약하다",
+    "계약을 체결하다"
+   ],
+   "legit_use_note_ko": "'계약을 맺다'는 일상에서 널리 쓰이며 규범상 문제는 아니다.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 17,
+     "klue/klue": 16
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.062,
+     "klue": 0.125,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.078,
+     "human_professional": 0.081
+    },
+    "hits_all_human": 33,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0071,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.083,
+     "a_w": 1.67,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.84,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.78,
+      "abstract": -0.28,
+      "poetry": -0.4
+     },
+     "z_gpt4o_only": -0.15,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  수 없다고 맞섰다. 지입계약을 맺은 개인사업자로서 단체협상",
+     "[news] 드가 성문안과 매니지먼트 계약을 맺었다. 현대적인 감각과 시",
+     "[news] 병원 등과 장기간 임대차 계약을 맺어 대출 이자 등을 제외하"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.081/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_33_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_gwabansu_neomneun",
+   "pattern": "과반수(를|가)? ?넘",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'과반수(過半數)'는 이미 절반을 넘는 수.",
+   "suggestions": [
+    "절반을 넘는",
+    "과반수"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gwabansu_isang",
+   "pattern": "과반(수)? ?이상",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'과반수 이상'은 구조적 겹말이나 국립국어원은 널리 쓰이는 표현이라 전면 부정하지 않는다. '과반수'는 절반 초과, '반수 이상'은 절반 포함.",
+   "suggestions": [
+    "과반수",
+    "반수 이상(절반 포함 시)"
+   ],
+   "legit_use_note_ko": "수치 기준(의결 정족수)이 걸린 문장에서는 원문 표현을 보존하고 사람이 확인해야 한다.",
+   "allowed": "contested",
+   "source_url": "https://www.korean.go.kr/front/onlineQna/onlineQnaView.do?mn_id=&pageIndex=1&qna_seq=316366",
+   "source_basis": "listed_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 티 구성원 700여명 중 과반 이상이 노조에 가입했고 크루유",
+     "[news] 주가 상승 신주상장일에는 과반 이상 주가 하락 주식병합 기업"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.005/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_malro_hyeongeon",
+   "pattern": "말로 ?형언",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'형언(形言)'이 말로 나타낸다는 뜻.",
+   "suggestions": [
+    "형언",
+    "말로 다 못 하는"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_busang_danghada",
+   "pattern": "부상 ?당(하|했|한|해|함)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'부상(負傷)'이 상처를 입는다는 뜻이라 '당하다'가 겹친다.",
+   "suggestions": [
+    "부상했다",
+    "다쳤다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.016,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 버지니아의 게리즈포트에서 부상당했다. 1864년 1월에도 ",
+     "[klue] 이 사고로 최소 29명이 부상당했다.   폭발 직후, J."
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.005/10k, LLM 0.0/10k (0 LLM hits, 2 human hits)",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_sang_susang",
+   "pattern": "(상|대상|우수상|금상|은상|동상|최우수상)을 ?수상",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'수상(受賞)'은 상을 받는다는 뜻.",
+   "suggestions": [
+    "상을 받다",
+    "수상하다"
+   ],
+   "legit_use_note_ko": "'~상을 수상했다'는 보도문에서 매우 흔해 계측에서도 전문가 글에 등장한다. 교정 제안은 선택 사항.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 63,
+     "klue/klue": 7
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.231,
+     "klue": 0.054,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.166,
+     "human_professional": 0.173
+    },
+    "hits_all_human": 70,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0105,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.176,
+     "a_w": 3.514,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -1.22,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.13,
+      "abstract": -0.41,
+      "poetry": -0.58
+     },
+     "z_gpt4o_only": -0.22,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 족대상에서 상조서비스부문 대상을 수상했다. 지난 2020년에 ",
+     "[news]  노벨상 으로 불리는 필즈상을 수상한 허준이 미국 프린스턴대",
+     "[news]  IMU 이 수여하는 필즈상을 수상하고 있다. 한국 수학자가"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.173/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_70_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_panihage_dareuda",
+   "pattern": "판이하게 ?다르",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'판이(判異)하다'가 아주 다르다.",
+   "suggestions": [
+    "판이하다",
+    "전혀 다르다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_ajik_sigisangjo",
+   "pattern": "아직 ?시기상조",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'시기상조(時機尙早)'에 '아직'이 들어 있다.",
+   "suggestions": [
+    "시기상조"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_okssang_wi",
+   "pattern": "옥상 ?위",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'옥상(屋上)'에 '위'가 들어 있다.",
+   "suggestions": [
+    "옥상에"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gyeolsil_maetda",
+   "pattern": "결실을 ?맺",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'결실(結實)'이 열매를 맺는다는 뜻.",
+   "suggestions": [
+    "결실을 보다",
+    "결실을 거두다"
+   ],
+   "legit_use_note_ko": "'결실을 맺다'는 사전에도 오른 관용이다.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  투자로 육성해온 사업이 결실을 맺기 시작했다 며 포스코그룹",
+     "[news]  투자로 육성해온 사업이 결실을 맺기 시작했다 며 포스코그룹"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.005/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_nameun_yeosaeng",
+   "pattern": "남은 ?여생",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'여생(餘生)'은 남은 삶.",
+   "suggestions": [
+    "여생",
+    "남은 생"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_sajeone_yebang",
+   "pattern": "사전에 ?예방|미리 ?예방",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'예방(豫防)'은 미리 막는다는 뜻.",
+   "suggestions": [
+    "예방"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 3,
+     "gpt4o/essay": 2,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.036,
+     "katfish_gpt4o": 0.068,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.172,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.056,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 3,
+    "hits_llm": 3,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0018
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.477,
+     "z": -0.67,
+     "ratio_x": 0.62,
+     "per_genre_delta": {
+      "essay": -0.514,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.62,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.24,
+     "boot_ci95": [
+      -1.468,
+      0.552
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 생 시 인명과 재산피해를 사전에 예방할 수 있도록 했다. 두산"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.036/10k (3 LLM hits, 3 human hits)",
+   "precision_evidence": "measured_on_3_human_and_3_llm_hits"
+  },
+  {
+   "id": "RD_meonjeo_seonchwi",
+   "pattern": "먼저 ?선취",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'선취(先取)'에 '먼저'가 들어 있다.",
+   "suggestions": [
+    "선취점을 얻다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_ganhi_yoyak",
+   "pattern": "간단히 ?요약",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'요약(要約)'에 간추림의 뜻이 있다.",
+   "suggestions": [
+    "요약하자면"
+   ],
+   "legit_use_note_ko": "'간단히 요약하면'은 구어에서 매우 흔하다.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_piraek_nabchi",
+   "pattern": "피랍된 ?(여객기|비행기|선박)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'피랍(被拉)'에 '된'이 들어 있다.",
+   "suggestions": [
+    "납치된 여객기",
+    "피랍 여객기"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_cheogatjip",
+   "pattern": "처갓집",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'처가(妻家)+집'. 표준국어대사전 표제어로 규범 표기이며 '처가'와 동의어(온라인가나다는 사이시옷 표기까지 확인).",
+   "suggestions": [
+    "(허용) 처갓집"
+   ],
+   "legit_use_note_ko": "겹말이나 사전에 올라 있어 지적하지 않는다.",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_oegatjip",
+   "pattern": "외갓집",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'외가+집'. 규범 표기.",
+   "suggestions": [
+    "(허용) 외갓집"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_sanggatjip",
+   "pattern": "상갓집",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'상가(喪家)+집'. 소식지가 같은 계열 겹말 예로 다룸.",
+   "suggestions": [
+    "(허용) 상갓집"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_chogajip",
+   "pattern": "초가집",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'초가(草家)+집'.",
+   "suggestions": [
+    "(허용) 초가집"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_saengiknal",
+   "pattern": "생일날",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'생일+날'.",
+   "suggestions": [
+    "(허용) 생일날"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gomoknamu",
+   "pattern": "고목나무",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'고목(古木)+나무'. 사전에 올라 있다고 법조신문 칼럼이 밝힘.",
+   "suggestions": [
+    "(허용) 고목나무"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_danbalmeori",
+   "pattern": "단발머리",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'단발(短髮)+머리'. 사전에 올라 있다.",
+   "suggestions": [
+    "(허용) 단발머리"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gukhwakkot",
+   "pattern": "국화꽃",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'국화+꽃'. 사전 표제어.",
+   "suggestions": [
+    "(허용) 국화꽃"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_dwitdeolmi",
+   "pattern": "뒷덜미",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'뒤+덜미'.",
+   "suggestions": [
+    "(허용) 뒷덜미"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_ontjongil",
+   "pattern": "(온|진)종일",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'종일(終日)' 앞에 '온', '진'이 붙은 합성어.",
+   "suggestions": [
+    "(허용) 온종일/진종일"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  “다양한 친구들과 모여 온종일 생활하며 싸우기도 했지만"
+    ]
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_poseungjul",
+   "pattern": "포승줄",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "allowed_compound",
+   "explanation_ko": "'포승(捕繩)+줄'. 소식지가 겹말 예로 거론하는 단일어. 사전 등재 여부를 열람 자료만으로 단정하지 못해 허용으로만 표시.",
+   "suggestions": [
+    "(허용) 포승줄"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": true,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "allow",
+   "enabled": false,
+   "tier_reason": "dictionary-accepted compound: exemption list, never flagged",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_donghaebada",
+   "pattern": "(동해|서해|남해) ?바다",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'동해(東海)'에 '바다'가 있다. '동해바다'는 사전에 없어 쓰려면 띄어 쓴다.",
+   "suggestions": [
+    "동해",
+    "동해 바다(띄어쓰기)"
+   ],
+   "legit_use_note_ko": "'동해 바다'처럼 띄어 쓰는 것은 일반적이다.",
+   "allowed": "contested",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.007,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 하는 노선이다. 낙동강과 남해바다가 인접한 수변 인근 단지",
+     "[news] 수변 인근 단지로 조성돼 남해 바다 조망권 실별 상이 을 확"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.005/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_mugunghwakkot",
+   "pattern": "무궁화꽃",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "소식지에 따르면 사전 표제어가 아니므로 띄어 써야 한다.",
+   "suggestions": [
+    "무궁화 꽃",
+    "무궁화"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": "contested",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_hajongil",
+   "pattern": "하루 ?종일",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'종일'에 '하루'가 들어 있으나 '하루 종일'은 널리 쓰인다.",
+   "suggestions": [
+    "온종일",
+    "하루 종일"
+   ],
+   "legit_use_note_ko": "일상에서 매우 흔함.",
+   "allowed": "contested",
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "listed_in_source",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 1,
+     "llm/poetry": 19,
+     "news/news": 3,
+     "klue/klue": 3
+    },
+    "per10k": {
+     "katfish_human": 0.051,
+     "katfish_llm": 0.227,
+     "katfish_gpt4o": 0.0,
+     "news": 0.011,
+     "klue": 0.023,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 1.12,
+     "all_human": 0.017,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 7,
+    "hits_llm": 19,
+    "doc_frac": {
+     "human": 0.0013,
+     "llm": 0.0105
+    },
+    "prior": {
+     "p_bg_per10k": 0.016,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 1.414,
+     "z": 1.95,
+     "ratio_x": 4.11,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 2.13
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 2.51
+     },
+     "z_gpt4o_only": -0.52,
+     "boot_ci95": [
+      0.731,
+      1.66
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 등 다양한 인기 스낵들을 하루 종일 할인가로 즐길 수 있는 ",
+     "[news]  수분율을 함유하고 있어 하루 종일 편안함을 제공한다. 알콘",
+     "[news] 리 씨의 당당한 이미지가 하루 종일 촉촉하고 편안한 착용감을"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.015/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_7_human_and_19_llm_hits"
+  },
+  {
+   "id": "RD_gakkaun_geuncheo",
+   "pattern": "가까운 ?근처",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'근처(近處)'에 '가까움'이 들어 있다.",
+   "suggestions": [
+    "근처",
+    "가까운 곳"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_nameun_janyeo",
+   "pattern": "남은 ?잔여|잔여 ?남은",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'잔여(殘餘)'가 남은 것.",
+   "suggestions": [
+    "잔여",
+    "남은"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_dasi_jaegae",
+   "pattern": "다시 ?재개",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'재개(再開)'에 다시의 뜻.",
+   "suggestions": [
+    "재개"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 코로나 2년 공백 딛고 다시 재개 대구치맥페스티벌 모습. "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_dasi_bokgwi",
+   "pattern": "다시 ?복귀|되돌아 ?복귀",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'복귀(復歸)'에 되돌아옴의 뜻.",
+   "suggestions": [
+    "복귀"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_sajeone_mili",
+   "pattern": "사전에 ?미리|미리 ?사전에",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'사전(事前)'에 '미리'가 들어 있다.",
+   "suggestions": [
+    "사전에",
+    "미리"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_mili_yego",
+   "pattern": "미리 ?(예고|예견|예습|예측|예보)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'예(豫)'에 미리의 뜻.",
+   "suggestions": [
+    "예고",
+    "예습"
+   ],
+   "legit_use_note_ko": "'미리 예약'은 관용이 강해 제외했다.",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.105,
+     "z": -0.1,
+     "ratio_x": 0.9,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.538,
+      0.382
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.012/10k (1 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_1_llm_hits"
+  },
+  {
+   "id": "RD_dasi_hanbeon_jae",
+   "pattern": "다시 ?한 ?번 ?재(확인|검토|점검|강조|고려)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'다시 한 번'과 '재(再)'가 겹친다.",
+   "suggestions": [
+    "다시 한번 확인",
+    "재확인"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://www.korean.go.kr/nkview/nknews/200508/85_9.html",
+   "source_basis": "category_in_source",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_dasi_banbok",
+   "pattern": "다시 ?(반복|복습)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'반복(反復)', '복습(復習)'에 다시의 뜻.",
+   "suggestions": [
+    "반복",
+    "복습"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_sseuseuro_jahaek",
+   "pattern": "스스로 ?(자각|자처|자초|자임|자청)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'자(自)'에 스스로의 뜻.",
+   "suggestions": [
+    "자각",
+    "자초"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gakmada",
+   "pattern": "각 ?(부서|학교|가정|지역|나라|사람|개인|분야|항목)마다",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'각(各)'에 '마다'의 뜻.",
+   "suggestions": [
+    "각 부서",
+    "부서마다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1,
+     "news/news": 3
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.024,
+     "katfish_gpt4o": 0.0,
+     "news": 0.011,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 2,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0012
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.265,
+     "z": 0.27,
+     "ratio_x": 1.3,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.534,
+      0.676
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": [
+     "[news] 라는 챕터를 별도 구성해 각 항목마다 실제 데이터 기반의 정성",
+     "[news]  . CJ푸드빌 관계자는 각 지역마다 소비력이 다르고 경쟁 환",
+     "[news]  챕터를 별도로 구성하여 각 항목마다 실제 데이터 기반의 정성"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.007/10k, LLM 0.024/10k (2 LLM hits, 3 human hits)",
+   "precision_evidence": "measured_on_3_human_and_2_llm_hits"
+  },
+  {
+   "id": "RD_seoro_sangho",
+   "pattern": "서로 ?(상호|상반|상충|상응)|상호 ?간에 ?서로|서로 ?간 ?상호",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'상호(相互)', '상반(相反)' 등에 '서로'가 들어 있다.",
+   "suggestions": [
+    "상호",
+    "서로"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 4,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.048,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.074,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 4,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0025
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": 0.443,
+     "z": 0.43,
+     "ratio_x": 1.56,
+     "per_genre_delta": {
+      "essay": 1.347,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.9,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.114,
+      0.804
+     ]
+    },
+    "signal_genres": [
+     "essay"
+    ],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.048/10k (4 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_4_llm_hits"
+  },
+  {
+   "id": "RD_yak_garyang",
+   "pattern": "약 ?[0-9][0-9,.]*[가-힣%]{0,3} ?(가량|내외|정도|쯤)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'약(約)'과 '가량/정도/쯤'이 어림을 이중으로 나타낸다.",
+   "suggestions": [
+    "약 ~",
+    "~가량"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 1,
+     "llm/abstract": 1,
+     "human/poetry": 1,
+     "llm/poetry": 0,
+     "news/news": 11,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.04,
+     "klue": 0.039,
+     "human_essay": 0.0,
+     "human_abstract": 0.245,
+     "human_poetry": 0.255,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.079,
+     "llm_poetry": 0.0,
+     "all_human": 0.043,
+     "human_professional": 0.042
+    },
+    "hits_all_human": 18,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0038,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.041,
+     "a_w": 0.822,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.702,
+     "z": -0.96,
+     "ratio_x": 0.5,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -1.231
+     },
+     "per_genre_z": {
+      "essay": -0.55,
+      "abstract": -0.29,
+      "poetry": -0.93
+     },
+     "z_gpt4o_only": -0.83,
+     "boot_ci95": [
+      -1.423,
+      0.011
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[human] 사용하지 않았을 때 비해 약 57.6% 정도 태깅 횟수가 감소했다.",
+     "[news] 난해 말 112만여명으로 약 66만명 가량 감소했다. 불법 사채 연",
+     "[news] 제강사인 현대제철는 매면 약 6000억원가량의 전기료를 납부하는 데 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.042/10k, LLM 0.012/10k (1 LLM hits, 18 human hits)",
+   "precision_evidence": "measured_on_18_human_and_1_llm_hits"
+  },
+  {
+   "id": "RD_daeryak_jjeum",
+   "pattern": "대략 ?[0-9][0-9,.]*[가-힣%]{0,3} ?(가량|내외|정도|쯤)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'대략'과 '정도' 등이 이중 어림.",
+   "suggestions": [
+    "대략 ~",
+    "~쯤"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_chong_hapgye",
+   "pattern": "총 ?합계|합계 ?총",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'총(總)'과 '합계(合計)'가 겹친다.",
+   "suggestions": [
+    "합계",
+    "총"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_jangnae_mirae",
+   "pattern": "(미래|장래)의 ?(장래|미래)|앞으로의 ?(장래|미래)|향후 ?앞으로|앞으로 ?향후",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'장래', '미래', '향후', '앞으로'가 같은 뜻.",
+   "suggestions": [
+    "장래",
+    "앞으로"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_geumil_oneul",
+   "pattern": "(금일|금년|금월|금주)(의)? ?(오늘|올해|이번 ?달|이번 ?주)|(오늘|올해|이번 ?달|이번 ?주)(의)? ?(금일|금년|금월|금주)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "한자어와 고유어가 같은 뜻으로 겹침.",
+   "suggestions": [
+    "금일",
+    "오늘"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_choecho_cheoeum",
+   "pattern": "(최초|맨 ?처음)(로|으로)? ?처음|처음(으로)? ?최초",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'최초'가 처음.",
+   "suggestions": [
+    "최초로",
+    "처음으로"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gajang_choego",
+   "pattern": "(가장|제일|젤) ?(최고|최선|최대|최소|최상|최악|최초|최강|최저)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'최(最)'에 '가장'이 들어 있다.",
+   "suggestions": [
+    "최고",
+    "가장 좋은"
+   ],
+   "legit_use_note_ko": "'가장 최근'은 겹말이 아니다(패턴 제외).",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.005,
+     "human_professional": 0.005
+    },
+    "hits_all_human": 2,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.006,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 두고 지금까지 우리가 본 가장 최고의 냉장고 라고 극찬했다.",
+     "[klue]  한 리뷰는 이를 두고 \"가장 최고의 특수 효과 하이라이트는"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.005/10k, LLM 0.0/10k (0 LLM hits, 2 human hits)",
+   "precision_evidence": "measured_on_2_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_yeoreobun_deul",
+   "pattern": "여러분들",
+   "pattern_type": "literal",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'여러분'은 이미 복수. 구어에서 널리 쓰임.",
+   "suggestions": [
+    "여러분"
+   ],
+   "legit_use_note_ko": "연설·방송 문체에서 강한 관습.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 2,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 17
+    },
+    "per10k": {
+     "katfish_human": 0.102,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.062,
+     "klue": 0.0,
+     "human_essay": 0.172,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.045,
+     "human_professional": 0.042
+    },
+    "hits_all_human": 19,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0036,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.044,
+     "a_w": 0.872,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.096,
+     "z": -1.36,
+     "ratio_x": 0.33,
+     "per_genre_delta": {
+      "essay": -2.042,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.67,
+      "abstract": -0.2,
+      "poetry": -0.29
+     },
+     "z_gpt4o_only": -0.79,
+     "boot_ci95": [
+      -1.643,
+      -0.522
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  올 신임 위원장과 함께 여러분들이 소명을 흔들림 없이 다",
+     "[news] 다 한 의원은 환영사에서 여러분들도 아시다시피 국회의원이기",
+     "[news]  유튜버 겸직 장관으로서 여러분들 앞에 섰다 며 정부와 국"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.042/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_19_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_bandeusi_pilsu",
+   "pattern": "(반드시|꼭|무조건) ?필수|필수(적)?(으로|인) ?(반드시|꼭)",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'필수(必須)'에 '반드시'가 들어 있다.",
+   "suggestions": [
+    "필수",
+    "반드시"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_jinan_gwageo",
+   "pattern": "지난 ?과거|지나간 ?과거",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'과거(過去)'가 지난 일.",
+   "suggestions": [
+    "과거",
+    "지난날"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.059,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.046,
+     "z": -0.04,
+     "ratio_x": 0.95,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": 0.663
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": 0.41
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.538,
+      0.527
+     ]
+    },
+    "signal_genres": [
+     "poetry"
+    ],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.0/10k, LLM 0.012/10k (1 LLM hits, 0 human hits)",
+   "precision_evidence": "measured_on_0_human_and_1_llm_hits"
+  },
+  {
+   "id": "RD_hamkke_gongdong",
+   "pattern": "함께 ?공동|공동으로 ?함께|함께 ?동참|같이 ?동참|같이 ?공유|서로 ?공유|서로 ?일치",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'공동', '동참', '공유', '일치'가 함께/서로의 뜻을 포함.",
+   "suggestions": [
+    "공동",
+    "동참",
+    "공유",
+    "일치"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "gpt4o/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 2
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.034,
+     "news": 0.004,
+     "klue": 0.016,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.007,
+     "human_professional": 0.007
+    },
+    "hits_all_human": 3,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0007,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.009,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.105,
+     "z": -0.1,
+     "ratio_x": 0.9,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": 0.33,
+     "boot_ci95": [
+      -0.54,
+      0.316
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  활동을 했을 때 이익을 같이 공유할 수 있어야 된다 고 강",
+     "[klue] 가운데 체코, 이스라엘과 함께 공동 6위다. GDP 대비 법",
+     "[klue] 5명으로 경북대 부산대와 함께 공동 8위에 그쳤다. 이 밖에"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.007/10k, LLM 0.012/10k (1 LLM hits, 3 human hits)",
+   "precision_evidence": "measured_on_3_human_and_1_llm_hits"
+  },
+  {
+   "id": "RD_oeguk_haeoe",
+   "pattern": "해외 ?외국|외국 ?해외",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'외국'과 '해외'가 같은 뜻으로 겹침.",
+   "suggestions": [
+    "외국",
+    "해외"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_jeongdo_jeongdo",
+   "pattern": "(정도|가량) ?정도",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'정도'가 반복.",
+   "suggestions": [
+    "정도"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_hoesang_chueok",
+   "pattern": "(추억|과거|지난 ?일)(을|를)? ?회상",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'회상(回想)'이 지난 일을 떠올림.",
+   "suggestions": [
+    "회상",
+    "추억"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  한다” “배경들을 보며 과거를 회상하니 뭔가 뭉클하다” 등 "
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 1 human hits)",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_gobaek_solji",
+   "pattern": "솔직(히|하게) ?고백|고백(을)? ?솔직",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'고백(告白)'에 솔직함이 포함.",
+   "suggestions": [
+    "고백"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_geoui_daebubun",
+   "pattern": "거의 ?대부분|대부분(의)? ?거의",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'대부분'에 '거의'의 뜻이 들어 있다.",
+   "suggestions": [
+    "대부분",
+    "거의 모두"
+   ],
+   "legit_use_note_ko": "구어에서 흔함.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 1,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1,
+     "klue/klue": 5
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.012,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.039,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.019,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.014,
+     "human_professional": 0.015
+    },
+    "hits_all_human": 6,
+    "hits_llm": 1,
+    "doc_frac": {
+     "human": 0.0013,
+     "llm": 0.0006
+    },
+    "prior": {
+     "p_bg_per10k": 0.016,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.105,
+     "z": -0.1,
+     "ratio_x": 0.9,
+     "per_genre_delta": {
+      "essay": 0.248,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": 0.15,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.539,
+      0.324
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news]  우리가 상상할 수 있는 거의 대부분의 소득. 앵커 배당소득.",
+     "[klue] 를 가졌고 모든 어피류와 거의 대부분의 대형 분추류, 그리고 ",
+     "[klue]  것에 적응했다.  작고 거의 대부분 수생이었던 양서류인 공추"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.015/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_6_human_and_1_llm_hits"
+  },
+  {
+   "id": "RD_hyeonjae_jigeum",
+   "pattern": "현재(도)? ?지금|지금(도)? ?현재",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'현재'와 '지금'이 같은 뜻.",
+   "suggestions": [
+    "현재",
+    "지금"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 3,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "news/news": 1
+    },
+    "per10k": {
+     "katfish_human": 0.153,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.004,
+     "klue": 0.0,
+     "human_essay": 0.258,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.01,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 4,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0004,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -1.503,
+     "z": -1.45,
+     "ratio_x": 0.22,
+     "per_genre_delta": {
+      "essay": -2.796,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -1.85,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -1.0,
+     "boot_ci95": [
+      -2.04,
+      -0.522
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[news] 중 이라며 AI 주택형은 현재 지금 2만5천 세대가 사용 중"
+    ]
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "pro-human 0.002/10k, LLM 0.0/10k (0 LLM hits, 4 human hits)",
+   "precision_evidence": "measured_on_4_human_and_0_llm_hits"
+  },
+  {
+   "id": "RD_dasu_manheun",
+   "pattern": "(수많은|많은) ?다수|다수의 ?많은",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'다수(多數)'에 '많음'.",
+   "suggestions": [
+    "다수",
+    "많은"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gongtong_gongtongjeom",
+   "pattern": "공통(적으로)? ?공통점|공통된 ?공통점|같은 ?공통점",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'공통점'에 '같음'.",
+   "suggestions": [
+    "공통점"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_bin_gonghu",
+   "pattern": "텅 ?빈 ?공허|빈 ?공허",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'공허(空虛)'에 '빔'.",
+   "suggestions": [
+    "공허",
+    "텅 빈"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_nakha_tteoreo",
+   "pattern": "떨어지는 ?낙하|낙하(하여)? ?떨어",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'낙하(落下)'가 떨어짐.",
+   "suggestions": [
+    "낙하",
+    "떨어지다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_geupsok_bbareu",
+   "pattern": "빠르게 ?급속|급속(히|하게)? ?빠르|빠른 ?속도로 ?급속",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'급속(急速)'에 '빠름'.",
+   "suggestions": [
+    "급속하게",
+    "빠르게"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_ttaraseo_geureomeuro",
+   "pattern": "따라서 ?그러므로|그러므로 ?따라서|그래서 ?따라서|따라서 ?그래서",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "접속부사 연쇄 중복.",
+   "suggestions": [
+    "따라서",
+    "그러므로"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "high",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "A",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=high)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_dareun_chai",
+   "pattern": "서로 ?다른 ?차이|다른 ?차이점|차이점(이|을)? ?다르",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'차이'에 '다름'.",
+   "suggestions": [
+    "차이",
+    "다른"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_gogeumae_nopi",
+   "pattern": "(높이|드높이) ?상승|상승(하여)? ?높아|높아지며 ?상승",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'상승(上昇)'에 높아짐.",
+   "suggestions": [
+    "상승",
+    "높아지다"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "medium",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=medium)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_jaemi_jaemiissneun",
+   "pattern": "재미(있|없)는 ?흥미|흥미(로|있)운 ?재미",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "동의어 중복.",
+   "suggestions": [
+    "흥미로운",
+    "재미있는"
+   ],
+   "legit_use_note_ko": "",
+   "allowed": false,
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.0,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.0,
+     "human_professional": 0.0
+    },
+    "hits_all_human": 0,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.001,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": null
+    },
+    "signal_genres": [],
+    "human_professional_examples": []
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "no hits in any corpus (precision unmeasured; tier from prior confidence=low)",
+   "precision_evidence": "unmeasured_no_hits_in_any_corpus"
+  },
+  {
+   "id": "RD_chinhan_chingu",
+   "pattern": "친한 ?친우|절친한 ?친구",
+   "pattern_type": "regex",
+   "flags": "m",
+   "category": "redundant_expression",
+   "explanation_ko": "'친(親)'에 '친함'이 들어 있다.",
+   "suggestions": [
+    "친우",
+    "친한 친구"
+   ],
+   "legit_use_note_ko": "'절친한 친구'는 구어에서 흔하다.",
+   "allowed": "contested",
+   "source_url": "https://mnews.koreanbar.or.kr/news/articleView.html?idxno=8845",
+   "source_basis": "author_knowledge",
+   "confidence": "low",
+   "measurement": {
+    "hits": {
+     "human/essay": 0,
+     "llm/essay": 0,
+     "human/abstract": 0,
+     "llm/abstract": 0,
+     "human/poetry": 0,
+     "llm/poetry": 0,
+     "klue/klue": 1
+    },
+    "per10k": {
+     "katfish_human": 0.0,
+     "katfish_llm": 0.0,
+     "katfish_gpt4o": 0.0,
+     "news": 0.0,
+     "klue": 0.008,
+     "human_essay": 0.0,
+     "human_abstract": 0.0,
+     "human_poetry": 0.0,
+     "llm_essay": 0.0,
+     "llm_abstract": 0.0,
+     "llm_poetry": 0.0,
+     "all_human": 0.002,
+     "human_professional": 0.002
+    },
+    "hits_all_human": 1,
+    "hits_llm": 0,
+    "doc_frac": {
+     "human": 0.0002,
+     "llm": 0.0
+    },
+    "prior": {
+     "p_bg_per10k": 0.004,
+     "a_w": 0.5,
+     "a0": 200000.0,
+     "a_floor": 0.5
+    },
+    "log_odds": {
+     "delta": -0.531,
+     "z": -0.46,
+     "ratio_x": 0.59,
+     "per_genre_delta": {
+      "essay": -0.85,
+      "abstract": -0.306,
+      "poetry": -0.435
+     },
+     "per_genre_z": {
+      "essay": -0.43,
+      "abstract": -0.15,
+      "poetry": -0.22
+     },
+     "z_gpt4o_only": -0.08,
+     "boot_ci95": [
+      -0.544,
+      -0.517
+     ]
+    },
+    "signal_genres": [],
+    "human_professional_examples": [
+     "[klue] 감동했고 그 이후로 둘은 절친한 친구가 된다. 카레라스가 백혈"
+    ]
+   },
+   "tier": "B",
+   "enabled": true,
+   "tier_reason": "low firing on pro-human (0.002/10k) but contested/low-confidence rule; suggest-only",
+   "precision_evidence": "measured_on_1_human_and_0_llm_hits"
+  }
+ ]
+}

@@ -40,3 +40,27 @@ test('a TXT file within the size limit but over the character limit is refused',
   await expect(page.locator('#status-message')).toHaveText('원문은 10자 이하만 변환할 수 있습니다. 나눠서 변환해 주세요.');
   await expect(page.locator('#source-text')).toHaveValue('');
 });
+
+test('Office preview labels do not count against the text input limit', async ({ page }) => {
+  await ready(page);
+  const token = 'a'.repeat(64);
+  await page.route('**/api/documents', r => r.fulfill({ status: 201, json: {
+    id: 'valid-office', token, name: 'report-humanized.docx', format: 'docx',
+    preview: '[문단 1 · 본문 위치]\n짧은 원문', sourceChars: 5, editableBlocks: 1, preservedBlocks: 0, slides: 0, warnings: []
+  } }));
+  let started = false;
+  await page.route('**/api/documents/valid-office/transform*', r => {
+    started = true;
+    return r.fulfill({ contentType: 'application/x-ndjson', body: [
+      { type: 'accepted', jobId: 'valid-office', position: 0 },
+      { type: 'document-result', artifactId: 'valid-office', name: 'report-humanized.docx', format: 'docx', bytes: 2, sha256: 'test', preview: '짧은 결과' },
+      { type: 'done', sourceChars: 5, outputChars: 5, chunks: 1, elapsedMs: 1 }
+    ].map(event => JSON.stringify(event)).join('\n') + '\n' });
+  });
+  await page.locator('#text-file-input').setInputFiles({ name: 'report.docx', mimeType: 'application/octet-stream', buffer: Buffer.from('PK') });
+  await expect(page.locator('#source-count')).toHaveText('5자');
+  await expect(page.locator('#transform-button')).toBeEnabled();
+  await page.locator('#transform-button').click();
+  await expect(page.locator('#status-chip')).toContainText('완료');
+  expect(started).toBe(true);
+});
