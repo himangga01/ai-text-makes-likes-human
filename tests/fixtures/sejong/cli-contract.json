@@ -1,0 +1,678 @@
+{
+ "source": "오늘은 세미나 후기를 정리합니다. 왜냐하면 일정이 바뀌었습니다. 참가비는 3만 원이 됬습니다.\n\n현장 분위기가 좋았어요😀 ㅎㅎ 궁금한 점이 있으시면 댓글로 문의해 주세요.\n",
+ "manifest": {
+  "version": 1,
+  "source_file": "01_input.txt",
+  "source_chars": 96,
+  "source_sha256": "c9d49833d8d82aa379de61de3a1ced24b1e8a3a56204bc592cf794d7705facdc",
+  "genre": "blog",
+  "target_chunk_chars": 7000,
+  "max_chunk_chars": 9000,
+  "route_hint": null,
+  "route_reason": "sejong:single",
+  "processing_mode": "single",
+  "chunk_count": 1,
+  "body_chunk_count": 1,
+  "passthrough_chunk_count": 0,
+  "lossless_check": "ok",
+  "warnings": [],
+  "chunks": [
+   {
+    "index": 1,
+    "start": 0,
+    "end": 96,
+    "char_count": 96,
+    "starts_with_heading": false,
+    "heading": null,
+    "passthrough": false,
+    "input_file": "01_chunk_01_input.txt",
+    "rewritten_file": "02_chunk_01_rewritten.txt"
+   }
+  ],
+  "sejong": {
+   "version": 1,
+   "genre": "blog",
+   "seams": [],
+   "plans": [
+    {
+     "chunk": 1,
+     "file": "plan-01.json",
+     "needsModel": true
+    }
+   ],
+   "options": {
+    "inputKind": "direct-text",
+    "strength": "medium"
+   }
+  }
+ },
+ "plan": {
+  "schema": "sejong-plan/1",
+  "engine": {
+   "id": "super-sejong",
+   "version": "2.0.0"
+  },
+  "chunk": {
+   "index": 1,
+   "total": 1,
+   "sourceSha256": "c9d49833d8d82aa379de61de3a1ced24b1e8a3a56204bc592cf794d7705facdc",
+   "chars": 96
+  },
+  "options": {
+   "inputKind": "direct-text",
+   "strength": "medium",
+   "genre": "blog",
+   "fixColloquial": false,
+   "deterministicFix": "all",
+   "openReview": true,
+   "allowFullText": false
+  },
+  "sentences": [
+   {
+    "id": "S1",
+    "start": 0,
+    "end": 18,
+    "startU16": 0,
+    "endU16": 18,
+    "para": 0,
+    "kind": "body",
+    "voice": {
+     "level": "HAPSYO",
+     "mood": "DECL",
+     "honSi": false,
+     "siCount": 0,
+     "stance": "ㅂ니다",
+     "persona": [],
+     "humble": false,
+     "cmc": [],
+     "discourse": [],
+     "final": "정리합니다."
+    },
+    "cta": null,
+    "meaning": [],
+    "findings": []
+   },
+   {
+    "id": "S2",
+    "start": 19,
+    "end": 35,
+    "startU16": 19,
+    "endU16": 35,
+    "para": 0,
+    "kind": "body",
+    "voice": {
+     "level": "HAPSYO",
+     "mood": "DECL",
+     "honSi": false,
+     "siCount": 0,
+     "stance": "ㅂ니다",
+     "persona": [],
+     "humble": false,
+     "cmc": [],
+     "discourse": [],
+     "final": "바뀌었습니다."
+    },
+    "cta": null,
+    "meaning": [],
+    "findings": [
+     "F1"
+    ]
+   },
+   {
+    "id": "S3",
+    "start": 36,
+    "end": 52,
+    "startU16": 36,
+    "endU16": 52,
+    "para": 0,
+    "kind": "body",
+    "voice": {
+     "level": "HAPSYO",
+     "mood": "DECL",
+     "honSi": false,
+     "siCount": 0,
+     "stance": "ㅂ니다",
+     "persona": [],
+     "humble": false,
+     "cmc": [],
+     "discourse": [],
+     "final": "됬습니다."
+    },
+    "cta": null,
+    "meaning": [
+     "AX_OPEN:1"
+    ],
+    "findings": [
+     "F2"
+    ]
+   },
+   {
+    "id": "S4",
+    "start": 54,
+    "end": 70,
+    "startU16": 54,
+    "endU16": 71,
+    "para": 1,
+    "kind": "body",
+    "voice": {
+     "level": "HAEYO",
+     "mood": "DECL",
+     "honSi": false,
+     "siCount": 0,
+     "stance": null,
+     "persona": [],
+     "humble": false,
+     "cmc": [
+      "😀",
+      "ㅎㅎ"
+     ],
+     "discourse": [],
+     "final": "좋았어요"
+    },
+    "cta": null,
+    "meaning": [],
+    "findings": []
+   },
+   {
+    "id": "S5",
+    "start": 71,
+    "end": 95,
+    "startU16": 72,
+    "endU16": 96,
+    "para": 1,
+    "kind": "body",
+    "voice": {
+     "level": "HAEYO",
+     "mood": "IMPER",
+     "honSi": true,
+     "siCount": 2,
+     "stance": null,
+     "persona": [],
+     "humble": false,
+     "cmc": [],
+     "discourse": [],
+     "final": "주세요."
+    },
+    "cta": "C1",
+    "meaning": [],
+    "findings": []
+   }
+  ],
+  "protected": [
+   {
+    "kind": "number",
+    "start": 41,
+    "end": 45,
+    "policy": "freeze"
+   },
+   {
+    "kind": "cmc",
+    "start": 66,
+    "end": 67,
+    "policy": "keep-token"
+   },
+   {
+    "kind": "cmc",
+    "start": 68,
+    "end": 70,
+    "policy": "keep-token"
+   }
+  ],
+  "ctaLedger": [
+   {
+    "id": "C1",
+    "sentence": "S5",
+    "form": "request",
+    "force": 4,
+    "tier": "contact",
+    "polarity": "pos",
+    "action": [
+     "문의"
+    ],
+    "object": null,
+    "condition": "궁금한 점이 있으시면",
+    "deadline": [],
+    "channel": [
+     "댓글"
+    ],
+    "benefit": [],
+    "intensity": [],
+    "level": "haeyo",
+    "honSi": true
+   }
+  ],
+  "findings": [
+   {
+    "id": "F1",
+    "rule": "SSJ-A01",
+    "tier": "FIX",
+    "action": "request",
+    "sentence": "S2",
+    "start": 19,
+    "end": 23,
+    "fix": null
+   },
+   {
+    "id": "F2",
+    "rule": "SSJ-N04",
+    "tier": "FIX",
+    "action": "deterministic",
+    "sentence": "S3",
+    "start": 47,
+    "end": 48,
+    "fix": "됐"
+   }
+  ],
+  "requests": [
+   {
+    "id": "R1",
+    "sentence": "S2",
+    "rules": [
+     "SSJ-A01"
+    ],
+    "tier": "FIX",
+    "allowSplit": false,
+    "guides": [
+     "'왜냐하면'으로 시작한 문장은 '~기 때문이다/때문입니다'처럼 이유 표현으로 맺는다. 문장 끝의 말투 등급은 그대로 둔다."
+    ]
+   }
+  ],
+  "deterministic": [
+   {
+    "finding": "F2",
+    "sentence": "S3",
+    "start": 47,
+    "end": 48,
+    "before": "됬",
+    "after": "됐"
+   }
+  ],
+  "profile": {
+   "dominant": "HAPSYO",
+   "share": 0.6,
+   "mixed": true,
+   "line": "합쇼 60%, 해요 서술·CTA 섞임"
+  },
+  "seam": {
+   "prev": [
+    0,
+    0
+   ],
+   "next": [
+    0,
+    0
+   ]
+  },
+  "openReview": {
+   "enabled": true,
+   "maxSentences": 3
+  },
+  "needsModel": true,
+  "stats": {
+   "findingsByTier": {
+    "FIX": 2,
+    "SUGGEST": 0,
+    "LEAVE": 0
+   },
+   "requestsByTier": {
+    "FIX": 1,
+    "SUGGEST": 0
+   },
+   "deterministicFixes": 1,
+   "deterministicDropped": 0,
+   "nominable": 5
+  }
+ },
+ "checks": {
+  "accept": {
+   "gate": {
+    "exit_code": 0
+   },
+   "hardFailures": [],
+   "warningReasons": {
+    "version": 1,
+    "codes": []
+   },
+   "policy": "accept",
+   "shadowFailures": [],
+   "schema": "sejong-check/1",
+   "attempt": 1,
+   "sentences": [
+    {
+     "id": "S1",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S2",
+     "request": "R1",
+     "status": "accepted",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S3",
+     "request": null,
+     "status": "deterministic",
+     "codes": [],
+     "repairs": [
+      "norm_fix"
+     ]
+    },
+    {
+     "id": "S4",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S5",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    }
+   ],
+   "retry": [],
+   "requestStatus": {
+    "FIXED": 1,
+    "UNTOUCHED": 0,
+    "STILL_PRESENT": 0,
+    "LOST": 0,
+    "DECLINED": 0
+   },
+   "counts": {
+    "revertedSentences": 0,
+    "revertedByFamily": {},
+    "collateralReverts": 0,
+    "voiceGrafts": 0,
+    "cmcRestored": 0,
+    "normFixes": 1,
+    "repairedParticles": 0,
+    "removedCommas": 0,
+    "restoredSentences": 0
+   },
+   "changeRate": 0.044
+  },
+  "retry": {
+   "gate": {
+    "exit_code": 1
+   },
+   "hardFailures": [],
+   "warningReasons": {
+    "version": 1,
+    "codes": []
+   },
+   "policy": "retry",
+   "shadowFailures": [],
+   "schema": "sejong-check/1",
+   "attempt": 1,
+   "sentences": [
+    {
+     "id": "S1",
+     "request": "S1",
+     "status": "retry",
+     "codes": [
+      "voice_level",
+      "voice_mood"
+     ],
+     "repairs": []
+    },
+    {
+     "id": "S2",
+     "request": "R1",
+     "status": "retry",
+     "codes": [
+      "voice_level"
+     ],
+     "repairs": []
+    },
+    {
+     "id": "S3",
+     "request": null,
+     "status": "deterministic",
+     "codes": [],
+     "repairs": [
+      "norm_fix"
+     ]
+    },
+    {
+     "id": "S4",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S5",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    }
+   ],
+   "retry": [
+    {
+     "id": "S1",
+     "sentence": "S1",
+     "violations": [
+      {
+       "code": "voice_level",
+       "family": "voice",
+       "severity": "hard",
+       "sentence": "S1",
+       "detail": "HAPSYO->HAEYO",
+       "keep": "정리합니다."
+      },
+      {
+       "code": "voice_mood",
+       "family": "voice",
+       "severity": "hard",
+       "sentence": "S1",
+       "detail": "DECL->INTERR",
+       "keep": "정리합니다."
+      }
+     ]
+    },
+    {
+     "id": "R1",
+     "sentence": "S2",
+     "violations": [
+      {
+       "code": "voice_level",
+       "family": "voice",
+       "severity": "hard",
+       "sentence": "S2",
+       "detail": "HAPSYO->HAEYO",
+       "keep": "바뀌었습니다."
+      }
+     ]
+    }
+   ],
+   "requestStatus": {
+    "FIXED": 0,
+    "UNTOUCHED": 0,
+    "STILL_PRESENT": 1,
+    "LOST": 0,
+    "DECLINED": 0
+   },
+   "counts": {
+    "revertedSentences": 0,
+    "revertedByFamily": {},
+    "collateralReverts": 0,
+    "voiceGrafts": 0,
+    "cmcRestored": 0,
+    "normFixes": 1,
+    "repairedParticles": 0,
+    "removedCommas": 0,
+    "restoredSentences": 0
+   },
+   "changeRate": 0.011
+  },
+  "attempt2": {
+   "gate": {
+    "exit_code": 0
+   },
+   "hardFailures": [],
+   "warningReasons": {
+    "version": 1,
+    "codes": []
+   },
+   "policy": "accept",
+   "shadowFailures": [],
+   "schema": "sejong-check/1",
+   "attempt": 2,
+   "sentences": [
+    {
+     "id": "S1",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S2",
+     "request": "R1",
+     "status": "accepted",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S3",
+     "request": null,
+     "status": "deterministic",
+     "codes": [],
+     "repairs": [
+      "norm_fix"
+     ]
+    },
+    {
+     "id": "S4",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S5",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    }
+   ],
+   "retry": [],
+   "requestStatus": {
+    "FIXED": 1,
+    "UNTOUCHED": 0,
+    "STILL_PRESENT": 0,
+    "LOST": 0,
+    "DECLINED": 0
+   },
+   "counts": {
+    "revertedSentences": 0,
+    "revertedByFamily": {},
+    "collateralReverts": 0,
+    "voiceGrafts": 0,
+    "cmcRestored": 0,
+    "normFixes": 1,
+    "repairedParticles": 0,
+    "removedCommas": 0,
+    "restoredSentences": 0
+   },
+   "changeRate": 0.044
+  },
+  "rollback": {
+   "gate": {
+    "exit_code": 2
+   },
+   "hardFailures": [
+    "model_output_unusable"
+   ],
+   "warningReasons": {
+    "version": 1,
+    "codes": []
+   },
+   "policy": "rollback",
+   "shadowFailures": [],
+   "schema": "sejong-check/1",
+   "attempt": 2,
+   "sentences": [
+    {
+     "id": "S1",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S2",
+     "request": "R1",
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S3",
+     "request": null,
+     "status": "deterministic",
+     "codes": [],
+     "repairs": [
+      "norm_fix"
+     ]
+    },
+    {
+     "id": "S4",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    },
+    {
+     "id": "S5",
+     "request": null,
+     "status": "unchanged",
+     "codes": [],
+     "repairs": []
+    }
+   ],
+   "retry": [],
+   "requestStatus": {
+    "FIXED": 0,
+    "UNTOUCHED": 0,
+    "STILL_PRESENT": 0,
+    "LOST": 0,
+    "DECLINED": 1
+   },
+   "counts": {
+    "revertedSentences": 0,
+    "revertedByFamily": {},
+    "collateralReverts": 0,
+    "voiceGrafts": 0,
+    "cmcRestored": 0,
+    "normFixes": 1,
+    "repairedParticles": 0,
+    "removedCommas": 0,
+    "restoredSentences": 0
+   },
+   "changeRate": 0.011
+  }
+ },
+ "gates": {
+  "same": {
+   "exitCode": 0,
+   "stdout": "{\"gate\": {\"exit_code\": 0}, \"hardFailures\": [], \"warningReasons\": {\"version\": 1, \"codes\": []}, \"policy\": \"accept\", \"shadowFailures\": [], \"changeRate\": 0.0}\n"
+  },
+  "number": {
+   "exitCode": 2,
+   "stdout": "{\"gate\": {\"exit_code\": 2}, \"hardFailures\": [\"number_injected\", \"quantity_changed\", \"number_dropped\", \"protected_span_changed\"], \"warningReasons\": {\"version\": 1, \"codes\": []}, \"policy\": \"retry\", \"shadowFailures\": [], \"changeRate\": 0.011}\n"
+  },
+  "emoticon": {
+   "exitCode": 1,
+   "stdout": "{\"gate\": {\"exit_code\": 1}, \"hardFailures\": [], \"warningReasons\": {\"version\": 1, \"codes\": []}, \"policy\": \"retry\", \"shadowFailures\": [\"voice_emoticon_dropped\"], \"changeRate\": 0.017}\n"
+  }
+ }
+}

@@ -435,7 +435,9 @@ class FlagsTable(unittest.TestCase):
 
 # Product files a work package has wired to v2 on purpose; each may only read the engine switch and the
 # version file, and legacy stays the default. WP-14: preflight checks the ENGINE_VERSION of the selected engine.
-WIRED = {"src/process/preflight.ts"}
+# WP-10: sejong_cli.py is the v2 CLI itself; workflow.py imports sejong.verify only inside verify_v2(), which
+# runs when SUPER_SEJONG_ENGINE=v2 (test_sejong_pipeline.WorkflowDispatch pins both branches).
+WIRED = {"src/process/preflight.ts", "engine_runtime/sejong_cli.py", "engine_runtime/workflow.py"}
 
 
 class NoRuntimeWiring(unittest.TestCase):
