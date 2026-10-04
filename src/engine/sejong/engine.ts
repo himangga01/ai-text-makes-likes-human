@@ -69,7 +69,7 @@ const EMPTY_REPLY = '{"replacements":[],"rewrittenText":"","warnings":[]}';
 // Floor codes of DESIGN 3.8: after finalize they can only mean that the document floor still fails.
 const FLOOR_CODES = new Set(['empty_output', 'quote_altered', 'heading_lost', 'heading_absorbed', 'footnote_count',
   'footnote_numbers', 'footnote_def', 'footnote_anchor', 'number_injected', 'number_dropped', 'quantity_changed',
-  'name_changed', 'sentence_dropped', 'protected_span_changed', 'josa_mismatch']);
+  'name_changed', 'weekday_changed', 'sentence_dropped', 'protected_span_changed', 'josa_mismatch']);
 const FAMILY_KO: Record<SejongFamily, string> = {
   floor: '보존', meaning: '의미', voice: '말투', cta: '행동 요청', flow: '흐름', clarity: '명료성', norms: '맞춤법',
   runaway: '변경량', nli: '함의'

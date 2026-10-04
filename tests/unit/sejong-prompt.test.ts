@@ -223,7 +223,7 @@ describe('buildSejongPrompt, attempt 2', () => {
   // Every code the v2 check can put on a retry entry (DESIGN 3.6, 3.8, WP-10 apply/check, WP-10b meaning codes).
   const RETRY_CODES = [
     'empty_output', 'quote_altered', 'heading_lost', 'heading_absorbed', 'footnote_count', 'footnote_numbers', 'footnote_def',
-    'footnote_anchor', 'number_injected', 'number_dropped', 'quantity_changed', 'name_changed', 'sentence_dropped',
+    'footnote_anchor', 'number_injected', 'number_dropped', 'quantity_changed', 'name_changed', 'weekday_changed', 'sentence_dropped',
     'protected_span_changed', 'josa_mismatch',
     'polarity_changed', 'modality_changed', 'lexical_polarity_changed', 'participant_role_changed', 'aspect_changed',
     'partial_negation_changed', 'content_dropped', 'temporal_order_changed',
