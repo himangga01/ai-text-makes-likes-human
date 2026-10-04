@@ -1,8 +1,10 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { assertSejongBundle, loadBundledSejong, readSejongEngineVersion } from "./engine-runtime.mjs";
 const parent = path.resolve("runtime/test-tmp"); await mkdir(parent, { recursive: true });
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
+const sejong = await readSejongEngineVersion();
 for (const host of ["Claude", "Codex"]) {
   const root = await mkdtemp(path.join(parent, "skill-package-"));
   const installArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.resolve("scripts/install-humanize-skill.ps1"), "-HostName", host, "-Scope", "Project", "-ProjectRoot", root,
@@ -14,6 +16,14 @@ for (const host of ["Claude", "Codex"]) {
   const python = path.join(skill, "python/python.exe");
   const gateway = path.join(skill, "engine_runtime/skill_gateway.py");
   const jobs = path.join(root, "jobs");
+  // v2 engine: every engine_runtime/sejong file arrived unchanged and the embedded Python can import it
+  // (the package reads its ENGINE_VERSION at import), at the version the receipt in distribution.json names.
+  await assertSejongBundle(path.join(skill, "engine_runtime"));
+  const loaded = loadBundledSejong(python, path.join(skill, "engine_runtime"), { cwd: root });
+  const distribution = JSON.parse(await readFile(path.join(skill, "distribution.json"), "utf8"));
+  for (const packed of [loaded, distribution.sejongEngine]) {
+    if (packed?.id !== sejong.id || packed.version !== sejong.version || packed.schema !== sejong.schema) throw new Error("Packaged Super Sejong engine version differs from the source");
+  }
   const source = path.join(root, "source.md"); const output = path.join(root, "result.md");
   const input = "# 문서\n\n회의 참석자는 12명이었다. 회의 내용을 문서로 남겼다. 다음 문장은 그대로 둔다. 😀\n";
   await writeFile(source, input, "utf8");

@@ -6,6 +6,7 @@
 *.sh text eol=lf
 *.ts text eol=lf
 vendor/humanize-engine/ENGINE_VERSION text eol=lf
+engine_runtime/sejong/ENGINE_VERSION text eol=lf
 tests/fixtures/** text eol=lf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
