@@ -21,6 +21,8 @@ diagnostics counts and the TS parser keep their meaning:
   number_dropped          a numeric value of the source is gone             (checks.dropped_numbers)
   quantity_changed        signed quantity + unit multiset changed           (quantities.signed_quantities)
   name_changed            the case-folded set of Latin/Han name tokens changed  (workflow.names)
+  weekday_changed         the set of weekdays named changed (토요일 -> 일요일, 18일(토) -> 18일(일);
+                          new in v2: a date's weekday is as much a fact as its number)
   sentence_dropped        a source sentence lost its counterpart and its own words are not in a
                           neighbour (workflow.dropped_sentences, on the WP-2 alignment)
   protected_span_changed  a freeze span of a source sentence is not verbatim in its aligned
@@ -65,7 +67,7 @@ FAMILY = "floor"
 # Section 3.8 floor row, in the order check() reports them.
 CODES = ("empty_output", "quote_altered", "heading_lost", "heading_absorbed", "footnote_count", "footnote_numbers",
          "footnote_def", "footnote_anchor", "number_injected", "number_dropped", "quantity_changed", "name_changed",
-         "sentence_dropped", "protected_span_changed", "josa_mismatch")
+         "weekday_changed", "sentence_dropped", "protected_span_changed", "josa_mismatch")
 MIN_DROPPED_COVERAGE = 0.5           # workflow.MIN_DROPPED_COVERAGE
 
 
@@ -396,6 +398,28 @@ def names(text: str) -> Set[str]:
 # --------------------------------------------------------------------------
 # dropped sentences (workflow.dropped_sentences on the WP-2 alignment)
 # --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# weekdays (new in v2)
+# --------------------------------------------------------------------------
+_DAY = "[월화수목금토일]"
+_DAY_SEP = r"\s*[·ㆍ,~∼\-–]\s*"
+# 토요일; 토·일요일 / 월, 화, 수요일 (a list closed by a full form); 월~금 (a bare range, alone or before a
+# particle: 월~금이에요, 월~금까지; not 화~토론회); 18일(토), (토·일)
+_WEEKDAY = re.compile("(?<![가-힣0-9])((?:" + _DAY + _DAY_SEP + ")*" + _DAY + ")요일"   # not 18일, / 10월,
+                      "|(?<![가-힣0-9])(" + _DAY + "[~∼\\-–]" + _DAY + ")(?![가-힣])"
+                      "|(?<![가-힣0-9])(" + _DAY + "[~∼\\-–]" + _DAY + ")(?=[이에까부은는을를도만의])"   # 월~금이에요
+                      "|\\((" + _DAY + "(?:" + _DAY_SEP + _DAY + ")*)\\)")
+
+
+def weekdays(text: str) -> Set[str]:
+    """The weekdays a text names, as day letters (토요일과 일요일 == 토·일요일 == {토, 일}); a set, like
+    number_values, so naming a day twice or once is not a change."""
+    days: Set[str] = set()
+    for m in _WEEKDAY.finditer(text):
+        days.update(ch for ch in next(g for g in m.groups() if g) if ch in "월화수목금토일")
+    return days
+
+
 def _bigrams(s: str) -> Counter:
     c = "".join(ch for ch in s if ch.isalnum())
     return Counter(c[i:i + 2] for i in range(len(c) - 1))
@@ -462,7 +486,8 @@ def _text_of(item: Any) -> str:
 def text_codes(source: str, output: str, *, document: Optional[str] = None) -> List[str]:
     """The text-level floor codes in workflow.verify's order: the vendor checks (sorted), then
     number_injected, quantity_changed, the short-quote variant of quote_altered, number_dropped,
-    name_changed. Summary blocks are ignored by the name check, as in workflow.names."""
+    name_changed, then weekday_changed (v2 only). Summary blocks are ignored by the name and weekday
+    checks, as in workflow.names."""
     long_quote, any_quote = _quotes_altered(source, output)
     found = sorted(set(heading_codes(source, output)) | set(footnote_codes(source, output, document))
                    | ({"quote_altered"} if long_quote else set()))
@@ -474,6 +499,8 @@ def text_codes(source: str, output: str, *, document: Optional[str] = None) -> L
         found.append("number_dropped")
     if names(strip_summary_block(source)) != names(strip_summary_block(output)):
         found.append("name_changed")
+    if weekdays(strip_summary_block(source)) != weekdays(strip_summary_block(output)):
+        found.append("weekday_changed")
     return found
 
 

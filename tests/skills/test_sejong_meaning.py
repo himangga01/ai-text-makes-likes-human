@@ -184,7 +184,8 @@ class Ledger(unittest.TestCase):
 class FloorCodes(unittest.TestCase):
     EXPECTED = ("empty_output", "quote_altered", "heading_lost", "heading_absorbed", "footnote_count",
                 "footnote_numbers", "footnote_def", "footnote_anchor", "number_injected", "number_dropped",
-                "quantity_changed", "name_changed", "sentence_dropped", "protected_span_changed", "josa_mismatch")
+                "quantity_changed", "name_changed", "weekday_changed", "sentence_dropped", "protected_span_changed",
+                "josa_mismatch")
 
     def test_design_row(self):
         self.assertEqual(floor.CODES, self.EXPECTED)
@@ -196,10 +197,11 @@ class FloorCodes(unittest.TestCase):
         workflow = (ROOT / "engine_runtime" / "workflow.py").read_text(encoding="utf-8")
         legacy = set(re.findall(r'Failure\(\s*"([a-z_]+)"', vendor)) | set(re.findall(r'append\("([a-z_]+)"\)', workflow))
         for code in floor.CODES:
-            if code == "protected_span_changed":      # new in v2 (DESIGN 3.1)
+            if code in ("protected_span_changed", "weekday_changed"):      # new in v2 (DESIGN 3.1; lead probe)
                 continue
             self.assertIn(code, legacy)
         self.assertNotIn("protected_span_changed", legacy)
+        self.assertNotIn("weekday_changed", legacy)
 
     def test_floor_module_does_not_import_the_vendor(self):
         source = (ROOT / "engine_runtime" / "sejong" / "floor.py").read_text(encoding="utf-8")
@@ -220,6 +222,21 @@ class FloorPair(unittest.TestCase):
         self.assertEqual([(v.code, v.sentence) for v in floor.check_pair(first, "", spans)], [("sentence_dropped", "S1")])
         self.assertEqual(floor.codes(floor.check_pair("서버가 API를 호출한다.", "서버가 API을 호출한다.")), ["josa_mismatch"])
         self.assertEqual(floor.codes(floor.check_pair("Apple이 발표했다.", "애플이 발표했다.")), ["name_changed"])
+        self.assertEqual(floor.codes(floor.check_pair("10월 18일 토요일에 만나요.", "10월 18일 일요일에 만나요.")),
+                         ["weekday_changed"])
+        self.assertEqual(floor.codes(floor.check_pair("18일(토) 오후 2시에 열려요.", "18일(일) 오후 2시에 열려요.")),
+                         ["weekday_changed"])
+        self.assertEqual(floor.check_pair("매주 토요일과 일요일에 쉬어요.", "매주 토·일요일에 쉬어요."), [])
+        self.assertEqual(floor.check_pair("영업시간은 월~금이에요.", "영업일은 월요일부터 금요일까지예요."), [])
+
+    def test_weekdays(self):
+        for text, days in [("10월 18일, 토요일에 만나요.", {"토"}), ("10월, 화요일에", {"화"}), ("토·일요일", {"토", "일"}),
+                           ("월~금 10시~19시", {"월", "금"}), ("18일(토)", {"토"}), ("(토·일) 휴무", {"토", "일"}),
+                           ("세월, 일요일에", {"일"}), ("월, 화, 수요일 수업", {"월", "화", "수"}), ("월급날", set()),
+                           ("5일~7일 휴무", set()), ("생일 축하해요", set()), ("월~금이에요", {"월", "금"}),
+                           ("월~금까지 열어요", {"월", "금"}), ("화~토론회", set())]:
+            with self.subTest(text=text):
+                self.assertEqual(floor.weekdays(text), days)
 
     def test_document_codes(self):
         self.assertEqual(floor.codes(floor.check("본문입니다.", "  ")), ["empty_output"])
@@ -309,7 +326,9 @@ class FloorDifferential(unittest.TestCase):
                 legacy = set(self.legacy(source, output))
                 v2 = set(floor.codes(floor.check(source, output)))
                 with self.subTest(record=record["id"]):
-                    self.assertEqual(legacy - sentence_level, v2 - sentence_level)
+                    # weekday_changed is new in v2 (a dropped sentence that named a day also loses the day)
+                    self.assertEqual("weekday_changed" in v2, floor.weekdays(source) != floor.weekdays(output))
+                    self.assertEqual(legacy - sentence_level, v2 - sentence_level - {"weekday_changed"})
                     if "sentence_dropped" in legacy:
                         drops += 1
                         self.assertIn("sentence_dropped", v2)
