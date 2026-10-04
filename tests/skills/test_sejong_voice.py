@@ -258,12 +258,25 @@ class OwnerDecisionTests(unittest.TestCase):
             ("이 카페는 디저트가 진짜 맛있네요.", "이 카페는 디저트가 정말 맛있네요."): "voice_discourse_dropped",
             ("그건 내가 알아서 할게 ㅋㅋ", "그건 내가 알아서 할게."): "voice_emoticon_dropped",
             ("내일 꼭 연락할께요.", "내일 꼭 연락할게요."): "voice_colloquial_changed",
+            # spoken -구 of -고 (2026-10-04 real-model run)
+            ("다음에는 평일 오전에 가 보려구요.", "다음에는 평일 오전에 가 보려고요."): "voice_colloquial_changed",
+            ("밥은 먹었구요, 이제 나가요.", "밥은 먹었고요, 이제 나가요."): "voice_colloquial_changed",
         }
         for (src, out), code in cases.items():
             default = check(src, out)
             self.assertEqual([(v.code, v.severity) for v in default], [(code, "soft")], src)
             opted = check(src, out, fix_colloquial=True)
             self.assertEqual([(v.code, v.severity) for v in opted], [(code, "info")], src)
+
+    def test_spoken_geo_gat_upshift_only_in_casual_levels(self):
+        # 거 같다 -> 것 같다 is a written upshift in 해체/해요체 (keep the spacing fix, not the register change)
+        self.assertEqual([v.code for v in check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 것 같아ㅎㅎ")],
+                         ["voice_written_upshift"])
+        self.assertEqual([v.code for v in check("비가 올 거 같아요.", "비가 올 것 같아요.")], ["voice_written_upshift"])
+        self.assertEqual(check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 거 같아ㅎㅎ"), [])
+        # in 합쇼체 and 해라체 것 같다 is the expected form
+        self.assertEqual(check("내일은 비가 올거 같습니다.", "내일은 비가 올 것 같습니다."), [])
+        self.assertEqual(check("그는 이미 떠난 거 같다.", "그는 이미 떠난 것 같다."), [])
 
     def test_od1_document_profile_never_decides(self):
         # a 해요체 CTA inside a 합쇼체 paragraph keeps its own level; normalising it is a violation
