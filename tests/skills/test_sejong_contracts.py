@@ -439,6 +439,10 @@ class FlagsTable(unittest.TestCase):
 # runs when SUPER_SEJONG_ENGINE=v2 (test_sejong_pipeline.WorkflowDispatch pins both branches).
 WIRED = {"src/process/preflight.ts", "engine_runtime/sejong_cli.py", "engine_runtime/workflow.py"}
 
+# WP-13: skill_gateway.py runs v2 in process when SUPER_SEJONG_ENGINE=v2; it imports sejong lazily, only then
+# (test_sejong_skill_path pins the switch, the recorded engine id and version, and the legacy default).
+WIRED |= {"engine_runtime/skill_gateway.py"}
+
 
 class NoRuntimeWiring(unittest.TestCase):
     def test_legacy_modules_do_not_import_the_v2_package(self):
