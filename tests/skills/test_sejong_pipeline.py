@@ -450,12 +450,13 @@ class SeedEndToEndTests(unittest.TestCase):
         agg = score.aggregate([score.score_item(r, o) for r, o in rows])
         unfixed = sorted({r["id"] for r, o in rows for s in score.score_item(r, o)["spans"]
                           if s["primary"] and s["status"] not in score.PRIMARY_FIXED})
-        # Measured residual (see the WP-10 report): five AGREE gold fixes flip the literal polarity of a
-        # negative-polarity adverb outside SSJ-A06's closed list (별로, 도저히, 일절, 거의), which the meaning
-        # family blocks by design; every other primary injection is fixed.
+        # Measured residual: WP-10 left five AGREE gold fixes blocked (87/92) because they flip the literal
+        # polarity of a negative-polarity adverb outside SSJ-A06's closed list. WP-10b added 별로, 도저히 and 일절
+        # (each gold fix adds the negation, so the request's polarity licence applies); 거의 stays out of the
+        # list ("거의 다", "거의 모든" are positive uses), so SSB-186 is the one primary injection left.
         self.assertEqual(agg["primary"], 92)
-        self.assertEqual(unfixed, ["SSB-044", "SSB-049", "SSB-185", "SSB-186", "SSB-190"])
-        self.assertEqual(agg["primary_fixed"], 87)
+        self.assertEqual(unfixed, ["SSB-186"])
+        self.assertEqual(agg["primary_fixed"], 91)
         self.assertEqual({k: agg[k] for k in ("clean_sentences_touched", "voice_violations", "quotes_changed",
                                                "protected_tokens_changed", "cta_weakened", "cta_strengthened",
                                                "cta_invented_sentences", "invariants_violated", "numbers_dropped",
@@ -473,7 +474,9 @@ class SeedEndToEndTests(unittest.TestCase):
                 rows, _calls, _retries = seed_run(writer, mode)
                 hits = sorted(r["key"] for r, o in rows if detected(score.score_item(r, o)))
                 delivered[(damage.SLUGS[label], mode)] = (len(rows), hits)
-        expected_misses = {("meaning", "replace"): ["T08", "T20"]}   # role swap and 전에 -> 뒤에: meaning-guard misses
+        # WP-10 missed T08 (role swap across two clauses) and T20 (전에 -> 뒤에); WP-10b catches both
+        # (participant_role_changed per clause, temporal_order_changed).
+        expected_misses = {}
         for key, (n, hits) in delivered.items():
             with self.subTest(damage=key, sites=n):
                 self.assertEqual(hits, expected_misses.get(key, []))
@@ -525,9 +528,11 @@ class SeedEndToEndTests(unittest.TestCase):
                 self.assertEqual((scored["clean_sentences_touched"], scored["voice_violations"]), (0, 0))
                 self.assertEqual((report["sejong"]["floorCodes"], report["sejong"]["seamCodes"]), ([], []))
                 # Without the plan, the document gate cannot know that an SSJ-A06 request licensed its own
-                # polarity repair (결코 … 이월됩니다 -> 이월되지 않습니다); nothing else may remain.
+                # polarity repair (결코 … 이월됩니다 -> 이월되지 않습니다; since WP-10b also 별로 비싸요 -> 비싸지
+                # 않아요 and 도저히 … 수 있었다 -> 수 없었다, which read as lexical and modality changes too);
+                # nothing else may remain: these are exactly check.LICENSED_BY_POLARITY_RULES.
                 gate = VF.verify_document(record["text"], output, flags=FLAGS)
-                self.assertLessEqual(set(gate["hardFailures"]), {"polarity_changed"})
+                self.assertLessEqual(set(gate["hardFailures"]), set(CK.LICENSED_BY_POLARITY_RULES))
 
 
 # ==========================================================================

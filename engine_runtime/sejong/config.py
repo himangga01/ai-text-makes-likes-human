@@ -18,7 +18,8 @@ Flags.rejected so diagnostics can report them; the values themselves are never l
     SUPER_SEJONG_WORKER            off | on                    optional persistent Python worker
     SUPER_SEJONG_KIWI              off | worker                Kiwi only inside the worker; without it, off
 
-The floor and runaway families are enforced in every mode and have no variable.
+The floor and runaway families are enforced in every mode and have no variable. Codes in SHADOW_CODES
+never go above shadow, whatever their family's mode.
 """
 from __future__ import annotations
 
@@ -27,6 +28,11 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional, Tuple
 
 OVERRIDABLE = ("meaning", "voice", "cta", "flow", "clarity", "norms", "nli")
+# Codes that stay in shadow while their family enforces (the flow family keeps its own list in flow.py).
+# content_dropped (meaning, WP-10b): 14 of the 374 seed gold replacements (3.7%) would be blocked, all of them
+# redundancy deletions outside data/redundancy.json or restructurings that drop a word on purpose, so it is
+# measured in shadowFailures until the false-block rate on gold is at most 1% (WP-10b report).
+SHADOW_CODES = ("content_dropped",)
 ALWAYS_ENFORCED = ("floor", "runaway")
 FAMILY_MODES = ("enforce", "shadow", "off")
 _CHOICES = {

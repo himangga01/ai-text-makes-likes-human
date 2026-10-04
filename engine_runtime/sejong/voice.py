@@ -34,6 +34,11 @@ Changes against the prototype, each tested in tests/skills/test_sejong_voice.py:
   - the gate also compares what the main-branch lock compares (direct-text-fidelity.ts): the
     number of humble forms, raw CMC runs (ㅋㅋㅋ vs ㅋㅋ), request endings (바랍니다) and a final '?';
     plus honorific address nouns and datives (학부모님, 학부모님들께);
+  - the humble forms include the contracted 뵈다 forms 봬 (= 뵈어: 봬요, 봬야, 봬서), 뵀 (= 뵈었), 뵌 and
+    the misspelling 뵜, so the SSJ-N04 fixes 뵈요 → 봬요 and 뵜 → 뵀 keep the humble count (WP-10b; T2
+    knew only 뵈/뵙/뵐);
+  - the up-shift counter reads the misspelling 이였 as 이었, so the spelling fix 편이였어 -> 편이었어 keeps
+    the count (WP-10b);
   - final-word analysis is limited to the last 400 characters, so a 100k run-on stays linear.
 
 Lexicon (word lists, stems, honorific nouns, stance families, labels): data/voice_lexicon.json.
@@ -479,6 +484,10 @@ def _fold(text: str) -> str:
     for a, b in _FOLD:
         if a in text:
             text = text.replace(a, b)
+    # WP-10b (lead item C): 이였 is the misspelling of the copula past 이었 (편이였어 -> 편이었어, SSJ-N04/N05),
+    # not a plain-register form, so fixing it is not an up-shift; both spellings are read as 이었.
+    if "이였" in text:
+        text = text.replace("이였", "이었")
     return text
 
 
