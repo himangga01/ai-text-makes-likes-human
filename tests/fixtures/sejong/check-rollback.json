@@ -1,0 +1,19 @@
+{
+  "gate": {"exit_code": 2},
+  "hardFailures": ["quote_altered"],
+  "warningReasons": {"version": 1, "codes": ["P0_CHANGE_RATE"]},
+  "policy": "rollback",
+  "shadowFailures": [],
+  "schema": "sejong-check/1",
+  "attempt": 2,
+  "sentences": [
+    {"id": "S1", "request": null, "status": "unchanged", "codes": [], "repairs": []},
+    {"id": "S2", "request": "R1", "status": "reverted", "codes": ["voice_level", "modality_changed"], "repairs": ["voice_graft"]}
+  ],
+  "retry": [],
+  "requestStatus": {"FIXED": 0, "UNTOUCHED": 0, "STILL_PRESENT": 0, "LOST": 1, "DECLINED": 0},
+  "counts": {"revertedSentences": 1, "revertedByFamily": {"voice": 1, "meaning": 1}, "collateralReverts": 0,
+             "voiceGrafts": 1, "cmcRestored": 0, "normFixes": 0, "repairedParticles": 0,
+             "removedCommas": 0, "restoredSentences": 1},
+  "changeRate": 0.5
+}

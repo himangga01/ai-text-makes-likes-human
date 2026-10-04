@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sejong-plan/1",
+  "$comment": "Super Sejong Engine v2 edit plan (DESIGN.md 3.12). Offsets are code points into the chunk text; *U16 are UTF-16 units. Validated by engine_runtime/sejong/io.py, mirrored by src/engine/sejong/types.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "engine", "chunk", "options", "sentences", "protected", "ctaLedger", "findings",
+               "requests", "deterministic", "profile", "seam", "openReview", "needsModel", "stats"],
+  "properties": {
+    "schema": {"const": "sejong-plan/1"},
+    "engine": {
+      "type": "object", "additionalProperties": false, "required": ["id", "version"],
+      "properties": {
+        "id": {"const": "super-sejong"},
+        "version": {"$ref": "#/$defs/semver"}
+      }
+    },
+    "chunk": {
+      "type": "object", "additionalProperties": false, "required": ["index", "total", "sourceSha256", "chars"],
+      "properties": {
+        "index": {"type": "integer", "minimum": 1},
+        "total": {"type": "integer", "minimum": 1},
+        "sourceSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "chars": {"$ref": "#/$defs/offset"}
+      }
+    },
+    "options": {
+      "type": "object", "additionalProperties": false,
+      "required": ["inputKind", "strength", "genre", "fixColloquial", "deterministicFix", "openReview", "allowFullText"],
+      "properties": {
+        "inputKind": {"enum": ["direct-text", "text-file"]},
+        "strength": {"enum": ["normal", "medium", "strong", "very-strong"]},
+        "genre": {"enum": ["general", "blog", "essay", "report", "notice", "document"]},
+        "fixColloquial": {"type": "boolean"},
+        "deterministicFix": {"enum": ["all", "edited-only", "off"]},
+        "openReview": {"type": "boolean"},
+        "allowFullText": {"type": "boolean"}
+      }
+    },
+    "sentences": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/sentence"}},
+    "protected": {"type": "array", "maxItems": 20000, "items": {"$ref": "#/$defs/span"}},
+    "ctaLedger": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/cta"}},
+    "findings": {"type": "array", "maxItems": 20000, "items": {"$ref": "#/$defs/finding"}},
+    "requests": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/request"}},
+    "deterministic": {"type": "array", "maxItems": 20000, "items": {"$ref": "#/$defs/deterministic"}},
+    "profile": {
+      "type": "object", "additionalProperties": false, "required": ["dominant", "share", "mixed", "line"],
+      "properties": {
+        "dominant": {"$ref": "#/$defs/level"},
+        "share": {"type": "number", "minimum": 0, "maximum": 1},
+        "mixed": {"type": "boolean"},
+        "line": {"type": "string", "maxLength": 200}
+      }
+    },
+    "seam": {
+      "type": "object", "additionalProperties": false, "required": ["prev", "next"],
+      "properties": {"prev": {"$ref": "#/$defs/range"}, "next": {"$ref": "#/$defs/range"}}
+    },
+    "openReview": {
+      "type": "object", "additionalProperties": false, "required": ["enabled", "maxSentences"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "maxSentences": {"type": "integer", "minimum": 0, "maximum": 10000}
+      }
+    },
+    "needsModel": {"type": "boolean"},
+    "stats": {
+      "type": "object", "required": ["findingsByTier"],
+      "properties": {
+        "findingsByTier": {
+          "type": "object", "propertyNames": {"enum": ["FIX", "SUGGEST", "LEAVE"]},
+          "additionalProperties": {"$ref": "#/$defs/count"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"},
+    "offset": {"type": "integer", "minimum": 0},
+    "count": {"type": "integer", "minimum": 0},
+    "range": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/offset"}},
+    "sentenceId": {"type": "string", "pattern": "^S[0-9]{1,4}$"},
+    "requestId": {"type": "string", "pattern": "^R[0-9]{1,4}$"},
+    "findingId": {"type": "string", "pattern": "^F[0-9]{1,5}$"},
+    "ctaId": {"type": "string", "pattern": "^C[0-9]{1,4}$"},
+    "ruleId": {"type": "string", "pattern": "^[A-Z][A-Z0-9_-]{1,39}$"},
+    "level": {"enum": ["HAPSYO", "HAEYO", "HAERA", "HAE", "HAO", "HAGE", "NOMINAL", "NONE"]},
+    "mood": {"enum": ["DECL", "INTERR", "IMPER", "PROPOS", "EXCL"]},
+    "shortText": {"type": "string", "maxLength": 80},
+    "shortList": {"type": "array", "maxItems": 40, "items": {"$ref": "#/$defs/shortText"}},
+    "voice": {
+      "type": "object", "additionalProperties": false,
+      "required": ["level", "mood", "honSi", "siCount", "stance", "persona", "humble", "cmc", "discourse", "final"],
+      "properties": {
+        "level": {"$ref": "#/$defs/level"},
+        "mood": {"$ref": "#/$defs/mood"},
+        "honSi": {"type": "boolean"},
+        "siCount": {"$ref": "#/$defs/count"},
+        "stance": {"type": ["string", "null"], "maxLength": 40},
+        "persona": {"$ref": "#/$defs/shortList"},
+        "humble": {"type": "boolean"},
+        "cmc": {"$ref": "#/$defs/shortList"},
+        "discourse": {"$ref": "#/$defs/shortList"},
+        "final": {"type": "string", "maxLength": 200},
+        "addressee": {"type": ["string", "null"], "maxLength": 40}
+      }
+    },
+    "sentence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "start", "end", "startU16", "endU16", "para", "kind", "voice", "cta", "meaning", "findings"],
+      "properties": {
+        "id": {"$ref": "#/$defs/sentenceId"},
+        "start": {"$ref": "#/$defs/offset"},
+        "end": {"$ref": "#/$defs/offset"},
+        "startU16": {"$ref": "#/$defs/offset"},
+        "endU16": {"$ref": "#/$defs/offset"},
+        "para": {"$ref": "#/$defs/offset"},
+        "kind": {"enum": ["body", "heading", "list", "quote", "button"]},
+        "voice": {"$ref": "#/$defs/voice"},
+        "cta": {"anyOf": [{"$ref": "#/$defs/ctaId"}, {"type": "null"}]},
+        "meaning": {"type": "array", "maxItems": 200, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]*(:[^\\s]{1,80})?$", "maxLength": 120}},
+        "findings": {"type": "array", "maxItems": 200, "items": {"$ref": "#/$defs/findingId"}}
+      }
+    },
+    "span": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "start", "end", "policy"],
+      "properties": {
+        "kind": {"enum": ["quote", "number", "date", "money", "url", "email", "phone", "handle", "hashtag", "name",
+                          "code", "markdown", "heading", "footnote", "cmc", "colloquial", "discourse"]},
+        "start": {"$ref": "#/$defs/offset"},
+        "end": {"$ref": "#/$defs/offset"},
+        "policy": {"enum": ["freeze", "keep-token"]}
+      }
+    },
+    "cta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sentence", "form", "force", "tier", "polarity", "action", "object", "condition",
+                   "deadline", "channel", "benefit", "intensity", "level", "honSi"],
+      "properties": {
+        "id": {"$ref": "#/$defs/ctaId"},
+        "sentence": {"$ref": "#/$defs/sentenceId"},
+        "form": {"enum": ["prohibitive", "request", "request_wish", "trial", "imperative", "suggestion", "option",
+                          "advisory", "instruction", "invitation", "nominal", "conditional_offer"]},
+        "force": {"type": "integer", "minimum": 0, "maximum": 5},
+        "tier": {"enum": ["engage", "contact", "navigate", "task"]},
+        "polarity": {"enum": ["pos", "neg"]},
+        "action": {"$ref": "#/$defs/shortList"},
+        "object": {"type": ["string", "null"], "maxLength": 80},
+        "condition": {"type": ["string", "null"], "maxLength": 200},
+        "deadline": {"$ref": "#/$defs/shortList"},
+        "channel": {"$ref": "#/$defs/shortList"},
+        "benefit": {"$ref": "#/$defs/shortList"},
+        "intensity": {"$ref": "#/$defs/shortList"},
+        "level": {"enum": ["hapsyo", "haeyo", "haera", "hae", "other"]},
+        "honSi": {"type": "boolean"}
+      }
+    },
+    "finding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "rule", "tier", "action", "sentence", "start", "end", "fix"],
+      "properties": {
+        "id": {"$ref": "#/$defs/findingId"},
+        "rule": {"$ref": "#/$defs/ruleId"},
+        "tier": {"enum": ["FIX", "SUGGEST", "LEAVE"]},
+        "action": {"enum": ["deterministic", "request", "report"]},
+        "sentence": {"$ref": "#/$defs/sentenceId"},
+        "start": {"$ref": "#/$defs/offset"},
+        "end": {"$ref": "#/$defs/offset"},
+        "fix": {"type": ["string", "null"], "maxLength": 200}
+      }
+    },
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sentence", "rules", "tier", "allowSplit", "guides"],
+      "properties": {
+        "id": {"$ref": "#/$defs/requestId"},
+        "sentence": {"$ref": "#/$defs/sentenceId"},
+        "rules": {"type": "array", "maxItems": 40, "uniqueItems": true, "items": {"$ref": "#/$defs/ruleId"}},
+        "tier": {"enum": ["FIX", "SUGGEST", "REVIEW"]},
+        "allowSplit": {"type": "boolean"},
+        "guides": {"type": "array", "maxItems": 40, "items": {"type": "string", "minLength": 1, "maxLength": 300}}
+      }
+    },
+    "deterministic": {
+      "type": "object", "additionalProperties": false,
+      "required": ["finding", "sentence", "start", "end", "before", "after"],
+      "properties": {
+        "finding": {"$ref": "#/$defs/findingId"},
+        "sentence": {"$ref": "#/$defs/sentenceId"},
+        "start": {"$ref": "#/$defs/offset"},
+        "end": {"$ref": "#/$defs/offset"},
+        "before": {"type": "string", "minLength": 1, "maxLength": 200},
+        "after": {"type": "string", "maxLength": 200}
+      }
+    }
+  }
+}

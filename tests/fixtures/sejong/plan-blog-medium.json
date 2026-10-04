@@ -1,0 +1,55 @@
+{
+  "schema": "sejong-plan/1",
+  "engine": {"id": "super-sejong", "version": "2.0.0"},
+  "chunk": {"index": 1, "total": 1, "sourceSha256": "c9d49833d8d82aa379de61de3a1ced24b1e8a3a56204bc592cf794d7705facdc", "chars": 96},
+  "options": {"inputKind": "direct-text", "strength": "medium", "genre": "blog",
+              "fixColloquial": false, "deterministicFix": "all", "openReview": true, "allowFullText": false},
+  "sentences": [
+    {"id": "S1", "start": 0, "end": 18, "startU16": 0, "endU16": 18, "para": 0, "kind": "body",
+     "voice": {"level": "HAPSYO", "mood": "DECL", "honSi": false, "siCount": 0, "stance": "ㅂ니다",
+               "persona": [], "humble": false, "cmc": [], "discourse": [], "final": "정리합니다."},
+     "cta": null, "meaning": [], "findings": []},
+    {"id": "S2", "start": 19, "end": 35, "startU16": 19, "endU16": 35, "para": 0, "kind": "body",
+     "voice": {"level": "HAPSYO", "mood": "DECL", "honSi": false, "siCount": 0, "stance": "ㅂ니다",
+               "persona": [], "humble": false, "cmc": [], "discourse": [], "final": "바뀌었습니다."},
+     "cta": null, "meaning": [], "findings": ["F1"]},
+    {"id": "S3", "start": 36, "end": 52, "startU16": 36, "endU16": 52, "para": 0, "kind": "body",
+     "voice": {"level": "HAPSYO", "mood": "DECL", "honSi": false, "siCount": 0, "stance": "ㅂ니다",
+               "persona": [], "humble": false, "cmc": [], "discourse": [], "final": "됬습니다."},
+     "cta": null, "meaning": ["NUM:1"], "findings": ["F2"]},
+    {"id": "S4", "start": 54, "end": 70, "startU16": 54, "endU16": 71, "para": 1, "kind": "body",
+     "voice": {"level": "HAEYO", "mood": "DECL", "honSi": false, "siCount": 0, "stance": null,
+               "persona": [], "humble": false, "cmc": ["😀", "ㅎㅎ"], "discourse": [], "final": "좋았어요"},
+     "cta": null, "meaning": [], "findings": []},
+    {"id": "S5", "start": 71, "end": 95, "startU16": 72, "endU16": 96, "para": 1, "kind": "body",
+     "voice": {"level": "HAEYO", "mood": "IMPER", "honSi": true, "siCount": 2, "stance": null,
+               "persona": [], "humble": false, "cmc": [], "discourse": [], "final": "주세요."},
+     "cta": "C1", "meaning": ["NEG:0"], "findings": []}
+  ],
+  "protected": [
+    {"kind": "number", "start": 41, "end": 45, "policy": "freeze"},
+    {"kind": "cmc", "start": 66, "end": 67, "policy": "keep-token"},
+    {"kind": "cmc", "start": 68, "end": 70, "policy": "keep-token"}
+  ],
+  "ctaLedger": [
+    {"id": "C1", "sentence": "S5", "form": "request", "force": 4, "tier": "contact", "polarity": "pos",
+     "action": ["문의"], "object": null, "condition": "궁금한 점이 있으시면", "deadline": [], "channel": ["댓글"],
+     "benefit": [], "intensity": [], "level": "haeyo", "honSi": true}
+  ],
+  "findings": [
+    {"id": "F1", "rule": "SSJ-A01", "tier": "FIX", "action": "request", "sentence": "S2", "start": 19, "end": 35, "fix": null},
+    {"id": "F2", "rule": "SSJ-N04", "tier": "FIX", "action": "deterministic", "sentence": "S3", "start": 47, "end": 48, "fix": "됐"}
+  ],
+  "requests": [
+    {"id": "R1", "sentence": "S2", "rules": ["SSJ-A01"], "tier": "FIX", "allowSplit": false,
+     "guides": ["왜냐하면으로 시작한 문장은 '~기 때문이다'류 이유 표현으로 맺는다"]}
+  ],
+  "deterministic": [
+    {"finding": "F2", "sentence": "S3", "start": 47, "end": 48, "before": "됬", "after": "됐"}
+  ],
+  "profile": {"dominant": "HAPSYO", "share": 0.6, "mixed": true, "line": "합쇼 60%, 해요 감상·CTA 섞임"},
+  "seam": {"prev": [0, 0], "next": [0, 0]},
+  "openReview": {"enabled": true, "maxSentences": 3},
+  "needsModel": true,
+  "stats": {"findingsByTier": {"FIX": 2, "SUGGEST": 0, "LEAVE": 0}}
+}

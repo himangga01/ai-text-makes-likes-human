@@ -1,0 +1,27 @@
+{
+  "schema": "sejong-plan/1",
+  "engine": {"id": "super-sejong", "version": "2.0.0"},
+  "chunk": {"index": 1, "total": 1, "sourceSha256": "9f1adff68f4f4032c859250fa25c21d09247f370eb4e86a7fbd1bab2c3628a2d", "chars": 34},
+  "options": {"inputKind": "text-file", "strength": "normal", "genre": "general",
+              "fixColloquial": false, "deterministicFix": "all", "openReview": false, "allowFullText": false},
+  "sentences": [
+    {"id": "S1", "start": 0, "end": 18, "startU16": 0, "endU16": 18, "para": 0, "kind": "body",
+     "voice": {"level": "HAPSYO", "mood": "DECL", "honSi": false, "siCount": 0, "stance": "ㅂ니다",
+               "persona": [], "humble": false, "cmc": [], "discourse": [], "final": "시작합니다."},
+     "cta": null, "meaning": ["NUM:1"], "findings": []},
+    {"id": "S2", "start": 19, "end": 33, "startU16": 19, "endU16": 33, "para": 0, "kind": "body",
+     "voice": {"level": "HAEYO", "mood": "IMPER", "honSi": true, "siCount": 1, "stance": null,
+               "persona": [], "humble": false, "cmc": [], "discourse": [], "final": "오세요."},
+     "cta": null, "meaning": [], "findings": []}
+  ],
+  "protected": [{"kind": "number", "start": 7, "end": 10, "policy": "freeze"}],
+  "ctaLedger": [],
+  "findings": [],
+  "requests": [],
+  "deterministic": [],
+  "profile": {"dominant": "HAPSYO", "share": 0.5, "mixed": true, "line": "합쇼 50%, 해요 안내 섞임"},
+  "seam": {"prev": [0, 0], "next": [0, 0]},
+  "openReview": {"enabled": false, "maxSentences": 0},
+  "needsModel": false,
+  "stats": {"findingsByTier": {}}
+}

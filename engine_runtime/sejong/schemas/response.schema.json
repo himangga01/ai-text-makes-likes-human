@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["replacements", "rewrittenText", "warnings"],
+  "properties": {
+    "replacements": {
+      "type": "array", "maxItems": 200,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "text", "reason"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^(R|S)[0-9]{1,4}$"},
+          "text": {"type": "string", "minLength": 1, "maxLength": 4000},
+          "reason": {"type": "string", "maxLength": 60}
+        }
+      }
+    },
+    "rewrittenText": {"type": "string"},
+    "warnings": {
+      "type": "array", "maxItems": 20,
+      "items": {"type": "string", "maxLength": 300}
+    }
+  }
+}

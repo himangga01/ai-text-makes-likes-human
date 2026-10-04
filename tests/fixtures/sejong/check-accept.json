@@ -1,0 +1,22 @@
+{
+  "gate": {"exit_code": 0},
+  "hardFailures": [],
+  "warningReasons": {"version": 1, "codes": []},
+  "policy": "accept",
+  "shadowFailures": ["clarity_longer_sentence"],
+  "schema": "sejong-check/1",
+  "attempt": 1,
+  "sentences": [
+    {"id": "S1", "request": null, "status": "unchanged", "codes": [], "repairs": []},
+    {"id": "S2", "request": "R1", "status": "accepted", "codes": [], "repairs": []},
+    {"id": "S3", "request": null, "status": "deterministic", "codes": [], "repairs": ["norm_fix"]},
+    {"id": "S4", "request": null, "status": "reverted", "codes": ["collateral_edit"], "repairs": []},
+    {"id": "S5", "request": null, "status": "unchanged", "codes": [], "repairs": []}
+  ],
+  "retry": [],
+  "requestStatus": {"FIXED": 1, "UNTOUCHED": 0, "STILL_PRESENT": 0, "LOST": 0, "DECLINED": 0},
+  "counts": {"revertedSentences": 1, "revertedByFamily": {}, "collateralReverts": 1,
+             "voiceGrafts": 0, "cmcRestored": 0, "normFixes": 1, "repairedParticles": 0,
+             "removedCommas": 0, "restoredSentences": 0},
+  "changeRate": 0.083
+}

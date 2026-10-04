@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sejong-check/1",
+  "$comment": "Super Sejong Engine v2 check report (DESIGN.md 3.12). The first five keys are the legacy gate JSON read by python-engine.ts verify(). Codes and counts only, never document text.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["gate", "hardFailures", "warningReasons", "policy", "shadowFailures", "schema", "attempt",
+               "sentences", "retry", "requestStatus", "counts", "changeRate"],
+  "properties": {
+    "gate": {
+      "type": "object", "additionalProperties": false, "required": ["exit_code"],
+      "properties": {"exit_code": {"enum": [0, 1, 2, 3]}}
+    },
+    "hardFailures": {"$ref": "#/$defs/codes"},
+    "warningReasons": {
+      "type": "object", "additionalProperties": false, "required": ["version", "codes"],
+      "properties": {
+        "version": {"const": 1},
+        "codes": {
+          "type": "array", "maxItems": 8, "uniqueItems": true,
+          "items": {"enum": ["P0_CHANGE_RATE", "P1_STYLE_TARGET", "P2_ANTITHESIS", "P3_GOLDEN",
+                             "P4_NUMBER_DROPPED", "P5_MODALITY", "P5_UNCERTAIN", "UNKNOWN"]}
+        }
+      }
+    },
+    "policy": {"enum": ["accept", "retry", "rollback", "accept-with-warning", "error"]},
+    "shadowFailures": {"$ref": "#/$defs/codes"},
+    "schema": {"const": "sejong-check/1"},
+    "attempt": {"enum": [1, 2]},
+    "sentences": {
+      "type": "array", "maxItems": 10000,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "request", "status", "codes", "repairs"],
+        "properties": {
+          "id": {"$ref": "#/$defs/sentenceId"},
+          "request": {"anyOf": [{"$ref": "#/$defs/requestId"}, {"type": "null"}]},
+          "status": {"enum": ["unchanged", "deterministic", "accepted", "retry", "rejected", "reverted"]},
+          "codes": {"$ref": "#/$defs/codes"},
+          "repairs": {"$ref": "#/$defs/codes"}
+        }
+      }
+    },
+    "retry": {
+      "type": "array", "maxItems": 10000,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["id", "sentence", "violations"],
+        "properties": {
+          "id": {"$ref": "#/$defs/requestId"},
+          "sentence": {"$ref": "#/$defs/sentenceId"},
+          "violations": {"type": "array", "minItems": 1, "maxItems": 40, "items": {"$ref": "#/$defs/violation"}}
+        }
+      }
+    },
+    "requestStatus": {
+      "type": "object", "additionalProperties": false,
+      "required": ["FIXED", "UNTOUCHED", "STILL_PRESENT", "LOST", "DECLINED"],
+      "properties": {
+        "FIXED": {"$ref": "#/$defs/count"},
+        "UNTOUCHED": {"$ref": "#/$defs/count"},
+        "STILL_PRESENT": {"$ref": "#/$defs/count"},
+        "LOST": {"$ref": "#/$defs/count"},
+        "DECLINED": {"$ref": "#/$defs/count"}
+      }
+    },
+    "counts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["revertedSentences", "revertedByFamily", "collateralReverts", "voiceGrafts", "cmcRestored",
+                   "normFixes", "repairedParticles", "removedCommas", "restoredSentences"],
+      "properties": {
+        "revertedSentences": {"$ref": "#/$defs/count"},
+        "revertedByFamily": {
+          "type": "object", "propertyNames": {"$ref": "#/$defs/family"},
+          "additionalProperties": {"$ref": "#/$defs/count"}
+        },
+        "collateralReverts": {"$ref": "#/$defs/count"},
+        "voiceGrafts": {"$ref": "#/$defs/count"},
+        "cmcRestored": {"$ref": "#/$defs/count"},
+        "normFixes": {"$ref": "#/$defs/count"},
+        "repairedParticles": {"$ref": "#/$defs/count"},
+        "removedCommas": {"$ref": "#/$defs/count"},
+        "restoredSentences": {"$ref": "#/$defs/count"}
+      }
+    },
+    "changeRate": {"type": "number", "minimum": 0}
+  },
+  "$defs": {
+    "count": {"type": "integer", "minimum": 0},
+    "code": {"type": "string", "pattern": "^[a-z_]{1,60}$"},
+    "codes": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/code"}},
+    "sentenceId": {"type": "string", "pattern": "^S[0-9]{1,4}$"},
+    "requestId": {"type": "string", "pattern": "^R[0-9]{1,4}$"},
+    "family": {"enum": ["floor", "meaning", "voice", "cta", "flow", "clarity", "norms", "runaway", "nli"]},
+    "violation": {
+      "type": "object", "additionalProperties": false, "required": ["code", "detail"],
+      "properties": {
+        "code": {"$ref": "#/$defs/code"},
+        "family": {"$ref": "#/$defs/family"},
+        "severity": {"enum": ["hard", "soft", "info"]},
+        "sentence": {"$ref": "#/$defs/sentenceId"},
+        "detail": {"type": "string", "maxLength": 200},
+        "keep": {"type": ["string", "null"], "maxLength": 200}
+      }
+    }
+  }
+}
