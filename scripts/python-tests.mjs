@@ -2,10 +2,16 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolvePythonCommand } from './python-command.mjs';
+import { readSejongEngineVersion } from './engine-runtime.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const suite = process.argv[2];
 if (!suite) { console.error('Usage: node scripts/python-tests.mjs <tests/documents|tests/skills>'); process.exit(2); }
+
+// The v2 engine package reads engine_runtime/sejong/ENGINE_VERSION when it is imported, so a missing or malformed
+// file would surface as an import traceback in every test module that touches it. Say it once, up front.
+try { await readSejongEngineVersion(root); }
+catch (error) { console.error(`engine_runtime/sejong/ENGINE_VERSION is unusable: ${error.message}`); process.exit(1); }
 
 // Skill gateway tests exercise the Node bridge, which bundles the shared TypeScript policy.
 // Rebuild it on every run (esbuild takes milliseconds) so tests never use a stale bundle.

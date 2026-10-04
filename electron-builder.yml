@@ -20,7 +20,8 @@ extraResources:
     filter: ['**/*', '!**/__pycache__/**', '!**/*.pyc']
   - from: engine_runtime
     to: engine/engine_runtime
-    filter: ['**/*.py', '**/*.json']
+    # Whole tree: an extension whitelist dropped engine_runtime/sejong/ENGINE_VERSION, which `import sejong` reads.
+    filter: ['**/*', '!**/__pycache__/**', '!**/*.pyc']
   - from: build-resources/python
     to: engine/python
   - from: src/engine/output-schema.json

@@ -433,10 +433,15 @@ class FlagsTable(unittest.TestCase):
             self.assertEqual(select_engine(), "v2")
 
 
+# Product files a work package has wired to v2 on purpose; each may only read the engine switch and the
+# version file, and legacy stays the default. WP-14: preflight checks the ENGINE_VERSION of the selected engine.
+WIRED = {"src/process/preflight.ts"}
+
+
 class NoRuntimeWiring(unittest.TestCase):
     def test_legacy_modules_do_not_import_the_v2_package(self):
         for path in list((ROOT / "engine_runtime").glob("*.py")) + list((ROOT / "src").rglob("*.ts")):
-            if "sejong" in path.parts:
+            if "sejong" in path.parts or path.relative_to(ROOT).as_posix() in WIRED:
                 continue
             text = path.read_text(encoding="utf-8")
             with self.subTest(path=str(path.relative_to(ROOT))):
