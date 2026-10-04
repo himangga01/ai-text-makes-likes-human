@@ -402,7 +402,8 @@ export class PythonEngine {
     const modalityReport = parseJsonReport(modality.stderr, "modality restore");
 
     const commas = await this.run(
-      [this.script("strip_injected_commas.py"), ...inPlace],
+      // Product-owned: the vendored stripper also deleted the writer's commas in any edited sentence.
+      [path.resolve(this.vendorRoot, "../../engine_runtime/comma_guard.py"), ...inPlace],
       cwd,
       signal
     );

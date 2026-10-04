@@ -73,7 +73,7 @@ class GateReasonTest(unittest.TestCase):
                     if changed >= 30:
                         self.assertEqual(first['policy'], 'retry')
 
-    def test_real_recorded_p1_warning_has_bounded_reasons(self):
+    def test_real_recorded_p1_only_warning_is_advisory_and_does_not_retry(self):
         fixture = json.loads((ROOT / 'tests/fixtures/direct-live-quality.json').read_text(encoding='utf-8'))
         with tempfile.TemporaryDirectory() as directory:
             before, after = Path(directory)/'before.txt', Path(directory)/'after.txt'
@@ -81,11 +81,26 @@ class GateReasonTest(unittest.TestCase):
             after.write_text(fixture['candidate'], encoding='utf-8')
             first = workflow.verify(before, after)
             second = workflow.verify(before, after, attempt=2)
-        self.assertEqual(first['gate']['exit_code'], 1)
+            after.write_text(fixture['source'], encoding='utf-8')
+            unchanged = workflow.verify(before, after)
+        for result in (first, second):
+            self.assertEqual(result['gate']['exit_code'], 0)
+            self.assertEqual(result['policy'], 'accept')
+            self.assertEqual(result['warningReasons'], {'version': 1, 'codes': []})
+            self.assertEqual(result['advisoryReasons'], ['P1_STYLE_TARGET'])
+            self.assertEqual(result['hardFailures'], [])
+        # An unchanged source must never be sent back for a retry.
+        self.assertEqual(unchanged['policy'], 'accept')
+
+    def test_p1_with_another_warning_still_retries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            before, after = Path(directory)/'before.txt', Path(directory)/'after.txt'
+            before.write_text('가' * 100, encoding='utf-8')
+            after.write_text('가' * 60 + '나' * 40, encoding='utf-8')
+            first = workflow.verify(before, after)
+        self.assertIn('P0_CHANGE_RATE', first['warningReasons']['codes'])
         self.assertEqual(first['policy'], 'retry')
-        self.assertEqual(second['policy'], 'accept-with-warning')
-        self.assertEqual(first.get('warningReasons'), {'version': 1, 'codes': ['P1_STYLE_TARGET']})
-        self.assertEqual(first['hardFailures'], [])
+        self.assertNotIn('advisoryReasons', first)
 
     def test_classifies_mixed_missing_and_unknown_reports_closed(self):
         report = p1_report()

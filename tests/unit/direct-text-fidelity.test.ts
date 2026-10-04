@@ -138,3 +138,22 @@ it('still counts sentences for direct text, ignoring the spelling of an ellipsis
  expect(checkDirectTextFidelity(source,'첫 문장이다, 둘째 문장이다.\n').violations).toBeGreaterThan(0);
  expect(checkDirectTextFidelity('기다렸다... 결국 왔다.\n','기다렸다… 결국 왔다.\n').violations).toBe(0);
 });
+
+it('lets a protected sentence fix awkward wording when its protected elements survive',()=>{
+ const source='해당 서류는 발급일로부터 3개월 이내의 것만 인정이 됩니다. 마지막 문장은 그대로다.\n';
+ const candidate='해당 서류는 발급일부터 3개월 이내의 것만 인정됩니다. 마지막 문장은 그대로다.\n';
+ expect(sourceSentences(source)[0]!.protected).toBe(true);
+ expect(checkDirectTextFidelity(source,candidate).violations).toBe(0);
+ expect(restoreProtectedSentences(source,candidate)).toEqual({rewrittenText:candidate,restoredProtectedSentences:0});
+});
+it.each([
+ ['possibility to obligation','서류는 온라인으로 신청할 수 있습니다.','서류는 온라인으로 신청해야 합니다.'],
+ ['changed number','처리 기간은 20일입니다.','처리 기간은 30일입니다.'],
+ ['dropped negation','이 경우 등록이 되지 않습니다.','이 경우 등록이 됩니다.'],
+ ['swapped values','처리 건수는 12건에서 20건으로 늘었습니다.','처리 건수는 20건에서 12건으로 늘었습니다.'],
+ ['several subjects','가팀은 12건을 처리했고 나팀은 20건을 처리했다.','가팀은 20건을 처리했고 나팀은 12건을 처리했다.']
+])('still rejects and restores a protected sentence with %s',(_label,original,changed)=>{
+ const source=original+' 마지막 문장은 그대로다.\n', candidate=changed+' 마지막 문장은 그대로다.\n';
+ expect(checkDirectTextFidelity(source,candidate).violations).toBeGreaterThan(0);
+ expect(restoreProtectedSentences(source,candidate).rewrittenText).toBe(source);
+});

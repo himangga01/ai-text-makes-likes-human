@@ -17,6 +17,7 @@ try:
     from .super_sejong import changed_polarity, changed_participant_roles, changed_sentence_modality, changed_lexical_polarity
     from .super_sejong import mode as super_sejong_mode
     from . import super_sejong_josa as josa
+    from .comma_guard import strip_injected as strip_commas
 except ImportError:  # Executed as a standalone gateway script.
     # Windows embedded Python's ._pth isolation omits the script directory.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -24,6 +25,7 @@ except ImportError:  # Executed as a standalone gateway script.
     from super_sejong import changed_polarity, changed_participant_roles, changed_sentence_modality, changed_lexical_polarity
     from super_sejong import mode as super_sejong_mode
     import super_sejong_josa as josa
+    from comma_guard import strip_injected as strip_commas
 
 # 라틴 문자 단어(Apple, AI)와 한자열(李文學)은 고유명사·용어로 보고 개수까지 보존한다.
 _NAME_TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[.'’\-][A-Za-z0-9]+)*"
@@ -290,12 +292,19 @@ def verify(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR, attempt: in
     except (ValueError, TypeError):
         detail = None
     reasons = warning_reasons(detail, code, stderr.getvalue())
+    advisory = []
+    # P1 compares comma and nominaliser metrics with placeholder baselines and warns on most unchanged human
+    # text, so on its own it no longer forces a retry. Any other warning or hard failure still does.
+    if code == 1 and not codes and reasons["codes"] == ["P1_STYLE_TARGET"]:
+        code, advisory, reasons = 0, ["P1_STYLE_TARGET"], {"version": 1, "codes": []}
     if code not in (0, 1, 2, 3):
         code = 3
     if codes and code != 3:
         code = 2
     result = {"gate": {"exit_code": code}, "hardFailures": codes,
               "warningReasons": reasons, "policy": decision(code, attempt)}
+    if advisory:
+        result["advisoryReasons"] = advisory
     if sejong_mode == "shadow" and sejong:
         result["shadowFailures"] = sejong
     return result
@@ -308,7 +317,8 @@ def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
     with after.open(encoding="utf-8", newline="") as file:
         output = file.read()
     output, restored, skipped = modality.restore(source, output)
-    output, report = commas.strip_injected(source, output, all_sentences=False)
+    # Only commas the rewrite added are removed; the writer's own commas survive edits to their sentence.
+    output, report = strip_commas(source, output, commas)
     # Super Sejong: an edit that changes a noun can leave the wrong particle allomorph behind
     # (회의을, URL를, 10%으로). Repair only mismatches the rewrite introduced.
     repaired = josa.gate(source, output, None, "likely") if super_sejong_mode() != "off" else []

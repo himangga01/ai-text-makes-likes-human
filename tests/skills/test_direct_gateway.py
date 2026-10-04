@@ -123,20 +123,16 @@ class DirectGatewayTest(unittest.TestCase):
         self.call("finalize", "--job", state["job"], "--output", output)
         self.assertEqual(output.read_text(encoding="utf-8"), candidate.replace("자료를 구분하고 기록을 정리한다.", "자료의 구분이 이루어지고 기록의 정리가 진행된다."))
 
-    def test_real_p1_review_uses_original_and_second_candidate(self):
+    def test_real_p1_only_candidate_is_accepted_without_review(self):
+        # P1 alone is advisory: the gateway accepts the candidate instead of asking for a candidate review.
         fixture = json.loads((test_gateway.ROOT / "tests/fixtures/direct-live-quality.json").read_text(encoding="utf-8"))
         self.input.write_text(fixture["source"], encoding="utf-8")
         state = self.accept(self.prepare("very-strong"), fixture["candidate"])
-        self.assertEqual(state["decision"], "retry")
-        prompt = Path(state["instructionsPath"]).read_text(encoding="utf-8")
-        self.assertIn("BEGIN_CANDIDATE_", prompt)
-        self.assertIn(fixture["source"], prompt)
-        self.assertIn(fixture["candidate"], prompt)
-        self.assertIn("DIRECT_TEXT_CANDIDATE_REVIEW_RETRY", " ".join(state["warnings"]))
-        state = self.accept(state, fixture["source"])
-        output = self.root / "reviewed.md"
+        self.assertEqual(state["decision"], "accept")
+        self.assertNotIn("DIRECT_TEXT_CANDIDATE_REVIEW_RETRY", " ".join(state["warnings"]))
+        output = self.root / "accepted.md"
         self.call("finalize", "--job", state["job"], "--output", output)
-        self.assertEqual(output.read_text(encoding="utf-8"), fixture["source"])
+        self.assertEqual(output.read_text(encoding="utf-8").strip(), fixture["candidate"].strip())
 
     def test_failed_second_export_removes_owned_first_and_allows_retry(self):
         state = self.finish(self.prepare())

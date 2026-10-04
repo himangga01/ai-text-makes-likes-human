@@ -432,13 +432,15 @@ def _orderings(sentence: str):
 
 
 def _order_swapped(before: str, after: str) -> bool:
+    # A source ordering counts as swapped only when its best swapped match beats its best straight match.
+    # Comparing every pair flagged an unchanged sentence with two frames ("…하기 전에 … 한 후에 …") as a swap,
+    # because one frame matched the other frame reversed, and the identical text was rolled back.
     ra, rb = _orderings(before), _orderings(after)
     for e1, l1 in ra:
-        for e2, l2 in rb:
-            straight = _overlap(e1, e2) + _overlap(l1, l2)
-            swapped = _overlap(e1, l2) + _overlap(l1, e2)
-            if swapped > straight and swapped >= 1.0:
-                return True
+        straight = max((_overlap(e1, e2) + _overlap(l1, l2) for e2, l2 in rb), default=0.0)
+        swapped = max((_overlap(e1, l2) + _overlap(l1, e2) for e2, l2 in rb), default=0.0)
+        if swapped > straight and swapped >= 1.0:
+            return True
     return False
 
 

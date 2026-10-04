@@ -29,7 +29,7 @@ export function buildHumanizePrompt(input: PromptInput): string {
   }
 
   const sentenceMap = options?.inputKind === 'direct-text'
-    ? `${fullFirstAttempt || review ? '아래 원문 문장의 ID·순서·범위를 새로 만들거나 이동하지 않는다.' : '각 edit의 실제 변경은 아래 원문 문장 하나 안에 한정한다. 유일한 before를 만들기 위한 이웃 문맥은 그대로 둔다. 문장 ID·순서·범위를 새로 만들거나 이동하지 않는다. 범위는 UTF-16 기준이며 출력에는 오프셋 대신 정확한 before/after를 사용한다.'} 보호 문장은 유지한다.\n<source_sentence_spans>\n${JSON.stringify(sourceSentences(input.source).map((sentence, index) => ({id:index + 1,start:sentence.start,end:sentence.end,protected:sentence.protected})))}\n</source_sentence_spans>`
+    ? `${fullFirstAttempt || review ? '아래 원문 문장의 ID·순서·범위를 새로 만들거나 이동하지 않는다.' : '각 edit의 실제 변경은 아래 원문 문장 하나 안에 한정한다. 유일한 before를 만들기 위한 이웃 문맥은 그대로 둔다. 문장 ID·순서·범위를 새로 만들거나 이동하지 않는다. 범위는 UTF-16 기준이며 출력에는 오프셋 대신 정확한 before/after를 사용한다.'} protected 문장은 숫자·날짜·인용과 가능성·부정·의무·조건 표현, 여러 주체의 관계를 그대로 두고 그 밖의 어색한 표현만 고친다.\n<source_sentence_spans>\n${JSON.stringify(sourceSentences(input.source).map((sentence, index) => ({id:index + 1,start:sentence.start,end:sentence.end,protected:sentence.protected})))}\n</source_sentence_spans>`
     : '';
   // Style hints invite edits, so the conservative retry and candidate review never get them.
   const styleFindings = superSejongEnabled() && input.attempt === 1 && !review ? diagnoseKoreanStyle(input.source) : [];

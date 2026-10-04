@@ -265,7 +265,7 @@ export class HumanizeEngine {
     if (protectedSentences > 0 && context.rewriteOptions?.strength !== 'normal') {
       this.recordChunkWarning(context, warnings, {
         code: 'DIRECT_TEXT_PROTECTED_SENTENCES',
-        message: `${chunk.index}번 구간의 ${protectedSentences}개 문장은 사실·인용·서법 또는 조건 보존을 위해 원문을 유지하므로 변경 범위가 작을 수 있습니다.`
+        message: `${chunk.index}번 구간의 ${protectedSentences}개 문장은 숫자·인용·서법·조건 표현을 원문 그대로 두고 그 밖의 표현만 다듬으므로 변경 범위가 작을 수 있습니다.`
       });
     }
 

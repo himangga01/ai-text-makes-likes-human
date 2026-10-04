@@ -186,7 +186,7 @@ describe("PythonEngine", () => {
     const after = path.resolve("C:/job/after.txt");
     expect(runner.calls.map(call => call.args[0])).toEqual([
       path.join(vendorRoot, "scripts", "restore_modality.py"),
-      path.join(vendorRoot, "scripts", "strip_injected_commas.py"),
+      path.resolve(vendorRoot, "../../engine_runtime/comma_guard.py"),
       path.resolve(vendorRoot, "../../engine_runtime/super_sejong_josa.py")
     ]);
     for (const call of runner.calls) {

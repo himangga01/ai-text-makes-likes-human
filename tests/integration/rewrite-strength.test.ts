@@ -185,31 +185,14 @@ it.each([
  expect(result.diagnostics).toMatchObject({fidelityGuardFailures:2,rolledBackChunks:1});
 },30000);
 
-it.each(['codex','claude'] as const)('keeps a guarded recorded candidate available to the actual second %s call',async kind=>{
+// P1-only warnings are advisory: a guarded candidate is accepted on the first call, without a review retry.
+it.each(['codex','claude'] as const)('accepts a P1-only recorded candidate on the first %s call',async kind=>{
  const {default:fixture}=await import('../fixtures/direct-live-quality.json');
  const {output,result,calls}=await run(fixture.source,()=>fixture.candidate,kind);
  expect(output.trim()).toBe(fixture.candidate.trim());
- expect(calls).toHaveLength(2);
- expect(calls[0]!.stdin).not.toContain('BEGIN_CANDIDATE_');
- expect(calls[1]!.stdin).toContain(fixture.candidate.trim());
- expect(calls[1]!.stdin).toContain('BEGIN_CANDIDATE_');
- expect(calls[1]!.stdin).toContain(fixture.source.trim());
- expect(calls[1]!.stdin).not.toContain('바뀐 부분만 edits');
- expect(result.diagnostics).toMatchObject({candidateReviewRetries:1,codexCalls:2,conservativeRetries:1,fidelityGuardFailures:0});
- expect(result.warnings).toContainEqual(expect.objectContaining({code:'DIRECT_TEXT_CANDIDATE_REVIEW_RETRY'}));
- expect(result.warnings).toContainEqual(expect.objectContaining({code:'CHUNK_WARNING_ACCEPTED'}));
- expect(JSON.stringify(result.diagnostics)).not.toContain(fixture.candidate.trim());
-},30000);
-it('honors the second review reverting the suggestion instead of automatically selecting attempt one',async()=>{
- const {default:fixture}=await import('../fixtures/direct-live-quality.json');
- const {output,calls}=await run(fixture.source,(s,attempt)=>attempt===1?fixture.candidate:s);
- expect(calls).toHaveLength(2);expect(calls[1]!.stdin).toContain('BEGIN_CANDIDATE_');expect(output.trim()).toBe(fixture.source.trim());
-},30000);
-it('rolls back an invalid second review even when the first candidate passed every guard',async()=>{
- const {default:fixture}=await import('../fixtures/direct-live-quality.json');
- const {output,result,calls}=await run(fixture.source,(_s,attempt)=>attempt===1?fixture.candidate:fixture.candidate.replace('정확성','안전성'));
- expect(calls).toHaveLength(2);expect(output.trim()).toBe(fixture.source.trim());
- expect(result.diagnostics).toMatchObject({candidateReviewRetries:1,rolledBackChunks:1,fidelityGuardFailures:1});
+ expect(calls).toHaveLength(1);
+ expect(result.diagnostics).toMatchObject({candidateReviewRetries:0,codexCalls:1,conservativeRetries:0,fidelityGuardFailures:0});
+ expect(result.warnings.map(warning=>warning.code)).not.toContain('DIRECT_TEXT_CANDIDATE_REVIEW_RETRY');
 },30000);
 it('never promotes a candidate with a failed direct fidelity check even if Python reports P1',async()=>{
  const {default:fixture}=await import('../fixtures/direct-live-quality.json');
@@ -218,22 +201,3 @@ it('never promotes a candidate with a failed direct fidelity check even if Pytho
  expect(result.diagnostics).toMatchObject({candidateReviewRetries:0,rolledBackChunks:1});
 },30000);
 
-it.each(['codex','claude'] as const)('rejects %s retry edit anchors that exist only in the suggested candidate',async kind=>{
- const {default:fixture}=await import('../fixtures/direct-live-quality.json');
- let attempts=0;
- const {output,result}=await run(fixture.source,(_s,attempt)=>{attempts=attempt;return attempt===1?fixture.candidate:{rewrittenText:'',edits:[{before:'별도의 항목을 두어 검토 기록을 구분했다',after:'별도의 항목으로 검토 기록을 구분했다'}],warnings:[]};},kind);
- expect(attempts).toBe(2);
- // The candidate-only anchor is never applied; the chunk keeps its source instead of failing the job.
- expect(output).toBe(fixture.source);
- expect(result.warnings.map(warning=>warning.code)).toEqual(expect.arrayContaining(['MODEL_OUTPUT_UNUSABLE','CHUNK_ROLLED_BACK']));
-},30000);
-it.each(['before','during'] as const)('honors cancellation %s the candidate-review model call',async timing=>{
- const {default:fixture}=await import('../fixtures/direct-live-quality.json');
- const controller=new AbortController();let attempts=0;
- await expect(run(fixture.source,(_s,attempt)=>{
-  attempts=attempt;if(attempt===2 && timing==='during')controller.abort();return fixture.candidate;
- },'codex',{inputKind:'direct-text',strength:'very-strong'},false,undefined,controller.signal,event=>{
-  if(timing==='before' && event.code==='DIRECT_TEXT_CANDIDATE_REVIEW_RETRY')controller.abort();
- })).rejects.toMatchObject({publicCode:'CLIENT_ABORTED'});
- expect(attempts).toBe(timing==='before'?1:2);
-},30000);

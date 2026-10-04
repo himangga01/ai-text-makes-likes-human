@@ -141,6 +141,13 @@ class Changed(unittest.TestCase):
             with self.subTest(s=s):
                 self.assertCaught(s, c)
 
+    def test_unchanged_sentence_with_two_order_frames_is_not_a_swap(self):
+        for s in ('회의에 들어가기 전에 자료를 다시 읽으면 회의가 끝난 후에 질문이 훨씬 줄어든다.',
+                  '계약하기 전에 서류를 확인하면 계약한 후에 문제가 생기지 않습니다.'):
+            with self.subTest(s=s):
+                self.assertFalse(any(flagged(s, s).values()), flagged(s, s))
+        self.assertCaught('서류를 낸 후에 수수료를 냅니다.', '수수료를 낸 후에 서류를 냅니다.')
+
     def test_document_drift_dropped_sentence(self):
         self.assertTrue(ss.document_sentence_drift('서버가 멈췄다. 원인을 찾았다. 조치를 완료했다.', '서버가 멈췄다. 조치를 완료했다.'))
         self.assertTrue(ss.document_sentence_drift('서버가 멈췄다. 원인을 찾았다.', '서버가 멈췄다. 원인을 찾지 못했다.'))

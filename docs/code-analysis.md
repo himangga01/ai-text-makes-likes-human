@@ -105,19 +105,19 @@ Sources: [limits](../src/engine/input-limits.ts), [body reception](../src/transp
 
 1. Prepare/sanitize input and validate manifest coverage against the prepared source.
 2. Request exact unique source-phrase replacements or full rewritten text. Local parsing sorts anchors and rejects overlap, ambiguity and mixed response forms. Direct-text very-strong first attempts request full text.
-3. Align outer whitespace. For very-strong direct text, restore protected sentences only when mechanical correspondence can be established.
+3. Align outer whitespace. For very-strong direct text, restore a protected sentence whose protected elements changed, only when mechanical correspondence can be established.
 4. Restore identifiable lost modality and remove injected connective commas. Ambiguous restoration is reported instead of guessed.
 5. Run JavaScript fidelity checks and the common Python verification wrapper.
 6. Retry at most once for unusable successful model output, fidelity violations or a retry gate decision. A second unusable/aborting response or unresolved fidelity violation restores the chunk; a second warning can be accepted with review advice.
 7. Reassemble strictly. A direct-text full-document fidelity violation restores the prepared full source before final Python verification. Final abort/error fails; a warning allows delivery with review advice.
 
-Direct-text guards preserve line layout, Markdown markers/headings, sentence counts/order, recognized concepts and literal protected sentences. They recognize numbers, quotations, modality, negation, conditions and multiple explicit subjects, and reject newly introduced protected meaning. These are lexical/structural heuristics, not semantic-equivalence proof.
+Direct-text guards preserve line layout, Markdown markers/headings, sentence counts/order and recognized concepts. Protected sentences (numbers, quotations, modality, negation, conditions, multiple explicit subjects) may be rephrased only when their numbers (in order), quotation marks and modality/negation/condition markers survive unchanged; sentences with several explicit subjects stay verbatim. Newly introduced protected meaning is rejected. These are lexical/structural heuristics, not semantic-equivalence proof.
 
 TXT/MD and legacy requests use structural checks for line layout, Markdown markers, prompt-boundary echo and duplicated source sentences. Sentence split/merge may be allowed by file-editing rules; Python additionally checks dropped content. Direct-text sentence-count/strength policy does not apply to files.
 
 The production wrapper in `engine_runtime/workflow.py` upgrades recognized quote, heading, footnote, number injection/loss, signed quantity, Latin/Hanja name-set and sentence-drop failures to abort. Upstream advisory fact checks therefore do not describe the application's final policy. Character change rate still warns at 30% and aborts at 50%.
 
-Very-strong candidate review is restricted to a fidelity-passing first candidate with only recognized `P1_STYLE_TARGET`, no hard failure and a retry policy. It makes an actual second call using the original as authority; it does not automatically select the first draft or relax final checks.
+A `P1_STYLE_TARGET` warning on its own is advisory: `workflow.verify` returns exit 0 with `advisoryReasons: ["P1_STYLE_TARGET"]`, because P1 compares comma metrics with placeholder baselines and warned on most unchanged human text. P1 together with any other warning or hard failure still retries. The very-strong candidate review, which only ran on P1-only warnings, is therefore no longer reached through the real gate.
 
 CLI execution failure, model rejection and timeout fail the job. If every text body chunk returns unusable output on both attempts, the job fails with `ENGINE_OUTPUT_INVALID` rather than reporting source-only success.
 

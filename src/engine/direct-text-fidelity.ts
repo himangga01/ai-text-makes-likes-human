@@ -12,7 +12,10 @@ const conceptSuffixes = new Set([
   '에게는', '에게도', '에게만', '로는', '로도', '로만', '으로는', '으로도', '으로만',
   '와는', '과는', '와도', '과도', '와의', '과의',
   '만은', '만을', '만이', '만의', '만으로', '만으로도', '만으로는',
-  '로부터', '로부터는', '로부터도', '으로부터', '으로부터는', '으로부터도'
+  '로부터', '로부터는', '로부터도', '으로부터', '으로부터는', '으로부터도',
+  // The same noun used as a 하다/되다 verb keeps the concept ("인정이 됩니다" → "인정됩니다").
+  '합니다', '했습니다', '하였습니다', '됩니다', '됐습니다', '되었습니다', '하였다', '되었다',
+  '하는', '되는', '한', '된'
 ]);
 // Used only to prove that a changed protected sentence still occupies its
 // original slot before literal restoration. This does not widen the ordinary
@@ -47,6 +50,36 @@ function risky(text: string): boolean {
   // Multiple explicit subjects can hide object/value swaps despite unchanged noun sets.
   const subjects = [...text.matchAll(/([가-힣A-Za-z]+)(?:은|는|이|가)(?=\s)/gu)].filter(match => !isAdnominalVerb(match[0]));
   return subjects.length > 1;
+}
+// The elements that make a sentence protected. A protected sentence may be rephrased only when all of them
+// survive unchanged. Freezing whole sentences kept about 72% of the owner's blog sentences from any edit;
+// meaning beyond these markers is still checked by the Python gate (negation, modality, roles, numbers).
+const protectedElementPatterns = [
+  /금지|불가|불허|허용|의무/gu,
+  /[0-9]+(?:[.,:][0-9]+)*/gu,
+  /['"“”‘’「」『』]/gu,
+  /수\s*(?:있|없)|(?:해|하여|어|아)야|않|없|아니|가능|추정|판단|듯|것\s*같|것으로\s*보|(?<!가지)(?<!갖)고\s*있/gu,
+  /(?:^|\s)(?:안|못)(?=\s)|(?<=[가-힣])면(?=\s|,)|경우|때문|조건|이후|이전|전까지|후에|따라서/gu
+];
+function protectedElements(text: string): string {
+  const markers: string[] = [];
+  for (const pattern of protectedElementPatterns.filter((_, index) => index !== 1)) {
+    for (const match of text.matchAll(pattern)) markers.push(match[0].replace(/\s+/gu, ''));
+  }
+  // Numbers keep their order: swapping two values ("12건 … 20건" → "20건 … 12건") changes the facts.
+  const numbers = [...text.matchAll(protectedElementPatterns[1]!)].map(match => match[0]);
+  return `${markers.sort().join('|')}#${numbers.join('|')}`;
+}
+function explicitSubjects(text: string): string[] {
+  // "N이 되다/아니다" marks a complement, not a second subject ("인정이 됩니다", "문제가 아닙니다").
+  return [...text.matchAll(/([가-힣A-Za-z]+)(?:은|는|이|가)(?=\s)(?!\s+(?:[되돼됩됐될된]|아니|아닙|아닌))/gu)]
+    .filter(match => !isAdnominalVerb(match[0])).map(match => match[0]);
+}
+/** A rewritten protected sentence must keep its numbers (in order), quotation marks and possibility/negation/
+ * obligation/condition markers. A sentence with several explicit subjects stays verbatim: values and roles can
+ * swap between its subjects without any marker changing. */
+export function preservesProtectedElements(original: string, rewritten: string): boolean {
+  return explicitSubjects(original).length < 2 && protectedElements(original) === protectedElements(rewritten);
 }
 export function sourceSentences(source: string): SourceSentence[] {
   const result: SourceSentence[] = [];
@@ -201,7 +234,7 @@ export interface ProtectedSentenceRestoration {
   restoredProtectedSentences: number;
 }
 
-/** Restore only mechanically aligned protected sentences. Ambiguous candidates
+/** Restore only mechanically aligned protected sentences whose protected elements changed. Ambiguous candidates
  * are returned untouched so the existing retry/rollback path remains active. */
 export function restoreProtectedSentences(source: string, candidate: string): ProtectedSentenceRestoration {
   const sourceLines = source.split('\n'), candidateLines = candidate.split('\n');
@@ -237,7 +270,7 @@ export function restoreProtectedSentences(source: string, candidate: string): Pr
       }
       continue;
     }
-    if (original.text === replacement.text) continue;
+    if (original.text === replacement.text || preservesProtectedElements(original.text, replacement.text)) continue;
     // A changed protected sentence needs at least one recognized lexical anchor;
     // sentence counts alone are never treated as proof of correspondence.
     if (!original.concepts.length || !preservesConcepts(original, replacement, restorationConceptSuffixes)) {
@@ -282,7 +315,7 @@ export function checkDirectTextFidelity(source: string, candidate: string): Fide
   for (let index = 0; index < before.length; index++) {
     const original = before[index]!, rewritten = after[index];
     if (!rewritten) continue;
-    if (original.protected && original.text !== rewritten.text) violations++;
+    if (original.protected && original.text !== rewritten.text && !preservesProtectedElements(original.text, rewritten.text)) violations++;
     // Protection is bidirectional: a factual statement must not become a
     // negative, obligation, possibility or condition during an ordinary rewrite.
     if (!original.protected && hasProtectedMeaning(rewritten.text)) violations++;
