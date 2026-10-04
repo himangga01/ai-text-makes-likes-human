@@ -197,10 +197,17 @@ class Features:
         self.short: Counter = Counter()
 
 
+# The bound noun 수 is often written attached ("할수 있다"). The CAN rules read it only after a space, so the
+# spacing fix 할수 있다 -> 할 수 있다 looked like a new ability and a lost negation. Both sides are read with 수
+# spaced after an attributive ㄹ ending; 할수록 and 할수밖에 are left alone.
+_RIEUL_FINAL = ''.join(chr(0xAC00 + i * 28 + 8) for i in range(19 * 21))
+_ATTACHED_SU = re.compile('([' + _RIEUL_FINAL + r'])수(?=(?:가|는|도)?\s*(?:있|없))')
+
+
 @lru_cache(maxsize=8192)
 def features(text: str) -> Features:
     f = Features()
-    work = _IDIOMS.sub(_blank, text)
+    work = _IDIOMS.sub(_blank, _ATTACHED_SU.sub(r'\1 수', text))
     ev: list = []
 
     def add_bound(m):

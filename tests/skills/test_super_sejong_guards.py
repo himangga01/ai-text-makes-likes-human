@@ -67,7 +67,12 @@ class Preserved(unittest.TestCase):
     def test_spacing_only_changes_never_flag(self):
         for source, candidate in [('할 수있다.', '할 수 있다.'), ('할 수 있다.', '할 수  있다.'),
                                   ('서류를 제출하면 안됩니다.', '서류를 제출하면 안 됩니다.'),
-                                  ('그 사건의 배후가 있을 수 있다.', '그 사건의  배후가  있을 수  있다.')]:
+                                  ('그 사건의 배후가 있을 수 있다.', '그 사건의  배후가  있을 수  있다.'),
+                                  # attached bound noun 수, fixed by the writer (2026-10-04 live false positive)
+                                  ('참가를 원하시는 분은 15일까지 신청하실수 있어요.', '참가를 원하시는 분은 15일까지 신청하실 수 있어요.'),
+                                  ('그날은 비가 와서 볼수 없었다.', '그날은 비가 와서 볼 수 없었다.'),
+                                  ('혼자서는 할수가 없다.', '혼자서는 할 수가 없다.'),
+                                  ('누구나 참여할수도 있다.', '누구나 참여할 수도 있다.')]:
             with self.subTest(source=source):
                 self.assertFalse(any(flagged(source, candidate).values()))
 
@@ -84,6 +89,12 @@ class Changed(unittest.TestCase):
                      ('그는 안 먹는다.', '그는 못 먹는다.'),
                      ('답이 틀리지 않았다.', '답이 틀렸다.'),
                      ('그는 안 먹고 집에 갔다.', '그는 먹고 집에 안 갔다.')]:
+            with self.subTest(s=s):
+                self.assertCaught(s, c, 'polarity', 'modality', 'lexical')
+
+    def test_attached_su_still_reads_ability(self):
+        # spacing 수 must not hide a real change: attached 할수 있다 -> 한다 still drops the ability
+        for s, c in [('그는 범인일수 있다.', '그는 범인이다.'), ('오늘은 갈수 없다.', '오늘은 갈 수 있다.')]:
             with self.subTest(s=s):
                 self.assertCaught(s, c, 'polarity', 'modality', 'lexical')
 
