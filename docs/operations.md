@@ -72,6 +72,16 @@ SUPER_SEJONG_MODE=shadow node dist/ops/hermes-service.js restart
 
 watchdog이 서버를 다시 띄울 때는 watchdog 자신의 환경을 사용하므로, 기본값이 아닌 모드를 유지하려면 cron 항목에도 같은 값을 넣어야 합니다. 그렇지 않으면 자동 재시작 후 `enforce`로 돌아갑니다. Python 단계는 작업마다 값을 읽지만 서버가 시작할 때 받은 환경을 전달하므로, 모드 변경은 재시작해야 반영됩니다.
 
+슈퍼세종엔진 v2도 같은 방식으로 켭니다. 기록 모드는 기존 엔진의 결과를 그대로 두고 v2 판정만 `diagnostics.v2ShadowCounts`에 숫자로 남깁니다(추가 모델 호출 없음, Office 문서 제외). v2 전환은 결과를 만드는 엔진 자체를 바꿉니다.
+
+```sh
+SUPER_SEJONG_V2_SHADOW=1 node dist/ops/hermes-service.js restart   # 기록 모드
+SUPER_SEJONG_ENGINE=v2 node dist/ops/hermes-service.js restart     # v2로 전환
+node dist/ops/hermes-service.js restart                            # 값 없이 재시작하면 기본값(기존 엔진, 기록 끔)
+```
+
+Hermes cron의 `portal-watchdog`은 `hermes-service.js watch`를 매시간 실행하며, 서버가 연속으로 응답하지 않을 때만 다시 띄웁니다. 평소에는 재시작 명령에 넣은 값이 유지되지만, watchdog이 다시 띄운 뒤에는 위 값이 빠진 기본 상태가 됩니다. 계속 유지하려면 watchdog 스크립트의 실행 환경에도 같은 값을 넣으세요. 기록 모드의 숫자는 `transform_complete` 로그의 `diagnostics.v2ShadowCounts`에서 확인합니다(키는 코드명, 값은 정수, 본문 없음).
+
 | 모드 | 의미 보존 검사 | 조사 교정 | 문체 힌트 | Office 순서 비교 |
 | --- | --- | --- | --- | --- |
 | `enforce` | 실패하면 재시도·되돌림 | 실행 | 첫 시도에만 전달 | 슈퍼세종 문장 정렬 비교로 대체 |
