@@ -80,6 +80,8 @@ const CHUNK_ROLLBACK = 'CHUNK_ROLLED_BACK';
 
 interface ChunkContext {
   plan: Plan;
+  /** The plan file named by manifest.sejong.plans (relative to the workspace). */
+  planFile: string;
   settings?: ModelSettings;
   workspace: HumanizeRequest['workspace'];
   documentText: string;
@@ -134,6 +136,13 @@ function codePointLength(value: string): number {
 /** Sentences of an attempt-1 report that are open-review nominations (request id = sentence id). */
 function nominationsOf(report: CheckReport): number {
   return report.sentences.filter(sentence => sentence.request !== null && sentence.request === sentence.id).length;
+}
+
+/** Why a chunk was rolled back, from the gate's hard codes (the warning used to say 의미 보존 for every reason). */
+export function rollbackReason(hardFailures: readonly string[]): string {
+  if (hardFailures.includes('model_output_unusable')) return '모델 응답을 쓸 수 없어';
+  if (hardFailures.includes('change_rate_runaway')) return '바뀐 양이 너무 많아';
+  return '내용 보존을 확인하지 못해';
 }
 
 function revertedMessage(report: CheckReport): string {
@@ -201,7 +210,7 @@ export class SejongEngine {
     };
     const sourcePath = workspace.path(chunk.inputFile!);
     const rewrittenPath = workspace.path(chunk.rewrittenFile!);
-    const planPath = workspace.path(`plan-${String(index).padStart(2, '0')}.json`);
+    const planPath = workspace.path(context.planFile);
     const source = await readFile(sourcePath, 'utf8');
     const gateCodes: GateCode[] = [];
     const hardFailures: Record<string, number> = {}, shadowFailures: Record<string, number> = {};
@@ -300,7 +309,8 @@ export class SejongEngine {
       const fixes = report.counts.normFixes;
       record({
         code: CHUNK_ROLLBACK,
-        message: `${index}번 구간은 의미 보존을 위해 원문을 유지했습니다.` + (fixes > 0 ? ` 확실한 맞춤법 오류 ${fixes}곳만 고쳤습니다.` : '')
+        message: `${index}번 구간은 ${rollbackReason(report.hardFailures)} 원문을 유지했습니다.` +
+          (fixes > 0 ? ` 확실한 맞춤법 오류 ${fixes}곳만 고쳤습니다.` : '')
       });
     } else {
       await writeFile(rewrittenPath, await readFile(decided, 'utf8'), 'utf8');
@@ -388,6 +398,7 @@ export class SejongEngine {
         this.ensureActive(signal);
         return this.processChunk(chunk, {
           plan: plans.get(chunk.index)!,
+          planFile: entries.get(chunk.index)!.file,
           settings: request.settings,
           workspace: request.workspace,
           documentText: source,

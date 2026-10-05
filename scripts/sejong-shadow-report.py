@@ -71,10 +71,14 @@ def summarise(total: int, jobs) -> dict:
         legacy["sourceChars"] += event.get("sourceChars") or 0
 
     def pct(values, q):
+        """Nearest-rank percentile (q in 0..1); None without values."""
         if not values:
             return None
         ordered = sorted(values)
-        return ordered[min(len(ordered) - 1, int(round(q * (len(ordered) - 1))))]
+        return ordered[min(len(ordered) - 1, max(0, -(-int(q * 100) * len(ordered) // 100) - 1))]
+
+    def median(values):
+        return round(statistics.median(values)) if values else None
 
     def top(prefix, limit=10):
         found = [(key[len(prefix):], value) for key, value in keys.items() if key.startswith(prefix) and value]
@@ -82,9 +86,12 @@ def summarise(total: int, jobs) -> dict:
 
     return {
         "logJobs": total, "shadowJobs": len(jobs), "keys": dict(keys), "legacy": dict(legacy),
-        "overhead": {"p50": pct(overhead, 0.5), "p90": pct(overhead, 0.9), "max": max(overhead) if overhead else None},
-        "prepareMedian": statistics.median(prepare) if prepare else None,
-        "checkMedian": statistics.median(check) if check else None,
+        "overhead": {"p50": median(overhead), "p90": pct(overhead, 0.9), "max": max(overhead) if overhead else None},
+        "prepareMedian": median(prepare),
+        "checkMedian": median(check),
+        "topFindingRules": top("finding_rule_"),
+        "stepFailures": top("failed_") + [("시간 초과 " + c, v) for c, v in top("timeout_")]
+                        + [("중단 " + c, v) for c, v in top("aborted_")],
         "topRequestRules": top("request_rule_"), "topRetryCodes": top("retry_code_"),
         "topSentenceCodes": top("sentence_code_"), "retryFamilies": top("retry_family_"),
         "revertedFamilies": top("reverted_family_"), "hard": top("hard_"), "soft": top("soft_"),
@@ -105,13 +112,21 @@ def render(s: dict) -> str:
     lines.append(f"- 처리한 원문 {legacy.get('sourceChars', 0):,}자, 기존 엔진 모델 호출 {legacy.get('codexCalls', 0)}회,"
                  f" 재시도 {legacy.get('retries', 0)}회, 구간 되돌림이 있었던 작업 {legacy.get('rolledBackJobs', 0)}건,"
                  f" 전체 원문 복원 {legacy.get('fullSourceRollbacks', 0)}건")
+    if s["stepFailures"]:
+        lines.append("- 기록 실패 단계: " + ", ".join(f"{c} {v}" for c, v in s["stepFailures"]))
+    if k.get("other_keys"):
+        lines.append(f"- 주의: 기록 항목 상한(작업당 200개)을 넘어 {k['other_keys']}개 항목이 `other_keys`로 합쳐졌습니다.")
     lines += ["", "## v2 검사의 판정 (기존 엔진이 낸 결과물 기준)", ""]
-    lines.append(f"- 그대로 받아들임: {k.get('would_accept', 0)}건 / 재시도 요청: {k.get('would_retry', 0)}건"
-                 f" / 실패 처리: {k.get('would_fail', 0)}건 (판정 불가: 구간 경계 불일치 {k.get('chunks_unaligned', 0)}구간)")
+    lines.append(f"- 작업 단위: 받아들임 {k.get('would_accept', 0)}건(일부 문장 되돌림 포함) / 재시도 {k.get('would_retry', 0)}건"
+                 f" / 되돌림 {k.get('would_fail', 0)}건")
+    lines.append(f"- 구간 단위: 검사한 구간 {k.get('chunks_checked', 0)}개 (exit 0 {k.get('gate_exit_0', 0)} · exit 1 {k.get('gate_exit_1', 0)}"
+                 f" · exit 2 {k.get('gate_exit_2', 0)}; 1차 시도의 exit 1·2는 모두 재시도), 판정 불가: 구간 경계 불일치"
+                 f" {k.get('chunks_unaligned', 0)}개, 시간 초과로 건너뜀 {k.get('chunks_skipped', 0)}개")
     lines.append(f"- 문장 판정: 그대로 {k.get('sentences_unchanged', 0)} · 맞춤법 자동 수정 {k.get('sentences_deterministic', 0)}"
                  f" · 채택 {k.get('sentences_accepted', 0)} · 재시도 {k.get('sentences_retry', 0)}"
                  f" · 되돌림 {k.get('sentences_reverted', 0)} · 거부 {k.get('sentences_rejected', 0)}")
-    lines.append(f"- 요청 밖 수정으로 되돌렸을 문장 {k.get('collateral_reverts', 0)}개, 확실한 맞춤법 수정 {k.get('norm_fixes', 0)}곳")
+    lines.append(f"- 요청 밖 수정으로 되돌렸을 문장 {k.get('collateral_reverts', 0)}개, 확실한 맞춤법 수정 {k.get('norm_fixes', 0)}곳,"
+                 f" 말투 복구 {k.get('voice_grafts', 0)}곳, ㅋㅋ·^^ 등 복구 {k.get('cmc_restored', 0)}곳")
     if s["retryFamilies"]:
         lines.append("- 재시도 사유(검사 묶음): " + ", ".join(f"{FAMILY_KO.get(f, f)} {v}" for f, v in s["retryFamilies"]))
     if s["revertedFamilies"]:
@@ -127,18 +142,22 @@ def render(s: dict) -> str:
     lines.append(f"- 구간 {k.get('chunks', 0)}개 중 모델이 필요한 구간 {k.get('chunks_need_model', 0)}개,"
                  f" 모델 없이 끝났을 구간 {k.get('chunks_no_model', 0)}개 (열린 검토 대상 {k.get('chunks_open_review', 0)}개)")
     lines.append(f"- 요청: 필수(FIX) {k.get('requests_fix', 0)} · 제안(SUGGEST) {k.get('requests_suggest', 0)}"
-                 f" · 열린 검토 {k.get('requests_review', 0)}")
+                 f" (진단 결과: 필수 {k.get('findings_fix', 0)} · 제안 {k.get('findings_suggest', 0)} · 보고만 {k.get('findings_leave', 0)})")
     if s["topRequestRules"]:
         lines.append("- 요청 규칙 상위: " + ", ".join(f"`{rule_id(r)}` {v}" for r, v in s["topRequestRules"]))
+    if s["topFindingRules"]:
+        lines.append("- 진단 규칙 상위: " + ", ".join(f"`{rule_id(r)}` {v}" for r, v in s["topFindingRules"]))
     lines.append(f"- 기존 엔진 결과에 비춘 요청 상태: 고쳐짐 {k.get('request_status_fixed', 0)}"
                  f" · 손대지 않음 {k.get('request_status_untouched', 0)} · 남아 있음 {k.get('request_status_still_present', 0)}"
                  f" · 해당 문장 미수정 {k.get('request_status_declined', 0)}")
     lines += ["", "## 추가 시간", ""]
     o = s["overhead"]
-    lines.append(f"- 작업이 v2 기록을 기다린 시간: 중앙값 {o['p50']}ms, 90% {o['p90']}ms, 최대 {o['max']}ms"
-                 f" (분석 중앙값 {s['prepareMedian']}ms, 검사 중앙값 {s['checkMedian']}ms, 둘 다 기존 엔진 작업과 겹쳐 실행)")
-    lines += ["", "숫자는 코드와 개수만 모은 것이며 본문은 들어가지 않습니다. v2가 직접 고친 결과의 품질은 이 기록으로 알 수 없고,"
-              " `SUPER_SEJONG_ENGINE=v2`로 전환해야 볼 수 있습니다."]
+    ms = lambda value: "-" if value is None else f"{value}ms"
+    lines.append(f"- 작업이 v2 기록을 기다린 시간: 중앙값 {ms(o['p50'])}, 90% {ms(o['p90'])}, 최대 {ms(o['max'])}"
+                 f" (분석 중앙값 {ms(s['prepareMedian'])}, 검사 중앙값 {ms(s['checkMedian'])}, 둘 다 기존 엔진 작업과 겹쳐 실행)")
+    lines += ["", "숫자는 코드와 개수만 모은 것이며 본문은 들어가지 않습니다. 로그 줄에 시각이 없어 기간을 나눌 수 없으므로,"
+              " 기록 모드를 켠 뒤의 모든 작업이 합쳐집니다. 서버 작업 실패는 `transform_complete`가 남지 않아 빠집니다."
+              " v2가 직접 고친 결과의 품질은 이 기록으로 알 수 없고, `SUPER_SEJONG_ENGINE=v2`로 전환해야 볼 수 있습니다."]
     return "\n".join(lines) + "\n"
 
 

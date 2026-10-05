@@ -632,6 +632,11 @@ export class SejongPython {
     if (![0, 1, 2, 3].includes(result.exitCode)) throw invalid('Unexpected Sejong check exit code');
     // Exit 3 is the legacy "gate execution failed" status, which the legacy engine turns into VALIDATION_FAILED.
     if (result.exitCode === 3) throw new EngineError('VALIDATION_FAILED', false, 'Sejong check execution failed');
+    // A Python crash before main() (an import error) also exits 1 but writes no report: an execution error, not
+    // an invalid report.
+    if (!(await stat(report).then(info => info.isFile(), () => false))) {
+      throw new EngineError('VALIDATION_FAILED', false, 'Sejong check execution failed');
+    }
     const data = await this.readJson(report, 'check report');
     const problems = checkProblems(data, await this.schema('check'));
     if (problems.length) throw invalid(`Sejong check report is invalid: ${problems.slice(0, 3).join('; ')}`);
@@ -651,6 +656,8 @@ export class SejongPython {
     ], path.dirname(beforePath), signal);
     if (![0, 1, 2, 3].includes(result.exitCode)) throw invalid('Unexpected gate exit code');
     const exitCode = result.exitCode as 0 | 1 | 2 | 3;
+    // Exit 1 with no JSON at all on stdout is a crash before main() (a Python traceback): an execution error.
+    if (exitCode === 1 && !result.stdout.includes('{')) throw new EngineError('VALIDATION_FAILED', false, 'Sejong verify execution failed');
     const report = lastJsonObject(result.stdout, 'gate');
     if (integer(record(report.gate, 'gate report.gate').exit_code, 'gate report.gate.exit_code') !== exitCode) {
       throw invalid('Gate report exit code mismatch');

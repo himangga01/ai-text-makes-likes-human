@@ -69,8 +69,24 @@ def _sejong():
     return sejong, config, diagnose, plan, text, types, verify, voice
 
 
+# The SUPER_SEJONG_* settings a v2 job started with (job.json `sejongEnv`); every later call of the job reads them
+# instead of its own environment, so a server restarted with other flags cannot strand a job between accept and
+# finalize (code review 2026-10-05). None = read the process environment (prepare, legacy jobs).
+_PINNED_ENV = None
+
+
+def sejong_env():
+    """The SUPER_SEJONG_* variables of this process, to pin in job.json at prepare."""
+    return {k: v for k, v in os.environ.items() if k.startswith('SUPER_SEJONG_')}
+
+
+def pin_sejong_env(env):
+    global _PINNED_ENV
+    _PINNED_ENV = dict(env) if env is not None else None
+
+
 def sejong_flags():
-    return _sejong()[1].Flags.from_env()
+    return _sejong()[1].Flags.from_env(_PINNED_ENV)
 
 
 def sejong_engine():
@@ -116,7 +132,7 @@ def reject_with_sejong(source, result):
     Nothing is repaired: an Office edit maps to formatting runs, so the writer's text is taken or refused.
     A crash in the checks refuses too (fail closed)."""
     try:
-        found = _sejong()[6].verify_block(source, result)
+        found = _sejong()[6].verify_block(source, result, flags=sejong_flags())
     except Exception:
         raise DocumentError('수정 내용을 검증하지 못해 원문을 유지합니다.') from None
     if not found:

@@ -149,9 +149,15 @@ _DEM_STARTER = re.compile("[" + _OPENERS + "]*(?:(?:" + _alt(LEXICON["demonstrat
                           + r")(?![가-힣])|(?:이|그)\s[가-힣]{1,6}(?:은|는)(?=\s))")
 
 
+# 그래도 before 되다/괜찮다 is the permission "that is fine to do" (그래도 돼요? = 그렇게 해도 돼요?), not the
+# concessive connective (code review 2026-10-05).
+_PERMISSION = r"(?!\s*(?:돼|되|된|됩|될|됐|괜찮))"
+
+
 def _contrast_word(word: str) -> str:
     base = word.rstrip(",")
-    return ("(?<![가-힣])" if len(base) <= 2 else "") + re.escape(word) + "(?![가-힣])"
+    return (("(?<![가-힣])" if len(base) <= 2 else "") + re.escape(word) + "(?![가-힣])"
+            + (_PERMISSION if word == "그래도" else ""))
 
 
 _CONTRAST = re.compile("|".join(
@@ -186,6 +192,8 @@ def _initial(masked: str) -> Optional[Tuple[str, str]]:
     word = m.group(1)
     if word == "또" and masked[m.end():].lstrip().startswith("다른"):   # "또 다른 방법": the determiner
         return None
+    if word == "그래도" and re.match(_PERMISSION, masked[m.end():]) is None:   # "그래도 돼요?": permission
+        return None
     return word, CLASS_OF[word]
 
 
@@ -210,10 +218,11 @@ def initial_connective(sentence: str) -> Optional[Tuple[str, str]]:
 class _Feat:
     """Marker counts of one sentence, computed once. All counts are on the quote-masked text."""
 
-    __slots__ = ("init", "stack", "contrast", "causal", "starter")
+    __slots__ = ("init", "stack", "contrast", "causal", "starter", "masked")
 
     def __init__(self, unit: Unit):
         masked = T.mask_quotes(body_text(unit.text))
+        self.masked = masked
         self.init = _initial(masked)
         self.stack = _stack(masked, self.init)
         self.contrast: List[str] = _CONTRAST.findall(masked)
@@ -328,11 +337,20 @@ def _init_counts(feats: Iterable[_Feat]) -> Counter:
     return Counter(cls for f in feats for _word, cls in f.stack)
 
 
+def _connective_word(word: str) -> str:
+    return ("(?<![가-힣])" if len(word.rstrip(",")) <= 2 else "") + re.escape(word.rstrip(",")) + "(?![가-힣])"
+
+
 def _transition(sf: List[_Feat], of: List[_Feat], one_to_one: bool) -> List[str]:
     """Labels of the transition changes of one pair, [] when none. Dropping one of two stacked connectives
     ("그리고 또한 ..." -> "또한 ...", a redundancy fix) is neither an added class nor an upshift."""
     labels: List[str] = []
-    si, oi = _init_counts(sf), _init_counts(of)
+    si = _init_counts(sf)
+    # A connective the source sentence already has elsewhere was moved to the front, not added (그는 사실 몰랐다 ->
+    # 사실 그는 몰랐다, 그런데 그는 사실 -> 그런데 사실 그는; code review 2026-10-05).
+    def uses(feats: List[_Feat], word: str) -> int:
+        return sum(len(re.findall(_connective_word(word), f.masked)) for f in feats)
+    oi = Counter(cls for f in of for word, cls in f.stack if si[cls] or uses(of, word) > uses(sf, word))
     for cls in ADDED_CLASSES:
         if oi[cls] > si[cls]:
             labels.append(cls)

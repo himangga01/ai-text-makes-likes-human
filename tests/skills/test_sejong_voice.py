@@ -277,6 +277,8 @@ class OwnerDecisionTests(unittest.TestCase):
         self.assertEqual([v.keep for v in check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 것 같아ㅎㅎ")],
                          ["거 같아"])
         self.assertEqual(check("역시 가을 산이 최고인거 같아ㅎㅎ", "역시 가을 산이 최고인 거 같아ㅎㅎ"), [])
+        # a new 것 같다 where the source had no spoken 거 같다 is a hedge change, not a register change
+        self.assertEqual(check("아마 그럴 수도 있어요.", "아마 그럴 것 같아요."), [])
         # 이었 after a final consonant is the only spelling (the TR-JUNGE_ITDA repair in the past tense); the other
         # upshifts still count
         self.assertEqual(check("공사가 진행 중에 있었다.", "공사가 진행 중이었다."), [])

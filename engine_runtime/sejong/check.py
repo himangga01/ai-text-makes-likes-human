@@ -266,6 +266,7 @@ def check(plan: Plan, source: str, *, response: Optional[object] = None, candida
 
     # Floor on the whole chunk: charged edits, then every edit, then the source itself (which passes).
     floor_failed: List[str] = []
+    to_source = False                              # the ladder reached the source: base(x) itself failed the floor
     text = AP.assemble(doc, texts)[0]
     found = F.check(source, text, document=document, spans=plan.protected) if text != source else []
     for stage in ("charged", "edits", "source"):
@@ -275,6 +276,7 @@ def check(plan: Plan, source: str, *, response: Optional[object] = None, candida
         kept = {k for k in range(n) if texts[k] != st.base[k]}
         codes = VF.unique_codes(found)
         if stage == "source":
+            to_source = True
             for k in range(n):
                 if texts[k] != st.src[k]:
                     verdicts[k] = DC.Verdict("reverted", "revert", codes)
@@ -309,10 +311,11 @@ def check(plan: Plan, source: str, *, response: Optional[object] = None, candida
         for k, verdict in verdicts.items():
             if verdict.status == "retry":
                 verdicts[k] = DC.Verdict("rejected" if not reasons.get(k) else "reverted", "revert", verdict.codes)
-    if gate.policy == "rollback" and not floor_failed:
+    if gate.policy == "rollback" and not floor_failed and not to_source:
         # A rollback delivers base(x), the source plus the deterministic fixes, which verify clean by construction
         # (3.11): the chunk keeps its certain misspelling fixes. The reverts above already leave base(x); this
-        # states it for every rollback reason (runaway, an unusable reply with nothing kept).
+        # states it for every rollback reason (runaway, an unusable reply with nothing kept). Where the floor
+        # ladder had to fall back to the source, base(x) failed the floor and the source stays.
         for k in range(n):
             if texts[k] != st.base[k]:
                 verdicts[k] = DC.Verdict("reverted", "revert", verdicts[k].codes or list(gate.hard))

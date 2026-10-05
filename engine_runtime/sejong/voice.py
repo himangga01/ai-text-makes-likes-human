@@ -117,13 +117,14 @@ _DIRECTIVE = tuple(LEX["directive_endings"])
 UPSHIFT = re.compile(LEX["upshift"])
 # The written 것 of the hedge 것 같다. In a 해요체 or 해체 sentence the spoken 거 같다 -> 것 같다 is a written upshift
 # like 했 -> 하였 (2026-10-04 real-model run: 최고인거 같아 -> 최고인 것 같아 instead of 최고인 거 같아); in 합쇼체
-# and 해라체 것 같다 is the expected form, so it is not counted there.
+# and 해라체 것 같다 is the expected form, so it is not counted there. The gate counts it only where the source had
+# the spoken form (a new 것 같아요 with no 거 같다 before is a hedge change, not a register change).
 _GEOT_GAT = re.compile(r"것(?=\s*같)")
 
 
 def _upshifts(folded: str) -> int:
-    """Written-style forms of the upshift lexicon. 이었 counts only after a vowel-final syllable (친구였다 ->
-    친구이었다); after a final consonant (중이었다, 학생이었다) it is the only spelling, so 진행 중에 있었다 ->
+    """Written-style forms of the upshift lexicon. 이었 counts only after a vowel-final syllable (친구였어 ->
+    친구이었어); after a final consonant (중이었다, 학생이었다) it is the only spelling, so 진행 중에 있었다 ->
     진행 중이었다 (the TR-JUNGE_ITDA repair, WP-8b) is not an upshift."""
     count = 0
     for m in UPSHIFT.finditer(folded):
@@ -451,10 +452,11 @@ class Features:
     hon_nouns: int                 # 고객님, 학부모님 ... and the dative 께 (honorific address)
     keep: Counter                  # protect.keep_tokens + intensifiers: {(kind, token): n}
     marks: Counter                 # raw CMC marks as the main-branch lock reads them
-    upshift: int                   # 하였/되었/하여 ... forms; 것 같다 in 해요체/해체
+    upshift: int                   # 하였/되었/하여 ... forms
     quote_levels: Tuple[str, ...]  # level inside each quotation (non-whole-quote sentences)
     inner: Tuple[Tuple[str, str], ...] = ()   # (level, mood) of clauses closed by ^^ or ~ inside the unit
     spoken: Tuple[str, ...] = ()   # spoken 거 같다 forms of a 해요체/해체 sentence (the upshift retry keeps them)
+    geot: int = 0                  # written 것 같다 in a 해요체/해체 sentence (an upshift only where 거 같다 was)
 
 
 def features(sentence: str, kind: str = "body") -> Features:
@@ -488,7 +490,8 @@ def features(sentence: str, kind: str = "body") -> Features:
     return Features(sig=sig, ending=ending, stance_family=family, question="?" in fin.tail,
                     directive=fin.word.endswith(_DIRECTIVE), humble_count=humble,
                     hon_nouns=_hon_nouns(masked), keep=keep, marks=marks,
-                    upshift=_upshifts(_fold(masked)) + (len(_GEOT_GAT.findall(masked)) if level in (HAEYO, HAE) else 0),
+                    upshift=_upshifts(_fold(masked)),
+                    geot=len(_GEOT_GAT.findall(masked)) if level in (HAEYO, HAE) else 0,
                     quote_levels=quote_levels, inner=_inner(masked),
                     spoken=tuple("거 " + m.group(1) for m in _GEO_GAT_FORM.finditer(masked)) if level in (HAEYO, HAE) else ())
 

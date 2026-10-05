@@ -86,6 +86,11 @@ KEEPS = [
     # WP-10d: a purpose or cause noun said twice may go while its marker stays (subject-predicate repair)
     ("이 사업의 목적은 지역 주민의 접근성을 높이기 위해 추진되었습니다.", "이 사업은 지역 주민의 접근성을 높이기 위해 추진되었습니다."),
     ("그가 늦은 이유는 차가 막혔기 때문입니다.", "그가 늦은 것은 차가 막혔기 때문입니다."),
+    # code review 2026-10-05: a key word whose meaning a remaining word carries (겹말 fixes)
+    ("이미 앞서 말씀드린 것처럼 신청은 마감되었습니다.", "앞서 말씀드린 것처럼 신청은 마감되었습니다."),
+    ("일정은 아직 미정입니다.", "일정은 미정입니다."), ("지금 즉시 바로 신청하세요.", "지금 바로 신청하세요."),
+    ("매일 날마다 운동합니다.", "날마다 운동합니다."), ("각자 개별적으로 준비해 주세요.", "개별적으로 준비해 주세요."),
+    ("본인 스스로 결정했다.", "스스로 결정했다."),
 ]
 
 
@@ -154,6 +159,8 @@ class ContentDropped(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertNotIn("condition_dropped", codes(source, candidate))
         self.assertIn("condition_dropped", codes("회원이면 무료로 이용할 수 있어요.", "무료로 이용할 수 있어요."))
+        # -자면 of any other verb is a purpose condition (code review 2026-10-05)
+        self.assertIn("condition_dropped", codes("서울에 가자면 기차를 타야 한다.", "기차를 타야 한다."))
 
     def test_identical_and_deterministic_fixes_are_clean(self):
         for text in ("그날 뵈요!", "안 되요?", "할수 있습니다.", "가격이 좀 비싼 편이였어."):

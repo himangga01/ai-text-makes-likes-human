@@ -150,6 +150,12 @@ describe('SejongPython.check', () => {
     }
   });
 
+  it('treats a check that exits 1 without writing its report as an execution error', async () => {
+    const { python } = adapter([exited('', 1)]);
+    expect(await rejection(python.check(checkArgs({ report: path.join(dir, 'missing-report.json') }), signal)))
+      .toMatchObject({ publicCode: 'VALIDATION_FAILED' });
+  });
+
   it('maps a check report to the legacy gate result', () => {
     const expected = [
       { status: 'ok', exitCode: 0, gateCodes: ['GATE_OK'], policy: 'accept', hardFailures: [], shadowFailures: ['clarity_longer_sentence'] },
@@ -222,6 +228,9 @@ describe('SejongPython.verifyDocument', () => {
     expect((await rejection(policy.verifyDocument('a', 'b', signal))).message).toContain('legacy decision table');
     const { python: none } = adapter([exited('no json', 0)]);
     expect((await rejection(none.verifyDocument('a', 'b', signal))).message).toContain('Unable to parse gate JSON');
+    // a crash before main() (exit 1, a traceback, no JSON) is an execution error, not invalid output
+    const { python: crash } = adapter([exited('Traceback (most recent call last):', 1)]);
+    expect(await rejection(crash.verifyDocument('a', 'b', signal))).toMatchObject({ publicCode: 'VALIDATION_FAILED' });
     const { python: odd } = adapter([exited(gate(0), 9)]);
     expect((await rejection(odd.verifyDocument('a', 'b', signal))).message).toBe('Unexpected gate exit code');
   });

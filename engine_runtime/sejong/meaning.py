@@ -572,7 +572,14 @@ _LIGHT_NOUN_FRAME = re.compile(r"\s*(?:을|를)?\s*(?:진행|실시|수행|하|�
 # 조치했다, 노력을 기울였다 -> 노력했다, 논쟁을 벌였다 -> 논쟁했다): the object noun carries the meaning.
 _SUPPORT_VERBS = ("내리", "내려", "내렸", "내린", "내릴", "가지", "가져", "가졌", "가진", "가질", "갖", "취하", "취해", "취했",
                   "취한", "취할", "기울", "벌이", "벌여", "벌였", "벌인", "벌일")
-_OBJECT = re.compile(r"[가-힣](?:을|를)\s+$")
+_OBJECT = re.compile(r"([가-힣]+)(?:을|를)\s+$")
+# The object nouns that make 내리다/가지다/취하다/기울이다/벌이다 a support verb; with any other object they are real
+# verbs (가방을 내려 놓았다; code review 2026-10-05).
+_SUPPORT_OBJECTS = frozenset("""
+결정 판단 결론 진단 명령 지시 평가 정의 처분 판결 관심 흥미 호기심 시간 기회 회의 모임 자리 행사 조치 노력 논쟁 논의
+싸움 경쟁 경험 생각 의견 책임 책임감 자신감 영향 영향력 의미 특징 특성 장점 단점 강점 약점 기능 효과 능력 권한 공간 역할
+태도 입장 자세 견해 목표 꿈 희망 계획 신념 확신 의지 주의 신경 캠페인 활동 운동 공세 행동
+""".split())
 # The noun of a compound "정리 작업": an eojeol right before, not ending in a particle or an ending (이번 달에 작업을
 # 진행 -> 진행 drops 작업 itself).
 _NOUN_BEFORE = re.compile(r"[가-힣]*[^에은는이가을를도만의로서와과께요다고며면게지\s]\s+$")
@@ -587,8 +594,10 @@ def _frame_word(text: str, m: "re.Match", core: str) -> bool:
     precision as requests, not as licences)."""
     if core.startswith(_LIGHT_VERB_KEYS[1:]) and _OBJECT_OR_SUBJECT.search(text, max(0, m.start() - 12), m.start()):
         return True
-    if core.startswith(_SUPPORT_VERBS) and _OBJECT.search(text, max(0, m.start() - 12), m.start()):
-        return True
+    if core.startswith(_SUPPORT_VERBS):
+        obj = _OBJECT.search(text, max(0, m.start() - 12), m.start())
+        if obj and obj.group(1) in _SUPPORT_OBJECTS:
+            return True
     if core in ("작업", "업무", "활동") and _LIGHT_NOUN_FRAME.match(text, m.start() + 2) is not None:
         return _NOUN_BEFORE.search(text, max(0, m.start() - 12), m.start()) is not None
     return core in ("역할", "기능") and _ROLE_FRAME.match(text, m.start() + 2) is not None
@@ -684,6 +693,8 @@ def drops(source: str, candidate: str) -> Drops:
             continue
         if _frame_word(masked_src, m, core) or _carried(core, source, candidate):
             continue
+        if any(carrier in candidate for carrier in _KEY_CARRIERS.get(core, ())):   # 이미 앞서 -> 앞서 (겹말)
+            continue
         dropped.append((m.start(), m.end(), core if len(core) >= 2 else word))
     if not dropped:
         return Drops([], [], [])
@@ -732,12 +743,28 @@ _KEY_WORDS = frozenset("""
 """.split())
 
 
-def _key_dropped(found: Drops) -> List[str]:
-    """The key words among the dropped ones (content_dropped's rule must hold), substituted names first."""
+# A key word whose meaning another word of the candidate still carries is a redundancy fix (겹말), not a drop:
+# 이미 앞서 -> 앞서, 아직 미정 -> 미정, 지금 즉시 바로 -> 지금 바로, 매일 날마다 -> 날마다, 각자 개별적으로 ->
+# 개별적으로, 본인 스스로 -> 스스로 (code review 2026-10-05). Closed lists of carriers, matched as substrings.
+_KEY_CARRIERS = {
+    "이미": ("앞서", "벌써", "기존"), "아직": ("미정", "미확정", "미완", "여전히"), "즉시": ("바로", "곧바로", "당장", "곧"),
+    "곧": ("바로", "즉시", "머지않아", "조만간"), "매일": ("날마다", "매일같이", "하루하루", "일일"),
+    "각자": ("개별", "각각", "저마다", "개개인"), "개별": ("각자", "각각", "저마다", "따로"), "따로": ("별도", "개별", "각자"),
+    "본인": ("스스로", "직접", "자신", "자기"), "직접": ("스스로", "몸소", "본인"), "혼자": ("홀로", "단독", "스스로"),
+    "함께": ("같이", "다 같이", "더불어", "공동"), "미리": ("사전", "먼저", "앞서"), "무료": ("공짜", "무상"),
+    "공짜": ("무료", "무상"), "오늘": ("금일", "당일"), "당일": ("오늘", "그날"), "추후": ("나중", "향후", "앞으로"),
+    "향후": ("앞으로", "추후", "나중"),
+}
+
+
+def _key_dropped(found: Drops, candidate: str = "") -> List[str]:
+    """The key words among the dropped ones (content_dropped's rule must hold), substituted names first; a key word
+    whose meaning a carrier word of the candidate keeps is not counted."""
     if _content_dropped(found) is None:
         return []
     key = [w for w in found.substituted]
-    key += [w for w in found.words if w in _KEY_WORDS and w not in key]
+    key += [w for w in found.words if w in _KEY_WORDS and w not in key
+            and not any(carrier in candidate for carrier in _KEY_CARRIERS.get(w, ()))]
     return key
 
 
@@ -763,6 +790,10 @@ _YA_VOWELS = {0, 1, 4, 6, 9, 10, 14}          # ㅏ ㅐ ㅓ ㅕ ㅘ ㅙ ㅝ: the
 # Discourse frames in -면 (WP-10d): 결론적으로 말하자면, 요약하자면, 솔직히 말하면 frame what follows and set no
 # condition, so a rewrite that drops them is not a dropped condition.
 _DISCOURSE_MYEON = frozenset("말하면 말씀드리면 말씀하자면 말해보면 따지면 돌이켜보면".split())
+# -자면 of a speech or viewpoint verb frames what follows (말하자면, 요약하자면); after any other verb it is a
+# purpose condition (서울에 가자면, 오늘 안에 끝내자면) and stays a condition (code review 2026-10-05).
+_DISCOURSE_JAMYEON = ("말하자면", "요약하자면", "정리하자면", "비유하자면", "들자면", "덧붙이자면", "따지자면",
+                      "보자면", "얘기하자면", "이야기하자면", "말씀드리자면", "표현하자면", "설명하자면")
 
 
 def _conditions(text: str) -> List[Tuple[int, int]]:
@@ -771,7 +802,7 @@ def _conditions(text: str) -> List[Tuple[int, int]]:
     for m in _COND.finditer(text):
         word = m.group(0)
         if m.group(1) is not None:
-            if word in _NOUN_MYEON or len(word) < 2 or word.endswith("자면") or word in _DISCOURSE_MYEON:
+            if word in _NOUN_MYEON or len(word) < 2 or word.endswith(_DISCOURSE_JAMYEON) or word in _DISCOURSE_MYEON:
                 continue
         if m.group("ya") is not None:
             ch = m.group("ya")
@@ -935,7 +966,7 @@ def findings(source: str, candidate: str) -> List[Tuple[str, str, Optional[str]]
             found.append(("condition_dropped", condition[0], condition[1]))
         dropped = _content_dropped(words)
         if dropped:
-            key = _key_dropped(words)
+            key = _key_dropped(words, candidate)
             if key:
                 found.append(("key_word_dropped", str(len(key)), ", ".join(key)))
             found.append(("content_dropped", dropped[0], dropped[1]))

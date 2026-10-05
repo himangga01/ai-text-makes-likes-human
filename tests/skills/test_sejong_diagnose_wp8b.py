@@ -167,3 +167,14 @@ class Performance(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CodeReviewCases(unittest.TestCase):
+    """Code review 2026-10-05."""
+
+    def test_negated_possession_and_lost_contact_are_not_requested(self):
+        from sejong import diagnose as D
+        self.assertEqual(D.RULES["TR-GAJIDA"].detect("이 약은 효과를 가지고 있지는 않다."), [])
+        self.assertTrue(D.RULES["TR-GAJIDA"].detect("이 약은 효과를 가지고 있다."))
+        self.assertEqual(D.RULES["TR-ROBUTEO"].detect("친구로부터 연락이 끊겼다."), [])
+        self.assertTrue(D.RULES["TR-ROBUTEO"].detect("고객으로부터 문의를 받았습니다."))

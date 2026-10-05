@@ -200,21 +200,42 @@ class Features:
 
 # The bound noun 수 is often written attached ("할수 있다"). The CAN rules read it only after a space, so the
 # spacing fix 할수 있다 -> 할 수 있다 looked like a new ability and a lost negation. Both sides are read with 수
-# spaced after an attributive ㄹ ending; 할수록 and 할수밖에 are left alone.
+# spaced after an attributive ㄹ ending; 할수록 and 할수밖에 are left alone. Nouns that end in ㄹ + 수 are not the
+# bound noun: 실수/말수/술수/철수 as a whole word (not 하실수), and 일수 when a particle follows (근무 일수가 없는 경우), as opposed to
+# the copula 문제일수 있다 (code review 2026-10-05).
 _RIEUL_FINAL = ''.join(chr(0xAC00 + i * 28 + 8) for i in range(19 * 21))
-_ATTACHED_SU = re.compile('([' + _RIEUL_FINAL + r'])수(?=(?:가|는|도)?\s*(?:있|없))')
+_ATTACHED_SU = re.compile('([' + _RIEUL_FINAL + r'])수(?=((?:가|는|도)?)\s*(?:있|없))')
+_SU_NOUNS = frozenset(('실', '말', '술', '철'))
 # Same for 안 + 되다: attached 안되요/안돼요 read as no negation (or as a prohibition) while the spaced
 # 안 돼요 read as a short negation, and the stems 되/돼 differed. 안 is spaced and 되요/됬 (always
 # misspellings of 돼요/됐) are read as spelled correctly, on both sides.
 _ATTACHED_AN = re.compile(r'(?<![가-힣])안(?=[되돼됐됩될된])')
 # The spoken bound noun 거 of 거 같다 is the 것 of the hedge 것 같다: 최고인거 같아 -> 최고인 것 같아 and
-# 맞는 거 같아 -> 맞는 것 같아 read as a new hedge before. Both sides read 거 같다 (attached or spaced) as 것 같다.
-_GEO_GAT = re.compile(r'(?<=[가-힣])\s?거(?=\s*같)')
+# 맞는 거 같아 -> 맞는 것 같아 read as a new hedge before. Both sides read 거 같다 (attached or spaced) as 것 같다,
+# but only after an attributive ending (a syllable with final ㄴ or ㄹ: 인, 는, 올, 할), and never the nouns
+# 근거/선거/준거/은거/본거/철거/별거 (증거, 과거, 이거 are already excluded by the ending rule).
+_GEO_GAT = re.compile(r'([가-힣])(\s?)거(?=\s*같)')
+_GEO_NOUNS = frozenset(('근', '선', '준', '은', '본', '철', '별'))
+
+
+def _attached_su(m: 're.Match') -> str:
+    stem, start = m.group(1), m.start(1)
+    word_initial = start == 0 or not ('가' <= m.string[start - 1] <= '힣')
+    if (stem in _SU_NOUNS and word_initial) or (stem == '일' and m.group(2)):   # 실수가, but 하실수 있어요
+        return m.group(0)
+    return stem + ' 수'
+
+
+def _geo_gat(m: 're.Match') -> str:
+    before, space = m.group(1), m.group(2)
+    if (ord(before) - 0xAC00) % 28 not in (4, 8) or (not space and before in _GEO_NOUNS):
+        return m.group(0)
+    return before + ' 것'
 
 
 def _spacing_normal(text: str) -> str:
-    text = _ATTACHED_AN.sub('안 ', _ATTACHED_SU.sub(r'\1 수', text))
-    text = _GEO_GAT.sub(' 것', text)
+    text = _ATTACHED_AN.sub('안 ', _ATTACHED_SU.sub(_attached_su, text))
+    text = _GEO_GAT.sub(_geo_gat, text)
     return text.replace('되요', '돼요').replace('됬', '됐')
 
 

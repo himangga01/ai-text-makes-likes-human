@@ -336,6 +336,10 @@ def _excluded(cue: Cue, clean: str, s: str) -> bool:
             return True
     if cue.form == "instruction" and EX_MENTAL.search(clean):
         return True
+    # An option offered to the reader is a statement (연락하셔도 됩니다); as a question it asks the reader for
+    # permission (그렇게 해도 돼요?) and is no call to action (code review 2026-10-05).
+    if cue.form == "option" and s.rstrip(" \t\"'”’)~^ㅎㅋ.").endswith("?"):
+        return True
     return False
 
 

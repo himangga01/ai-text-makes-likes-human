@@ -230,13 +230,20 @@ class FloorPair(unittest.TestCase):
                          ["weekday_changed"])
         self.assertEqual(floor.check_pair("매주 토요일과 일요일에 쉬어요.", "매주 토·일요일에 쉬어요."), [])
         self.assertEqual(floor.check_pair("영업시간은 월~금이에요.", "영업일은 월요일부터 금요일까지예요."), [])
+        for source, output in [("이번주토요일에 만나요.", "이번 주 토요일에 만나요."), ("월·수·금에 운영합니다.", "월·수·금요일에 운영합니다."),
+                               ("매주 월, 수에 진행합니다.", "매주 월요일과 수요일에 진행합니다."),
+                               ("임대료(월) 50만 원입니다.", "월 임대료는 50만 원입니다.")]:
+            self.assertNotIn("weekday_changed", floor.codes(floor.check_pair(source, output)), source)
 
     def test_weekdays(self):
         for text, days in [("10월 18일, 토요일에 만나요.", {"토"}), ("10월, 화요일에", {"화"}), ("토·일요일", {"토", "일"}),
                            ("월~금 10시~19시", {"월", "금"}), ("18일(토)", {"토"}), ("(토·일) 휴무", {"토", "일"}),
                            ("세월, 일요일에", {"일"}), ("월, 화, 수요일 수업", {"월", "화", "수"}), ("월급날", set()),
                            ("5일~7일 휴무", set()), ("생일 축하해요", set()), ("월~금이에요", {"월", "금"}),
-                           ("월~금까지 열어요", {"월", "금"}), ("화~토론회", set())]:
+                           ("월~금까지 열어요", {"월", "금"}), ("화~토론회", set()),
+                           # code review 2026-10-05: attached and bare lists read alike; unit labels are not days
+                           ("이번주토요일에", {"토"}), ("월·수·금에", {"월", "수", "금"}), ("매주 월, 수에", {"월", "수"}),
+                           ("임대료(월) 50만 원", set()), ("기간(일)은 3", set()), ("10/18(토) 오후", {"토"})]:
             with self.subTest(text=text):
                 self.assertEqual(floor.weekdays(text), days)
 

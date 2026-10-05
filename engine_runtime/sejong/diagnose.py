@@ -526,7 +526,7 @@ _GAJI_NOUNS = sorted(set("""
 _GAJI_ADVERB = r"(?:(?:많이|모두|이미|여전히|충분히|동시에|각각|분명히|확실히|두루|고루)\s)?"
 _GAJI = re.compile(r"(?<![가-힣])[가-힣]{0,4}?(?:" + "|".join(_GAJI_NOUNS) + r")(?:들)?[을를]\s" + _GAJI_ADVERB +
                    r"(가지고\s?있|갖고\s?있|가진|가지는|가집니|가지며|가졌|갖는|갖습니)")
-_GAJI_NEGATED = re.compile(r"[가-힣]{0,6}?지\s*(?:않|못)")
+_GAJI_NEGATED = re.compile(r"[가-힣]{0,6}?지(?:는|도|조차)?\s*(?:않|못)")   # 있지 않다, 있지는 않다
 # A quoted gloss: "'전하다'라는 의미를 가진 텔" reads best as "~라는 뜻의", not "~라는 의미가 있는" (2/2 FP in the check).
 _GAJI_GLOSS = re.compile(r"(?:라는|이란)\s(?:의미|의의)[를을]\s(?:가진|가지는|갖는)")
 
@@ -598,7 +598,8 @@ _ROBUTEO_PERSON = sorted(set("""
 _ROBUTEO = re.compile(r"(?<![가-힣])(?:" + "|".join(_ROBUTEO_PERSON) + r")(?:들)?(으로부터|로부터)(?![가-힣])")
 _ROBUTEO_RECEIVE = re.compile(r"받|들었|들은|듣|들어|전해|전달|연락|문의|요청|제안|부탁|초대|소식|편지|메일|메시지|선물|칭찬|"
                               r"비판|항의|지적|추천|배우|배운|배웠|얻|빌|물려|건네")
-_ROBUTEO_SEPARATE = re.compile(r"자유|벗어|보호|지키|지켜|멀어|멀리|독립|분리|해방|격리|차단|탈피|떨어|도망|도피|숨")
+_ROBUTEO_SEPARATE = re.compile(r"자유|벗어|보호|지키|지켜|멀어|멀리|독립|분리|해방|격리|차단|탈피|떨어|도망|도피|숨"
+                               r"|끊|두절|단절")   # 친구로부터 연락이 끊겼다: a loss, not a reception
 
 
 def _robuteo(s: str) -> List[Hit]:

@@ -68,6 +68,19 @@ class Preserved(unittest.TestCase):
             with self.subTest(source=source):
                 self.assertFalse(any(flagged(source, candidate).values()), flagged(source, candidate))
 
+    def test_nouns_in_su_and_geo_are_not_the_bound_nouns(self):
+        # code review 2026-10-05: 실수/일수/말수 are nouns, not 할 수; 증거/근거/과거/이거 are not the hedge 거 같다
+        for source, candidate in [('실수가 없도록 주의하세요.', '실수하지 않도록 주의하세요.'),
+                                  ('실수가 있었습니다.', '제가 잘못했습니다.'),
+                                  ('근무 일수가 없는 경우 지급하지 않습니다.', '근무한 날이 없으면 지급하지 않습니다.'),
+                                  ('그는 말수가 없는 편이다.', '그는 말수가 없는 사람이다.'),
+                                  ('확실한 증거 같은 게 있어요.', '확실한 증거가 있어요.'),
+                                  ('근거 같은 건 없어요.', '근거라고 할 만한 건 없어요.'),
+                                  ('요즘은 과거 같지 않아요.', '요즘은 예전과 달라요.'),
+                                  ('이거 같이 먹자.', '이것을 함께 먹자.')]:
+            with self.subTest(source=source):
+                self.assertFalse(any(flagged(source, candidate).values()), flagged(source, candidate))
+
     def test_spacing_only_changes_never_flag(self):
         for source, candidate in [('할 수있다.', '할 수 있다.'), ('할 수 있다.', '할 수  있다.'),
                                   ('서류를 제출하면 안됩니다.', '서류를 제출하면 안 됩니다.'),
@@ -82,7 +95,8 @@ class Preserved(unittest.TestCase):
                                   ('거기 가면 안되나요?', '거기 가면 안 되나요?'), ('벌써 다 됬어요.', '벌써 다 됐어요.'),
                                   # spoken 거 of 거 같다 is the 것 of the hedge (2026-10-04 real-model run)
                                   ('역시 가을 산이 최고인거 같아.', '역시 가을 산이 최고인 것 같아.'),
-                                  ('그게 맞는 거 같아.', '그게 맞는 것 같아.'), ('내일은 비가 올거 같아요.', '내일은 비가 올 거 같아요.')]:
+                                  ('그게 맞는 거 같아.', '그게 맞는 것 같아.'), ('내일은 비가 올거 같아요.', '내일은 비가 올 거 같아요.'),
+                                  ('문제일수 있다.', '문제일 수 있다.')]:
             with self.subTest(source=source):
                 self.assertFalse(any(flagged(source, candidate).values()))
 

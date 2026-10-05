@@ -688,6 +688,18 @@
    "expect": [
     "flow_contrast_changed"
    ]
+  },
+  {
+   "id": "permission_geuraedo_is_not_contrast",
+   "src": "엄마한테 물어봤어요. 엄마가 그래도 된대요.",
+   "out": "엄마한테 물어봤어요. 엄마가 그렇게 해도 된대요.",
+   "expect": []
+  },
+  {
+   "id": "connective_moved_to_the_front_is_not_added",
+   "src": "모임이 끝났어요. 그런데 그는 사실 몰랐어요.",
+   "out": "모임이 끝났어요. 그런데 사실 그는 몰랐어요.",
+   "expect": []
   }
  ],
  "seam": [

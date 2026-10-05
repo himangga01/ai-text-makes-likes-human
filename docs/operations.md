@@ -80,7 +80,7 @@ SUPER_SEJONG_ENGINE=v2 node dist/ops/hermes-service.js restart     # v2로 전�
 node dist/ops/hermes-service.js restart                            # 값 없이 재시작하면 기본값(기존 엔진, 기록 끔)
 ```
 
-Hermes cron의 `portal-watchdog`은 `hermes-service.js watch`를 매시간 실행하며, 서버가 연속으로 응답하지 않을 때만 다시 띄웁니다. 평소에는 재시작 명령에 넣은 값이 유지되지만, watchdog이 다시 띄운 뒤에는 위 값이 빠진 기본 상태가 됩니다. 계속 유지하려면 watchdog 스크립트의 실행 환경에도 같은 값을 넣으세요. 기록 모드의 숫자는 `transform_complete` 로그의 `diagnostics.v2ShadowCounts`에서 확인합니다(키는 코드명, 값은 정수, 본문 없음).
+Hermes cron의 `portal-watchdog`은 `hermes-service.js watch`를 매시간 실행하며, 서버가 연속으로 응답하지 않을 때만 다시 띄웁니다. 평소에는 재시작 명령에 넣은 값이 유지되지만, watchdog이 다시 띄운 뒤에는 위 값이 빠진 기본 상태가 됩니다. 계속 유지하려면 watchdog 스크립트의 실행 환경에도 같은 값을 넣으세요. 기록 모드의 숫자는 `transform_complete` 로그의 `diagnostics.v2ShadowCounts`에서 확인합니다(키는 코드명, 값은 정수, 본문 없음). `python3 scripts/sejong-shadow-report.py`(`--json`은 원자료)가 이 값을 모아 한국어 요약으로 보여 줍니다. 로그 줄에 시각이 없으므로 기록 모드를 켠 뒤의 작업이 모두 합쳐집니다.
 
 | 모드 | 의미 보존 검사 | 조사 교정 | 문체 힌트 | Office 순서 비교 |
 | --- | --- | --- | --- | --- |

@@ -26,6 +26,9 @@ extraResources:
     to: engine/python
   - from: src/engine/output-schema.json
     to: engine/src/engine/output-schema.json
+  # Super Sejong v2 writer schema (create-runtime.ts reads <projectRoot>/src/engine/sejong/response-schema.json).
+  - from: src/engine/sejong/response-schema.json
+    to: engine/src/engine/sejong/response-schema.json
 win:
   target:
     - target: portable

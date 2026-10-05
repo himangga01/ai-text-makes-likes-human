@@ -358,7 +358,19 @@ class RequestedSentencesOnly(OfficeCase):
             state = self.answer(state, {'b1': [self.REQUESTED, self.OTHER]})
             self.assertEqual((state['decision'], state['status']), ('accept', 'ready-to-finalize'))
             self.assertTrue(any('문단 1' in w and '요청하지 않은 문장을 수정했습니다' in w for w in state['warnings']))
-            self.assertEqual([b['text'] for b in self.finalize(state)], [self.TWO])
+            # only the edit outside the requests is dropped; the requested fix in the same block is kept
+            # (code review 2026-10-05: the whole block used to be dropped)
+            self.assertEqual([b['text'] for b in self.finalize(state)], [self.TWO.replace('됬', '됐')])
+
+    def test_a_job_keeps_the_flags_it_started_with(self):
+        # code review 2026-10-05: accept under one SUPER_SEJONG_MODE and finalize under another stranded the job
+        with V2(SUPER_SEJONG_MODE='off'):
+            state = prepare(self.docx(['이 문서는 이해되어졌습니다.']), self.jobs, VENDOR)
+        with V2(SUPER_SEJONG_MODE='off'):
+            state = self.answer(state, {'b1': [{'before': '이해되어졌습니다', 'after': '이해됐어요'}]})
+        with V2():
+            out = self.finalize(state)
+        self.assertEqual([b['text'] for b in out], ['이 문서는 이해됐어요.'])
 
     def test_an_edit_inside_the_requested_sentence_is_taken(self):
         with V2(SUPER_SEJONG_OPEN_REVIEW='off'):

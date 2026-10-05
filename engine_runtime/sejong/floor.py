@@ -403,12 +403,18 @@ def names(text: str) -> Set[str]:
 # --------------------------------------------------------------------------
 _DAY = "[월화수목금토일]"
 _DAY_SEP = r"\s*[·ㆍ,~∼\-–]\s*"
-# 토요일; 토·일요일 / 월, 화, 수요일 (a list closed by a full form); 월~금 (a bare range, alone or before a
-# particle: 월~금이에요, 월~금까지; not 화~토론회); 18일(토), (토·일)
-_WEEKDAY = re.compile("(?<![가-힣0-9])((?:" + _DAY + _DAY_SEP + ")*" + _DAY + ")요일"   # not 18일, / 10월,
-                      "|(?<![가-힣0-9])(" + _DAY + "[~∼\\-–]" + _DAY + ")(?![가-힣])"
-                      "|(?<![가-힣0-9])(" + _DAY + "[~∼\\-–]" + _DAY + ")(?=[이에까부은는을를도만의])"   # 월~금이에요
-                      "|\\((" + _DAY + "(?:" + _DAY_SEP + _DAY + ")*)\\)")
+# Read the same way on both sides, so a spacing fix or an added 요일 is not a change (code review 2026-10-05):
+#   토요일 anywhere, attached too (이번주토요일); a list closed by a full form (토·일요일, 월, 화, 수요일);
+#   a bare list or range of at least two days before a particle or a non-letter (월·수·금에, 월~금이에요, 매주 월, 수에;
+#   not 화~토론회); one day in parentheses only right after a date (18일(토), 10/18(토)), any list in parentheses
+#   ((토·일) 휴무), so 임대료(월) and 기간(일) are units, not days. Lists are capped at 7 days, which keeps the scan
+#   linear on adversarial runs such as "월, 월, 월, …".
+_LIST = "(?:" + _DAY + _DAY_SEP + "){1,6}" + _DAY
+_WEEKDAY = re.compile("(?<![가-힣0-9])(" + _LIST + ")요일"
+                      "|(" + _DAY + ")요일"
+                      "|(?<![가-힣0-9])(" + _LIST + ")(?=[이에까부은는을를도만의]|[^가-힣]|$)"
+                      "|(?<=[0-9일])\s*\((" + _DAY + ")\)"
+                      "|\((" + _LIST + ")\)")
 
 
 def weekdays(text: str) -> Set[str]:

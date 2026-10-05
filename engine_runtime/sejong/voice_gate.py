@@ -197,10 +197,13 @@ def _compare_group(src: Sequence[V.Features], out: Sequence[V.Features], sid: Op
     ns, no = sum(f.hon_nouns for f in src), sum(f.hon_nouns for f in out)
     if ns != no:
         found.append(_v("voice_hon_noun_changed", "soft", sid, f"{ns}->{no}"))
-    if sum(f.upshift for f in out) > sum(f.upshift for f in src):
-        # name the spoken form to keep (거 같아); a 했 -> 하였 upshift falls back to the sentence's final form
-        spoken = next((form for f in src for form in f.spoken), None)
-        found.append(_v("voice_written_upshift", "soft", sid, keep=spoken))
+    spoken_src, spoken_out = sum(len(f.spoken) for f in src), sum(len(f.spoken) for f in out)
+    geot_up = sum(f.geot for f in out) > sum(f.geot for f in src) and spoken_out < spoken_src
+    if geot_up:
+        # 거 같다 -> 것 같다: name the spoken form to keep (거 같아)
+        found.append(_v("voice_written_upshift", "soft", sid, keep=next(form for f in src for form in f.spoken)))
+    elif sum(f.upshift for f in out) > sum(f.upshift for f in src):
+        found.append(_v("voice_written_upshift", "soft", sid))            # 했 -> 하였: the final form is kept
     return found
 
 

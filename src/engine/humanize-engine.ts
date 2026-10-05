@@ -200,13 +200,15 @@ function unusableModelOutput(error: unknown): boolean {
  *
  * Keys (a count of 0 is not recorded, so an absent key reads as 0; the three ms_ timings are always present when measured):
  *   shadow_ok | shadow_failed        every step ran / some step failed (see failed_*, timeout_*, aborted_*)
+ *   chunks_skipped                   chunks not checked because the finish deadline passed or the job stopped
  *   failed_<step> timeout_<step> aborted_<step>     step = prepare | plan | check
  *   chunks chunks_need_model chunks_no_model chunks_open_review chunks_checked chunks_unaligned
  *   plan_sentences deterministic_fixes cta_units sanitize_differs
- *   requests_<fix|suggest|review>      requests v2 would have sent; request_rule_<rule> per rule
+ *   requests_<fix|suggest>             requests v2 would have sent (the open review is chunks_open_review); request_rule_<rule>
  *   findings_<fix|suggest|leave>       finding_rule_<rule> per rule
- *   gate_exit_<0|1|2>                  v2 gate result per checked chunk (0 accept, 1 retry, 2 fail)
- *   would_accept | would_retry | would_fail   whole job, only when every chunk was checked (fail > retry > accept)
+ *   gate_exit_<0|1|2>                  v2 gate exit per checked chunk (attempt 1: 0 accept, 1 and 2 retry)
+ *   would_accept | would_retry | would_fail   whole job by policy, only when every chunk was checked
+ *                                      (fail = a rollback policy > retry > accept; accept may include reverted sentences)
  *   sentences_<unchanged|deterministic|accepted|retry|rejected|reverted>   v2 verdict on the legacy text
  *   hard_<code> soft_<code>            gate hard failures / shadow codes; sentence_code_<code>
  *   retry_code_<code> retry_family_<family> reverted_family_<family>
@@ -465,9 +467,17 @@ class V2ShadowRun {
     const body = prepared.chunks.filter(chunk => !chunk.passthrough);
     const candidates = shadowCandidates(prepared.document, output, prepared.chunks);
     const exits: number[] = [];
+    const policies: string[] = [];
     let next = 0;
     const worker = async (): Promise<void> => {
       while (next < body.length) {
+        if (this.signal.aborted || this.stop.signal.aborted || this.deadline.signal.aborted) {
+          // Past the finish deadline (or stopped): the remaining chunks are skipped, not timed out one by one,
+          // and their candidates are not written (code review 2026-10-05).
+          this.counts.add('chunks_skipped', body.length - next);
+          next = body.length;
+          break;
+        }
         const chunk = body[next++]!;
         const candidate = candidates.get(chunk.index);
         if (candidate === undefined) {
@@ -490,12 +500,15 @@ class V2ShadowRun {
         if (!report) continue;
         digestShadowCheck(this.counts, report);
         exits.push(report.gate.exit_code);
+        policies.push(report.policy);
       }
     };
     await Promise.all(Array.from({ length: Math.min(SHADOW_CHECK_CONCURRENCY, body.length) }, worker));
     this.counts.time('ms_check', this.now() - startedAt);
     if (body.length > 0 && exits.length === body.length) {
-      this.counts.add(exits.some(code => code >= 2) ? 'would_fail' : exits.includes(1) ? 'would_retry' : 'would_accept');
+      // By policy, not exit code: at attempt 1 an exit 2 (runaway, unusable) is still a retry; only a rollback
+      // fails the chunk (code review 2026-10-05: every exit 2 used to count as would_fail).
+      this.counts.add(policies.includes('rollback') ? 'would_fail' : exits.some(code => code >= 1) ? 'would_retry' : 'would_accept');
     }
   }
 }

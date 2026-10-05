@@ -8,6 +8,7 @@ import uuid
 from .package import Package, DocumentError, digest
 from .model import extract, apply_edits, export, public_block, resolve_edits
 from .model import sejong_v2, sejong_flags, sejong_engine, sejong_block_plan, sejong_nominations, sejong_review_limit, sejong_profile
+from .model import sejong_env, pin_sejong_env
 
 def save(file, value):
     temp=file.with_suffix('.tmp')
@@ -15,6 +16,7 @@ def save(file, value):
     temp.replace(file)
 
 def prepare(input_path, root, vendor, job_id=None):
+    pin_sejong_env(None)   # a new job reads this process's SUPER_SEJONG_* settings and pins them below
     if job_id is not None and (not isinstance(job_id, str) or not re.fullmatch(r'job-[a-f0-9]{32}', job_id)):
         raise DocumentError('작업 ID가 잘못되었습니다.')
     suffix=input_path.suffix.lower()[1:]
@@ -35,6 +37,7 @@ def prepare(input_path, root, vendor, job_id=None):
                'status':'active','accepted':{},'warnings':manifest['warnings'],'restored':0}
         if sejong_v2():
             state['engine']=sejong_engine()  # id+version; a later change of engine or version fails the job
+            state['sejongEnv']=sejong_env()  # SUPER_SEJONG_* flags; every later call of the job uses these
         save(job/'job.json',state)
         return next_batch(job,state,manifest)
     except Exception:
@@ -81,6 +84,9 @@ def v2_batch(job,state,manifest):
             result=(ids,[{**public_block(by_id[i]),'plan':{'requests':plans[i]['requests']}} for i in ids],sejong)
             break
         state['current']+=1;state['attempt']=1;state.pop('active',None);changed=True
+        notice='SEJONG_NO_EDIT_NEEDED: 고칠 곳을 찾지 못한 구간은 모델을 호출하지 않고 원문을 유지했습니다.'
+        if notice not in state['warnings']:
+            state['warnings'].append(notice)
     if result is None and state.pop('active',None) is not None:
         changed=True
     if changed:
@@ -171,16 +177,22 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
             raise DocumentError('블록 원문 해시가 다릅니다.')
         try:
             edits=resolve_edits(block,item.get('edits')) if version==2 else item.get('edits')
-            apply_edits(block,edits)
             if v2 and edits:
                 # v2: only the requested sentences may change, plus at most `review` others when the plan allows
-                # an open review. The excess is dropped in reply order, without a retry (as in the chunk path).
-                nominated=len(sejong_nominations(block,edits,active['asked'].get(block['id'],())))
-                if nominated>budget:
+                # an open review. Edit by edit, in reply order, an edit that would nominate more sentences than
+                # the budget left is dropped without a retry; the block's other edits (the requested fixes among
+                # them) are kept (code review 2026-10-05: the whole block used to be dropped).
+                asked=active['asked'].get(block['id'],()); kept=[]; seen=set(); over=False
+                for edit in edits:
+                    new=set(sejong_nominations(block,[edit],asked))-seen
+                    if len(new)>budget:
+                        over=True
+                        continue
+                    budget-=len(new); seen|=new; kept.append(edit)
+                if over:
                     dropped.append((block,'열린 검토 한도를 넘어 요청하지 않은 문장을 수정했습니다' if active['review'] else '요청하지 않은 문장을 수정했습니다'))
-                    edits=[]
-                else:
-                    budget-=nominated
+                edits=kept
+            apply_edits(block,edits)
             pending[block['id']]=edits
         except DocumentError as exc:
             failures.append((block,str(exc)))
@@ -189,7 +201,7 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
         same=[b for b,r in dropped if r==reason]
         state['restored']+=len(same)
         # one notice per reason, so a long document does not flood the review list
-        state['warnings'].append(f"{same[0]['location']}{' 등 %d개 블록' % len(same) if len(same)>1 else ''}: 원문을 유지했습니다 ({reason})")
+        state['warnings'].append(f"{same[0]['location']}{' 등 %d개 블록' % len(same) if len(same)>1 else ''}: 일부 문장은 원문을 유지했습니다 ({reason})")
     if failures and attempt==1:
         state['attempt']=2
         state['warnings'] += [f"{b['location']}: 편집 검증 후 재시도합니다 ({reason})" for b,reason in failures]
@@ -236,6 +248,7 @@ def dispatch(args,root,vendor):
             raise DocumentError('원본 또는 문서 manifest가 변경되었습니다.')
         if bool(state.get('engine'))!=sejong_v2() or (state.get('engine') and state['engine']!=sejong_engine()):
             raise DocumentError('작업을 시작한 윤문 엔진과 현재 설정이 다릅니다. 문서를 다시 선택해 주세요.')
+        pin_sejong_env(state.get('sejongEnv', {}) if state.get('engine') else None)
         manifest=json.loads((job/'document.json').read_text(encoding='utf-8'))
         if args.command=='next':
             return next_batch(job,state,manifest)
@@ -262,6 +275,7 @@ def dispatch(args,root,vendor):
             return next_batch(job,state,manifest)
         raise DocumentError('지원하지 않는 문서 명령입니다.')
     finally:
+        pin_sejong_env(None)   # the pin belongs to this call's job only
         lock.unlink(missing_ok=True)
         if args.command=='cleanup':
             import shutil

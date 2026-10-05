@@ -190,7 +190,8 @@ def transaction(root: Path, job_id: str, verify_content: bool = True):
                 if digest(job / f"source-{chunk['index']}.txt") != state["chunkHashes"][str(chunk["index"])]:
                     raise ValueError("A source chunk was modified")
             if engine_changed(state):
-                raise ValueError("The engine changed during this job")
+                raise ValueError("The engine changed during this job (keep SUPER_SEJONG_ENGINE and the ENGINE_VERSION "
+                                 "the same until the job ends, or start a new job)")
             if state.get("engine") == "v2":
                 for chunk in bodies(manifest):
                     if digest(plan_file(job, chunk)) != state["planHashes"][str(chunk["index"])]:
@@ -496,7 +497,7 @@ def decide_empty_plans(job: Path, state: dict, manifest: dict) -> None:
         moved.append(chunk["index"])
     if moved:
         state["noEditChunks"] = sorted(set(state.get("noEditChunks", [])) | set(moved))
-        message = f"SEJONG_NO_EDIT_NEEDED: {', '.join(map(str, state['noEditChunks']))}번 구간은 고칠 곳이 없어 모델 호출 없이 통과했습니다."
+        message = f"SEJONG_NO_EDIT_NEEDED: {', '.join(map(str, state['noEditChunks']))}번 구간은 모델에 요청할 곳이 없어 모델 호출 없이 통과했습니다(확실한 맞춤법 수정은 적용)."
         state["warnings"] = [w for w in state["warnings"] if not w.startswith("SEJONG_NO_EDIT_NEEDED")] + [message]
         write_json(job / "job.json", state)
 
@@ -636,7 +637,10 @@ def accept_v2(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: in
         finish_chunk_v2(job, state, chunk, outcome.text)
         if action == "rollback":
             fixes = report.counts["normFixes"]
-            state["warnings"].append(f"CHUNK_ROLLED_BACK: {chunk_id}번 구간은 내용 보존을 확인하지 못해 원문을 유지했습니다."
+            reason = ("모델 응답을 쓸 수 없어" if "model_output_unusable" in report.hard_failures
+                      else "바뀐 양이 너무 많아" if "change_rate_runaway" in report.hard_failures
+                      else "내용 보존을 확인하지 못해")
+            state["warnings"].append(f"CHUNK_ROLLED_BACK: {chunk_id}번 구간은 {reason} 원문을 유지했습니다."
                                      + (f" 확실한 맞춤법 오류 {fixes}곳만 고쳤습니다." if fixes else ""))
         elif action == "accept-with-warning":
             state["warnings"].append(f"CHUNK_WARNING_ACCEPTED: {chunk_id}번 구간은 사람의 검토가 권장됩니다.")

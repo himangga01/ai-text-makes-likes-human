@@ -29,7 +29,10 @@ def available() -> bool:
 def invoke(operation, **payload):
     executable, bridge = _runtime()
     if not executable or not bridge.is_file():
-        raise ValueError("Direct text requires the bundled Node bridge (development: node scripts/build-skill-bridge.mjs; Node >=24.19.0)")
+        # Direct text always needs it; under SUPER_SEJONG_ENGINE=v2 every job whose chunk needs a writer prompt
+        # (context-v2) does too, TXT/MD files included (code review 2026-10-05: the message named direct text only).
+        raise ValueError("Direct text and Super Sejong v2 prompts require the bundled Node bridge "
+                         "(development: node scripts/build-skill-bridge.mjs; Node >=24.19.0)")
     with tempfile.TemporaryDirectory(prefix="humanize-bridge-") as temporary:
         source, output = Path(temporary) / "request.json", Path(temporary) / "response.json"
         source.write_text(json.dumps({"operation": operation, **payload}, ensure_ascii=False), encoding="utf-8")

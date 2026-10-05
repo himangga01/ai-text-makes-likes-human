@@ -9,7 +9,7 @@ import type { TransformEvent } from '../../src/contracts.js';
 import { HumanizeEngine } from '../../src/engine/humanize-engine.js';
 import type { ModelSettings } from '../../src/engine/model-policy.js';
 import type { GateResult } from '../../src/engine/python-engine.js';
-import { SejongEngine, type SejongPythonPort, type SejongWriter } from '../../src/engine/sejong/engine.js';
+import { rollbackReason, SejongEngine, type SejongPythonPort, type SejongWriter } from '../../src/engine/sejong/engine.js';
 import {
   parseSejongManifest, type CheckArgs, type FinalizeReport, type PlanExpectation, type SejongManifest
 } from '../../src/engine/sejong/python-adapter.js';
@@ -310,5 +310,13 @@ describe('engine switch (SUPER_SEJONG_ENGINE)', () => {
     const created = await runtime({ SUPER_SEJONG_ENGINE: value });
     expect(created.engine).toBeInstanceOf(SejongEngine);
     expect(created.claudeEngine).toBeInstanceOf(SejongEngine);
+  });
+});
+
+describe('rollback warning reason (code review 2026-10-05)', () => {
+  it('names the gate reason instead of always saying 의미 보존', () => {
+    expect(rollbackReason(['model_output_unusable'])).toBe('모델 응답을 쓸 수 없어');
+    expect(rollbackReason(['change_rate_runaway'])).toBe('바뀐 양이 너무 많아');
+    expect(rollbackReason(['quote_altered'])).toBe('내용 보존을 확인하지 못해');
   });
 });
