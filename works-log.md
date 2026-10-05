@@ -1,5 +1,72 @@
 # Works Log
 
+## 2026-10-05 — Three code reviews of the Super Sejong v2 work, all findings fixed, merged into main
+
+**Request (user):** "최신 코드 수정내용을 중점으로 코드 리뷰 3회 진행, 문제점이나 버그 찾아봐", then "리뷰 끝나면 전부 수정하고 메인 반영해". Before that, works-log.md was committed and pushed (`b173c8f`).
+
+**Reviews** were read-only and ran in parallel over `b3bc384..HEAD` (65 commits, 170 files).
+
+| Round | Scope | Agent | Severity of confirmed findings |
+|---|---|---|---|
+| 1 | v2 Python core and legacy guard hotfixes | Opus | 4 medium, 4 low |
+| 2 | TypeScript, shadow hook, ops | Opus | none high or medium, 4 low |
+| 3 | skill and Office paths, report script, docs | Sonnet | 1 medium-low, 4 low, doc mismatches |
+
+- Round 2 verified that the shadow hook never changes delivered text: byte-identical on 7.5k and 30k-char runs, no text leak, abort-safe.
+- Round 3 verified that legacy skill and Office output is unchanged with the switch unset.
+- The lead re-ran the top findings before fixing: the legacy 실수 and 증거 같은 false positives on the live tree, and the weekday spacing false positive.
+
+**Fixes** (`495a394`, fast-forwarded into main `b173c8f` → `495a394`; not pushed; no restart)
+- **Legacy guard (live as soon as merged, because the Python is read per job):**
+  - 실수/말수/술수/철수 as whole words, and 일수 followed by a particle, are not the bound noun 수.
+  - 거 같다 is the hedge only after an attributive ending, never 근거/증거/과거/이거.
+  - Verified on the live tree: 실수가 없도록 → 실수하지 않도록 and 확실한 증거 같은 게 → 증거가 now exit 0. 신청하실수 → 신청하실 수 and 맞는 거 같아 → 것 같아 still exit 0.
+- **v2 Python:**
+  - Weekday extraction is symmetric (attached forms, bare lists, a single-letter parenthesis only after a date), with lists capped at 7. "월, " × 32000 now takes 0.007 s; it took 29.5 s before.
+  - Key words carried by a remaining word count as no drop. Six 겹말 fixes pass, and B18/B35 are still caught.
+  - Permission 그래도 is not contrast. An option-form question is not a CTA. A connective moved to the front is not counted as added; the T5 mutation 'add 먼저' is still caught.
+  - -자면 skips only discourse frames. 가지고 있지는 않다 counts as negated. 연락이 끊기다 is no longer requested.
+  - Support verbs are licensed only after meaning-carrying objects. 거→것 counts only where the source had 거 같다.
+  - check keeps the source when the floor ladder had to fall back to it.
+- **TypeScript and ops:**
+  - The desktop package bundles the v2 response schema.
+  - Rollback warnings name the reason.
+  - A Python crash (exit 1 with no report or JSON) maps to `VALIDATION_FAILED`.
+  - The shadow verdict follows the gate policy, so an attempt-1 exit 2 counts as a retry. Chunks left past the deadline become `chunks_skipped`.
+  - The plan file name is read from the manifest.
+- **Office:**
+  - Only the over-budget edits are dropped; the requested fix stays.
+  - A job pins its `SUPER_SEJONG_*` flags at prepare (`sejongEnv`; the pin is scoped to each dispatch call).
+  - Skipped batches get a notice.
+- **Skill gateway:** clearer Node-bridge, engine-pin and no-edit messages.
+- **Report script:**
+  - Verdicts follow policy; medians are consistent; step failures, gate exits, finding rules and `other_keys` are shown; no "None".
+  - New `tests/skills/test_sejong_shadow_report.py`.
+- **README and operations docs:**
+  - The skill path follows the host session's environment, not a server restart.
+  - Office requests deterministic fixes instead of applying them.
+  - Clarity is shadow-only by default.
+  - Added `SUPER_SEJONG_OPEN_REVIEW` and `SUPER_SEJONG_DETERMINISTIC_FIX`, plus the report script.
+
+**Tests**
+- tsc clean, desktop config too.
+- vitest: 717 passed / 9 skipped.
+- skills: 678 OK / 5 skipped with the switch unset, and the same with v2.
+- documents: 93 OK in both engines.
+- Seed: gold 91/92 (SSB-186 unfixed); invariants clean on 212 records.
+- Lead probe: 32/32 and 36/36. Fluency set: 2/40.
+
+**Not fixed, with reasons**
+- A length-ratio chunk rollback in `chunk.reassemble` still restores the raw source chunk, not base(x). It is rare because the runaway guard comes first, and fixing it needs base text stored per chunk.
+- The Office open-review cap can be used twice across attempts (up to about 2× the batch cap).
+- An invalid `SUPER_SEJONG_GENRE_DEFAULT` on the skill path falls back to general, following the general fallback rule.
+- In the worst case the shadow can delay a job by 15 s. This is bounded and documented.
+
+**Deployment** (user: "서버 반영하고 재시작, 메인깃에 커푸")
+- `/api/status` was idle. `npm run build` exited 0.
+- Restarted with `SUPER_SEJONG_V2_SHADOW=1`: PID 47153 → 80242, status ready, LAN 200. Codex and Claude are ready, and the flag is in the process environment.
+- Pushed `b173c8f..` to origin/main together with this log entry.
+
 ## 2026-10-05 — Super Sejong v2 merged into main; live server in v2 shadow recording; README section; pushed
 
 **Request (user):** asked "1번으로 하면 세종엔진 사용하는건가?", then chose option 1 (shadow recording) with "오케이 그럼 일단 현재는 1번으로 서버에 반영". Mid-turn: "서버 반영, 재시작, 메인깃에 커푸", "그리고 리드미에 우리 세종 엔진에 대해서 정리해서 내용 추가" and "리드미 파일 정리하고 깃에 커푸".
