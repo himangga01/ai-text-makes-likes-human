@@ -1,5 +1,589 @@
 # Works Log
 
+## 2026-10-05 — Super Sejong v2 merged into main; live server in v2 shadow recording; README section; pushed
+
+**Request (user):** asked "1번으로 하면 세종엔진 사용하는건가?", then chose option 1 (shadow recording) with "오케이 그럼 일단 현재는 1번으로 서버에 반영". Mid-turn: "서버 반영, 재시작, 메인깃에 커푸", "그리고 리드미에 우리 세종 엔진에 대해서 정리해서 내용 추가" and "리드미 파일 정리하고 깃에 커푸".
+
+**What changed**
+- **main fast-forwarded** `b6a5d65` → `df37ec6` (the `super-sejong-engine` branch; main was its ancestor). The legacy engine stays the default (`SUPER_SEJONG_ENGINE` unset).
+  - `skills/humanize-kr/SKILL.md` and `references/workflow.md` carry both the user's uncommitted "지혜 블로그" lines and the v2 additions, so those two files were stashed by tag (`pre-v2-merge-20261005-skill-docs`, sha `6c455cb`) and applied by sha after the merge.
+  - The apply had no conflict. Only the user's 6 lines differ from HEAD, and the stash was dropped by tag.
+  - The older stash (`pre-deploy-2026-09-09…`) is untouched. Backups of the four local files are in `$SP/r5/main-backup-20261005/`.
+- **Docs commit** `f0949c2`.
+  - README gains a "슈퍼세종엔진" section: what it does, principles, flow, the 2026-10-05 measurements, current state, switches and links.
+  - The README is tidied: the v1 prototype and post-processing paragraphs move into that section, the dated handoff note moves to the development section, and "DOCX · PPTX 지원 (0.3.0)" becomes "릴리스 기록".
+  - `docs/operations.md` documents `SUPER_SEJONG_V2_SHADOW=1` and `SUPER_SEJONG_ENGINE=v2` restarts, plus the watchdog caveat.
+- **Deployment**
+  - `/api/status` showed 0 active jobs. `npm run build` exited 0.
+  - Restarted with `SUPER_SEJONG_V2_SHADOW=1 ~/.hermes/node/bin/node dist/ops/hermes-service.js restart`: PID 68128 → 47153, status ready, LAN 200.
+  - The process environment shows `SUPER_SEJONG_V2_SHADOW=1` and the product Python. Codex and Claude are both ready.
+- **Smoke job** (one Codex call, user-approved deploy check; 78-char constructed text, direct-text/medium):
+  - Legacy delivered in 8.1 s with 1 call.
+  - `diagnostics.v2ShadowCounts` was populated:
+    - plan: 1 SUGGEST request (SSJ-LV3) and 1 deterministic fix (N01);
+    - gate: v2 would accept, and the request was FIXED;
+    - 1 sentence would be reverted as `collateral_edit`;
+    - overhead: `ms_overhead` 117.
+- **Pushed** `b3bc384..f0949c2` to origin/main: 63 commits (the four legacy hotfixes, the v2 branch, the docs commit).
+  - `works-log.md` and the user's personal lines in `SKILL.md`, `references/workflow.md` and `docs/skills-guide.md` stay uncommitted, as before.
+
+**Caveats**
+- The Hermes cron `portal-watchdog` (`~/.hermes/scripts/portal-watchdog.sh` → `hermes-service.js watch`) restarts the server only after consecutive health failures.
+  - On the user's request ("watchdog 스크립트에도 넣어줘") the script now runs `export SUPER_SEJONG_V2_SHADOW=1` before exec, so a watchdog restart keeps recording.
+  - The original is backed up in `$SP/r5/main-backup-20261005/portal-watchdog.sh.bak`. Mode stays `-rwx------`; `sh -n` passes.
+  - A manual run on the healthy server exited 0 with state `{desired: running, consecutiveFailures: 0}` and no restart (PID 47153 unchanged).
+- Manual restarts must still pass `SUPER_SEJONG_V2_SHADOW=1` themselves.
+- Shadow report: on the user's request ('며칠 뒤 기록 모드 결과 정리해줘') the lead added `scripts/sejong-shadow-report.py`.
+  - Committed and pushed as `88ade0b` after a double check the user asked for ('커밋하고 푸시하기전에 … 더블체크').
+    - Missing log: message, exit 1. Empty log: '0건' notice.
+    - Synthetic log (broken line, a legacy-only job, 3 shadow jobs including a `shadow_failed` + `timeout_check` one): counts, families, rule ids and percentiles came out correct.
+    - `--json` works. No document text appears in the output. No `__pycache__` was left.
+    - Suites with the file present: tsc clean; vitest 715 passed / 9 skipped; skills 673 OK / 5 skipped; documents OK.
+    - Packaging does not copy it; only `install-humanize-skill.ps1` is copied from `scripts/`.
+    - Fixes made during the check: a missing log no longer raises a traceback, and sanitised rule keys display correctly (`tr_junge_itda` → TR-JUNGE_ITDA, `public_language_frame` → PUBLIC_LANGUAGE_FRAME).
+  - It uses the standard library only, runs on the system Python 3.9.6, and outputs codes and counts.
+  - It reads every `transform_complete` event that carries `v2ShadowCounts` and prints a Korean markdown summary: v2's verdict on the legacy output, the checks and codes that fire, the requests v2 would send, and the overhead percentiles.
+  - First run: 1 shadow job, the smoke test, out of 191 logged jobs.
+  - A session-only reminder is set for 2026-10-08 10:07 KST to run it and report. The reminder is lost if this Claude session ends; the script stays.
+- Shadow counts cover the text path only (no Office). They judge legacy's output; they do not measure v2's own writing, which needs `SUPER_SEJONG_ENGINE=v2`.
+
+## 2026-10-05 — Super Sejong v2: calque requests for every genre (WP-8b)
+
+**Why:** in the real-model run (entry below) the writer was never asked to fix calques such as 넓은 공간을 가지고 있어서, 배송 준비중에 있습니다, 주문 건에 대해서 안내드립니다, 고객으로부터. The existing TR-* rules cover only essay, report and document, so the server's default genre (general) and blog got none of them. The user had asked to keep refining on the branch ("브랜치에서 더 다듬기").
+
+**Merged on `super-sejong-engine`** (local, not pushed; HEAD `df37ec6`):
+- `bb420c0` (WP-8b agent) adds four closed-list SUGGEST rules for all genres.
+
+  | Rule | Pattern | Hand-checked precision |
+  |---|---|---|
+  | TR-GAJIDA | abstract noun + 을 가지고 있다 | 92/93 |
+  | TR-JUNGE_ITDA | verbal noun + 중에 있다 | 13/13 |
+  | TR-DAEHAE | 에 대해서 + 안내/설명/논의 … 하다 | 54/54 |
+  | TR-ROBUTEO | person noun + 으로부터 + receiving verb | 20/20 |
+
+  - Samples come from the T3 corpora: 5.14M chars of KatFish, news and KLUE. One LLM annotator labelled them; no native reader.
+  - A stricter criterion ("the original reads stiff in context") gives TR-DAEHAE about 14/50 and TR-ROBUTEO about 7/20, mostly in news style.
+  - 0 hits on the 28 owner blog posts and the seed blog items, so blog precision is undefined.
+  - All four fire on the real-run sentences. Natural collocations (관심을 가지고 있다) and time phrases (회의 중에 있었던 일) do not fire.
+- `268dbac` (lead): `voice_written_upshift` counted 이었 even after a final consonant. So "진행 중에 있었다 → 진행 중이었다", a TR-JUNGE_ITDA repair, was flagged. 이었 now counts only after a vowel-final syllable. DESIGN 3.3 gains a row for the four rules next to the LEAVE row they narrow.
+
+**Decisions (lead)**
+- Kept all four rules in every genre, against the agent's suggestion to make TR-DAEHAE and TR-ROBUTEO LEAVE in report and document.
+  - NIKL 「공공언어 바로 쓰기」 (2022), pp. 42, 44, 54, 98, 100, treats 에 대하여, 중에 있다 and 으로부터 as translationese in exactly those public-document genres.
+  - The weak strict-criterion numbers come from news text, which is not a target genre.
+  - A SUGGEST request may be declined, and every edit is gate-verified.
+- Not shipped (agent measured):
+  - 에 대해 + 이야기/답변/질문 …: 17/40.
+  - 으로부터 with organisation sources: it would fire on seed natural control SSB-025, and 에서 adds a place reading.
+
+**Tests** at `df37ec6`:
+- tsc clean.
+- vitest: 715 passed / 9 skipped.
+- skills: 673 OK / 5 skipped in both engines.
+- documents: OK in both engines.
+- Seed: gold stub 91/92, identity 0/438 touched, verify(x, x) and verify(x, base(x)) clean on all 212 records.
+- Lead probe: 32/32 good fixes passed, 36/36 damage caught. Fluency: 2/40 meaning blocks, unchanged.
+
+**Main hotfix deployed the same night:** `b6a5d65` (거 같다 = 것 같다), on the user's request. Details are in the real-model entry below.
+
+**Real-model rerun after WP-8b** (user: "1번 고고"):
+- Same 5 constructed texts, v2 only, Codex writer, v2 HEAD `df37ec6`; 7 calls, 15–29 s per text.
+- Every text delivered with 0 reverted sentences, and every sentence kept its level.
+
+| Text | Requests and outcome |
+|---|---|
+| T1 | TR-GAJIDA FIXED: 넓은 공간을 가지고 있어서 → 공간이 넓어서. Also 편이였어요 → 편이었어요 and "10분 정도의 시간이 소요됩니다" → "10분 정도 소요됩니다" (합쇼체 kept). 가 보려구요 kept. 1 call. |
+| T2 | LV3 FIXED (진행될 예정입니다); LV1 declined this run. 신청하실 수. One retry for `voice_hon_si_dropped`, resolved on attempt 2. 2 calls. |
+| T3 | A04 FIXED (발생되고). TR-GAJIDA + CONNECTOR_RUN FIXED: 장점과 단점을 동시에 가지고 있는 → 장점과 단점이 동시에 있는. 데에 있어서 → 데; 기울여야 할 필요 → 기울일 필요. 1 call. |
+| T4 | TR-DAEHAE FIXED: 주문 건에 대해서 안내드립니다 → 주문 건을 안내드립니다. TR-JUNGE_ITDA FIXED: 배송 준비중에 있습니다 → 배송 준비 중입니다. Also 연락주세요 → 연락 주세요. 보내드릴께요 kept. 1 call. |
+| T5 | 갔다 왔어. A05 FIXED: 같이 동행 → 동행. 최고인 거 같아ㅎㅎ, after one `voice_written_upshift` retry. The model kept the spoken 거, so the WP-10f retry wording works. 2 calls. |
+
+- Model calls for the real-model work so far: 27 in total (20 earlier, 7 here).
+
+## 2026-10-04 — First real-model run of Super Sejong v2 (Codex, 5 constructed texts) and the fixes it found
+
+**Request (user):** "진행" for a real-model trial of v2, about 20 calls, without touching the live server. Afterwards "브랜치에서 더 다듬기".
+
+**Setup**
+- `$SP/r5/tierc/run.mts` builds the production runtime (`createProductionRuntime`) of the v2 worktree with `HUMANIZE_RUNTIME_ROOT` in the scratchpad, so the managed service and its runtime directory are untouched.
+- Each job runs through `runtime.engine.transform` (Codex writer) at direct-text/medium.
+- The same five constructed texts went through v2 (`SUPER_SEJONG_ENGINE=v2`) and legacy. Constructed text only, 166–226 chars each:
+  - T1 blog in 해요체 with ㅋㅋ/~
+  - T2 notice in 합쇼체
+  - T3 report in 해라체
+  - T4 customer service, mixed levels
+  - T5 반말 blog
+- Model calls: 20 in total (v2 7, legacy 8, reruns 5).
+
+**Results (first run)**
+
+| Text | Legacy | v2 |
+|---|---|---|
+| T1 | 2 calls, 29 s, whole chunk rolled back (`DIRECT_TEXT_FIDELITY_RESTRICTED`) | 1 call, 12 s: 편이였어요→편이었어요 (deterministic), "10분 정도의 시간이 소요됩니다"→"10분 정도 소요됩니다" (합쇼체 kept in a 해요 text) |
+| T2 | 1 call, 14 s, 4 good edits | 2 calls, 20 s, 4 good edits (LV3, spacing, LV1, 경우에는→경우); requests FIXED 2/2 |
+| T3 | 2 calls, 31 s, rolled back | 1 call, 14 s: 추세 redundancy, 데에 있어서→데, 발생되어지고→발생되고, 기울여야 할 필요→기울일 필요 |
+| T4 | 2 calls, 32 s, rolled back | 1 call, 13 s: 대해서→대해, 준비중→준비 중, 연락주세요→연락 주세요; 보내드릴께요 kept (owner rule) |
+| T5 | 1 call, 13 s, 3 edits | 2 calls, 16 s: 2 edits; one sentence reverted (meaning) |
+
+- Legacy rolled back 3 of 5 texts; v2 delivered minimal edits on 5 of 5 with every sentence's level kept.
+
+**Problems found and fixed**
+1. **T5 meaning false positive.** "최고인거 같아ㅎㅎ" → "최고인 것 같아ㅎㅎ" raised `modality_changed`, because the hedge rule reads 것 같다 but not the spoken 거 같다. The live legacy gate does the same (confirmed on main: 맞는 거 같아 → 맞는 것 같아 is also flagged).
+   - Fix `b6a5d65` on branch `hotfix/geo-gat`: `features()` reads 거 같다 as 것 같다 on both sides.
+   - Merged into v2 (`bd89935`).
+   - Deployed to main on the user's request ("핫픽스 메인 반영하고 서버 재시작해"):
+     - `/api/status` was idle beforehand.
+     - `git merge --ff-only` moved main `7394230` → `b6a5d65`; the hotfix touches only `super_sejong.py` and its test, so no stash was needed.
+     - `npm run build` exited 0; the restart moved PID 39250 → 68128, status ready; LAN returns 200.
+     - On the live tree, 최고인거 같아 → 최고인 것 같아 and 맞는 거 같아 → 맞는 것 같아 now give exit 0, and dropping the hedge (올 거 같아요 → 와요) still gives exit 2 with `modality_changed`.
+     - Not pushed. The user's uncommitted files are unchanged. The hotfix worktree and branch were removed.
+2. **Colloquial spelling changed (T1).** 가 보려구요 → 가 보려고요 broke the owner's "구어 표기는 기본 유지" rule.
+   - `cbb6d99`: the spoken -구 after 려/다/라/냐/자 and the -구요 of a past or existential stem (했구요, 있구요) are now colloquial keep tokens.
+3. **거 → 것 in casual sentences (T5).** The model's fix also changed 거 to 것, a written upshift.
+   - `cbb6d99`: 것 같다 counts as `voice_written_upshift` in 해요체/해체 only; in 합쇼체/해라체 것 같다 is the expected form.
+4. **Upshift retry gave the wrong form to keep.** In the rerun the retry said to keep the final "같아", so Codex answered "것 같아" again.
+   - `b0709d3`: the violation now carries the source's spoken form ("거 같아").
+   - Final rerun: Codex returned "최고인 거 같아ㅎㅎ" on attempt 2; all 3 edits were kept and nothing was reverted.
+
+**Tests** at v2 `53a38ea` (= wp10f):
+- tsc clean.
+- vitest: 715 passed / 9 skipped.
+- skills: 662 OK / 5 skipped in both engines.
+- documents: OK in both engines.
+- Lead probe 32/32 good fixes passed and 36/36 damaging edits caught; fluency set 2/40 meaning blocks.
+- Hotfix branch `b6a5d65` on main: vitest 483 passed / 9 skipped; skills 113 OK / 4 skipped; documents OK.
+
+**Open**
+- T1/T2 left some translationese (넓은 공간을 가지고 있어서, 홈페이지를 통해서) that no rule requests. The open review picked them up only in one of two runs, which is model non-determinism.
+
+## 2026-10-04 — Super Sejong v2 wave 3: TS engine, Office, shadow hook, meaning hardening; three legacy hotfixes deployed
+
+**Request (user):** keep going with the v2 replacement engine on its own branch ("좋아 킵 고잉"). Merging into main stays opt-in.
+
+**Branch state:** `super-sejong-engine` is local and not pushed; HEAD is `e37fa16`. Wave 3 merged:
+
+| Commit | Package | Content |
+|---|---|---|
+| `aa1e799` | WP-10c (lead) | flow reads stacked initial connectives together; new floor code `weekday_changed` |
+| `bea1c58` | WP-11b | `SejongEngine` (TS), `runPrompt` on both runners, v2 diagnostics. `SUPER_SEJONG_ENGINE=v2` selects it at start-up. |
+| `d8653af` | WP-12 | Office path under v2: per-block plan, reject-only `verify_block`, retries only failed blocks |
+| `d02b100` | WP-17 | legacy shadow hook (`SUPER_SEJONG_V2_SHADOW=1`): codes and counts only, no model call |
+| `71833b7` | WP-10b | `condition_dropped`, `temporal_order_changed`, per-clause roles, A06 + 별로/도저히/일절, 뵈요→봬요, 이였→이었, `content_dropped` (shadow) |
+| `3398012` | WP-10d (lead) | `key_word_dropped` enforced; common fluency drops licensed |
+| `d6d557e` | WP-13 | agent-skill path under v2: in-process plan/check, empty-plan chunks decided without the host, engine pinned in job.json, bridge ops `context-v2`/`parse-v2` |
+| `ac5d9de` | WP-11c (lead) | chunk rollback keeps base(x) on the server and skill paths; retry prompt names S ids |
+
+Lead follow-ups: `054ca8b` and `e382eab` add Korean wording for the new codes; `0a3de90` adds a test allowance; `1c6aa7b` merges the legacy hotfixes into v2.
+
+**Measured**
+- Tests at `e37fa16`:
+  - tsc clean (desktop config too).
+  - vitest: 715 passed / 9 skipped.
+  - skills: 661 OK / 5 skipped with the switch unset, and 661 OK / 5 skipped with `SUPER_SEJONG_ENGINE=v2`.
+  - documents: OK in both engines.
+- WP-13: in-process and CLI decisions are identical on all 6 seed composites (plans, every check report, delivered text). Five of the six go through attempt 2.
+- WP-11b legacy byte-identity: runner command lines, prompts and engine results digest identical to `91a23b2`, compared with `cmp`.
+- WP-11b Tier-B stub run (6 seed composites, real Python CLI): 127/161 primary injections fixed, 0 untouched paragraphs changed, 0 rollbacks.
+- WP-12: legacy Office output unchanged (batch files, job.json, exported DOCX/PPTX bytes). tests/documents: 92 OK in both engines.
+- WP-17: delivered text byte-identical with the hook on; overhead about 60–70 ms per 3k-char job (budget 300 ms).
+- WP-10b seed gold stub: 91/92 primary injections fixed (was 87/92; only SSB-186, 거의, is still unfixed by design). The 555 meaning-pair rates are unchanged.
+- Lead probe on constructed pairs (`$SP/r5/probe/probe.py`): 32 good fixes that must pass and 36 damaging edits that must be caught.
+
+  | Gate | Good fixes passed | Damage caught |
+  |---|---|---|
+  | v2 at `91a23b2` | 26/32 | 32/36 |
+  | v2 at `ec7bae4` | 32/32 | 36/36 |
+  | legacy Python gate (hotfix branch) | 30/32 | 18/36 |
+
+  The legacy production path also has the TS voice lock, which this table does not include.
+- Constructed fluency edits (`fluency.py`, 40): 2 meaning blocks, both borderline (필요한 시점 → 해야 할 때; 해결될 수 있는 → 해결되지 않는다).
+
+- Hermes drafts (10 articles; body-original and body-final; read-only; counts only, temporary copies deleted):
+  - At normal, every one of the 20 bodies has 0 requests and 0 deterministic fixes, so v2 makes 0 writer calls.
+  - At medium, there are still 0 requests and 0 fixes. Each body makes 1 call, only for the open review (up to max(3, 10%) sentences the writer may nominate).
+  - The rule layer finds nothing to fix in these drafts.
+
+**Decisions (lead) and reasons**
+- `content_dropped` stays in shadow.
+  - Licensing redundancy pairs, support verbs (결정을 내리다), postpositional verbs (에 대해서), the "N 작업을 진행하다" head noun and a purpose noun kept by 위해 took gold false blocks from 14/374 to 0/374.
+  - It still fires on 6/40 constructed fluency edits.
+- `key_word_dropped` is enforced instead (soft: one retry, then that sentence reverts).
+  - It covers a closed list of time, participant/manner and cost words, plus place-name swaps.
+  - Gold 0/374; seed preserve probes 0/25; 0 preserve pairs flagged.
+  - It catches 함께/미리 drops and 서울시청→부산시청.
+  - Reason: a false block costs one sentence its edit; a miss delivers a silent loss of content.
+- Rejected: enforcing all of `content_dropped`. It went to 4/32 false blocks on the lead probe once the licences were tightened for gold.
+- The document gate under v2 now reports the codes an SSJ-A06 request licenses for its own repair (polarity, modality, lexical) as review hints, not rollbacks. The Tier-B test now allows them.
+- New redundancy entries RD_gachi_donghaeng, RD_seodulleo_geuphi, RD_geujeya_biroso and RD_mili_yeyak are author knowledge, marked "needs native review". This session's web-search budget was used up, so no source was found. RD_saeroun_sinjepum was widened under its existing NIKL source.
+
+**Legacy hotfixes, deployed to main**
+- The user chose "지금 반영" (merge into main and restart). Three commits on `b3bc384`; each fixes a correct writer fix that the live gate rolled back.
+
+  | Commit | Fix the gate rejected | Hard failure |
+  |---|---|---|
+  | `8a2eb9b` | 할수 있다 → 할 수 있다 | `modality_changed` |
+  | `ec7ba05` | 안되요 → 안 돼요 | `polarity_changed` |
+  | `7394230` | 신분증을 필요로 합니다 → 신분증이 필요합니다 | `modality_changed` |
+
+- Suites on the branch: vitest 483 passed / 9 skipped; skills 113 OK / 4 skipped; documents OK.
+- The same commits are merged into the v2 branch, because v2's meaning family imports `super_sejong.py`.
+- Deployment:
+  - `/api/status` showed 0 active and 0 queued jobs before the merge.
+  - `git merge --ff-only` moved main `b3bc384` → `7394230`. No stash was needed: the hotfix touches only `engine_runtime/super_sejong.py` and its test, not the user's uncommitted files, which kept their 6 lines.
+  - `npm run build` exited 0, then the Hermes-node supervisor restarted the service: PID 55915 → 39250, status ready.
+  - LAN `http://192.168.0.22:7882/` returns 200.
+  - On the live tree, `workflow.py` now gives exit 0 for 할수 있다 → 할 수 있다, 안되요 → 안 돼요 and 필요로 합니다 → 필요합니다. All three were exit 2 before.
+  - Not pushed; the user asked for merge and restart only. The hotfix worktree and branch were removed.
+
+**Open**
+- `DocumentEngine` still points `quickRulesPath` at an empty placeholder under v2. It can use `runPrompt` now.
+- Real-model (Tier C) runs have not been done. They need the user's go-ahead because they spend Codex/Claude quota.
+
+## 2026-10-04 — Super Sejong v2 implementation: WP-0 to WP-10 merged on the v2 branch; legacy 수-spacing false positive
+
+**Request (user):** build Super Sejong Engine v2 to replace the vendored engine, on a branch kept apart from main ("이 작업은 새 브랜치를 따로 생성해서 메인이랑 분리해서 진행한다"), then "좋아 킵 고잉". Merging into main stays opt-in ("메인 브랜치에 머지하는건 내가 요청할때만").
+
+**Branch state:** `super-sejong-engine` is local only and not pushed; HEAD is `91a23b2`.
+- Each work package (WP) ran in its own worktree on branch `sejong/wpN` and was merged `--no-ff`. The worktree and branch were then removed.
+- Merged so far: WP-0 contracts, WP-1 text/protect, WP-2 align, WP-3 chunk, WP-4 voice, WP-5 meaning/floor, WP-6 CTA, WP-7 flow/clarity, WP-8 diagnose/norms/josa, WP-9 commas, WP-11a TS prompt/response/adapter, WP-14 version/preflight/packaging, WP-15a scorer.
+- WP-10 (`205c026`, merge `91a23b2`) adds the pipeline glue: plan, apply, repair, verify, decide, check, and `engine_runtime/sejong_cli.py`.
+  - CLI subcommands: prepare, analyse, check, verify, finalize.
+  - `workflow.py` switches to v2 only when `SUPER_SEJONG_ENGINE=v2`. Legacy output is byte-identical and pinned by a test.
+  - `THIRD_PARTY.md` carries the vendor MIT notice for the ported pieces.
+
+**WP-10 measurements:** stub writers on the 206-item seed set, medium strength, regex backend.
+
+| Writer | Result |
+|---|---|
+| Identity | output = base(x) on every item; 0/438 clean sentences touched; 0 retries |
+| Gold replacements | 87/92 primary injections fixed (86 exact, 1 probable); 0 collateral; 0 voice, quote, number or CTA damage; 21 retries |
+| Gold, normal strength | 36/92 fixed with 21 calls |
+| Damaged, full-text mode | 0 damage delivered in all 11 classes |
+| Damaged, replacement mode | 3 misses: meaning flip 2/22 (T08 role swap, T20 전에→뒤에), transition 1/206 |
+
+- The 5 unfixed gold items (SSB-044/049/185/186/190) involve negative-polarity adverbs (별로, 도저히, 일절) that are outside the A06 list.
+- Invariants: `verify(x, x)` and `verify(x, base(x))` are clean on all 212 records.
+- Performance at 100k chars: analyse 1.37 s, finalize 0.58 s, check ≤ 85 ms per chunk. All are within DESIGN §6.
+- Tests at `91a23b2`:
+  - tsc clean.
+  - vitest: 595 passed / 9 skipped.
+  - skills: 593 OK / 5 skipped. The baseline was 560; the 33 added tests are WP-10's.
+  - documents: 54 OK.
+- WP-10 changed other packages' files: `meaning.py` now compares both sides after `norms.fix_text` and after collapsing the closed A04 double-passive list, so the engine's own fixes are not flagged as meaning changes. `check.schema.json` also accepts sentence ids for open-review retries. The 555 meaning-pair rates are unchanged.
+
+**Cross-package bugs fixed during integration (lead, before the WP-10 merge)**
+- voice: the spacing fix 하실수 → 하실 수 was counted as an added -시-. Bound nouns written apart are now counted the same as attached ones.
+- text: chatty blog lines ("…잠이 안 와~") were treated as unmarked headings and frozen. 해체 endings and CMC marks now mean "not a heading"; 개요/필요/중요 are excepted.
+- protect: dotted versions were partly frozen ("1.2" of "1.2.3"). Now the whole version is frozen.
+- commas: `restore_dropped` required an identical left word. It now matches by connective ending.
+
+**Lead end-to-end check through the CLI** (constructed blog text, scratchpad only)
+- Accepted: the deterministic 신청하실수 → 신청하실 수 fix and the SSJ-LV3 rewrite 진행이 이루어질 → 진행될.
+- Caught and retried: -시- and ㅋㅋ dropped, 남겨주세요 → 남겨줘. Attempt 2 and finalize behaved as specified.
+- Gaps found and assigned to WP-10b:
+  - 뵈요 → 봬요 is blocked as `voice_humble_dropped`, because voice does not know 봬.
+  - A reply that drops 함께 / 미리 / 예정 passes every family. The legacy gate misses this too.
+  - The temporal and role flips listed above.
+
+**Live main bug found by the same check (not deployed)**
+- On main `b3bc384`, the legacy gate treats a correct spacing fix as a meaning change:
+
+  | Fix | Hard failure |
+  |---|---|
+  | 할수 있다 → 할 수 있다 | `modality_changed` |
+  | 볼수 없었다 → 볼 수 없었다 | `polarity_changed` + `modality_changed` |
+
+  This forces a retry and then a rollback.
+- Cause: in `engine_runtime/super_sejong.py`, `_CAN_POS`/`_CAN_NEG` match `(?<![가-힣])수`, which only reads a spaced 수.
+- Fix prepared as `8a2eb9b` on local branch `hotfix/bound-noun-spacing` (worktree `.worktrees/hotfix-su`). Nothing was merged or deployed; that waits for the user.
+  - `features()` reads 수 spaced after an attributive ㄹ ending on both sides. 할수록 and 할수밖에 are untouched.
+  - 6 regression cases added. An attached 범인일수 있다 → 범인이다 is still caught.
+  - Suites on the hotfix branch: tsc clean; vitest 483 passed / 9 skipped; skills 113 OK / 4 skipped; documents OK.
+
+**Running now (wave 3, each in its own worktree)**
+- WP-10b: content-drop and temporal-order meaning codes, 뵈요/봬요, A06 additions, T08.
+- WP-11b: `SejongEngine` TS integration.
+- WP-12: Office path.
+- WP-13: skill path.
+- WP-17: legacy shadow hook.
+
+**Open**
+- NIKL corpus approval is pending; the user has applied.
+- v2 cutover is not scheduled; the plan is shadow mode first.
+- Vendor removal (WP-18) needs the user's approval.
+
+## 2026-10-04 — Main hotfixes: wasted retries, writer commas, order-swap rollback, frozen protected sentences, voice lock
+
+**Request (user):** fix all four main bugs found by the v2 research ("2번은 모두 수정"), then "기능 버그 수정한거는 메인 브랜치에 머지하고, 서버에 반영하고, 서버 재시작해".
+
+Work was done in a hotfix worktree off main, then fast-forwarded. The worktree and branch were removed afterwards.
+
+**Commits (pushed `4b6a7a9..b3bc384`)**
+- `f926eaa`:
+  - P1-only gate warnings are advisory: exit 0 with `advisoryReasons`, no retry.
+  - New `engine_runtime/comma_guard.py` keeps writer commas: it aligns each edited sentence with its source sentence and removes only added commas. Used on the server and skill paths.
+  - `_order_swapped` takes the best match per ordering. Before, every unchanged sentence with "…하기 전에 … 한 후에" was rolled back.
+  - Protected direct-text sentences may now be edited when their protected elements survive.
+- `2046c28`:
+  - Protected markers are compared by meaning class (가능 ↔ 수 있, 경우 ↔ -면).
+  - Numbers and quotes are compared in order.
+  - Multi-subject sentences keep their noun order instead of being frozen.
+  - "N이 되다" complements are no longer counted as subjects.
+  - Light nouns (진행·실시·시행) may be dropped, and a noun may become its 하다/되다/받다 verb.
+- `b3bc384`: voice lock (see the live check below for why). Per sentence it checks:
+  - speech level and honorific -시- count (T2 noun exclusions);
+  - question, request and propositive mood, and stance ending;
+  - humble verbs and CMC marks.
+
+  Results on the T2 pair set:
+
+  | Pairs | Flagged |
+  |---|---|
+  | 60 non-structural preserving pairs | 1 (a real -시- loss) |
+  | 64 drifting pairs | 52, counting splits/merges, which direct text already rejects |
+
+  The rewrite policy now states the per-sentence voice rule.
+
+**Tests**
+- f926eaa: tsc clean; vitest 472 passed / 9 skipped; documents OK; skills 112 OK / 4 skipped.
+- b3bc384: vitest 483 passed / 9 skipped; the rest unchanged.
+- One vitest run on f926eaa had a single failure that did not reproduce on 2 reruns (test name not captured).
+
+**Behaviour changes, with tests updated to match**
+- The P1-only candidate-review retry is no longer reached through the real gate.
+  - 6 integration tests that only exercised it were removed; 2 were rewritten as "accepted on the first call".
+  - The skill-gateway P1 test was rewritten the same way.
+  - `candidate-review.ts` is now dead code, left for v2 to remove.
+- Two restoration tests (TS integration and skill gateway) now expect the de-nominalised "자료의 구분이 이루어지고 …" rewrite to be kept.
+- The role-swap restoration test is unchanged and passes.
+
+**Merging into main**
+- The main tree has the user's uncommitted personal lines in `skills/humanize-kr/SKILL.md`. Each merge that touched that file was handled the same way:
+  1. Stash that file alone, with a unique tag.
+  2. `git merge --ff-only`.
+  3. `git stash apply <sha>`.
+  4. Drop the entry by tag.
+- Both lines survived with no conflict markers. A backup is in the scratchpad.
+
+**Deployment**
+- `/api/status` showed 0 active jobs before each merge.
+- `npm run build`, then a Hermes-node supervisor restart.
+- PIDs: 4118 → 38731 → 48827 → 55915.
+- LAN `http://192.168.0.22:7882/` returns 200 and both providers are ready.
+
+**Live checks** (Claude Sonnet 5.5 low, direct-text, strength medium, 3 sentences full of protected elements)
+
+| Stage | Calls | Time | Result |
+|---|---|---|---|
+| Before the fixes | 2 | 11–13 s | Source returned unchanged |
+| After `f926eaa` | 2 | — | No P1 warning, but the TS fidelity guard rolled back the natural edits (wording-level markers) |
+| After `2046c28` | 1 | 4.7 s | Edits applied inside protected sentences, but "궁금하신 → 궁금한" dropped an honorific |
+| After `b3bc384`, run 1 | 1 | 5.3 s | Edits applied, honorific kept; the model dropped a writer comma itself |
+| After `b3bc384`, run 2 | 1 | 4.4 s | Edits applied, honorific and comma kept |
+
+- Edits applied after `2046c28`: 인정이 됩니다 → 인정됩니다, 진행이 가능하며 → 진행할 수 있으며, 누락되는 경우에는 → 누락되면.
+- The comma dropped in b3bc384 run 1 was the model's own deletion, not our stripper; v2 can restore it.
+
+**Open**
+- The voice lock misses persona swaps, 해체-level changes and nominal↔finite changes; the full v2 classifier covers these.
+- Per-sentence revert instead of chunk retry/rollback is v2 work.
+- The design doc (`.worktrees/super-sejong-engine/docs/research/super-sejong/v2/DESIGN.md`, 787 lines, 19 work packages) is drafted but not reviewed.
+
+## 2026-10-04 — Super Sejong v2 research: 12 tracks toward replacing the 윤문 엔진
+
+**Request (user):** Super Sejong was meant to *replace* the vendored 윤문 엔진, not sit on top of it. Redo the research on a separate branch, isolated from main. It must be better than the old engine, not a copy, and use clarity, flow and CTA as criteria. The key point is to keep 말투 and fix only awkward Korean.
+
+Later additions from the user:
+- Research the listed institutions and fields (국립국어원, 한국어학회, 한국학중앙연구원, "한글연구소", KFL, Korean NLP) and the papers.
+- Look for MCP servers and plugins, with a mandatory security check before any use.
+- "조사하고나서 대기해": stop after the research and wait.
+
+**Decisions by the user**
+- Subagents run on Opus 5.5 high or Sonnet 5.5 xhigh, chosen by difficulty.
+- The LLM stays the writer; v2 replaces everything around it.
+- 말투 is preserved strictly per sentence ("문장마다 원래 말투 그대로 유지해야함").
+- Colloquial spellings and CMC tokens (할께, ㅋㅋ, ^^, ~) are kept by default; fixing them is an opt-in.
+- The published 지혜 blog posts were already processed by the 윤문 엔진.
+- Hermes keeps the drafts at `~/.hermes/work/blog-new10-20261003/articles/*/` (body-original / -humanized / -final). Read-only use is approved.
+
+**Setup**
+- Branch `super-sejong-engine` at `4b6a7a9`, in worktree `.worktrees/super-sejong-engine`.
+  - It is a separate worktree because the live server reads Python from the main tree per job.
+  - `node_modules` is symlinked and listed in `.git/info/exclude`.
+- Agent definitions `~/.claude/agents/sejong-opus-high.md` and `sejong-sonnet-xhigh.md` (model + `effort` frontmatter).
+  - Creating the agents directory for the first time required a session restart (`claude --continue`); Claude Code docs confirm this.
+- Research brief and per-track prompts in the session scratchpad `r5/`.
+
+**Tracks**
+- Opus high: T1 engine dissection, T2 voice lock, T3 awkward Korean, T8 literature, T11 NLP tooling, T12 MCP discovery and security audit.
+- Sonnet xhigh: T4 clarity, T5 flow, T6 CTA, T7 evaluation, T9 NIKL resources, T10 AKS/KFL/philology.
+- The session's WebSearch budget (200) ran out late in the run. WebFetch still worked until near the end; T9 also ran out of fetches.
+
+**Key findings, each spot-checked or reproduced by the lead**
+
+| Track | Finding | Lead check |
+|---|---|---|
+| Real drafts | All 10 Hermes drafts are byte-identical across original/humanized/final; the 윤문 엔진 made 0 edits. `protected_sentence_count` 42–49 per article, 463/640 (72%). 8/10 went attempt-1 "retry" → attempt-2 "accept-with-warning", both with 0 edits. | Lead measured |
+| T7 | The protection is our own product rule, not vendor: `src/engine/rewrite-policy.ts:33` (from `e09df96`, 2026-09-10) tells the model to keep every sentence with numbers, dates, quotes, possibility, negation, obligation, condition or multiple subjects verbatim. The 10-03 benchmark's changes (17/20) came from the text-file route, which has no such protection. | Lead confirmed the rule |
+| T1 | The vendor gate warns on unchanged human text 75–99.5% of the time (P1 comma z-scores against placeholder baselines), forcing a wasted retry. | Lead: 25/30 KatFish human essays → P1 warn |
+| T1 | `strip_injected_commas` deletes the writer's own commas in any edited sentence. | Lead: 2/2 removed after a one-word edit |
+| T1 | v1 bug: `_order_swapped` flags an identical sentence with two 전에/후에 frames, so it rolls back. | Lead reproduced on KatFish essay index 150 |
+| T1 | No voice guard, no CTA guard; only `quick-rules.md` reaches the model. | — |
+| T2 | Per-sentence speech-level classifier (regex, 8 levels): 0.964 on a blind holdout (n=110) vs 0.736 for the current TS function. Gate catches 104/104 one-sentence and half-post 해요↔합니다 drifts vs vendor 0/104; 0 false flags on 1,202 paragraphs of voice-neutral edits; graft/revert repair restores 620/620. | Lead: 10/10 on new pairs |
+| T3 | Mechanical norm errors (spacing, 율/률, misspellings, 로서/로써) fire 17–20 per 10k chars in human student essays, ~0 in LLM text, and 0 in the blog. 11 kept rules with precision 0.92–1.00. | Lead recount: 17.55 vs 17.21 per 10k; 율/률 0.47 exact |
+| T4 | Clarity acts mainly as a non-regression guard. Blog sentence length: P95 21, P99 26 eojeol; 0.4% ≥30. | Lead: exact match |
+| T5 | The shipped gate passes added transitions, wrong contrast connectives and paragraph merges. Five flow guards proposed, with 1/77 benign false alarms in-sample. | Lead: all three pass with exit 0 |
+| T6 | CTA detector P 103/103, R 103/107 on drafts frozen before tuning. The CTA gate blocks 90.3% of 113 violating rewrites vs 42.5% for the current gate. | Lead: 7/8 new pairs correct; 1 overblock on a synonym condition clause (준비되면→갖춰지면) |
+| T7 | Seed benchmark: 206 items + 6 composites. v1 guards on 72 new probes: 76.6% sensitivity, 48% overblock. Protocol with safety non-inferiority margins and power calculations. | Lead: 212 records validate against the schema |
+| T8 | ~85 sources. 15 ranked findings: per-sentence ending-class gate; -시- tiers; length never triggers edits; no new connectives (explicitation); aspect (-고 있다) as a meaning axis; 호응 family; minimal-edit prompt. | Spot numbers consistent with T3 |
+| T9 | NIKL expert edits: 304,046 cases, spacing 41.4%. 온라인가나다 answers firmly only on spelling and 호응 breaks. Corpus catalogue and terms collected. | Lead checked both in the source text |
+| T10 | NIKL's 25 native-writer error types exist. The 2025 online-posting corpus has 73,176 Naver blog + 42,937 Instagram posts. AKS adds little. No AI-era "한글연구소" found. | Lead checked both |
+| T11 | Kiwi in a persistent worker takes 57 ms per 2×2.6k chars vs 0.93 s per spawn. Bidirectional KLUE-NLI as OR-veto: untuned set misses 11/60 → 2/60, code1 overblock 8 → 15/207. The tested checkpoint has no licence. | Lead recomputed independently: identical numbers |
+| T12 | No third-party MCP for the product. Rejected: Naver/PNU/나라 spell-check scrapers (one spoofs X-Forwarded-For), koreandict-mcp-server (reads `~/.cursor/mcp.json` and `.env`), kisti-mcp (logs keys), paper-search-mcp (Sci-Hub, TLS off). Safe for pinned research use: korea-scholarship-mcp `8ed87e3`, arxiv-mcp-server 0.8.0. | Lead read the source for two rejects and one safe pick. Nothing installed. NIKL stdict data mirror `42c0d01` (657 MB XML) downloaded to the scratchpad only. |
+
+**Production-affecting issues found on main (not fixed; the user has not decided)**
+- P1 warn → wasted retry on unchanged text.
+- The comma stripper deletes writer commas.
+- `_order_swapped` false rollback.
+- Flow-guard gaps.
+- The direct-text protection rule makes the skill path a no-op on the owner's genre.
+
+**Files**
+- Reports T1–T12, the brief, prototypes (voice/gate/repair, detectors, flow gate, CTA detector/gate, scorer) and the seed benchmark are copied to the worktree's `docs/research/super-sejong/v2/`.
+- They are uncommitted. The scratchpad in `/private/tmp` may be wiped.
+- Some T2/T5 examples contain the owner's business and personal name. Review before any commit.
+- No NIKL corpus or blog bodies were stored.
+
+**Limits**
+- Every hand label and constructed pair comes from a single LLM annotator; no native-reader judgement exists.
+- No live LLM rewrite runs were made.
+- Windows was not measured.
+
+**Open, for the user**
+- Apply to 모두의 말뭉치 (procedure given to the user). The site page showed a "일부 기능 장애로 신청 불가" notice, unverified.
+- Get NIKL dictionary and KCI API keys.
+- MCP installation (recommended: none).
+- Main hotfixes.
+- Whether 되요/됬/몇일 count as colloquial.
+- Voice-conflicting fixes (하실게요→해 주세요).
+- Licence path for the NLI model.
+- Evaluation margins.
+
+**Status:** research complete. Design and implementation have not started, per the user's instruction to wait. Nothing was committed or pushed.
+
+## 2026-10-04 — Super Sejong Engine: review, resumed research, guard rewrite, performance fixes
+
+**Request (user):** review the MD files Codex wrote on 10-03 (research synthesis, code plan, handoff, benchmark), resume the interrupted research tracks with subagents, review the Super Sejong code, and find and apply logic, performance and other improvements. Constraints: subagents on Sonnet 5.5 only, no git commit/push, stop and wait after the changes.
+
+**How:**
+- Ten Sonnet 5.5 subagents in parallel: 2 document reviews, 3 code reviews, 5 research tracks (morphology, lexicon, corpus calibration, josa, discourse).
+- All edits were made in a scratch worktree, a detached snapshot `4fa16a3` of HEAD `c792440` plus the full working tree.
+- The lead re-ran every claimed reproduction before accepting it.
+- The diff was applied to the main working tree only after `/api/status` showed 0 active and 0 queued jobs. Python stages are read per job, so they go live on save.
+- Full record: `docs/research/super-sejong/EVALUATION-2026-10-04.md`.
+
+**Bugs found and reproduced**
+
+| Area | Reproduction | Fix |
+|---|---|---|
+| Meaning guards (prototype) | On an independent 60/60 pair set: 38.3% of paraphrases blocked, 40.0% of meaning changes accepted. Blocked: 뿐만 아니라, 잘못, 어렵다→쉽지 않다, 알지 못했다→몰랐다. Accepted: 안 갔어→갔어, 승인→반려, 올랐다→내렸다, 모든→일부, 이상→이하, subject/object swaps. | `engine_runtime/super_sejong.py` replaced with event-based guards (v3, below). |
+| `change_rate` (vendor metrics_v2) | A quadratic char diff; single-line paragraphs bypassed line segmentation. 20k repetitive chars took 86 s; 85k exceeded the 120 s Python timeout after all model calls had run. | Line, then sentence, segmentation, with bounded unmatched blocks. 20k: 86 s → 1.4 s; 85k: >120 s → 5.3 s; max value difference 0.0003 on 20 real texts (3k–60k chars). Vendor patch regenerated and verified byte-identical with `git apply` and `patch -p1`; UPSTREAM.md matches the sync-engine.ps1 generator. |
+| Style hints (TS) | The quote-protection regex was quadratic: an unclosed “ in 50k chars blocked the event loop 0.87–4.7 s. "집에 있어서" was flagged as translationese. | New `src/engine/super-sejong.ts`, 15 rules; every 50k-char adversarial shape runs in ≤37 ms. |
+| Chunk prompts | The Python "chunk i/N" header was written to disk but never sent to the model. | Chunk prompts now carry the position and the document's dominant speech level. |
+| Office path | Ordered-list equality of modal and short-negation cues rejected harmless clause reordering (37.7% overblock measured by a code reviewer). | Enforce mode uses Super Sejong's sentence-aligned comparison instead. |
+| Office, shadow mode (found during the docs pass) | With `SUPER_SEJONG_MODE=shadow`, the Office path ran neither the old list checks nor the new comparison, so "제출해야 한다 → 제출할 수 있다" was accepted. Enforce and off both rejected it. | Shadow and off now keep the legacy checks; test `test_shadow_mode_keeps_the_ordered_modal_check`. |
+| Particles | No check for allomorphs that an edit left wrong (URL를, 10%으로, AI이). | New `engine_runtime/super_sejong_josa.py`: repair in restore, `josa_mismatch` gate in verify, rejection on the Office path. |
+| Observability | Gate failure codes were parsed but never logged; there was no way to shadow the new guards. | `SUPER_SEJONG_MODE=enforce|shadow|off`. Diagnostics add `hardFailureCounts`, `shadowFailureCounts`, `repairedParticles` and `styleFindingsBefore/After` (codes and counts only). |
+
+**Meaning guards (v3), cross-evaluated on three independently written sets (overblock / missed)**
+
+| Set | Prototype | Code reviewer v2 | Shipped v3 |
+|---|---|---|---|
+| Lead, 20/20 (written blind; v3 tuned on it) | 50% / 75% | 25% / 30% | 5% / 0% |
+| Morphology researcher, 60/60 (never tuned on) | 38.3% / 40.0% | 11.7% / 20.0% | 11.7% / 18.3% |
+| Code reviewer, 207/188 | 27.1% / 68.6% | 3.4% / 0% | 3.9% / 0% |
+
+- The honest generalisation figure is the middle row.
+- All 555 pairs are now a regression test (`tests/skills/data/super_sejong_pairs.json`, `test_super_sejong_guards.py`) with per-set rate thresholds.
+
+**Other changes**
+- `quantities.py` skips the idiom "두 번 다시".
+- `src/app.ts`: a Host rejection on a non-API path shows a Korean page listing the LAN URLs; the API returns `HOST_NOT_ALLOWED` with a hint.
+- `hermes-service.ts`: falls back to `/api/health` when `/api/status` returns 404 (older builds).
+- `codex-runner.ts`: the comment now says `--disable unified_exec` is ignored on CLI 0.160, so the sandbox is the real containment.
+- `python-engine.ts`:
+  - restore runs a third step (josa);
+  - an `output-limit` termination is treated as invalid output;
+  - `shadowFailures` is parsed with a strict code pattern.
+
+**Docs**
+- `EVALUATION-2026-10-04.md` (new) and research data under `docs/research/super-sejong/data/2026-10-04/`:
+  - a 284-entry lexicon, kept for research only and not wired in;
+  - calibration data;
+  - rhythm thresholds;
+  - the lead pair set.
+- `operations.md` gains:
+  - a `SUPER_SEJONG_MODE` section with a mode table;
+  - the new diagnostics fields;
+  - `/api/status`;
+  - a warning that the watchdog does not inherit the mode;
+  - a warning that `npm run test:e2e` rebuilds the served `dist/` and that Python edits go live on save.
+- `RESEARCH-SYNTHESIS.md`: the particle claim was corrected. 은/는 is an auxiliary particle, so 은/는↔이/가 is not automatically safe.
+- Code plan: a 4 October update with revised priorities.
+- Handoff: an addendum.
+
+**Corrections to Codex's 10-03 documents**
+- The benchmark difference is within noise: paired −4.2 s, bootstrap 95% CI (−19.7, +10.2), MDE about 22 s, sign test p = 0.22.
+- The replay flag counts (4 vs 0) are circular.
+- The obligation guard covered only the Office path.
+- About 75 cited URLs were spot-checked: no dead links, three content mismatches (reports H, J and G).
+
+**Decisions and rejected proposals**
+- **Kiwi analyser:** not adopted for the runtime. It is Apache-2.0 at 0.24.0 but costs about 0.9 s cold start and 0.4–0.6 GB per process (Python is spawned per gate), plus about 130 MB on Windows. Most of the accuracy gain came from the cue categories, not the analyser.
+- **Josa lexicon:** not bundled because its licence is unverified. Without it, 이/가 and 은/는 after Hangul nouns stay at hint level.
+- **Register-drift and term-drift gates:** not shipped, because their false-positive rate on real rewrites is unmeasured.
+- **Style rules rejected:** human prose uses them as much or more than LLM prose: 에 의해, 로부터, 에 대해/대한, 을 가지다, 의-chains, 이러한, ~하고 있다.
+- **Review item rejected:** the desktop reset race. The UI disables reset during import and IPC is ordered.
+- The user's personal blog policy line in `skills/humanize-kr/SKILL.md` was left untouched.
+
+**Verification (main working tree, macOS)**
+
+| Check | Result |
+|---|---|
+| typecheck | clean |
+| vitest | 472 passed, 9 skipped (420 at the end of the 10-03 review) |
+| test:documents | 54 OK (53 + the shadow-mode test) |
+| test:skills | 102 OK, 4 skipped (guards 18, josa 7 new) |
+
+- **Not run:**
+  - Playwright E2E (it rebuilds the served `dist/`);
+  - Windows checks;
+  - a live model benchmark of the revised engine;
+  - any native-reader evaluation.
+- A security reviewer subagent opened `~/.codex/auth.json` and `~/.claude.json` (byte count only); this was reported to the user.
+
+**Commit, push and deployment (user asked: "일단 메인 깃에 커푸하고 서버에 반영하고 서버재시작해")**
+- Pre-commit E2E: `E2E_PORT=7893 npx playwright test`, 54 passed and 9 skipped.
+- Commit `4b6a7a9` was pushed to `origin/main` (`c792440..4b6a7a9`): 93 files, including Codex's uncommitted 10-03 work (review fixes, research and reports).
+- Left out of the commit and still modified in the working tree:
+  - `works-log.md` (standing rule).
+  - The user's personal "지혜 블로그" host/quota policy lines in `skills/humanize-kr/SKILL.md`, `skills/humanize-kr/references/workflow.md` and `docs/skills-guide.md`. Those changes were nothing but that policy, and they include a local `~/.hermes` path. They would ship to skill users, so they are left for the user to decide.
+- Deployment:
+  - Before: `/api/status` showed 0 active and 0 queued jobs.
+  - Ran `npm run build`, then `~/.hermes/node/bin/node dist/ops/hermes-service.js restart`.
+  - Result: `restarted`, PID 80787 → 4118, `ready`, Codex and Claude both ready. Port 7882 is served by 4118; the LAN URL `http://192.168.0.22:7882/` returns 200.
+  - A disallowed Host gets the Korean page listing `http://192.168.0.22:7882`, and the API gets `HOST_NOT_ALLOWED`.
+- Live smoke test (Claude Sonnet 5.5, low effort, 148 chars):
+  - Completed in 13.2 s.
+  - The new diagnostics fields are present: `hardFailureCounts` {}, `shadowFailureCounts` {}, `styleFindingsBefore/After` 2/2, `repairedParticles` 0.
+  - Gate codes were WARN ×3 with 1 retry, and the output came back identical to the source. The 09-30 smoke showed the same WARN ×3 + 1 retry pattern before Super Sejong, so this is not new. It was not investigated.
+- The server now runs the committed code. The Python and TS halves are in sync and the mode is the default `enforce`.
+- Open:
+  - human evaluation;
+  - lexical axes beyond the ~45;
+  - separating the served tree from the development tree;
+  - why short inputs warn on every attempt and come back unchanged.
+
 ## 2026-10-02 — Input size limits (100,000 chars, TXT/MD 1 MiB)
 
 **Decision (user):** asked whether running without an input limit was OK, I recommended a cap. The user agreed to align with the existing DOCX/PPTX extracted-text limit:
