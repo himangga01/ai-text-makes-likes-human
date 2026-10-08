@@ -12,6 +12,11 @@
  *   rejects the same ones);
  * - on attempt 2, an id of the plan that is not on the retry list (not_in_retry): the retry may touch only
  *   the failed requests (3.5), so `forward` drops it before the reply reaches the check step.
+ * Rewrite plans (strength rewrite, WP-19; engine_runtime/sejong/rewrite.py applies the same rules): attempt 1 answers
+ * with rewrittenText only (replacements_not_allowed otherwise) holding as many blank-line paragraphs as the source
+ * (paragraph_count; a blank reply means "nothing to change"); attempt 2 answers with replacements only, each id a
+ * paragraph id P… of the plan (unknown_id otherwise) and its text the whole paragraph (line breaks allowed: a list
+ * paragraph keeps its lines); ids off the retry list are not_in_retry, as above.
  * Error messages carry codes and ids, never reply text.
  */
 import { EngineError } from '../errors.js';
@@ -20,7 +25,7 @@ import type { Plan, RetryRequest, SejongReplacement, SejongResponse } from './ty
 /** Limits of response-schema.json. String lengths count code points, as the Python validator does. */
 export const RESPONSE_LIMITS = {
   replacements: 200, textMin: 1, textMax: 4000, reasonMax: 60, warnings: 20, warningMax: 300,
-  id: /^(R|S)[0-9]{1,4}$/
+  id: /^(R|S|P)[0-9]{1,4}$/
 } as const;
 /** Upper bound on the raw reply before JSON parsing: 200 × 4,000 + a full-text reply of a 15k chunk, with room. */
 export const MAX_REPLY_CHARS = 2_000_000;
@@ -28,7 +33,8 @@ export const MAX_REPLY_CHARS = 2_000_000;
 export const MODEL_OUTPUT_UNUSABLE = 'MODEL_OUTPUT_UNUSABLE';
 export type UnusableReason =
   | 'too_large' | 'not_json' | 'schema' | 'unknown_id' | 'duplicate_id' | 'duplicate_target'
-  | 'review_disabled' | 'full_text_not_allowed' | 'full_text_with_replacements';
+  | 'review_disabled' | 'full_text_not_allowed' | 'full_text_with_replacements'
+  | 'replacements_not_allowed' | 'paragraph_count';
 
 export class SejongOutputError extends EngineError {
   readonly code = MODEL_OUTPUT_UNUSABLE;
@@ -127,6 +133,7 @@ export function readSejongReply(raw: string, plan: Plan, options: ParseReplyOpti
   const problem = schemaProblem(value);
   if (problem) return fail('schema', problem);
   const response = value as SejongResponse;
+  if (plan.options.mode === 'rewrite') return readRewriteReply(response, plan, options.retry, fail);
 
   const retry = options.retry;
   const sentences = new Set(plan.sentences.map(sentence => sentence.id));
@@ -183,6 +190,52 @@ export function readSejongReply(raw: string, plan: Plan, options: ParseReplyOpti
     else usable.push(item);
   }
   const forward = forwarded.length === response.replacements.length ? response : { ...response, replacements: forwarded };
+  return { ok: true, value: { response, forward, usable, rejected, targets } };
+}
+
+// Lines Python's str.strip() and sanitize leave empty: whitespace, zero-width and bidi marks, the BOM.
+const BLANK_LINE = /^[\s\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]*$/u;
+
+/** Blank-line paragraphs of a text (text.segment: maximal runs of non-blank lines). */
+export function paragraphCount(text: string): number {
+  let count = 0, inside = false;
+  for (const line of text.split('\n')) {
+    const blank = BLANK_LINE.test(line);
+    if (!blank && !inside) count += 1;
+    inside = !blank;
+  }
+  return count;
+}
+
+function readRewriteReply(response: SejongResponse, plan: Plan, retry: RetryRequest[] | undefined,
+  fail: (reason: UnusableReason, at?: string) => SejongReplyResult): SejongReplyResult {
+  const paragraphs = new Map((plan.paragraphs ?? []).map(paragraph => [paragraph.id, paragraph]));
+  if (!retry) {
+    if (response.replacements.length) return fail('replacements_not_allowed', '$.replacements');
+    if (response.rewrittenText.trim() && paragraphCount(response.rewrittenText) !== paragraphs.size) {
+      return fail('paragraph_count', '$.rewrittenText');
+    }
+    return { ok: true, value: { response, forward: response, usable: [], rejected: [], targets: {} } };
+  }
+  if (response.rewrittenText.trim()) return fail('full_text_not_allowed', '$.rewrittenText');
+  const retryIds = new Set(retry.map(entry => entry.id));
+  const seen = new Set<string>();
+  const targets: Record<string, string> = {};
+  for (const [index, item] of response.replacements.entries()) {
+    const at = `$.replacements[${index}].id`;
+    if (seen.has(item.id)) return fail('duplicate_id', at);
+    seen.add(item.id);
+    const paragraph = paragraphs.get(item.id);
+    if (!item.id.startsWith('P') || !paragraph) return fail('unknown_id', at);
+    targets[item.id] = paragraph.sentences[0] ?? item.id;
+  }
+  const usable: SejongReplacement[] = [];
+  const rejected: RejectedReplacement[] = [];
+  for (const item of response.replacements) {
+    if (retryIds.has(item.id)) usable.push(item);
+    else rejected.push({ id: item.id, sentence: targets[item.id]!, code: 'not_in_retry' });
+  }
+  const forward = usable.length === response.replacements.length ? response : { ...response, replacements: usable };
   return { ok: true, value: { response, forward, usable, rejected, targets } };
 }
 

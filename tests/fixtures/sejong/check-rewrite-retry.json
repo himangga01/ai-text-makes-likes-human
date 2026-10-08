@@ -1,0 +1,154 @@
+{
+  "gate": {
+    "exit_code": 1
+  },
+  "hardFailures": [],
+  "warningReasons": {
+    "version": 1,
+    "codes": []
+  },
+  "policy": "retry",
+  "shadowFailures": [],
+  "schema": "sejong-check/1",
+  "attempt": 1,
+  "sentences": [
+    {
+      "id": "S1",
+      "request": null,
+      "status": "unchanged",
+      "codes": [],
+      "repairs": []
+    },
+    {
+      "id": "S2",
+      "request": "P2",
+      "status": "retry",
+      "codes": [
+        "number_injected",
+        "quantity_changed",
+        "number_dropped",
+        "protected_span_changed"
+      ],
+      "repairs": []
+    },
+    {
+      "id": "S3",
+      "request": "P2",
+      "status": "retry",
+      "codes": [
+        "number_injected",
+        "quantity_changed",
+        "number_dropped",
+        "protected_span_changed"
+      ],
+      "repairs": []
+    },
+    {
+      "id": "S4",
+      "request": "P2",
+      "status": "retry",
+      "codes": [
+        "number_injected",
+        "quantity_changed",
+        "number_dropped",
+        "protected_span_changed"
+      ],
+      "repairs": []
+    },
+    {
+      "id": "S5",
+      "request": "P3",
+      "status": "retry",
+      "codes": [
+        "voice_level"
+      ],
+      "repairs": []
+    },
+    {
+      "id": "S6",
+      "request": "P3",
+      "status": "retry",
+      "codes": [
+        "voice_level"
+      ],
+      "repairs": []
+    },
+    {
+      "id": "S7",
+      "request": "P3",
+      "status": "retry",
+      "codes": [
+        "voice_level"
+      ],
+      "repairs": []
+    }
+  ],
+  "retry": [
+    {
+      "id": "P2",
+      "sentence": "S2",
+      "violations": [
+        {
+          "code": "number_injected",
+          "family": "floor",
+          "severity": "hard",
+          "sentence": "S2",
+          "detail": ""
+        },
+        {
+          "code": "quantity_changed",
+          "family": "floor",
+          "severity": "hard",
+          "sentence": "S2",
+          "detail": ""
+        },
+        {
+          "code": "number_dropped",
+          "family": "floor",
+          "severity": "hard",
+          "sentence": "S2",
+          "detail": ""
+        },
+        {
+          "code": "protected_span_changed",
+          "family": "floor",
+          "severity": "hard",
+          "sentence": "S2",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "id": "P3",
+      "sentence": "S5",
+      "violations": [
+        {
+          "code": "voice_level",
+          "family": "voice",
+          "severity": "hard",
+          "sentence": "S5",
+          "detail": "HAEYO->HAPSYO"
+        }
+      ]
+    }
+  ],
+  "requestStatus": {
+    "FIXED": 0,
+    "UNTOUCHED": 0,
+    "STILL_PRESENT": 1,
+    "LOST": 0,
+    "DECLINED": 0
+  },
+  "counts": {
+    "revertedSentences": 0,
+    "revertedByFamily": {},
+    "collateralReverts": 0,
+    "voiceGrafts": 0,
+    "cmcRestored": 0,
+    "normFixes": 0,
+    "repairedParticles": 0,
+    "removedCommas": 0,
+    "restoredSentences": 0
+  },
+  "changeRate": 0.0
+}

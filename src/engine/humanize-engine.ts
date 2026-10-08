@@ -1,5 +1,5 @@
 import { candidateReviewForRetry, type CandidateReview } from './candidate-review.js';
-import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
+import { legacyRewriteOptions, parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences } from './direct-text-fidelity.js';
 import { collectKoreanStyleFindings, documentRegister, type ChunkPromptContext } from './super-sejong.js';
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
@@ -829,7 +829,9 @@ export class HumanizeEngine {
   }
 
   private async decideAndDeliver(request: HumanizeRequest, shadow: { run?: V2ShadowRun }): Promise<HumanizeResult> {
-    const rewriteOptions = parseRewriteOptions(request.rewriteOptions?.inputKind, request.rewriteOptions?.strength);
+    const requested = parseRewriteOptions(request.rewriteOptions?.inputKind, request.rewriteOptions?.strength);
+    // `rewrite` (매우 강하게(다시쓰기), WP-19) runs as very-strong here; diagnostics and the v2 shadow keep the request.
+    const rewriteOptions = legacyRewriteOptions(requested);
     const totalStartedAt = this.now();
     this.ensureActive(request.signal);
     const warnings: HumanizeWarning[] = [];
@@ -877,7 +879,7 @@ export class HumanizeEngine {
         "Chunk manifest does not cover the prepared source text"
       );
     }
-    shadow.run = this.startShadow(request, source, rewriteOptions);
+    shadow.run = this.startShadow(request, source, requested);
     const bodyChunks = manifest.chunks.filter(chunk => !chunk.passthrough);
     // Chunks are rewritten independently; the document's speech level keeps them consistent.
     const documentRegisterOfSource = bodyChunks.length > 1 ? documentRegister(source) : undefined;
@@ -981,7 +983,7 @@ export class HumanizeEngine {
     const v2ShadowCounts = await shadow.run?.collect();
     const sourceChars = sourcePoints.length;
     const diagnostics: TransformDiagnostics = {
-      ...(rewriteOptions ? {requestedStrength: rewriteOptions.strength} : {}),
+      ...(requested ? {requestedStrength: requested.strength} : {}),
       ...(rewriteOptions?.inputKind === 'direct-text' ? {
         candidateReviewRetries: chunkResults.reduce((sum, result) => sum + result.candidateReviewRetries, 0),
         conservativeRetries: chunkResults.reduce((sum, result) => sum + result.retries, 0),

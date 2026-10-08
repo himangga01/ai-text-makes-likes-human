@@ -1,6 +1,6 @@
 import { checkDirectTextFidelity } from './direct-text-fidelity.js';
 import type { GateResult } from './python-engine.js';
-import type { RewriteOptions } from './rewrite-policy.js';
+import { legacyRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 
 const REASONS = ['P0_CHANGE_RATE', 'P1_STYLE_TARGET', 'P2_ANTITHESIS', 'P3_GOLDEN',
   'P4_NUMBER_DROPPED', 'P5_MODALITY', 'P5_UNCERTAIN', 'UNKNOWN'] as const;
@@ -24,7 +24,8 @@ export function candidateReviewForRetry(input: {
   source: string; candidate: string; options?: RewriteOptions; gate: GateResult;
   parserIssues: number; skippedSentences: number;
 }): CandidateReview | undefined {
-  const { source, candidate, options, gate } = input;
+  const { source, candidate, gate } = input;
+  const options = legacyRewriteOptions(input.options);   // `rewrite` reviews as very-strong (WP-19)
   const reasons = parseGateReasonMetadata(gate.warningReasons);
   if (options?.inputKind !== 'direct-text' || options.strength !== 'very-strong' ||
       input.parserIssues !== 0 || input.skippedSentences !== 0 ||

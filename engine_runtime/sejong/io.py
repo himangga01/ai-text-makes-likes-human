@@ -275,8 +275,40 @@ def plan_problems(data: Any) -> List[str]:
         problems.append("$.openReview.enabled: differs from options.openReview")
     if not review["enabled"] and review["maxSentences"] != 0:
         problems.append("$.openReview.maxSentences: must be 0 when disabled")
-    if data["needsModel"] != (bool(data["requests"]) or review["enabled"]):
+    rewrite = data["options"].get("mode") == "rewrite"
+    if rewrite != (data["options"]["strength"] == "rewrite") or rewrite != ("paragraphs" in data):
+        problems.append("$.options.mode: rewrite mode, strength rewrite and paragraphs go together")
+    elif rewrite:
+        problems += _paragraph_problems(data, chars)
+        if data["needsModel"] != any(p["editable"] for p in data["paragraphs"]):
+            problems.append("$.needsModel: must equal (some paragraph is editable) in rewrite mode")
+    elif data["needsModel"] != (bool(data["requests"]) or review["enabled"]):
         problems.append("$.needsModel: must equal (requests non-empty or openReview.enabled)")
+    return problems
+
+
+def _paragraph_problems(data: Dict[str, Any], chars: int) -> List[str]:
+    """Rewrite plans (WP-19): P1..Pn in order, each covering a run of the plan's sentences, all of them once."""
+    problems: List[str] = []
+    order = [s["id"] for s in data["sentences"]]
+    spans = {s["id"]: (s["start"], s["end"]) for s in data["sentences"]}
+    covered: List[str] = []
+    previous_end = 0
+    for index, p in enumerate(data["paragraphs"]):
+        where = f"$.paragraphs[{index}]"
+        if p["id"] != f"P{index + 1}":
+            problems.append(f"{where}: ids must run P1, P2, ... in order")
+        if not (previous_end <= p["start"] <= p["end"] <= chars) or p["startU16"] > p["endU16"] \
+                or p["startU16"] < p["start"] or p["endU16"] < p["end"]:
+            problems.append(f"{where}: offsets out of order")
+        previous_end = p["end"]
+        for sid in p["sentences"]:
+            a, b = spans.get(sid, (-1, -1))
+            if not p["start"] <= a <= b <= p["end"]:
+                problems.append(f"{where}.sentences: {sid} is not inside the paragraph")
+        covered += p["sentences"]
+    if covered != order:
+        problems.append("$.paragraphs: must list every sentence once, in order")
     return problems
 
 
@@ -295,7 +327,12 @@ def check_problems(data: Any) -> List[str]:
     retrying = {s["id"]: s["request"] for s in data["sentences"] if s["status"] == "retry"}
     if data["retry"] and (attempt != 1 or data["policy"] != "retry"):
         problems.append("$.retry: only at attempt 1 with policy retry")
-    if {r["sentence"]: r["id"] for r in data["retry"]} != retrying:
+    # One entry per retried request: a sentence or open-review request names its one sentence; a paragraph of rewrite
+    # mode (P…, WP-19) names its first sentence and stands for every sentence of the paragraph.
+    if {r["id"] for r in data["retry"]} != set(retrying.values()) \
+            or any(retrying.get(r["sentence"]) != r["id"] for r in data["retry"]) \
+            or any(not str(request).startswith("P") and sentence not in {r["sentence"] for r in data["retry"]}
+                   for sentence, request in retrying.items()):
         problems.append("$.retry: must list exactly the sentences with status retry and their requests")
     return problems
 

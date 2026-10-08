@@ -2,7 +2,8 @@
 
     family_violations(src, out, pairs, *, flags, genre, fix_colloquial, spans, ...) -> list[Violation]
     classify(flags, violations)                  -> (enforced, shadow)
-    verify_document(before, after, *, context=None, attempt=1, flags=None) -> dict   legacy gate JSON
+    verify_document(before, after, *, context=None, attempt=1, flags=None, genre=None, mode="edit") -> dict
+                                                 legacy gate JSON; mode "rewrite" = rewrite.document_violations
     verify_block(source, result, *, flags=None)  -> list[Violation]                  Office (reject only)
     change_rate(a, b) -> float ; text_distance(a, b) -> float ; rate_of_texts(before, after) -> float
 
@@ -213,13 +214,20 @@ def document_violations(before: str, after: str, *, context: Optional[str] = Non
 
 
 def verify_document(before: PathOrText, after: PathOrText, *, context: Optional[PathOrText] = None,
-                    attempt: int = 1, flags: Optional[C.Flags] = None, genre: Optional[str] = None) -> Dict[str, Any]:
+                    attempt: int = 1, flags: Optional[C.Flags] = None, genre: Optional[str] = None,
+                    mode: str = "edit") -> Dict[str, Any]:
     """Legacy gate JSON of `after` against `before` (paths or texts); `context` is the whole document
-    when `before` is one chunk of it (footnote markers). verify_document(x, x) is exit 0 with no code."""
+    when `before` is one chunk of it (footnote markers). verify_document(x, x) is exit 0 with no code.
+    mode "rewrite" (strength rewrite, WP-19) verifies per paragraph with the rewrite rules (rewrite.py)."""
     flags = flags if flags is not None else C.Flags.from_env()
     source, output = _read(before), _read(after)
-    found, rate = document_violations(source, output, context=_read(context), flags=flags,
-                                      genre=genre or flags.genre_default)
+    if mode == "rewrite":
+        from . import rewrite as RW                 # late: rewrite imports this module
+        found, rate = RW.document_violations(source, output, context=_read(context), flags=flags,
+                                             genre=genre or flags.genre_default)
+    else:
+        found, rate = document_violations(source, output, context=_read(context), flags=flags,
+                                          genre=genre or flags.genre_default)
     enforced, shadow = classify(flags, found)
     hard = unique_codes([v for v in enforced if v.severity == "hard"])
     soft = unique_codes([v for v in enforced if v.severity != "hard"])

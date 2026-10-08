@@ -32,7 +32,12 @@ Strength -> requested tiers (3.4 with lead decision 9.2a item 2):
                                       open review, so it never costs a call for nothing
   allowSplit                          a request with a rule that allows splitting (CLR-LONG), strength
                                       medium and up
-  allowFullText                       very-strong
+  allowFullText                       very-strong and rewrite
+
+Strength rewrite (WP-19, 매우 강하게(다시쓰기)): FIX + SUGGEST requests are computed as above and sent as context
+only, there is no open review, allowFullText is true, options.mode is "rewrite" and plan.paragraphs lists every
+source paragraph with its voice rule (rewrite.plan_paragraphs); prompt, apply, verify and decide then work per
+paragraph (rewrite.py). needsModel = some paragraph is editable.
 
 needsModel = requests non-empty or openReview.enabled; when false the check step runs without a model call
 and the candidate is base(x) [G6, 3.4 step 4].
@@ -60,6 +65,7 @@ REVIEW_MIN = 3                 # open review: at least this many nominations ...
 REVIEW_SHARE = 0.1             # ... or this share of the nominable sentences, rounded up
 REVIEW_KINDS = ("body", "list", "quote", "button")
 SPLIT_STRENGTHS = ("medium", "strong", "very-strong")
+FULL_TEXT_STRENGTHS = ("very-strong", "rewrite")
 TIER_ORDER = ("FIX", "SUGGEST", "LEAVE")
 
 # Schema bounds (schemas/plan.schema.json): shortText 80, shortList 40 items, final 200, stance 40,
@@ -241,9 +247,15 @@ def build_plan(chunk_text: str, *, options: Options, chunk: Optional[ChunkInfo] 
 
     review_count = sum(1 for unit in doc.units if nominable(unit, spans)) if review_wanted(options, flags) else 0
     review = OpenReview(enabled=review_count > 0, max_sentences=review_limit(review_count) if review_count else 0)
+    rewrite = options.strength == "rewrite"
     resolved = Options(input_kind=options.input_kind, strength=options.strength, genre=options.genre,
                        fix_colloquial=options.fix_colloquial, deterministic_fix=options.deterministic_fix,
-                       open_review=review.enabled, allow_full_text=options.strength == "very-strong")
+                       open_review=review.enabled, allow_full_text=options.strength in FULL_TEXT_STRENGTHS,
+                       mode="rewrite" if rewrite else None)
+    paragraphs = None
+    if rewrite:
+        from . import rewrite as RW                 # late: rewrite reads plan helpers
+        paragraphs = RW.plan_paragraphs(doc, spans)
 
     ctas = _cta_units(doc)
     cta_of = {c.sentence: c.id for c in ctas}
@@ -268,7 +280,8 @@ def build_plan(chunk_text: str, *, options: Options, chunk: Optional[ChunkInfo] 
                 profile=Profile(dominant=prof["dominant"], share=prof["share"], mixed=prof["mixed"],
                                 line=_clip(prof["line"], 200) or ""),
                 seam=Seam(prev=tuple(prev), next=tuple(nxt)), open_review=review,
-                needs_model=bool(requests) or review.enabled,
+                needs_model=any(p.editable for p in paragraphs) if paragraphs is not None
+                else bool(requests) or review.enabled, paragraphs=paragraphs,
                 stats={"findingsByTier": by_tier, "requestsByTier": by_request,
                        "deterministicFixes": len(deterministic), "deterministicDropped": dropped,
                        "nominable": review_count})

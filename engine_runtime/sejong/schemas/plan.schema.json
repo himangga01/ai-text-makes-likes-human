@@ -29,12 +29,13 @@
       "required": ["inputKind", "strength", "genre", "fixColloquial", "deterministicFix", "openReview", "allowFullText"],
       "properties": {
         "inputKind": {"enum": ["direct-text", "text-file"]},
-        "strength": {"enum": ["normal", "medium", "strong", "very-strong"]},
+        "strength": {"enum": ["normal", "medium", "strong", "very-strong", "rewrite"]},
         "genre": {"enum": ["general", "blog", "essay", "report", "notice", "document"]},
         "fixColloquial": {"type": "boolean"},
         "deterministicFix": {"enum": ["all", "edited-only", "off"]},
         "openReview": {"type": "boolean"},
-        "allowFullText": {"type": "boolean"}
+        "allowFullText": {"type": "boolean"},
+        "mode": {"enum": ["edit", "rewrite"]}
       }
     },
     "sentences": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/sentence"}},
@@ -64,6 +65,7 @@
       }
     },
     "needsModel": {"type": "boolean"},
+    "paragraphs": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/paragraph"}},
     "stats": {
       "type": "object", "required": ["findingsByTier"],
       "properties": {
@@ -75,6 +77,29 @@
     }
   },
   "$defs": {
+    "paragraph": {
+      "$comment": "Rewrite mode only (strength rewrite, WP-19): one entry per source paragraph, with the paragraph voice rule of engine_runtime/sejong/rewrite.py.",
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "para", "start", "end", "startU16", "endU16", "sentences", "editable", "level", "honSi",
+                   "humble", "persona", "questions", "requests", "proposals"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^P[0-9]{1,4}$"},
+        "para": {"$ref": "#/$defs/offset"},
+        "start": {"$ref": "#/$defs/offset"},
+        "end": {"$ref": "#/$defs/offset"},
+        "startU16": {"$ref": "#/$defs/offset"},
+        "endU16": {"$ref": "#/$defs/offset"},
+        "sentences": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/sentenceId"}},
+        "editable": {"type": "boolean"},
+        "level": {"$ref": "#/$defs/level"},
+        "honSi": {"type": "boolean"},
+        "humble": {"type": "boolean"},
+        "persona": {"$ref": "#/$defs/shortList"},
+        "questions": {"$ref": "#/$defs/count"},
+        "requests": {"$ref": "#/$defs/count"},
+        "proposals": {"$ref": "#/$defs/count"}
+      }
+    },
     "semver": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?$"},
     "offset": {"type": "integer", "minimum": 0},
     "count": {"type": "integer", "minimum": 0},

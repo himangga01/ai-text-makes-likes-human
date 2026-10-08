@@ -44,9 +44,11 @@ for (const host of ["Claude", "Codex"]) {
   if (nodeLock.version !== '24.19.0' || !(await readFile(path.join(skill, 'node/LICENSE'), 'utf8')).includes('Node.js')) throw new Error('Pinned licensed Node missing');
   if ((await readdir(path.join(skill,'node'))).sort().join(',') !== 'LICENSE,node.exe,runtime-lock.json') throw new Error('Unexpected Node runtime contents');
   const fixture = JSON.parse(await readFile('tests/fixtures/direct-live-quality.json','utf8'));
-  for (const strength of ['normal','medium','strong','very-strong']) {
+  for (const strength of ['normal','medium','strong','very-strong','rewrite']) {
+    // The packaged skill runs the legacy engine, where rewrite (매우 강하게(다시쓰기), WP-19) takes the very-strong instructions.
+    const legacy = strength === 'rewrite' ? 'very-strong' : strength;
     const directSource = path.join(root, `direct-${strength}.txt`);
-    const expected = strength === 'very-strong' ? fixture.candidate : fixture.source;
+    const expected = legacy === 'very-strong' ? fixture.candidate : fixture.source;
     await writeFile(directSource, fixture.source, 'utf8');
     state = call('prepare','--input',directSource,'--input-kind','direct-text','--strength',strength);
     let attempts = 0;
@@ -55,8 +57,8 @@ for (const host of ["Claude", "Codex"]) {
       if (state.rewriteOptions.strength !== strength) throw new Error('Requested strength lost');
       const instructions = await readFile(state.instructionsPath,'utf8');
       const sentences = JSON.parse(await readFile(state.sentencesPath,'utf8'));
-      if (!instructions.includes(`요청 강도: ${strength}`) || !sentences.length) throw new Error('Host context missing');
-      if (strength === 'very-strong' && state.attempt === 2 && !instructions.includes('BEGIN_CANDIDATE_')) throw new Error('Conservative review context missing');
+      if (!instructions.includes(`요청 강도: ${legacy}`) || !sentences.length) throw new Error('Host context missing');
+      if (legacy === 'very-strong' && state.attempt === 2 && !instructions.includes('BEGIN_CANDIDATE_')) throw new Error('Conservative review context missing');
       await writeFile(state.responsePath,JSON.stringify({rewrittenText:expected,edits:[],warnings:[]}));
       state=call('accept','--job',state.job,'--chunk',String(state.chunk),'--attempt',String(state.attempt),'--source-hash',state.sourceHash,'--response',state.responsePath);
     }

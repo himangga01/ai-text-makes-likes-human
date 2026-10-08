@@ -138,6 +138,30 @@ export interface PlanOptions {
   deterministicFix: DeterministicScope;
   openReview: boolean;
   allowFullText: boolean;
+  /** "rewrite" for strength rewrite (WP-19): prompt, apply, verify and decide work per paragraph. Absent otherwise. */
+  mode?: 'edit' | 'rewrite';
+}
+
+/** One source paragraph of a rewrite plan (WP-19), with the paragraph voice rule of engine_runtime/sejong/rewrite.py. */
+export interface PlanParagraph {
+  /** "P1", "P2", ... in document order. */
+  id: string;
+  para: number;
+  start: number;
+  end: number;
+  startU16: number;
+  endU16: number;
+  sentences: string[];
+  /** False for headings and wholly frozen paragraphs, which stay verbatim. */
+  editable: boolean;
+  /** Dominant finite level of the source sentences (ties: the level used last); NOMINAL/NONE without one. */
+  level: SpeechLevel;
+  honSi: boolean;
+  humble: boolean;
+  persona: string[];
+  questions: number;
+  requests: number;
+  proposals: number;
 }
 
 export interface Plan {
@@ -157,6 +181,8 @@ export interface Plan {
   openReview: { enabled: boolean; maxSentences: number };
   needsModel: boolean;
   stats: { findingsByTier: Partial<Record<FindingTier, number>>; [key: string]: unknown };
+  /** Rewrite mode only. */
+  paragraphs?: PlanParagraph[];
 }
 
 /* ---------- check report (sejong-check/1) ---------- */
@@ -217,7 +243,8 @@ export interface CheckReport {
 /* ---------- writer reply (response-schema.json) ---------- */
 
 export interface SejongReplacement {
-  /** A request id (R…), or a sentence id (S…) only when open review is enabled. */
+  /** A request id (R…), or a sentence id (S…) only when open review is enabled; in rewrite mode (attempt 2 only) a
+   * paragraph id (P…) whose text is the whole rewritten paragraph. */
   id: string;
   /** The whole rewritten sentence, without newlines. */
   text: string;

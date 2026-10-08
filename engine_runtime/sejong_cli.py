@@ -5,7 +5,8 @@
                            --input-kind K --strength S --genre G --out plan.json
     sejong_cli.py check    --plan plan.json --source chunk.txt (--response r.json | --candidate c.txt)
                            --attempt 1|2 [--base decided-1.txt] --out decided.txt --report check.json
-    sejong_cli.py verify   --before B --after A [--context C] [--attempt 1|2]      legacy gate JSON on stdout
+    sejong_cli.py verify   --before B --after A [--context C] [--attempt 1|2] [--mode edit|rewrite]
+                                                                               legacy gate JSON on stdout
     sejong_cli.py finalize --run-dir D --output 03_reassembled.md --report 03_reassembly_report.json
 
 Exit codes: prepare, analyse and finalize 0 (done) or 1 (failed; the adapter raises ENGINE_OUTPUT_INVALID);
@@ -21,7 +22,8 @@ footnote markers and seam context) the way python-engine.ts documentContext does
 next to --source names it. finalize reassembles (sejong.chunk.reassemble: a chunk whose rewrite fails the
 length ratio goes back to its source, CHUNK_ROLLED_BACK), then verifies the whole document: seam
 violations (flow.seam_check) revert the offending sentences to the source, and a floor failure that
-remains puts the whole document back to the source (DIRECT_TEXT_DOCUMENT_ROLLED_BACK). The reassembly
+remains puts the whole document back to the source (DIRECT_TEXT_DOCUMENT_ROLLED_BACK); a rewrite job (manifest
+sejong.options.strength "rewrite", WP-19) checks that floor per paragraph (rewrite.floor_violations). The reassembly
 report gains warning_codes, rolledBackChunks and a "sejong" block with the document gate (codes and
 counts only).
 """
@@ -35,13 +37,16 @@ from typing import List, Optional
 
 try:                 # imported as engine_runtime.sejong_cli
     from .sejong import align, check as check_mod, chunk, config, floor, flow, io, plan as plan_mod, text, verify
+    from .sejong import rewrite as rewrite_mod
     from .sejong.types import ChunkInfo, Options
 except ImportError:  # executed as a script: engine_runtime/ is sys.path[0] (Windows ._pth: add it)
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from sejong import align, check as check_mod, chunk, config, floor, flow, io, plan as plan_mod, text, verify
+    from sejong import rewrite as rewrite_mod
     from sejong.types import ChunkInfo, Options
 
-STRENGTHS = ("normal", "medium", "strong", "very-strong")
+STRENGTHS = config.STRENGTHS          # normal, medium, strong, very-strong, rewrite (WP-19)
+MODES = ("edit", "rewrite")
 INPUT_KINDS = ("direct-text", "text-file")
 GENRES = ("general", "blog", "essay", "report", "notice", "document")
 PLAN_FILE = "plan-{index:02d}.json"
@@ -166,7 +171,8 @@ def cmd_check(args: argparse.Namespace) -> int:
 def cmd_verify(args: argparse.Namespace) -> int:
     try:
         report = verify.verify_document(Path(args.before), Path(args.after),
-                                        context=Path(args.context) if args.context else None, attempt=args.attempt)
+                                        context=Path(args.context) if args.context else None, attempt=args.attempt,
+                                        mode=args.mode)
     except Exception as error:  # noqa: BLE001
         _fail("verify", error)
         report = _error_gate()
@@ -203,7 +209,13 @@ def finalize(run_dir: Path, output: str, report_name: str, *, flags: Optional[co
                 seam_reverts += len(pair.src)
             pieces.append(result[last:])
             result = "".join(pieces)
-    floor_codes = floor.codes(floor.check(source, result)) if result != source else []
+    # A rewrite job (strength rewrite, WP-19) keeps the floor per paragraph: floor.check aligns sentence by sentence
+    # and would read a merge inside a paragraph as a dropped sentence.
+    rewrite = ((manifest.get("sejong") or {}).get("options") or {}).get("strength") == "rewrite"
+    if result == source:
+        floor_codes = []
+    else:
+        floor_codes = floor.codes(rewrite_mod.floor_violations(source, result) if rewrite else floor.check(source, result))
     rolled_back = bool(floor_codes)
     if rolled_back:
         result = source
@@ -272,6 +284,7 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--after", required=True)
     p.add_argument("--context")
     p.add_argument("--attempt", type=int, choices=(1, 2), default=1)
+    p.add_argument("--mode", choices=MODES, default="edit")     # rewrite: the paragraph rules of strength rewrite
     p.set_defaults(run=cmd_verify)
 
     p = sub.add_parser("finalize")

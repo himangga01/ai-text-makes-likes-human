@@ -26,7 +26,10 @@ Level = Literal["HAPSYO", "HAEYO", "HAERA", "HAE", "HAO", "HAGE", "NOMINAL", "NO
 Mood = Literal["DECL", "INTERR", "IMPER", "PROPOS", "EXCL"]
 UnitKind = Literal["body", "heading", "list", "quote", "button"]
 InputKind = Literal["direct-text", "text-file"]
-Strength = Literal["normal", "medium", "strong", "very-strong"]
+Strength = Literal["normal", "medium", "strong", "very-strong", "rewrite"]
+# Plan mode: absent = the minimal-edit protocol of the four strengths; "rewrite" = strength rewrite (WP-19),
+# decided per paragraph (rewrite.py). Only "rewrite" is ever written, so edit plans keep their exact JSON.
+PlanMode = Literal["edit", "rewrite"]
 Genre = Literal["general", "blog", "essay", "report", "notice", "document"]
 DeterministicScope = Literal["all", "edited-only", "off"]
 Tier = Literal["FIX", "SUGGEST", "LEAVE"]
@@ -42,6 +45,7 @@ MOODS = get_args(Mood)
 UNIT_KINDS = get_args(UnitKind)
 INPUT_KINDS = get_args(InputKind)
 STRENGTHS = get_args(Strength)
+PLAN_MODES = get_args(PlanMode)
 GENRES = get_args(Genre)
 DETERMINISTIC_SCOPES = get_args(DeterministicScope)
 TIERS = get_args(Tier)
@@ -198,6 +202,8 @@ class Options(_Json):
     deterministic_fix: DeterministicScope = "all"
     open_review: bool = False
     allow_full_text: bool = False
+    mode: Optional[PlanMode] = None
+    _OMIT_NONE: ClassVar[Tuple[str, ...]] = ("mode",)
 
 
 @dataclass
@@ -303,6 +309,28 @@ class OpenReview(_Json):
 
 
 @dataclass
+class PlanParagraph(_Json):
+    """One source paragraph of a rewrite plan (WP-19). The voice fields are the paragraph rule of rewrite.py:
+    `level` is the dominant finite level of the source sentences (ties: the level used last), or NOMINAL/NONE when
+    no sentence is finite; the counts are the questions, requests (imperative or 바랍니다-type) and proposals."""
+    id: str                       # "P1", ... in document order
+    para: int                     # Document.paragraphs index, 0-based
+    start: int
+    end: int
+    start_u16: int
+    end_u16: int
+    sentences: List[str]          # ids of its units, in order
+    editable: bool                # False for headings and wholly frozen paragraphs (kept verbatim)
+    level: Level
+    hon_si: bool                  # some -시- in the paragraph
+    humble: bool                  # some humble form (드리다, 여쭙다, 뵙다, 모시다)
+    persona: List[str]            # first-person classes used (voice.FIRST_PERSONS)
+    questions: int
+    requests: int
+    proposals: int
+
+
+@dataclass
 class Plan(_Json):
     schema: str                   # PLAN_SCHEMA
     engine: EngineInfo
@@ -319,6 +347,8 @@ class Plan(_Json):
     open_review: OpenReview
     needs_model: bool
     stats: Dict[str, Any]
+    paragraphs: Optional[List[PlanParagraph]] = None     # rewrite mode only
+    _OMIT_NONE: ClassVar[Tuple[str, ...]] = ("paragraphs",)
 
 
 # --------------------------------------------------------------------------

@@ -99,7 +99,8 @@ const bundledRewriteOptions = [
   { id: "normal", label: "보통", description: "원래 표현을 살려 어색한 부분을 다듬습니다." },
   { id: "medium", label: "중간", description: "어휘와 길어진 표현을 더 자연스럽게 정리합니다." },
   { id: "strong", label: "강하게", description: "문장 구조와 반복 표현까지 적극적으로 바꿉니다." },
-  { id: "very-strong", label: "매우 강하게", description: "뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다." }
+  { id: "very-strong", label: "매우 강하게", description: "뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다." },
+  { id: "rewrite", label: "매우 강하게(다시쓰기)", description: "뜻은 유지하고 글 전체를 가장 크게 다시 씁니다." }
 ];
 let rewriteOptions = bundledRewriteOptions;
 let rewriteStrength = "normal";
@@ -123,11 +124,14 @@ function normalizeLineEndings(text) {
 }
 
 function renderRewriteOptions(options = rewriteOptions) {
-  if (!Array.isArray(options) || options.length !== 4 || !options.every(option =>
+  // A server lists the four original strengths or those plus rewrite (WP-19), each id once.
+  if (!Array.isArray(options) || options.length < 4 || options.length > bundledRewriteOptions.length ||
+    new Set(options.map(option => option?.id)).size !== options.length || !options.every(option =>
     bundledRewriteOptions.some(fallback => fallback.id === option?.id) &&
     typeof option.label === "string" && typeof option.description === "string"
   )) options = bundledRewriteOptions;
   rewriteOptions = options;
+  elements.rewriteOptionList.style.setProperty("--option-count", String(rewriteOptions.length));
   if (!rewriteOptions.some(option => option.id === rewriteStrength)) rewriteStrength = "normal";
   elements.rewriteOptionList.replaceChildren(...rewriteOptions.map(option => {
     const label = document.createElement("label");

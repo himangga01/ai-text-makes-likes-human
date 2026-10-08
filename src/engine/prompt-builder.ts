@@ -1,6 +1,6 @@
 import { candidateReviewInstructions, MAX_REVIEW_CHARS, type CandidateReview } from './candidate-review.js';
 import { sourceSentences } from './direct-text-fidelity.js';
-import { parseRewriteOptions, rewriteInstructions, type RewriteOptions } from './rewrite-policy.js';
+import { legacyRewriteOptions, parseRewriteOptions, rewriteInstructions, type RewriteOptions } from './rewrite-policy.js';
 import { diagnoseKoreanStyle, STYLE_RULE_GUIDANCE, superSejongEnabled, type ChunkPromptContext } from './super-sejong.js';
 export interface PromptInput {
   candidateReview?: CandidateReview;
@@ -13,7 +13,8 @@ export interface PromptInput {
 }
 
 export function buildHumanizePrompt(input: PromptInput): string {
-  const options = parseRewriteOptions(input.rewriteOptions?.inputKind, input.rewriteOptions?.strength);
+  // `rewrite` (WP-19) is the very-strong prompt in the legacy engine.
+  const options = legacyRewriteOptions(parseRewriteOptions(input.rewriteOptions?.inputKind, input.rewriteOptions?.strength));
   const review = input.candidateReview;
   if (review && (input.attempt !== 2 || options?.inputKind !== 'direct-text' || options.strength !== 'very-strong' ||
       review.reason !== 'P1_STYLE_TARGET' || typeof review.candidate !== 'string' || !review.candidate.trim() ||
