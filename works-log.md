@@ -1,5 +1,58 @@
 # Works Log
 
+## 2026-10-08 (later) — v2 shadow recording, first real jobs: 6 shadow jobs, 5 real
+
+**Correction:** the scheduled review below was right at 10:07, but the portal ran 5 real direct-text jobs around 13:34. The user asked "기록 모드 데이터 왜 아직도 1건이야? 진짜 1건임?", and the report was rerun at 20:14. There are now 196 `transform_complete` events, 6 of them with `v2ShadowCounts`, and every shadow job recorded successfully.
+
+**The 5 real jobs** (counts only; all at strength `strong`, 749–2,721 chars):
+- Legacy made 2 calls per job, each with 1 retry.
+  - 2 jobs rolled their chunk back to the source.
+  - 1 more delivered text identical to the source.
+  - So in 3 of 5 jobs, two model calls changed nothing.
+- v2's gate on the delivered text:
+  - It would accept all 5.
+  - 0 meaning, voice, CTA, flow or norm codes fired on legacy's real edits.
+  - 10 sentences would be reverted, all as `collateral_edit`: 4/15 and 6/14 in the two shorter jobs that legacy actually edited.
+  - These are scope differences, not false positives. Legacy rewrites broadly at `strong`, while v2's minimal-edit contract changes only requested sentences plus up to max(3, 10%) open-review nominations, and candidate mode allows no nominations.
+- v2 would have requested 2 sentences in all, SSJ-LV1 and SSJ-LV3; legacy left the LV1 one unchanged. Four LEAVE findings were reported (BOILERPLATE_ANNOUNCE ×3, CAUSAL_LEAD).
+- `ms_overhead`: 52–93 ms per job.
+
+**Implication for the switch**
+- No evidence so far that v2's checks block legitimate real edits (n = 5).
+- v2's `strong`/`very-strong` would change far less than legacy's, because v2's strengths add request tiers and open review but no broader rewrite. If the owner relies on `strong` for heavier rewriting, the strength semantics need adjusting before a switch.
+- Keep collecting; rerun the report after more jobs.
+
+## 2026-10-08 — Scheduled review of the v2 shadow recording: no real jobs yet
+
+**Request:** the reminder the user asked for on 2026-10-05 ("며칠 뒤 기록 모드 결과 정리해줘") fired. Instructions: summarise with `scripts/sejong-shadow-report.py`, check the server flag, log in English, no merge or restart.
+
+**Server state**
+- PID 80242, started Mon Oct 5 21:16:07; status ready, 0 active and 0 queued jobs.
+- `SUPER_SEJONG_V2_SHADOW=1` is in the process environment.
+- Supervisor state is `{desired: running, consecutiveFailures: 0}`, so no watchdog restart happened since.
+
+**Shadow data**
+- `scripts/sejong-shadow-report.py` found 1 shadow job out of 191 `transform_complete` events. That job is the 78-char smoke test of 2026-10-05.
+- `runtime/hermes-service.log` was last written at Oct 5 21:16, the restart. No text job, failure or Office job has been logged since.
+- The portal was not used between 2026-10-05 and 2026-10-08, so there is nothing to analyse: no check codes, request rules, recording failures or rejected-output patterns.
+- The only data point is that one smoke job:
+  - v2 would accept it.
+  - 1 sentence would be reverted as `collateral_edit`.
+  - Plan: one SSJ-LV3 SUGGEST request, which legacy had fixed, and one N01 deterministic fix.
+  - Overhead 117 ms.
+
+**Conclusion for the v2 switch**
+- Shadow evidence is insufficient: n = 1, and that one was synthetic. It neither supports nor blocks a switch.
+- The switch decision rests on the earlier offline and real-model evidence:
+  - lead probe 32/32 and 36/36 against legacy 30/32 and 18/36;
+  - Codex runs where v2 edited 5 of 5 texts, legacy 2 of 5;
+  - seed gold 91/92.
+- Options for the user:
+  1. Keep shadow on and use the portal normally, then rerun the report after about 20 real jobs.
+  2. Replay a fixed set of texts through the live portal to fill the shadow log. This needs explicit approval for the model calls.
+  3. Switch to `SUPER_SEJONG_ENGINE=v2`, which can be reverted with one env change and a restart, and judge v2's own output directly.
+- Nothing was changed. The report script and log are unchanged, and there was no merge, restart or commit.
+
 ## 2026-10-05 — Three code reviews of the Super Sejong v2 work, all findings fixed, merged into main
 
 **Request (user):** "최신 코드 수정내용을 중점으로 코드 리뷰 3회 진행, 문제점이나 버그 찾아봐", then "리뷰 끝나면 전부 수정하고 메인 반영해". Before that, works-log.md was committed and pushed (`b173c8f`).
