@@ -40,7 +40,7 @@ Each blog violation was traced to a sub-rule with an instrumented copy of `check
 
 **Deployment state:**
 - Python (`engine_runtime/`) is read per job, and the skill bridge was rebuilt, so the Hermes skill path runs the fixes now.
-- The portal server still runs the old `dist` in memory until a restart (`SUPER_SEJONG_V2_SHADOW=1 … hermes-service.js restart`). The user asked only for commit and push.
+- Portal restart: the user then asked "서버 재시작해". Pre-check showed 0 active / 0 queued jobs. `npm run build` from `002505b` was followed by `SUPER_SEJONG_V2_SHADOW=1 … hermes-service.js restart` → `restarted`, PID 19617, `ready`. The flag is in the process environment. `/api/health` serves the GPT-6.1 Sol/high and Opus 5.5/xhigh defaults and five strengths, and the built `dist` contains the new guard (`sameProtectedElements`).
 
 ## 2026-10-09 — Blog humanize rollback diagnosed; skill update check; Super Sejong version 2.1.0
 
