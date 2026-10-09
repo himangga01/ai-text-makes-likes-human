@@ -1,5 +1,74 @@
 # Works Log
 
+## 2026-10-09 — Preservation-check false positives fixed in the legacy guard and in Super Sejong v2
+
+**Requests (user):** "보존 검사 오판 수정하고 메인에 커푸", then mid-task "우리 세종엔진도 수정해 오판 관련해서".
+
+**Legacy guard (`src/engine/direct-text-fidelity.ts`, used by the portal's direct text and by the skill bridge)**
+Each blog violation was traced to a sub-rule with an instrumented copy of `checkDirectTextFidelity`. Fixes:
+- PROG may be dropped, never added. `protectedElements` now returns `{fixed, progressive}`, and the new `sameProtectedElements` requires the same markers, numbers and quotes, with progressive count after ≤ before. Reason: rulebook E-2 reduces "~고 있다" to the simple tense, so "정하고 있습니다 → 정합니다" (attempt 2's only violation) was the rulebook's own fix being blocked.
+- NEG pattern `아니` → `아[니닙닌닐님]`. "아닙니다" was not read as a negation, so "되는 것은 아닙니다 → 되지는 않습니다" looked like an added negation. `hasProtectedMeaning` was changed the same way.
+- COND: "경우라면/경우에는/경우이면…" count once (was 경우 + 면 = 2). `-면 좋다` (advice: "두시는 것이 좋습니다 → 두시면 좋습니다") is not a condition, in both the marker class and `hasProtectedMeaning`.
+- Concepts:
+  - New `conceptSuffixes`: 부터, 까지, 마다, 처럼, 보다, 조차, 밖에, 이나/나, 이든/든, 이라도/라도, 이라고/라고, 이라는/라는, 이란/란, 이면/면, 으로서/로서, 으로써/로써, 께/께서, 한테.
+  - New `functionalNouns`: 까지/부터/마다/처럼/보다, because "별표3까지로" produced the concept "까지".
+  - New `sameVerbStem`: an open-syllable term taken from "X는" may be a verb adnominal (떠오르는, 두시는). The same stem with ㄴ/ㄹ on its last syllable plus a verbal tail keeps the concept (떠오르 → 떠오를).
+- Multi-subject order check: new `argumentRolesPreserved` runs before the old strict order check. It passes when every participant keeps its role (topic and subject merged) and participants of one role keep their order.
+  - Accepted: "근거는 현행 법령에서 확인되지 않습니다 → 현행 법령에서는 … 근거가".
+  - Bug caught by existing tests: my first version compared roles only. `tests/integration/rewrite-strength.test.ts` (5 tests) failed on "민수는 사과를 샀고 지수는 배를 샀다 → 지수는 사과를 …". The per-role order requirement fixed it, and the case is now also in the unit list.
+- Kept blocked on purpose: an agent moving into another role ("법은 X를 정의하고 → X는 법에서 정의하고"). The guard cannot tell it from "회사는 직원을 평가한다 → 직원은 회사에서 평가한다".
+- Blog job re-run through the Gateway (`parse` → `protect` → `check`, rebuilt bridge `1beacb6…`):
+  - Attempt 1: 10 → 1 violation (the agent-role case above).
+  - Attempt 2: 1 → **0**, so the job would now accept attempt 2's 5 edits instead of rolling back.
+- Tests in `tests/unit/direct-text-fidelity.test.ts`, constructed sentences only (no owner text in the repo):
+  - 7 accepted cases; all 7 fail on the old guard (checked against the pre-change build: 1, 1, 2, 1, 1, 1, 1 violations).
+  - 6 still-rejected cases: progressive added, negation dropped from 아닙니다, a real condition added, participants of one role swapped, topic/subject swapped between two participants, agent moved into another role.
+
+**Super Sejong v2 (same blog attempts through `verify.document_violations`, genre blog)**
+- Before the fix:
+  - Attempt 2 clean. The 8 constructed pairs had no enforced violation.
+  - Attempt 1 had 3 enforced violations, all false positives.
+- Fixes:
+  - `participant_role_changed` (v1 guard `changed_participant_roles` in `engine_runtime/super_sejong.py`, shared with the legacy Python guard). Case: "예외도 있지만 범위가 좁습니다 → 예외가 있기는 하지만 그 범위는 좁습니다". A dropped 도 is now excused only when the source has "N도 있/없…" and the rewrite has a new concessive "있/없기는 하-". "철수도 왔다 → 철수가 왔다" and "철수도 왔지만 → 철수가 오기는 했지만" still fire.
+  - `cta_action_replaced` (`cta_gate.py`). Case: "옮기지 마세요 → 옮겨 쓰지 마세요". New `_key_forms` accepts the vowel-contracted conjugation of an open last syllable (ㅣ→ㅕ, ㅗ→ㅘ, ㅜ→ㅝ, ㅡ→ㅓ, ㅚ→ㅙ, 하→해).
+  - `flow_transition_added` (`data/connectives.json`). Case: "그다음 → 이어서". 그다음/그다음에/그 다음/그 다음에/그런 다음/그러고 나서 join the sequence class. Side effect: adding "그다음" to a sentence is now detected as an added sequence connective; before, it was missed.
+- After the fix: attempt 1 has no enforced violation (only the shadow `content_dropped`); attempt 2 clean.
+- New `tests/skills/test_sejong_false_positives.py`: 3 accepted and 3 still-rejected cases. On a HEAD copy of `engine_runtime` (`git archive`, run outside the live tree), the 3 accepted cases and the new "그다음 added" detection fail; all pass now.
+- Missed detection seen, not fixed: v2 does not flag "협회는 회원 3명을 평가하고 → 회원 3명은 협회에서 평가하고". A miss, not a false positive.
+
+**Verification:** build exit 0; vitest 752 passed / 9 skipped; skills Python suite (715 tests, skipped 5) and documents OK under both `SUPER_SEJONG_ENGINE=legacy` and `v2`.
+
+**Deployment state:**
+- Python (`engine_runtime/`) is read per job, and the skill bridge was rebuilt, so the Hermes skill path runs the fixes now.
+- The portal server still runs the old `dist` in memory until a restart (`SUPER_SEJONG_V2_SHADOW=1 … hermes-service.js restart`). The user asked only for commit and push.
+
+## 2026-10-09 — Blog humanize rollback diagnosed; skill update check; Super Sejong version 2.1.0
+
+**Requests (user):** a pasted Hermes status report (blog article humanized with Opus 5.5/high at `strong`; "내용 보존 검사에서 두 차례 통과하지 못해 엔진이 원문으로 되돌렸습니다"), then "우리 스킬이나 플러그인 업데이트 했는지 확인하고, 안했으면 코드 수정 업데이트", then "위반???".
+
+**Rollback diagnosis (read-only on Hermes files; the job was copied to the scratchpad)**
+- The run did not use the portal: Hermes ran the source-checkout Gateway (`engine_runtime/skill_gateway.py`, legacy engine, `engine_environment: unset`) for job `job-8f52487c…`, direct text, `strong`, 1 chunk.
+- Both attempts ended in `DIRECT_TEXT_FIDELITY_RESTRICTED`; attempt 2 → `decision: rollback`, so the output equals the draft.
+- Reproduced with the bridge (`parse` → `protect` → `check`) on the archived responses: attempt 1 (23 edits) has 10 violations, attempt 2 (5 edits, a conservative retry) has 1. 57 of the chunk's sentences are protected (legal text: articles, numbers, obligations).
+- An instrumented copy of `checkDirectTextFidelity` listed each violation. They are guard false positives, not meaning changes:
+  - Attempt 2's only violation is "정하고 있습니다 → 정합니다". The PROG marker class (`고 있`) in `protectedElements` treats dropping a progressive as a protected-element change, but the vendor rulebook's E-2 asks for exactly that fix. The rulebook and the guard contradict each other.
+  - Attempt 1 also has: COND counted twice in "경우라면" (`경우` plus `면`) against once in "한다면"; an added `-면` in "점검해 두시는 것이 좋습니다 → 두시면 좋습니다"; "되는 것은 아닙니다 → 되지는 않습니다"; reorders tripping the multi-subject order check; and 4 `concepts` hits on light paraphrases.
+- Not fixed: the change would touch the live legacy guard while the Hermes run was still active, and it needs the user's decision.
+
+**Skill / plugin check**
+- There is no plugin: `~/.claude/plugins` holds only the official marketplace, and the repo has no plugin manifest. `humanize-kr` is not installed under `~/.claude/skills` or `~/.codex/skills`.
+- Hermes reads the skill straight from this checkout (`docs/skills-guide.md`, `skills/humanize-kr/SKILL.md`, `references/workflow.md`, the Gateway), so main is what it runs.
+- The source docs already describe the fifth strength `rewrite` (from the wp19 merge). The skill uses the host session's model, so today's portal model changes do not apply to it.
+- Stale items fixed:
+  - `docs/skills-guide.md` header still said "Source reviewed on October 2, 2026: `d9df30e`". It now names the 2026-10-09 state: v2 2.1.0 bundled (opt-in), five strengths, host model. Only that line was staged; the owner's personal lines in the same file stay unstaged.
+  - `engine_runtime/sejong/ENGINE_VERSION` 2.0.0 → **2.1.0** (rewrite mode is a feature release; `schema` stays 1 because the plan/check schema changes were additive). `MINIMUM_ENGINE_VERSION` stays 2.0.0. Updated with it: `tests/unit/sejong-engine-files.test.ts`, `tests/unit/preflight.test.ts`, the three plan fixtures (version field only), and `cli-contract.json` (regenerated with `SEJONG_WRITE_FIXTURES=1`).
+  - `build-resources/skill-bridge/skill-bridge.cjs` (git-ignored; the Gateway's bridge in a source checkout) was built at 16:57 with the rewrite option but before the model-default change. Rebuilt; the build is deterministic (sha `7bc6caa…` twice). The only difference was the bundled model constants, which the skill does not use.
+- Not done:
+  - The Windows skill ZIPs (`npm run skills:build`) were not rebuilt; the packager runs a Windows `python.exe`.
+  - Hermes's own `~/.hermes/skills/portal-service/SKILL.md` still lists four strengths. Under `~/.hermes`, so it was left untouched.
+- Verification: build exit 0; vitest 739 passed / 9 skipped; skills Python suite OK (skipped 5) and documents OK under both `SUPER_SEJONG_ENGINE=legacy` and `v2`.
+- Committed and pushed together with the false-positive fixes below (the user then asked for "메인에 커푸").
+
 ## 2026-10-09 — Codex default effort lowered to high
 
 **Request (user):** "코덱스는 high로 낮춰줘", after the report that GPT-6.1 Sol at xhigh took 278 s per call on a 2,332-char sample.

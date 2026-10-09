@@ -178,3 +178,26 @@ it.each([
 ])('keeps a voice-preserving rewrite: %s',(_label,original,changed)=>{
  expect(preservesVoice(original,changed)).toBe(true);
 });
+
+// Guard false positives seen on a legal-information blog post (2026-10-09), constructed sentences of the same shape.
+it.each([
+ ['a progressive reduced to the simple tense (rulebook E-2)','이 조항은 신고 기한을 30일로 정하고 있습니다.','이 조항은 신고 기한을 30일로 정합니다.'],
+ ['one condition spelled 경우라면','서류를 내려는 경우라면 기한을 30일 안에 확인해야 합니다.','서류를 내려 한다면 기한을 30일 안에 확인해야 합니다.'],
+ ['advice -는 것이 좋다 as -면 좋다','제출 전에 사본 2부를 보관해 두시는 것이 좋습니다.','제출 전에 사본 2부를 미리 보관해 두시면 좋습니다.'],
+ ['아닙니다 rephrased as 않습니다','모든 간식이 자동으로 사료 1종이 되는 것은 아닙니다.','모든 간식이 자동으로 사료 1종이 되지는 않습니다.'],
+ ['a delimiter particle and a verb stem keep their concepts','이때 가장 먼저 떠오르는 질문은 아마 비용일 겁니다.','이때 아마 비용 질문부터 떠오를 겁니다.'],
+ ['까지 is a particle, not a concept','시설기준은 별표1부터 별표3까지로 정합니다.','시설기준은 별표1부터 별표3까지입니다.'],
+ ['a phrase moved to the front with every role kept','수수료가 면제된다는 근거는 현행 규정에서 확인되지 않습니다.','현행 규정에서는 수수료가 면제된다는 근거가 확인되지 않습니다.']
+])('accepts a meaning-preserving rewrite: %s',(_label,original,changed)=>{
+ expect(checkDirectTextFidelity(original+' 끝이다.\n',changed+' 끝이다.\n').violations).toBe(0);
+});
+it.each([
+ ['a progressive added','이 조항은 신고 기한을 30일로 정합니다.','이 조항은 신고 기한을 30일로 정하고 있습니다.'],
+ ['a negation dropped from 아닙니다','모든 간식이 자동으로 사료 1종이 되는 것은 아닙니다.','모든 간식이 자동으로 사료 1종이 됩니다.'],
+ ['a real condition added','사본 2부를 보관해 두십시오.','필요하면 사본 2부를 보관해 두십시오.'],
+ ['participants of one role swapped','민수는 사과 2개를 샀고 지수는 배를 샀다.','지수는 사과 2개를 샀고 민수는 배를 샀다.'],
+ ['topic and subject swapped between two participants','가팀은 나팀이 이겼다고 3일에 발표했다.','나팀은 가팀이 이겼다고 3일에 발표했다.'],
+ ['the agent moved into another role','협회는 회원 3명을 평가하고 결과는 공지합니다.','회원 3명은 협회에서 평가하고 결과는 공지합니다.']
+])('still rejects: %s',(_label,original,changed)=>{
+ expect(checkDirectTextFidelity(original+' 끝이다.\n',changed+' 끝이다.\n').violations).toBeGreaterThan(0);
+});

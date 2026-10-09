@@ -71,6 +71,30 @@ def _norm(text: str) -> str:
     return _WS.sub("", text or "")
 
 
+# Vowel contraction of an open last syllable before -어/-아 (옮기 -> 옮겨, 보 -> 봐, 주 -> 줘, 쓰 -> 써, 되 -> 돼,
+# 하 -> 해): "옮기지 마세요" -> "옮겨 쓰지 마세요" keeps the action (blog run 2026-10-09).
+_CONTRACTED_VOWEL = {20: 6, 8: 9, 13: 14, 18: 4, 11: 10}
+
+
+def _key_forms(key: str) -> Tuple[str, ...]:
+    """The action key and its contracted conjugation, when it has one."""
+    if not key:
+        return ()
+    code = ord(key[-1]) - 0xAC00
+    if not 0 <= code < 11172 or code % 28:
+        return (key,)
+    lead, vowel = divmod(code // 28, 21)
+    if key[-1] == "하":
+        return key, key[:-1] + "해"
+    if vowel not in _CONTRACTED_VOWEL:
+        return (key,)
+    return key, key[:-1] + chr(0xAC00 + (lead * 21 + _CONTRACTED_VOWEL[vowel]) * 28)
+
+
+def _kept(key: str, keys: Set[str], own: str) -> bool:
+    return key in keys or any(form in own for form in _key_forms(key))
+
+
 def _chan_norm(items: Iterable[str]) -> Set[str]:
     out = set()
     for x in items:
@@ -493,10 +517,10 @@ def compare(src: Document, out: Document, pairs: Optional[Sequence[Pair]] = None
         split_keys, extra = reach(r, (-2, -1, 0, 1, 2))
         r_keys = {akey(a) for a in ru.actions} | split_keys
         own = _norm(r.text) + extra
-        missing = [k for k in keys if k not in r_keys and k not in own]
+        missing = [k for k in keys if not _kept(k, r_keys, own)]
         main, rw_main = akey(s.main_action), akey(r.main_action)
         rw_count = len(set().union(*[count_by_sent.get(r.index + d, set()) for d in (-1, 0, 1)]))
-        if main and main not in r_keys and main not in own and cta.action_key(s.main_action) not in own:
+        if main and not _kept(main, r_keys, own) and not _kept(cta.action_key(s.main_action), r_keys, own):
             # closed-class acts (문의, 구독, 공감 ...) have no near-synonyms: a change is a real change;
             # open-class task verbs (제출/내다, 준비/챙기다) are often a legitimate substitution: soft
             if main in CLOSED_ACTIONS or rw_main in CLOSED_ACTIONS:

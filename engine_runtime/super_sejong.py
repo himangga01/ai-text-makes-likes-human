@@ -590,8 +590,14 @@ def changed_participant_roles(source: str, candidate: str, aligned=None) -> bool
         for stem in fa.keys() & fb.keys():
             if fa[stem] != fb[stem]:
                 return True
+        # "예외도 있지만" -> "예외가 있기는 하지만": with 있다/없다 the concessive 기는 하- now carries what 도
+        # did. "철수도 왔다" -> "철수가 왔다" and "철수도 왔지만" -> "철수가 오기는 했지만" still lose "also".
+        concessive = re.search(r'(?:있|없)(?:기는|긴)\s*(?:하|했|합|해)', after) and \
+            not re.search(r'(?:기는|긴)\s*(?:하|했|합|해)', before)
         # focus particle moved onto/off a noun that exists on both sides
         for stem in fa.keys() - fb.keys():
+            if concessive and fa[stem] == {'도'} and re.search(re.escape(stem) + r'도\s+(?:있|없)', before):
+                continue
             if stem in after and not any(stem in k for k in fb):
                 if re.search(re.escape(stem) + r'(?:을|를|은|는|이|가)(?=\s|$)', after):
                     return True

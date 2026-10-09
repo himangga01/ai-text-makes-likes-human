@@ -3,7 +3,9 @@ export interface SourceSentence { start: number; end: number; text: string; prot
 const segmenter = new Intl.Segmenter('ko', { granularity: 'sentence' });
 const functionalNouns = new Set(['것','이것','그것','저것','수','중','등','점','경우','작업','수행','방식','부분','측면','통해','대해',
   // Light nouns of 하다/되다 constructions; dropping them is the usual fix ("진행이 가능하다" → "할 수 있다").
-  '진행','실시','시행']);
+  '진행','실시','시행',
+  // Particles that the noun+particle split would otherwise read as nouns ("별표3까지로").
+  '까지','부터','마다','처럼','보다']);
 // Match the complete remainder of a token, never just a particle-like prefix
 // in a new compound such as 문제의식 or 자료가치. Unknown forms fail closed.
 const conceptSuffixes = new Set([
@@ -15,6 +17,10 @@ const conceptSuffixes = new Set([
   '와는', '과는', '와도', '과도', '와의', '과의',
   '만은', '만을', '만이', '만의', '만으로', '만으로도', '만으로는',
   '로부터', '로부터는', '로부터도', '으로부터', '으로부터는', '으로부터도',
+  // Delimiter, quotative and copula-conditional particles ("질문은" → "질문부터", "간식이" → "간식이라고").
+  '부터', '부터는', '부터도', '까지', '까지는', '까지도', '에서부터', '마다', '처럼', '보다', '보다는', '조차', '밖에',
+  '이나', '나', '이든', '든', '이라도', '라도', '이라고', '라고', '이라는', '라는', '이란', '란', '이면', '면',
+  '으로서', '로서', '으로써', '로써', '께', '께서', '한테',
   // The same noun used as a 하다/되다 verb keeps the concept ("인정이 됩니다" → "인정됩니다").
   '합니다', '했습니다', '하였습니다', '됩니다', '됐습니다', '되었습니다', '하였다', '되었다',
   '하는', '되는', '한', '된', '할', '될', '하면', '되면', '해야', '돼야', '되어야', '하여야', '하므로', '되므로',
@@ -44,8 +50,8 @@ function concepts(text: string): string[] {
 function hasProtectedMeaning(text: string): boolean {
   if (/금지|불가|불허|허용|의무/u.test(text)) return true;
   if (/[0-9'"“”‘’「」『』]/u.test(text)) return true;
-  if (/수\s*(?:있|없)|(?:해|하여|어|아)야|않|없|아니|가능|추정|판단|듯|것\s*같|것으로\s*보|(?<!가지)(?<!갖)고\s*있/u.test(text)) return true;
-  if (/(?:^|\s)(?:안|못)\s|[가-힣]+면(?:\s|,)|경우|때문|조건|이후|이전|전까지|후에|따라서/u.test(text)) return true;
+  if (/수\s*(?:있|없)|(?:해|하여|어|아)야|않|없|아[니닙닌닐님]|가능|추정|판단|듯|것\s*같|것으로\s*보|(?<!가지)(?<!갖)고\s*있/u.test(text)) return true;
+  if (/(?:^|\s)(?:안|못)\s|[가-힣]+면(?:,|\s(?!좋))|경우|때문|조건|이후|이전|전까지|후에|따라서/u.test(text)) return true;
   return false;
 }
 function risky(text: string): boolean {
@@ -67,13 +73,17 @@ const markerClasses: Array<[RegExp, string]> = [
   [/의무|(?:해|하여|어|아|여)야/gu, 'MUST'],
   [/수\s*있|가능/gu, 'CAN'],
   [/추정|판단|듯|것\s*같|것으로\s*보/gu, 'HEDGE'],
-  [/않|아니|없|(?:^|\s)(?:안|못)(?=\s)/gu, 'NEG'],
-  [/(?<=[가-힣])면(?=\s|,)|경우|조건/gu, 'COND'],
+  // 아닙니다/아닌/아닐/아님 are the same negation as 아니다.
+  [/않|아[니닙닌닐님]|없|(?:^|\s)(?:안|못)(?=\s)/gu, 'NEG'],
+  // One condition however it is spelled: "경우라면" is a single COND, not 경우 + 면. "-면 좋다" is advice
+  // ("확인하는 것이 좋습니다" → "확인하면 좋습니다"), not a condition.
+  [/경우(?:라면|이라면|이면|에는|엔|에)?|조건|(?<=[가-힣])면(?=\s|,)(?!\s+좋)/gu, 'COND'],
   [/때문|따라서/gu, 'CAUSE'],
   [/이후|이전|전까지|후에/gu, 'ORDER'],
   [/(?<!가지)(?<!갖)고\s*있/gu, 'PROG']
 ];
-function protectedElements(text: string): string {
+interface ProtectedElements { fixed: string; progressive: number }
+function protectedElements(text: string): ProtectedElements {
   let rest = text;
   const markers: string[] = [];
   for (const [pattern, label] of markerClasses) {
@@ -82,7 +92,14 @@ function protectedElements(text: string): string {
   // Numbers and quotation marks keep their order: swapping two values ("12건 … 20건") changes the facts.
   const numbers = text.match(/[0-9]+(?:[.,:][0-9]+)*/gu) ?? [];
   const quotes = text.match(/['"“”‘’「」『』]/gu) ?? [];
-  return `${markers.sort().join('|')}#${numbers.join('|')}#${quotes.join('')}`;
+  const fixed = markers.filter(label => label !== 'PROG').sort().join('|');
+  return { fixed: `${fixed}#${numbers.join('|')}#${quotes.join('')}`, progressive: markers.filter(label => label === 'PROG').length };
+}
+/** Same markers, numbers and quotes. A progressive may be dropped, because the rulebook's E-2 reduces
+ * "~고 있다" to the simple tense ("정하고 있습니다" → "정합니다"), but never added. */
+function sameProtectedElements(original: string, rewritten: string): boolean {
+  const before = protectedElements(original), after = protectedElements(rewritten);
+  return before.fixed === after.fixed && after.progressive <= before.progressive;
 }
 function explicitSubjects(text: string): string[] {
   // "N이 되다/아니다" marks a complement, not a second subject ("인정이 됩니다", "문제가 아닙니다").
@@ -98,8 +115,38 @@ function argumentNouns(text: string): string[] {
   }
   return nouns;
 }
+const particleRoles: Record<string, string> = { 은: 'T', 는: 'T', 이: 'S', 가: 'S', 을: 'O', 를: 'O', 에게: 'D', 에서: 'L',
+  으로: 'I', 로: 'I', 에: 'A', 와: 'C', 과: 'C', 의: 'G' };
+function argumentRoles(text: string): Array<[string, string]> {
+  const roles: Array<[string, string]> = [];
+  for (const token of text.match(/[가-힣A-Za-z0-9]+/gu) ?? []) {
+    if (isAdnominalVerb(token)) continue;
+    // A delimiter after the case particle keeps the role ("법령에서" → "법령에서는").
+    const match = token.match(/^([가-힣A-Za-z0-9]+?)(에게|에서|으로|은|는|이|가|을|를|에|로|와|과|의)(?:는|은|도|만)?$/u);
+    if (match && !functionalNouns.has(match[1]!)) roles.push([match[1]!, particleRoles[match[2]!]!]);
+  }
+  return roles;
+}
+/** Every participant keeps its role, and participants of one role keep their order, so moving a phrase
+ * ("현행 법령에서는 …" to the front) is accepted while "민수는 사과를, 지수는 배를" → "지수는 사과를, 민수는 배를"
+ * is not. Topic and subject count as one role ("근거는" → "근거가"), so trading them is an order change too. */
+function argumentRolesPreserved(original: string, rewritten: string): boolean {
+  const roleOf = ([noun, role]: [string, string]): [string, string] => [noun, role === 'T' ? 'S' : role];
+  const before = argumentRoles(original).map(roleOf), after = argumentRoles(rewritten).map(roleOf);
+  const tokens = rewritten.match(/[가-힣A-Za-z0-9]+/gu) ?? [];
+  for (const [noun, role] of before) {
+    if (tokens.some(token => token.startsWith(noun)) && !after.some(([other, its]) => other === noun && its === role)) return false;
+  }
+  for (const role of new Set(before.map(([, its]) => its))) {
+    const sequence = (items: Array<[string, string]>, others: Array<[string, string]>) => items
+      .filter(([noun, its]) => its === role && others.some(([other]) => other === noun)).map(([noun]) => noun).join('|');
+    if (sequence(before, after) !== sequence(after, before)) return false;
+  }
+  return true;
+}
 /** Nouns that still appear in the rewrite keep their relative order, so no two participants or values swapped. */
 function argumentOrderPreserved(original: string, rewritten: string): boolean {
+  if (argumentRolesPreserved(original, rewritten)) return true;
   const tokens = rewritten.match(/[가-힣A-Za-z0-9]+/gu) ?? [];
   let last = -1;
   for (const noun of argumentNouns(original)) {
@@ -115,7 +162,7 @@ function argumentOrderPreserved(original: string, rewritten: string): boolean {
  * obligation/condition markers by class. With several explicit subjects its nouns must also keep their order,
  * because values and roles can swap between subjects without any marker changing. */
 export function preservesProtectedElements(original: string, rewritten: string): boolean {
-  if (protectedElements(original) !== protectedElements(rewritten) || !preservesVoice(original, rewritten)) return false;
+  if (!sameProtectedElements(original, rewritten) || !preservesVoice(original, rewritten)) return false;
   return explicitSubjects(original).length < 2 || argumentOrderPreserved(original, rewritten);
 }
 // Voice lock (owner decision: every sentence keeps its own 말투 and honorifics). A minimal port of the Super
@@ -191,10 +238,20 @@ function isVerbalRealization(remainder: string): boolean {
   const match = remainder.match(verbalStem);
   return Boolean(match && verbalTails.has(match[2]!));
 }
+// An open-syllable term taken from "X는" may be a verb's adnominal form ("떠오르는", "두시는"), not noun + topic;
+// the same verb then keeps the concept with ㄴ/ㄹ on its last syllable ("떠오를", "두신").
+function sameVerbStem(term: string, token: string, original: string): boolean {
+  const last = term.charCodeAt(term.length - 1) - 0xac00;
+  if (last < 0 || last > 11171 || last % 28 !== 0 || !new RegExp(`(?:^|[^가-힣])${term}는(?![가-힣])`, 'u').test(original)) return false;
+  const syllable = token.charCodeAt(term.length - 1) - 0xac00;
+  return token.startsWith(term.slice(0, -1)) && syllable - last >= 0 && [4, 8].includes(syllable - last) &&
+    verbalTails.has(token.slice(term.length));
+}
 function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, suffixes = conceptSuffixes): boolean {
   const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
   return original.concepts.every(term => (term === '과정' && permitsFunctionalProcessOmission(original.text, rewritten.text)) || tokens.some(token =>
-    token.startsWith(term) && (suffixes.has(token.slice(term.length)) || isVerbalRealization(token.slice(term.length)))
+    (token.startsWith(term) && (suffixes.has(token.slice(term.length)) || isVerbalRealization(token.slice(term.length)))) ||
+    sameVerbStem(term, token, original.text)
   ));
 }
 
