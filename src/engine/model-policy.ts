@@ -1,5 +1,5 @@
 export const HUMANIZE_MODEL = "gpt-6.1-sol" as const;
-export const HUMANIZE_REASONING_EFFORT = "xhigh" as const;
+export const HUMANIZE_REASONING_EFFORT = "high" as const;
 
 export const CLAUDE_MODEL = "claude-opus-5-5" as const;
 export const CLAUDE_REASONING_EFFORT = "xhigh" as const;

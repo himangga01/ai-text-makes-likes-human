@@ -80,7 +80,7 @@ let resultGeneration = 0;
 let comparisonReady = false;
 let elapsedStarted;
 let elapsedInterval;
-const fallbackModelDefaults={codex:{model:'gpt-6.1-sol',effort:'xhigh'},claude:{model:'claude-opus-5-5',effort:'xhigh'}};
+const fallbackModelDefaults={codex:{model:'gpt-6.1-sol',effort:'high'},claude:{model:'claude-opus-5-5',effort:'xhigh'}};
 let modelDefaults=fallbackModelDefaults;
 let inputLimits=DEFAULT_INPUT_LIMITS;
 let modelOptions={codex:[{id:'gpt-6.1-sol',label:'GPT-6.1 Sol',efforts:['low','medium','high','xhigh','max','ultra']}],claude:[{id:'claude-opus-5-5',label:'Claude Opus 5.5',efforts:['low','medium','high','xhigh','max']}]};

@@ -1,5 +1,14 @@
 # Works Log
 
+## 2026-10-09 — Codex default effort lowered to high
+
+**Request (user):** "코덱스는 high로 낮춰줘", after the report that GPT-6.1 Sol at xhigh took 278 s per call on a 2,332-char sample.
+
+- `HUMANIZE_REASONING_EFFORT` `xhigh` → `high`. The Codex default is now `gpt-6.1-sol`/`high`; Claude stays `claude-opus-5-5`/`xhigh`. Same places as the previous change: `public/app.js` fallback, the static Codex effort `<option>` in `public/index.html`, README, `docs/operations.md`, `docs/code-analysis.md`, `docs/service-analysis.md`, and the unit, integration and e2e assertions.
+- The owner's uncommitted blog-host policy lines (Codex `gpt-6.1-sol` xhigh fallback) are a separate Hermes policy and were not touched.
+- Verification: build exit 0; vitest 739 passed / 9 skipped; Playwright e2e (side port 7899) 54 passed / 9 skipped.
+- Same 2,332-char synthetic sample, one call with the production runner flags: `gpt-6.1-sol` high OK in **132,751 ms** (xhigh was 278,401 ms; the old default `gpt-5.6-sol`/medium ran real ~2,700-char jobs in 55–84 s for 2 calls).
+
 ## 2026-10-09 — Default models changed to GPT-6.1 Sol / Claude Opus 5.5, both at xhigh
 
 **Request (user):** "기본 모델 변경, 코덱스는 지피티 6.1 솔 / 클로드는 오푸스 5.5 / 추론레벨은 둘다 xhigh", then "수정후 서버반영, 재시작, 깃에 커푸".

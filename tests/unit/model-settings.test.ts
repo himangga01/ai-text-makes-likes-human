@@ -8,7 +8,7 @@ import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
 import type { CommandRequest } from '../../src/process/command-runner.js';
 
 it('defaults remain unchanged and provider/model effort combinations are validated',()=>{
-  expect(parseModelSettings('codex')).toEqual({model:'gpt-6.1-sol',effort:'xhigh'});
+  expect(parseModelSettings('codex')).toEqual({model:'gpt-6.1-sol',effort:'high'});
   expect(parseModelSettings('claude')).toEqual({model:'claude-opus-5-5',effort:'xhigh'});
   expect(()=>parseModelSettings('codex','claude-opus-5','high')).toThrow();
   expect(()=>parseModelSettings('codex','gpt-5.6-luna','ultra')).toThrow();

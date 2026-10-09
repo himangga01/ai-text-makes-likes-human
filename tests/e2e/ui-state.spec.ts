@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { MODEL_OPTIONS } from '../../src/engine/model-policy.js';
 
 const providers={codex:{ready:true,installed:true,authenticated:true,message:'Codex 사용 가능'},claude:{ready:true,installed:true,authenticated:true,message:'Claude 사용 가능'}};
-const healthy={status:'ready',modelOptions:MODEL_OPTIONS,modelDefaults:{codex:{model:'gpt-6.1-sol',effort:'xhigh'},claude:{model:'claude-opus-5-5',effort:'xhigh'}},providers};
+const healthy={status:'ready',modelOptions:MODEL_OPTIONS,modelDefaults:{codex:{model:'gpt-6.1-sol',effort:'high'},claude:{model:'claude-opus-5-5',effort:'xhigh'}},providers};
 const ndjson=(values:unknown[])=>values.map(x=>JSON.stringify(x)).join('\n')+'\n';
 const completed=ndjson([{type:'result-start'},{type:'result-delta',text:'다듬은 결과'},{type:'done',chunks:1,elapsedMs:1}]);
 async function ready(page:Page){await page.goto('/');await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');}
@@ -22,11 +22,11 @@ test('A6: pre-health fallback matches current defaults and only the engine defau
   await page.route('**/api/health',async r=>{await held;await r.fulfill({json:healthy});});
   await page.goto('/');
   await expect(page.locator('#claude-model')).toHaveValue('claude-opus-5-5');await expect(page.locator('#claude-effort')).toHaveValue('xhigh');
-  await expect(page.locator('#codex-model')).toHaveValue('gpt-6.1-sol');await expect(page.locator('#codex-effort')).toHaveValue('xhigh');
+  await expect(page.locator('#codex-model')).toHaveValue('gpt-6.1-sol');await expect(page.locator('#codex-effort')).toHaveValue('high');
   release();await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');
   await expect(page.locator('#claude-effort option[value="xhigh"]')).toContainText('기본');
   await expect(page.locator('#claude-effort option[value="high"]')).not.toContainText('기본');
-  await expect(page.locator('#codex-effort option[value="xhigh"]')).toContainText('기본');
+  await expect(page.locator('#codex-effort option[value="high"]')).toContainText('기본');
   await expect(page.locator('#codex-effort option')).toHaveCount(6);
 });
 
@@ -34,7 +34,7 @@ test('A4/E9: removed saved models fall back to engine defaults, persist, and are
   await page.addInitScript(()=>{if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.setItem('humanize-model-settings',JSON.stringify({codex:{model:'gpt-5.5',effort:'xhigh'},claude:{model:'claude-fable-5-1',effort:'ultra'}}));}});
   await page.route('**/api/health',r=>r.fulfill({json:healthy}));
   await ready(page);
-  await expect(page.locator('#codex-model')).toHaveValue('gpt-6.1-sol');await expect(page.locator('#codex-effort')).toHaveValue('xhigh');
+  await expect(page.locator('#codex-model')).toHaveValue('gpt-6.1-sol');await expect(page.locator('#codex-effort')).toHaveValue('high');
   await expect(page.locator('#claude-model')).toHaveValue('claude-fable-5-1');await expect(page.locator('#claude-effort')).toHaveValue('xhigh');
   await expect(page.locator('#status-message')).toContainText('gpt-5.5');
   // The removed choice is dropped rather than pinned, so later server defaults still apply.

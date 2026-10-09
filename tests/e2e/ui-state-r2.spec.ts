@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { MODEL_OPTIONS } from '../../src/engine/model-policy.js';
 
 const providers={codex:{ready:true,installed:true,authenticated:true,message:'Codex 사용 가능'},claude:{ready:true,installed:true,authenticated:true,message:'Claude 사용 가능'}};
-const healthy={status:'ready',modelOptions:MODEL_OPTIONS,modelDefaults:{codex:{model:'gpt-6.1-sol',effort:'xhigh'},claude:{model:'claude-opus-5-5',effort:'xhigh'}},providers,documentsAvailable:true};
+const healthy={status:'ready',modelOptions:MODEL_OPTIONS,modelDefaults:{codex:{model:'gpt-6.1-sol',effort:'high'},claude:{model:'claude-opus-5-5',effort:'xhigh'}},providers,documentsAvailable:true};
 const ndjson=(values:unknown[])=>values.map(x=>JSON.stringify(x)).join('\n')+'\n';
 const completed=ndjson([{type:'accepted',jobId:'j',position:0},{type:'result-start'},{type:'result-delta',text:'다듬은 결과'},{type:'done',chunks:1,elapsedMs:1}]);
 async function ready(page:Page){await page.goto('/');await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');}
