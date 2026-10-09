@@ -14,12 +14,13 @@ export const MODEL_DEFAULTS: Record<EngineChoice, ModelSettings> = {
 };
 const codexEfforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const claudeEfforts = ['low', 'medium', 'high', 'xhigh', 'max'];
-// Codex 0.159.0 model catalog and Claude Code 2.1.284 model configuration (2026-09-30).
+// Codex 0.161.0 model catalog and Claude Code 2.1.295 model configuration (2026-10-09).
 // GPT-5.5 is omitted on purpose: it retires 2026-10-14.
 // These are selectable configurations, not a promise of account model access.
 export const MODEL_OPTIONS = {
   codex: [
     { id: HUMANIZE_MODEL, label: 'GPT-5.6 Sol', efforts: codexEfforts },
+    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol', efforts: codexEfforts },
     { id: 'gpt-6-astra', label: 'GPT-6 Astra', efforts: codexEfforts },
     { id: 'gpt-6-sol', label: 'GPT-6 Sol', efforts: codexEfforts },
     { id: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: codexEfforts.slice(0, 5) },
@@ -30,6 +31,7 @@ export const MODEL_OPTIONS = {
     { id: CLAUDE_MODEL, label: 'Claude Fable 5.1', efforts: claudeEfforts },
     { id: 'claude-opus-5-5', label: 'Claude Opus 5.5', efforts: claudeEfforts },
     { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5', efforts: claudeEfforts },
+    { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5', efforts: claudeEfforts },
     { id: 'claude-sonnet-5', label: 'Claude Sonnet 5', efforts: claudeEfforts },
     { id: 'claude-opus-5', label: 'Claude Opus 5', efforts: claudeEfforts }
   ]

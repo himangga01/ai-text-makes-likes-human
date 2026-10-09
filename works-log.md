@@ -1,5 +1,23 @@
 # Works Log
 
+## 2026-10-09 — Rewrite strength merged and deployed; GPT-6.1 Sol and Claude Haiku 5.5 added
+
+**Request (user):** "깃 메인에 커밋푸쉬하고, 서버 반영 서버 재시작해, 그리고 최근데 코덱스랑 클로드 모델들이 새로 많이 추가됨 모델 업데이트들 해주고 수정되면 바로 서버반영 재시작해".
+
+**Rewrite strength to main**
+- Merged `sejong/wp19` into main as `374150d` (no-ff, on top of `259ad2c`); works-log commit `2a7c0e9`; pushed.
+- The branch touched the three files that hold the owner's uncommitted personal lines (`docs/skills-guide.md`, `skills/humanize-kr/SKILL.md`, `skills/humanize-kr/references/workflow.md`). They were saved as a patch in the scratchpad, reset, the merge run, and the patch re-applied with `git apply --3way` (clean). They were then unstaged and stay uncommitted.
+- Verification on main after the merge: `npm run build` exit 0; vitest 739 passed / 9 skipped (with `PYTHON_COMMAND` set to the product venv; with the default lookup it is 728 / 20 because the Office suites skip without lxml); skills and documents Python suites OK under both `SUPER_SEJONG_ENGINE=legacy` and `v2`.
+- Restart (idle pre-check, 0 active / 0 queued): `SUPER_SEJONG_V2_SHADOW=1 … hermes-service.js restart` → `restarted`, PID 87874, `ready`; the flag is present in the process environment. `/api/health` lists the fifth option `rewrite` / "매우 강하게(다시쓰기)". The live engine stays legacy, where `rewrite` runs as 매우 강하게.
+
+**Model audit (both providers, official sources)**
+- Codex: `codex debug models` under codex-cli 0.161.0 lists a new visible model `gpt-6.1-sol` (priority 1, "Latest workhorse model", efforts low..ultra). `gpt-6-sol` is now "Previous generation", `gpt-5.6-sol` "Older generation". `gpt-5.5` (hidden) points its upgrade at `gpt-6.1-sol` and retires 2026-10-14 19:00 UTC. learn.chatgpt.com/docs/models recommends Astra, 6.1 Sol and 6 Luna and still lists 6 Sol and the 5.6 family. The latest stable CLI is 0.162.0 (2026-10-08); its release notes add no models (the catalog is server-side). Nothing else to add or remove.
+- Claude: code.claude.com/docs/en/model-config lists Haiku 5.5 (`claude-haiku-5-5`, low..max, needs Claude Code 2.1.293; installed 2.1.295), and the `haiku` alias moved to it in 2.1.293. Fable 5 (`claude-fable-5`) stays out, as before: saved Fable 5 selections are auto-moved to the `fable` alias since 2.1.257. Older 4.x models stay out.
+- Change: `src/engine/model-policy.ts` adds `gpt-6.1-sol` (GPT-6.1 Sol, low..ultra) and `claude-haiku-5-5` (Claude Haiku 5.5, low..max). Codex now offers 7 models and Claude 6. Defaults are unchanged (`gpt-5.6-sol`/medium, `claude-fable-5-1`/high); switching the default to 6.1 Sol was not requested.
+- `tests/unit/model-settings.test.ts`, `README.md` and `docs/code-analysis.md` updated.
+- Live call with the production runner flags (built `dist` runners, 1-sentence sample, effort low): `gpt-6.1-sol` OK in 14,320 ms; `claude-haiku-5-5` OK in 7,199 ms. Both returned valid schema JSON.
+- Tests: build exit 0; vitest 739 passed / 9 skipped.
+
 ## 2026-10-08 — Fifth strength "매우 강하게(다시쓰기)" (rewrite) built and verified on a branch
 
 **Request (user):** "크게 다시 쓰기도 원하는데 … '매우 강하게(다시쓰기)' 옵션을 추가하자, 대신 말투나 어투는 전체흐름과 맞아야함". The user then chose a fifth option, not a replacement of 매우 강하게, with 말투 following each paragraph's dominant level, and asked: "다시쓰기 작업 끝나면 검증하고 보고해".

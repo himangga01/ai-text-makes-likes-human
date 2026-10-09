@@ -153,7 +153,7 @@ TXT·MD·DOCX·PPTX는 파일 경로를 지정해 요청합니다. 예를 들어
 - **GPT** (기본): 기본값은 `gpt-5.6-sol`, reasoning effort `medium`이며 연결 설정에서 모델과 추론 수준을 선택할 수 있습니다.
 - **Claude**: 기본값은 `claude-fable-5-1`, effort `high`이며 연결 설정에서 변경할 수 있습니다. 서버 PC에 Claude CLI 설치와 로그인이 필요합니다.
 
-추가 지원 모델: GPT-6 Sol (`gpt-6-sol`, `low`~`ultra`), GPT-6 Luna (`gpt-6-luna`, `low`~`max`), Claude Opus 5.5 (`claude-opus-5-5`, `low`~`max`), Claude Sonnet 5.5 (`claude-sonnet-5-5`, `low`~`max`). 웹·데스크톱 앱의 연결 설정에서 선택할 수 있습니다. Claude Opus 5.5는 Claude Code 2.1.280 이상, Claude Sonnet 5.5는 2.1.284 이상이 필요하며, 실제 모델 이용 가능 여부는 로그인한 계정의 권한에 따릅니다. GPT-5.2는 ChatGPT 계정으로 로그인한 Codex에서 더 이상 지원되지 않고, GPT-5.5는 2026년 10월 14일 지원 종료 예정이라 목록에서 제외했습니다. 모델 정보는 [OpenAI 공식 문서](https://learn.chatgpt.com/docs/models)와 [Claude Code 공식 문서](https://code.claude.com/docs/en/model-config)를 참고하세요.
+추가 지원 모델: GPT-6.1 Sol (`gpt-6.1-sol`, `low`~`ultra`), GPT-6 Sol (`gpt-6-sol`, `low`~`ultra`), GPT-6 Luna (`gpt-6-luna`, `low`~`max`), Claude Opus 5.5 (`claude-opus-5-5`, `low`~`max`), Claude Sonnet 5.5 (`claude-sonnet-5-5`, `low`~`max`), Claude Haiku 5.5 (`claude-haiku-5-5`, `low`~`max`). 웹·데스크톱 앱의 연결 설정에서 선택할 수 있습니다. Claude Opus 5.5는 Claude Code 2.1.280 이상, Claude Sonnet 5.5는 2.1.284 이상, Claude Haiku 5.5는 2.1.293 이상이 필요하며, 실제 모델 이용 가능 여부는 로그인한 계정의 권한에 따릅니다. GPT-5.2는 ChatGPT 계정으로 로그인한 Codex에서 더 이상 지원되지 않고, GPT-5.5는 2026년 10월 14일 지원 종료 예정이라 목록에서 제외했습니다. 모델 정보는 [OpenAI 공식 문서](https://learn.chatgpt.com/docs/models)와 [Claude Code 공식 문서](https://code.claude.com/docs/en/model-config)를 참고하세요.
 
 Codex 로그인 확인:
 
