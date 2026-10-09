@@ -1,6 +1,6 @@
 {
   "schema": "sejong-plan/1",
-  "engine": {"id": "super-sejong", "version": "2.0.0"},
+  "engine": {"id": "super-sejong", "version": "2.1.0"},
   "chunk": {"index": 1, "total": 1, "sourceSha256": "9f1adff68f4f4032c859250fa25c21d09247f370eb4e86a7fbd1bab2c3628a2d", "chars": 34},
   "options": {"inputKind": "text-file", "strength": "normal", "genre": "general",
               "fixColloquial": false, "deterministicFix": "all", "openReview": false, "allowFullText": false},

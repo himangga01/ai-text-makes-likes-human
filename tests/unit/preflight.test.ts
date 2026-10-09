@@ -246,7 +246,7 @@ describe("engineVersionPath and the repository's own version files", () => {
     });
     expect(await runPreflight(config, readyRunner(), v2Text, v2Env)).toMatchObject({
       ready: true,
-      humanizeVersion: "2.0.0",
+      humanizeVersion: "2.1.0",
       engineId: "super-sejong"
     });
   });

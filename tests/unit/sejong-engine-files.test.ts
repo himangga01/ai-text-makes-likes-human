@@ -46,9 +46,9 @@ const sourceFiles = (directory: string) => listFiles(directory);
 describe("Super Sejong runtime files", () => {
   // Bump together with a deliberate engine release: the version is recorded in every plan and in job state.
   it("pins ENGINE_VERSION: engine id, version and contract schema", async () => {
-    expect(text("engine_runtime", "sejong", "ENGINE_VERSION")).toBe("id=super-sejong\nversion=2.0.0\nschema=1\n");
-    expect(await readEngineVersion(engineRoot)).toEqual({ id: "super-sejong", version: "2.0.0", schema: 1 });
-    expect(await readSejongEngineVersion(root)).toEqual({ id: "super-sejong", version: "2.0.0", schema: 1 });
+    expect(text("engine_runtime", "sejong", "ENGINE_VERSION")).toBe("id=super-sejong\nversion=2.1.0\nschema=1\n");
+    expect(await readEngineVersion(engineRoot)).toEqual({ id: "super-sejong", version: "2.1.0", schema: 1 });
+    expect(await readSejongEngineVersion(root)).toEqual({ id: "super-sejong", version: "2.1.0", schema: 1 });
   });
 
   it("keeps the version file in step with the TypeScript contract schema", async () => {

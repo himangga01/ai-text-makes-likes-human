@@ -9,7 +9,7 @@ This repository ships two agent skills. Both run inside an existing Claude Code 
 
 Use `humanize-kr` for everyday rewriting. Use `update-humanize-engine` only for engine maintenance. It never rewrites user text.
 
-Source reviewed on October 2, 2026: `d9df30e`, application `0.4.0`, engine pinned to fork commit `9747f03` (Humanize label 2.3.2). Direct text supports rewrite strength and standalone HTML comparison; later source updates also strengthened preservation and recovery. An existing ZIP or installed skill may contain an earlier bridge/Gateway despite the same version label. This documentation update did not rebuild packages or inspect installed skills. See [Code Analysis](code-analysis.md) and [Service Analysis](service-analysis.md).
+Source reviewed on October 9, 2026: application `0.4.0`, default engine pinned to fork commit `9747f03` (Humanize label 2.3.2), Super Sejong v2 `2.1.0` bundled (opt-in with `SUPER_SEJONG_ENGINE=v2`). Direct text supports five rewrite strengths, including `rewrite` (매우 강하게(다시쓰기)), and standalone HTML comparison. The skill rewrites with the host session's own model; the portal's model defaults do not apply to it. An existing ZIP or installed skill may contain an earlier bridge/Gateway despite the same version label. This update did not rebuild the Windows skill ZIPs. See [Code Analysis](code-analysis.md) and [Service Analysis](service-analysis.md).
 
 ---
 
