@@ -14,7 +14,7 @@
 **Verification**
 - Build exit 0; vitest 739 passed / 9 skipped (product venv as `PYTHON_COMMAND`); Playwright e2e on side port 7899 (`E2E_PORT=7899`, `PYTHON_COMMAND` set) 54 passed / 9 skipped. The first e2e attempt timed out because the side server's health was 503 ("Python 3.11 이상이 필요합니다") without `PYTHON_COMMAND`; the next run caught the stale static `<option>`s in `index.html`, fixed above.
 - Live calls with the production runner flags and the legacy prompt, 527-char three-paragraph synthetic sample: `gpt-6.1-sol` xhigh OK in 191,705 ms; `claude-opus-5-5` xhigh OK in 54,074 ms.
-- Latency risk, not yet resolved: recent real codex jobs are one ~2,700-char chunk taking 55–84 s at `gpt-5.6-sol`/medium with 2 calls. GPT-6.1 Sol at xhigh took 192 s for 527 chars, so a full chunk may approach the 10-minute `chunkTimeoutMs`.
+- Latency: recent real codex jobs are one ~2,700-char chunk taking 55–84 s at `gpt-5.6-sol`/medium with 2 calls. After the deploy (restart PID 10842, `SUPER_SEJONG_V2_SHADOW=1` confirmed, `/api/health` serves the new `modelDefaults`), one call on a 2,332-char five-paragraph synthetic sample took **278,401 ms for `gpt-6.1-sol` xhigh** and **58,204 ms for `claude-opus-5-5` xhigh**, both OK. The per-call limit (`chunkTimeoutMs` 10 min) holds with about 2× margin, but a two-call Codex job of that size now takes roughly 8–10 minutes instead of about 1. Not changed: the timeout and the effort (the user chose xhigh).
 
 ## 2026-10-09 — Rewrite strength merged and deployed; GPT-6.1 Sol and Claude Haiku 5.5 added
 
