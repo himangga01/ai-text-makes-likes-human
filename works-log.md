@@ -1,5 +1,58 @@
 # Works Log
 
+## 2026-10-08 — Fifth strength "매우 강하게(다시쓰기)" (rewrite) built and verified on a branch
+
+**Request (user):** "크게 다시 쓰기도 원하는데 … '매우 강하게(다시쓰기)' 옵션을 추가하자, 대신 말투나 어투는 전체흐름과 맞아야함". The user then chose a fifth option, not a replacement of 매우 강하게, with 말투 following each paragraph's dominant level, and asked: "다시쓰기 작업 끝나면 검증하고 보고해".
+
+**Branch:** `sejong/wp19` (from main `328fca1`), commit `7ba99cb`. Local only: not merged, not pushed.
+
+**What it does (WP-19 agent, Opus)**
+- New strength `rewrite`, labelled "매우 강하게(다시쓰기)", in every place that enumerates strengths: UI, server options, skill bridge, Python plan and CLI, schemas, docs.
+- v2 behaviour:
+  - The writer rewrites the chunk paragraph by paragraph.
+  - Python decides each paragraph: accept, one retry naming its violations, or revert to base(x).
+  - Voice: each output sentence must use the paragraph's dominant source level; question and request counts are kept; -시-, humble forms, persona and CMC are checked by presence per paragraph.
+  - Floor, meaning, CTA and norms stay strict.
+  - `flow_transition_added`/`sentence_added` and `clarity_longer_sentence` are not enforced. The runaway guard is replaced by a per-paragraph length ratio of 0.5–1.8.
+- Legacy runs `rewrite` exactly as very-strong. So until v2 is switched on, the new option rewrites no more than 매우 강하게.
+- Agent-reported numbers:
+  - Constructed pairs: 4/96 good paragraphs falsely blocked; the held-out set had 0/27. 41/42 damaged paragraphs caught.
+  - Seed rewrite mode: invariants clean on 212/212 records; gold 91/92.
+  - The four existing strengths are byte-identical to main: 848 plan/check outcomes, 1,260 legacy prompts, 688 v2 prompts, 1,353 parser results.
+
+**Lead verification**
+- Own trials (`$SP/r5/wp19-lead/lead_rewrite.py`, a 3-paragraph text: 해요체 / 합쇼체 / 해체 with ㅋㅋ):
+  - The first run falsely blocked a good rewrite on two counts.
+    - P3 `voice_discourse_dropped`: the lead's own rewrite had changed 진짜 to 정말, which the colloquial rule correctly blocks.
+    - P1 `voice_mood`: a real voice.py bug. "5시에 끝나요." was classified as a question because of the -나요 ending.
+  - After the fix, 9/9 behave as expected:
+    - a good rewrite and a sentence split are accepted;
+    - each damage is flagged only in its paragraph: number, 합쇼→해요 drift, deadline drop, -시- loss (caught as `cta_dropped`), ㅋㅋ/~ drop, 반말→존댓말, weekday change;
+    - merged paragraphs make the reply unusable.
+  - At attempt 2, a still-drifted P2 reverts alone while P1 and P3 keep their rewrite.
+- Fixes in voice.py:
+  - 나요/가요 followed by a period count as a statement only for verbs whose stem ends in 나 or 가 (끝나요, 만나요, 일어나요, 가요). 하나요 and 있나요 stay questions.
+  - The first, broader version broke `test_voice_violations_are_rejected` (그 뒤에 연락하나요.) and was narrowed.
+  - "…중 하나이다." is now 해라체; archaic -나이다 only counts with 옵/사오 (비옵나이다). This is the agent's reported bug.
+  - Regression tests were added.
+- Final suites on `7ba99cb`:
+  - tsc clean.
+  - vitest: 739 passed / 9 skipped.
+  - skills: 709 OK / 5 skipped with the switch unset and with v2.
+  - documents: 93 OK in both engines.
+  - Seed: gold 91/92 (SSB-186 unfixed); invariants clean on 212 records.
+  - Lead probe: 32/32 and 36/36. Fluency set: 2/40.
+
+**Open / for the user**
+- Deviations the agent chose (to review):
+  - In a paragraph, a sentence that keeps one of the paragraph's own source endings may stay off the dominant level.
+  - 해체 and 해라체 count as one level inside a casual paragraph.
+  - -시- is checked by presence only, so 궁금하신 → 궁금한 passes if another -시- remains in the paragraph.
+  - Line count per paragraph must match the source.
+  - A paragraph over 2,200 chars is reverted without a retry.
+- Not run: Playwright e2e and desktop, `verify-skill-packages.mjs`, the Windows .ps1 fixture, and real-model rewrite runs.
+- `ENGINE_VERSION` was not bumped.
+
 ## 2026-10-08 (later) — v2 shadow recording, first real jobs: 6 shadow jobs, 5 real
 
 **Correction:** the scheduled review below was right at 10:07, but the portal ran 5 real direct-text jobs around 13:34. The user asked "기록 모드 데이터 왜 아직도 1건이야? 진짜 1건임?", and the report was rerun at 20:14. There are now 196 `transform_complete` events, 6 of them with `v2ShadowCounts`, and every shadow job recorded successfully.
