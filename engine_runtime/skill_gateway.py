@@ -571,9 +571,12 @@ def drop_not_in_retry(job: Path, chunk: dict, response: dict) -> dict:
     request_sentence = {request.id: request.sentence for request in plan.requests}
     sentences = {sentence.id for sentence in plan.sentences}
     requested = set(request_sentence.values())
+    paragraphs = {paragraph.id for paragraph in plan.paragraphs or ()}      # rewrite mode: P ids (WP-19)
 
     def kept(item) -> bool:
         rid = item.get("id") if isinstance(item, dict) else None
+        if isinstance(rid, str) and rid in paragraphs:
+            return rid in listed
         if not isinstance(rid, str) or rid in listed or not (rid in request_sentence or rid in sentences):
             return True
         sentence = request_sentence.get(rid, rid)
@@ -628,7 +631,8 @@ def accept_v2(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: in
         state["baseHash"] = digest(decided_file(job, chunk))
         state["attempt"] = 2
         action = "retry"
-        state["warnings"].append(f"CHUNK_RETRY: {chunk_id}번 구간에서 검증에 걸린 문장 {len(report.retry)}개만 보수적으로 다시 다듬어 주세요.")
+        unit = "문단" if report.retry and report.retry[0].id.startswith("P") else "문장"     # rewrite mode retries paragraphs
+        state["warnings"].append(f"CHUNK_RETRY: {chunk_id}번 구간에서 검증에 걸린 {unit} {len(report.retry)}개만 보수적으로 다시 다듬어 주세요.")
     else:
         # The decided text holds the source plus the edits that passed (a sentence that failed is back to its
         # source text plus the deterministic fixes). A rollback delivers base(x), the source plus the deterministic
@@ -666,7 +670,9 @@ def reassemble_v2(job: Path, state: dict, manifest: dict) -> Path:
     report = sj.cli.finalize(job, "final.md", "assembly.json", flags=flags)
     source, result = safe_leaf(job, manifest["source_file"]), job / "final.md"
     rolled = bool(report["sejong"]["documentRolledBack"])
-    gate = sj.verify.verify_document(source, result, attempt=2, flags=flags, genre=state["genre"])
+    # A rewrite job (strength rewrite, WP-19) is gated with the paragraph rules its chunks were decided by.
+    mode = "rewrite" if (state.get("rewriteOptions") or {}).get("strength") == "rewrite" else "edit"
+    gate = sj.verify.verify_document(source, result, attempt=2, flags=flags, genre=state["genre"], mode=mode)
     code = gate["gate"]["exit_code"]
     if code == 3:
         state["status"] = "failed"

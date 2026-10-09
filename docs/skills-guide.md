@@ -110,6 +110,7 @@ Requests can be written in Korean or English. For Codex, replace the prefix with
 | Medium | `medium` | Tidies vocabulary and long-winded expressions. |
 | Strong | `strong` | Actively changes sentence structure and repetition. |
 | Very strong | `very-strong` | Keeps the meaning while substantially reworking wording and sentence composition. |
+| Very strong (rewrite) | `rewrite` | Rewrites the most broadly. The default engine runs it exactly as `very-strong`; under Super Sejong v2 each paragraph is rewritten freely (sentences merged, split or reordered inside it) with every sentence in the paragraph's dominant speech level, while numbers, quotations, names, meaning and calls to action stay. Added 2026-10-08 (WP-19). |
 
 - If no strength is given, `normal` is used. The strength is fixed for the life of a job.
 - Strength is **not a guarantee** of how much text changes. Protected sentences (numbers, conditions, quotations) stay verbatim.

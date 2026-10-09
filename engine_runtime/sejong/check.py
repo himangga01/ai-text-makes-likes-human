@@ -26,6 +26,9 @@ Steps (each sentence is decided on its own; nothing ever fails the whole chunk f
                 source itself, which always passes
   6. report     the check report of DESIGN 3.12 (types.CheckReport), codes and counts only
 
+A rewrite plan (strength rewrite, options.mode "rewrite") is decided per paragraph by rewrite.check instead, with the
+same arguments and the same CheckOutcome.
+
 Request status (plan requests only): DECLINED = no replacement was supplied (in this attempt, or for
 attempt 2 in attempt 1 either); UNTOUCHED = the supplied text equals base(s); FIXED = the decided
 sentence differs from base(s) and every rule of the request passes its success check
@@ -153,6 +156,10 @@ def check(plan: Plan, source: str, *, response: Optional[object] = None, candida
           attempt: int = 1, base: Optional[str] = None, document: Optional[str] = None,
           flags: Optional[C.Flags] = None) -> CheckOutcome:
     """Apply, repair, verify and decide one attempt (module docstring)."""
+    if plan.options.mode == "rewrite":               # strength rewrite: decided per paragraph (WP-19)
+        from . import rewrite as RW
+        return RW.check(plan, source, response=response, candidate=candidate, attempt=attempt, base=base,
+                        document=document, flags=flags)
     if response is not None and candidate is not None:
         raise ValueError("pass at most one of response and candidate")
     if attempt not in (1, 2):

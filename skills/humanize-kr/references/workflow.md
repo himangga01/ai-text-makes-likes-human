@@ -28,6 +28,7 @@
 | medium · 중간 | 어휘와 길어진 표현을 더 자연스럽게 정리합니다. |
 | strong · 강하게 | 문장 구조와 반복 표현까지 적극적으로 바꿉니다. |
 | very-strong · 매우 강하게 | 뜻은 유지하고 글 전반의 표현과 문장 구성을 크게 바꿉니다. |
+| rewrite · 매우 강하게(다시쓰기) | 뜻은 유지하고 글 전체를 가장 크게 다시 씁니다. 기본 엔진에서는 very-strong과 같이 처리합니다. |
 
 강도는 변경량 보장이 아니다. 보호 문장과 검증 결과에 따라 원문을 유지하며, 최대 한 번의 보수적 재시도 뒤에도 보존을 확인하지 못하면 원문으로 되돌린다. Gateway의 경고에는 원문이나 후보를 붙이지 않는다.
 
@@ -44,4 +45,5 @@
 
 - Gateway가 고칠 곳이 없다고 본 구간은 호스트에게 묻지 않고 통과시킨다(결정적 맞춤법 교정만 반영). prepare나 accept의 결과가 곧바로 `ready-to-finalize`일 수 있으며, warnings의 `SEJONG_NO_EDIT_NEEDED`가 그 구간을 알려 준다. 모든 구간이 이렇게 끝나는 job은 Node 없이 끝난다.
 - accept의 `decision`은 같은 어휘(accept·retry·rollback·accept-with-warning)다. 한 구간의 재시도는 최대 한 번이며 검증을 통과한 문장의 수정은 유지된다. 통과하지 못한 문장은 원문(결정적 맞춤법 교정만 반영)으로 돌아간다.
+- 강도 rewrite(매우 강하게(다시쓰기))이면 프롬프트가 구간 전체를 문단별로 다시 쓰라고 요청한다. attempt 1의 답은 `rewrittenText`에 다시 쓴 구간 전체(원문과 같은 수의 문단)를 담고 `replacements`는 빈 배열이다. attempt 2에는 검증에 걸린 문단만 문단 ID(P…)로 `replacements`에 하나씩 담는다(text는 그 문단 전체). 문단마다 따로 판정되며, 두 번째에도 통과하지 못한 문단만 원문으로 돌아간다.
 - warnings에는 코드와 개수만 담긴다(`SEJONG_SENTENCES_REVERTED`, `CHUNK_RETRY`, `CHUNK_ROLLED_BACK`, `MODEL_OUTPUT_UNUSABLE`, `DOCUMENT_REVIEW_RECOMMENDED`, `DIRECT_TEXT_DOCUMENT_ROLLED_BACK`). 원문이나 후보 문장은 붙지 않는다.

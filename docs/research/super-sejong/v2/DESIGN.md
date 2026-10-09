@@ -186,8 +186,9 @@ Detectors run on the sentence text with `freeze` spans masked. A rule's guide li
 | medium (owner's route) | FIX + SUGGEST | open review, as strong (lead decision 2026-10-04, 9.2 item 2): medium makes one call per chunk even when no rule fires, because the owner's drafts are AI-written and their awkwardness is mostly outside the mechanical rule set |
 | strong | FIX + SUGGEST | open review: the model may nominate up to `max(3, ceil(0.1·n))` further sentences, each with a reason from the closed taxonomy (NIKL 25 types [T9 D3]) |
 | very-strong | as strong | `allowSplit` on open-review sentences; full-text fallback allowed |
+| rewrite (매우 강하게(다시쓰기), WP-19, owner decision 2026-10-08) | FIX + SUGGEST as context only | no open review; the writer rewrites the whole chunk paragraph by paragraph and every paragraph is decided on its own (3.13) |
 
-All strengths go through the same per-sentence verification; strength never relaxes voice, meaning, CTA or flow guards [R; T1 §4 P0 notes the old strength–gate clash].
+The four edit strengths go through the same per-sentence verification; strength never relaxes voice, meaning, CTA or flow guards [R; T1 §4 P0 notes the old strength–gate clash].
 
 4. `needsModel = requests non-empty or openReview.enabled`. **If false, no model call is made**; the candidate is the source plus deterministic fixes [T7 §10.2, G6].
 
@@ -297,6 +298,10 @@ After reassembly, `verify --document` runs the floor on the whole text (footnote
 - A sentence can only change through a request or a deterministic fix. Deterministic fixes are idempotent (`fix(fix(x)) = fix(x)`, tested). On a second pass, FIX rules no longer fire on fixed sentences, so only declined SUGGEST requests can re-trigger a call, and they change nothing when declined again.
 - Unrequested edits are reverted by construction (`collateral_edit`).
 - Evidence on the owner's genre: re-processing the 28 posts gives 0 voice flags [T2 §6]; `compare(x, x)` = 0 CTA findings on 3,909 corpus docs + 20 posts + 10 drafts [T6 §0.6]; 0 of 107 draft CTA sentences carry a wording defect [T6]; the norm layer has nothing to fix on the blog [T3, T9]. Baseline to beat: the text-file route changed 17/20 already-processed posts again [T7 §3.5].
+
+### 3.13 Strength rewrite (WP-19)
+
+Owner decision 2026-10-08: a fifth strength for broad rewriting, the four others unchanged. Plan: `options.mode = "rewrite"`, `allowFullText`, no open review, and `plan.paragraphs` (one entry per blank-line paragraph with its voice rule). Prompt: a rewrite contract (rewrite each paragraph freely, keep paragraph count and order, every protected item, the meaning and the CTAs), one voice line per paragraph, the requests as hints; attempt 1 answers with `rewrittenText`, the retry names the failed paragraphs and takes them back as `replacements` with paragraph ids `P…`. Verify and decide per paragraph pair (`engine_runtime/sejong/rewrite.py`): floor, CTA and norms unchanged but read per paragraph; meaning on the paragraph and on its aligned sentence groups (word drops on the paragraph only); voice by the paragraph rule (each output finite sentence at the paragraph's dominant source level, or ending as one of the paragraph's own source sentences; question/request/proposal counts; -시-, humble, persona, address and keep tokens by presence per paragraph); flow without `flow_transition_added`/`flow_sentence_added`, contrast counted per paragraph, order only across paragraphs; no change-rate runaway but a paragraph length ratio of [0.5, 1.8]. A failing paragraph is retried once and then goes back to base(x); the chunk is never reverted for one paragraph. The document gate and finalize use the same paragraph rules (`verify --mode rewrite`). The legacy engine runs `rewrite` exactly as very-strong.
 
 ### 3.12 JSON shapes
 

@@ -241,6 +241,21 @@ class PairSetTests(unittest.TestCase):
                 self.assertIn(v.code, G.HARD_CODES + G.SOFT_CODES)
 
 
+class ClassifierRegressionTests(unittest.TestCase):
+    """Lead check of WP-19 (2026-10-08)."""
+
+    def test_stem_final_na_ga_with_a_period_state(self):
+        for sentence, mood in [("토요일 오후 3시에 시작해서 5시에 끝나요.", "DECL"), ("내일 학교에 가요.", "DECL"),
+                               ("주말에 친구를 만나요.", "DECL"), ("아침 일찍 일어나요.", "DECL"), ("몇 시에 끝나요?", "INTERR"),
+                               ("언제 가나요?", "INTERR"), ("그 뒤에 연락하나요.", "INTERR"), ("여기 있나요.", "INTERR")]:
+            with self.subTest(sentence=sentence):
+                self.assertEqual(V.features(sentence).sig.mood, mood)
+
+    def test_hana_ida_is_haera(self):
+        self.assertEqual(V.features("이곳은 서울에서 가장 오래된 서점 중 하나이다.").sig.level, "HAERA")
+        self.assertEqual(V.features("간절히 비옵나이다.").sig.level, "HAPSYO")
+
+
 class OwnerDecisionTests(unittest.TestCase):
     def test_od4_honorific_changes_are_hard(self):
         cases = [

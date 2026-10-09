@@ -16,6 +16,10 @@
  *                          whole document back to the source: DIRECT_TEXT_DOCUMENT_ROLLED_BACK)
  *   final verify gate      legacy gate JSON on the whole document; exit 3 fails the job (VALIDATION_FAILED)
  *
+ * Strength rewrite (매우 강하게(다시쓰기), WP-19): the plan is in rewrite mode, the prompt asks for the whole chunk
+ * rewritten paragraph by paragraph, the retry names the failed paragraphs (P…), Python decides every paragraph, and the
+ * final gate runs with `verify --mode rewrite`. Messages then speak of 문단.
+ *
  * Python decides every sentence; this class never edits text itself. A reply this side cannot use is still
  * handed to the check step (as an object that fails the response schema) so Python's decision table, not a
  * second one here, decides what an unusable reply costs. The engine version is read when the job starts and
@@ -145,6 +149,12 @@ export function rollbackReason(hardFailures: readonly string[]): string {
   return '내용 보존을 확인하지 못해';
 }
 
+/** Paragraphs (P…) with a reverted or rejected sentence: a rewrite plan decides whole paragraphs. */
+function revertedParagraphs(report: CheckReport): number {
+  return new Set(report.sentences.filter(sentence => (sentence.status === 'reverted' || sentence.status === 'rejected') &&
+    sentence.request?.startsWith('P')).map(sentence => sentence.request)).size;
+}
+
 function revertedMessage(report: CheckReport): string {
   const families = Object.entries(report.counts.revertedByFamily)
     .filter(([, count]) => (count ?? 0) > 0)
@@ -272,6 +282,7 @@ export class SejongEngine {
 
     let report: CheckReport;
     let sentenceRetries = 0, nominations = 0;
+    const rewrite = plan.options.mode === 'rewrite';
     let decided = workspace.path(`decided-${index}-attempt-1.txt`);
     if (!plan.needsModel) {
       // No request and no open review: nothing for a writer to do (DESIGN 3.4 step 4, G6).
@@ -290,7 +301,9 @@ export class SejongEngine {
       if (report.policy === 'retry') {
         retries += 1;
         sentenceRetries = report.retry.length;
-        record({ code: 'CHUNK_RETRY', message: `${index}번 구간에서 검증에 걸린 문장만 한 번 더 다듬습니다.` });
+        record({ code: 'CHUNK_RETRY', message: rewrite
+          ? `${index}번 구간에서 검증에 걸린 문단만 한 번 더 다시 씁니다.`
+          : `${index}번 구간에서 검증에 걸린 문장만 한 번 더 다듬습니다.` });
         this.ensureActive(context.signal);
         const base = decided;
         // An unusable reply on a plan without requests leaves nothing to retry; attempt 2 then only settles
@@ -318,9 +331,12 @@ export class SejongEngine {
         record({ code: 'CHUNK_WARNING_ACCEPTED', message: `${index}번 구간에 검토 권고가 있습니다.` });
       }
       if (report.counts.revertedSentences > 0) {
+        const paragraphs = rewrite ? revertedParagraphs(report) : 0;
         record({
           code: 'SEJONG_SENTENCES_REVERTED',
-          message: `${index}번 구간에서 검증을 통과하지 못한 문장 ${report.counts.revertedSentences}개를 원래 문장으로 되돌렸습니다${revertedMessage(report)}.`
+          message: paragraphs > 0
+            ? `${index}번 구간에서 검증을 통과하지 못한 문단 ${paragraphs}개를 원래 문단으로 되돌렸습니다${revertedMessage(report)}.`
+            : `${index}번 구간에서 검증을 통과하지 못한 문장 ${report.counts.revertedSentences}개를 원래 문장으로 되돌렸습니다${revertedMessage(report)}.`
         });
       }
     }
@@ -448,13 +464,19 @@ export class SejongEngine {
     // repair) and every sentence was already verified against its source with that context. Only the floor
     // decides here: a floor code that survived finalize puts the source back; anything else is a review hint.
     const gateStartedAt = this.now();
-    let fullGate: GateResult = await this.python.verifyDocument(sourcePath, finalPath, request.signal);
+    // A rewritten document is gated with the paragraph rules it was decided by (the edit gate would flag every
+    // normalised speech level and the change rate itself).
+    const gateMode = rewriteOptions.strength === 'rewrite' ? 'rewrite' as const : undefined;
+    const verifyDocument = (): Promise<GateResult> => gateMode
+      ? this.python.verifyDocument(sourcePath, finalPath, request.signal, 1, undefined, gateMode)
+      : this.python.verifyDocument(sourcePath, finalPath, request.signal);
+    let fullGate: GateResult = await verifyDocument();
     if (fullGate.status === 'error') throw new EngineError('VALIDATION_FAILED', false, 'Full-document validation failed');
     const gates = [fullGate];
     if (fullGate.status === 'abort' && (fullGate.hardFailures ?? []).some(code => FLOOR_CODES.has(code))) {
       await writeFile(finalPath, source, 'utf8');
       if (!fullSourceRollbacks) documentRollback();
-      fullGate = await this.python.verifyDocument(sourcePath, finalPath, request.signal);
+      fullGate = await verifyDocument();
       if (fullGate.status === 'error' || fullGate.status === 'abort') {
         throw new EngineError('VALIDATION_FAILED', false, 'Full-document validation failed');
       }

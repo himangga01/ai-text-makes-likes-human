@@ -7,7 +7,8 @@
  */
 import { createHash } from 'node:crypto';
 import {
-  isSejongCode, type Plan, type PlanRequest, type PlanSentence, type ProtectedSpan, type RetryRequest, type SejongViolation
+  isSejongCode, type Plan, type PlanParagraph, type PlanRequest, type PlanSentence, type ProtectedSpan, type RetryRequest,
+  type SejongViolation
 } from './types.js';
 
 /** The fixed minimal-edit contract of DESIGN 3.5, verbatim. Kept at or below 2,500 characters. */
@@ -247,7 +248,9 @@ const VIOLATION_KO: Record<string, string> = {
   replacement_length_ratio: '결과 길이가 원문 문장과 너무 다르다', model_output_unusable: '답의 형식을 쓸 수 없었다',
   replacement_split: '나누지 말아야 할 문장이 나뉘었다', replacement_boundary: '문장 끝이 사라져 다음 문장과 이어졌다',
   replacement_merge: '다른 문장과 합쳐졌다', replacement_frozen_unit: '고칠 수 없는 문장(제목 등)을 골랐다',
-  open_review_limit: '열린 검토로 고를 수 있는 문장 수를 넘었다', unstable_decision: '고친 결과가 검증에서 안정되지 않았다'
+  open_review_limit: '열린 검토로 고를 수 있는 문장 수를 넘었다', unstable_decision: '고친 결과가 검증에서 안정되지 않았다',
+  paragraph_length_ratio: '문단 길이가 원문과 너무 다르다', paragraph_split: '문단 안에 빈 줄이 들어가 문단이 나뉘었다',
+  paragraph_lines_changed: '문단 안의 줄 수가 원문과 다르다'
 };
 
 /** One violation in Korean, e.g. `말투가 합쇼체에서 해요체로 바뀌었다(voice_level). 종결 「없습니다.」 형태를 유지하라.`
@@ -303,6 +306,7 @@ function guardNonce(nonce: string, texts: Iterable<string>): void {
 /** The writer prompt for one chunk. Attempt 1 renders the plan's requests and, when the plan enables
  * it, the open review; attempt 2 renders only the failed requests of `retry` with their violations. */
 export function buildSejongPrompt(input: SejongPromptInput): string {
+  if (input.plan.options.mode === 'rewrite') return buildRewritePrompt(input);
   const { plan, source, nonce, attempt } = input;
   if (attempt === 2 ? !input.retry?.length : input.retry !== undefined) {
     throw new Error('A retry list is required on attempt 2 and only there');
@@ -376,5 +380,147 @@ ${block('SENTENCES', nonce, jsonLines(candidates.map(({ id, text }) => ({ id, te
   }
   sections.push(outputSection(review, attempt === 1 && plan.options.allowFullText, attempt === 2));
   sections.push(`[원문] 이 구간 전체. 읽기 전용이며 출력하지 않는다.\n${block('SOURCE', nonce, source)}`);
+  return sections.join('\n\n');
+}
+
+/* ---------- strength rewrite (매우 강하게(다시쓰기), WP-19) ---------- */
+
+/** The fixed rewrite contract: the writer rewrites the chunk paragraph by paragraph; every protected item, the meaning,
+ * the CTAs and each paragraph's voice stay (engine_runtime/sejong/rewrite.py checks exactly these). */
+export const SEJONG_REWRITE_CONTRACT = `너는 한국어 글을 자연스럽게 다시 쓰는 편집자다. 아래 [원문] 구간 전체를 문단별로 다시 쓴다.
+- 문단은 빈 줄로 나뉜다. 문단 수와 순서를 그대로 두고 문단 사이는 빈 줄 하나로 구분한다. 문단을 합치거나 나누거나 옮기지 않는다. 문단 안의 줄 수(목록 항목 등)도 원문과 같게 둔다.
+- 한 문단 안에서는 크게 다시 쓴다. 문장을 합치거나 나누고, 절과 문장의 순서를 바꾸고, 어휘와 구조를 바꿔 흐름이 자연스러운 한국어로 만든다.
+- 뜻은 바꾸지 않는다. 사실·수치·이름·부정·가능·의무·추측·조건·시간 순서·행위 주체와 대상·핵심 낱말을 지킨다. 원문에 없는 사실·예시·주장·인사·요약을 더하지 않고 있는 내용을 빼지 않는다.
+- 말투는 [문단 말투]에 적힌 문단별 말투로 끝낸다. 한 문단 안의 문장은 모두 그 말투로 맞춘다. 문단마다 말투가 다르면 다른 그대로 둔다.
+- 질문·요청·청유 문장의 수는 문단마다 원문과 같게 둔다. 문단에 있던 '-시-' 높임, 드리다 같은 겸양, 고객님 같은 높임 호칭, 저·저희 같은 화자 표현, ㅋㅋ·^^·~·할께 같은 표기, 사실·뭐·진짜 같은 담화 표지를 그 문단 안에 남긴다.
+- 행동 요청(CTA)은 행동·대상·조건·기한·채널·세기를 그대로 둔다. 말투를 맞출 때도 요청의 세기를 지킨다(예: '신청하세요'→'신청하십시오'). 새 CTA를 만들지 않는다.
+- [보호] 구간(따옴표 인용, 숫자, 날짜, 요일, 링크, 영문 이름, 제목 줄, 각주, 표기)은 한 글자도 바꾸지 않는다. '그대로 둠'으로 표시된 문단은 원문 그대로 둔다.
+- 문단 길이는 원문의 절반보다 짧게 줄이거나 1.8배보다 길게 늘리지 않는다.`;
+
+const PERSONA_KO: Record<string, string> = { first_humble: '저·제·저희', first_plain: '나·내', first_we: '우리' };
+const REQUEST_CLASS_KO: Record<string, string> = { questions: '질문', requests: '요청', proposals: '청유' };
+const REWRITE_SCHEMA_TEXT = RESPONSE_SCHEMA_TEXT.replace('"^(R|S)[0-9]{1,4}$"', '"^(R|S|P)[0-9]{1,4}$"');
+const HEAD_LIMIT = 16;
+
+/** One [문단 말투] line: `P2 「첫머리…」 해요체, -시- 있음, 질문 1, keep:[ㅋㅋ], 보호:[4,500원]`. */
+export function paragraphSheetLine(paragraph: PlanParagraph, head: string, keep: string[] = [], frozen: string[] = []): string {
+  const points = Array.from(head.trim().replace(/\s+/gu, ' '));
+  const shown = `「${points.slice(0, HEAD_LIMIT).join('')}${points.length > HEAD_LIMIT ? '…' : ''}」`;
+  if (!paragraph.editable) return `${paragraph.id} ${shown} 그대로 둠`;
+  const parts = [LEVEL[paragraph.level] ?? paragraph.level];
+  if (paragraph.honSi) parts.push("'-시-' 있음");
+  if (paragraph.humble) parts.push('겸양 있음');
+  const persona = paragraph.persona.map(item => PERSONA_KO[item]).filter(Boolean);
+  if (persona.length) parts.push(`화자 ${persona.join('/')}`);
+  for (const name of ['questions', 'requests', 'proposals'] as const) {
+    if (paragraph[name] > 0) parts.push(`${REQUEST_CLASS_KO[name]} ${paragraph[name]}`);
+  }
+  if (keep.length) parts.push(`keep:[${keep.join(', ')}]`);
+  if (frozen.length) parts.push(`보호:[${frozen.join(', ')}]`);
+  return `${paragraph.id} ${shown} ${parts.join(', ')}`;
+}
+
+/** A retry violation in Korean, with the paragraph rule wording for the paragraph voice codes. */
+export function rewriteViolationKo(violation: SejongViolation): string {
+  const code = isSejongCode(violation.code) ? violation.code : 'unknown';
+  const detail = violation.detail ?? '';
+  if (code === 'voice_level') {
+    const levels = levelPair(detail, LEVEL);
+    if (levels) return `이 문단은 모든 문장을 ${ro(levels[0])} 끝내야 하는데 ${levels[1]} 문장이 있었다(voice_level).`;
+  }
+  if (code === 'voice_mood') {
+    const match = /^(questions|requests|proposals):(\d+)->(\d+)$/u.exec(detail);
+    if (match) return `${REQUEST_CLASS_KO[match[1]!]} 문장 수가 원문 ${match[2]}개에서 ${match[3]}개로 바뀌었다(voice_mood).`;
+  }
+  return violationKo(violation);
+}
+
+function rewriteOutputSection(retry: boolean): string {
+  return retry ? `[출력 형식]
+아래 JSON 스키마를 정확히 따르는 JSON 객체 하나만 출력한다. Markdown 코드 펜스나 설명 문장을 붙이지 않는다.
+${REWRITE_SCHEMA_TEXT}
+- replacements: [재시도]에 적힌 문단마다 하나. id는 그 문단 ID(P…)이고 text는 그 문단 전체를 다시 쓴 결과다. 문단 안의 줄 수는 원문 문단과 같게 두고 빈 줄을 넣지 않는다. 같은 id를 두 번 쓰지 않는다. reason은 60자 이내다.
+- rewrittenText: 항상 빈 문자열 ""이다.
+- warnings: 보존 충돌처럼 원문을 유지한 사유만 짧게 담는다. 없으면 []이다.
+- 지적된 문제 없이 다시 쓸 수 없는 문단은 생략한다. 생략한 문단은 원문이 유지된다.` : `[출력 형식]
+아래 JSON 스키마를 정확히 따르는 JSON 객체 하나만 출력한다. Markdown 코드 펜스나 설명 문장을 붙이지 않는다.
+${REWRITE_SCHEMA_TEXT}
+- rewrittenText: 다시 쓴 구간 전체. 원문과 같은 수의 문단을 같은 순서로, 빈 줄로 나누어 담는다.
+- replacements: 항상 빈 배열 []이다.
+- warnings: 보존 충돌처럼 원문을 유지한 사유만 짧게 담는다. 없으면 []이다.
+- 다시 쓸 곳이 없으면 {"replacements":[],"rewrittenText":"","warnings":[]}를 출력한다.`;
+}
+
+/** The writer prompt of a rewrite plan (DESIGN 3.5 adapted by WP-19). Attempt 1 asks for the whole chunk rewritten
+ * paragraph by paragraph (rewrittenText); attempt 2 names the failed paragraphs with their violations and asks for
+ * those paragraphs only, as replacements keyed by paragraph id, which the check step puts back by that id. The plan's
+ * FIX and SUGGEST requests are context: awkward spots to fix while rewriting, never a list of the only sentences to
+ * touch. */
+export function buildRewritePrompt(input: SejongPromptInput): string {
+  const { plan, source, nonce, attempt } = input;
+  if (attempt === 2 ? !input.retry?.length : input.retry !== undefined) {
+    throw new Error('A retry list is required on attempt 2 and only there');
+  }
+  const paragraphs = plan.paragraphs;
+  if (!paragraphs) throw new Error('A rewrite plan needs its paragraphs');
+  const view = new PlanView(plan, source);
+  const seam = plan.chunk.total > 1 && input.seamContext && (input.seamContext.prev || input.seamContext.next)
+    ? input.seamContext : undefined;
+  guardNonce(nonce, [source, seam?.prev ?? '', seam?.next ?? '',
+    ...plan.requests.flatMap(request => request.guides),
+    ...(input.retry ?? []).flatMap(item => item.violations.map(v => `${v.detail ?? ''}${v.keep ?? ''}`))]);
+  if (!paragraphs.some(paragraph => paragraph.editable)) throw new Error('Plan needs no model call');
+  const byId = new Map(paragraphs.map(paragraph => [paragraph.id, paragraph]));
+  const paragraphOf = new Map(paragraphs.flatMap(paragraph => paragraph.sentences.map(id => [id, paragraph.id] as const)));
+  const text = (paragraph: PlanParagraph): string => source.slice(paragraph.startU16, paragraph.endU16);
+  const marks = (paragraph: PlanParagraph): { keep: string[]; frozen: string[] } => {
+    const keep: string[] = [], frozen: string[] = [];
+    for (const id of paragraph.sentences) {
+      const sentence = view.view(id);
+      // persona classes are shown as 화자 …, not as tokens to keep
+      keep.push(...sentence.keep.filter(token => !sentence.sentence.voice.persona.includes(token)));
+      frozen.push(...sentence.frozen);
+    }
+    return { keep: unique(keep), frozen: unique(frozen) };
+  };
+
+  const sections: string[] = [SEJONG_REWRITE_CONTRACT, DATA_BOUNDARY.replace('[요청]의 text·prev·next', '[참고 지적]의 text')];
+  let shown = paragraphs;
+  if (attempt === 2) {
+    const retry = input.retry!;
+    if (new Set(retry.map(entry => entry.id)).size !== retry.length) throw new Error('Duplicate retry entry');
+    for (const entry of retry) {
+      const paragraph = byId.get(entry.id);
+      if (!paragraph || !paragraph.editable || paragraph.sentences[0] !== entry.sentence) {
+        throw new Error(`Retry entry ${entry.id} is not a paragraph of this plan`);
+      }
+    }
+    shown = retry.map(entry => byId.get(entry.id)!);
+    sections.push(`[재시도]
+이번 호출은 검증에 걸린 문단만 다시 쓰는 재시도 1회다. 아래 문단 밖은 다루지 않는다. 지적된 문제를 고쳐 그 문단 전체를 다시 쓴다.
+${retry.map(entry => `${entry.id} 이전 답: ${entry.violations.map(rewriteViolationKo).join(' ')}`).join('\n')}`);
+  }
+  sections.push(`[문단 말투] 문단 ID(원문의 빈 줄로 나뉜 문단을 위에서부터 P1, P2, …로 센다), 첫머리, 그 문단의 말투와 남길 표지. 다시 쓴 문단도 이 말투로 끝낸다.\n` +
+    block('PARAGRAPHS', nonce, shown.map(paragraph => {
+      const { keep, frozen } = marks(paragraph);
+      return paragraphSheetLine(paragraph, text(paragraph), keep, frozen);
+    }).join('\n')));
+  if (attempt === 2) {
+    sections.push(`[재시도 문단] 다시 쓸 문단의 원문. 읽기 전용이다.\n${block('RETRY_PARAGRAPHS', nonce,
+      jsonLines(shown.map(paragraph => ({ id: paragraph.id, text: text(paragraph) }))))}`);
+  } else if (plan.requests.length) {
+    const hints = plan.requests.map(request => {
+      const index = view.byId.get(request.sentence)!;
+      return { paragraph: paragraphOf.get(request.sentence) ?? '', sentence: request.sentence, text: view.text(index),
+        guides: request.guides };
+    });
+    sections.push(`[참고 지적] 규칙이 찾은 어색한 곳이다. 다시 쓸 때 함께 고친다. 고칠 이유가 없으면 무시해도 된다.\n${block('REQUESTS', nonce, jsonLines(hints))}`);
+  }
+  if (seam) {
+    sections.push(`[경계 문맥] 이 구간은 한 문서를 나눈 ${plan.chunk.total}개 구간 중 ${plan.chunk.index}번째다. 아래 앞뒤 문단은 참고 전용, 출력 금지.\n` +
+      block('SEAM_PREV', nonce, seam.prev) + '\n' + block('SEAM_NEXT', nonce, seam.next));
+  }
+  sections.push(rewriteOutputSection(attempt === 2));
+  sections.push(`[원문] 이 구간 전체. 읽기 전용이며 ${attempt === 2 ? '[재시도] 밖의 문단은 출력하지 않는다' : '이 글을 문단별로 다시 써서 rewrittenText에 담는다'}.\n${block('SOURCE', nonce, source)}`);
   return sections.join('\n\n');
 }

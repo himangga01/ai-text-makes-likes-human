@@ -49,6 +49,9 @@ _CHOICES = {
     "SUPER_SEJONG_WORKER": ("off", "on"),
     "SUPER_SEJONG_KIWI": ("off", "worker"),
 }
+# Every strength the engine accepts. `rewrite` (WP-19, 매우 강하게(다시쓰기)) rewrites whole paragraphs, so the open
+# review, a minimal-edit nomination, never applies to it.
+STRENGTHS = ("normal", "medium", "strong", "very-strong", "rewrite")
 # Strengths that get the open review for each SUPER_SEJONG_OPEN_REVIEW value.
 _OPEN_REVIEW = {
     "medium": ("medium", "strong", "very-strong"),
@@ -150,6 +153,6 @@ def suggest_requests_enabled(flags: Flags) -> bool:
 def open_review_enabled(flags: Flags, strength: str) -> bool:
     """Whether a chunk at this strength gets the open review (3.4). Off together with SUGGEST requests,
     because open-review nominations are optional edits like SUGGEST requests."""
-    if strength not in _OPEN_REVIEW["always"]:
+    if strength not in STRENGTHS:
         raise ValueError(f"unknown strength: {strength!r}")
     return suggest_requests_enabled(flags) and strength in _OPEN_REVIEW[flags.open_review]

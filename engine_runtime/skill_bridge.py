@@ -49,7 +49,7 @@ def options(input_kind=None, strength=None, offline=False):
     # job that needs a writer prompt or a reply check.
     if input_kind not in (None, "direct-text", "text-file"):
         raise ValueError("Invalid input kind")
-    if strength is not None and strength not in ("normal", "medium", "strong", "very-strong"):
+    if strength is not None and strength not in ("normal", "medium", "strong", "very-strong", "rewrite"):
         raise ValueError("Invalid strength")
     if input_kind is None:
         if strength is not None:

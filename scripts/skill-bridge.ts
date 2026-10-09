@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { parseRewriteOptions, REWRITE_OPTIONS } from '../src/engine/rewrite-policy.js';
+import { legacyRewriteOptions, parseRewriteOptions, REWRITE_OPTIONS } from '../src/engine/rewrite-policy.js';
 import { sourceSentences, checkDirectTextFidelity, checkStructuralFidelity, restoreProtectedSentences } from '../src/engine/direct-text-fidelity.js';
 import { parseTextResult } from '../src/engine/text-edits.js';
 import { EngineError } from '../src/engine/errors.js';
@@ -21,10 +21,12 @@ function comparison(source: string, finalText: string) {
 }
 try {
   const input = JSON.parse(readFileSync(process.argv[2]!, 'utf8'));
-  const options = parseRewriteOptions(input.inputKind, input.strength);
+  const requested = parseRewriteOptions(input.inputKind, input.strength);
+  // The legacy operations run `rewrite` (WP-19) as very-strong; `options` reports what was requested.
+  const options = legacyRewriteOptions(requested);
   let result: unknown;
   switch (input.operation) {
-    case 'options': result = { options, choices: REWRITE_OPTIONS }; break;
+    case 'options': result = { options: requested, choices: REWRITE_OPTIONS }; break;
     case 'context': {
       let nonce; do { nonce = randomUUID(); } while (input.source.includes(nonce) || input.candidateReview?.candidate.includes(nonce));
       result = { sentences: sourceSentences(input.source), instructions: buildHumanizePrompt({ source: input.source,

@@ -28,7 +28,7 @@ function fixtures(kind: keyof typeof schemas): Array<[string, unknown]> {
   return names.map(name => [name, json(path.join(fixtureDir, name))]);
 }
 const clone = <T>(value: T): T => structuredClone(value);
-const STRENGTHS: RewriteStrength[] = ['normal', 'medium', 'strong', 'very-strong'];
+const STRENGTHS: RewriteStrength[] = ['normal', 'medium', 'strong', 'very-strong', 'rewrite'];
 
 /* ---------- the same JSON Schema subset as engine_runtime/sejong/io.py ---------- */
 
@@ -309,14 +309,15 @@ describe('sejongFlags', () => {
 
   it('enables the open review by strength, and never in mode off', () => {
     const expected = {
-      medium: [false, true, true, true], strong: [false, false, true, true],
-      always: [true, true, true, true], off: [false, false, false, false]
+      // rewrite (WP-19) rewrites whole paragraphs: the open review never applies to it
+      medium: [false, true, true, true, false], strong: [false, false, true, true, false],
+      always: [true, true, true, true, false], off: [false, false, false, false, false]
     };
     for (const [setting, row] of Object.entries(expected)) {
       const flags = sejongFlags({ SUPER_SEJONG_OPEN_REVIEW: setting });
       const off = sejongFlags({ SUPER_SEJONG_OPEN_REVIEW: setting, SUPER_SEJONG_MODE: 'off' });
       expect(STRENGTHS.map(strength => openReviewEnabled(flags, strength))).toEqual(row);
-      expect(STRENGTHS.map(strength => openReviewEnabled(off, strength))).toEqual([false, false, false, false]);
+      expect(STRENGTHS.map(strength => openReviewEnabled(off, strength))).toEqual([false, false, false, false, false]);
     }
     expect(suggestRequestsEnabled(sejongFlags({ SUPER_SEJONG_MODE: 'off' }))).toBe(false);
   });

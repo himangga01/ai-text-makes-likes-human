@@ -36,7 +36,10 @@ public class FakeCli {
       string effort=effortIndex>=0?args[effortIndex+1]:"";
       foreach(string arg in args) if(arg.StartsWith("model_reasoning_effort=")) effort=arg.Substring("model_reasoning_effort=".Length).Trim('"');
       string strength="";
-      if(prompt.Contains("<rewrite_policy>")) {
+      // The legacy engine sends rewrite (WP-19) with the very-strong policy, so it is recorded as very-strong; a Super
+      // Sejong v2 rewrite prompt carries the paragraph contract instead.
+      if(prompt.Contains("[\uBB38\uB2E8 \uB9D0\uD22C]")) strength="rewrite";   // the [paragraph voice] header, escaped: this file stays ASCII
+      else if(prompt.Contains("<rewrite_policy>")) {
         if(prompt.Contains("very-strong")) strength="very-strong";
         else if(prompt.Contains("strong")) strength="strong";
         else if(prompt.Contains("medium")) strength="medium";

@@ -379,8 +379,12 @@ def _join(items: Iterable[str]) -> str:
     return _clip(", ".join(items))
 
 
-def compare(src: Document, out: Document, pairs: Optional[Sequence[Pair]] = None) -> Dict[str, List[Violation]]:
-    """CTA findings of a rewrite `out` against its source `src`; `pairs` = align_documents(src, out)."""
+def compare(src: Document, out: Document, pairs: Optional[Sequence[Pair]] = None, *,
+            paragraph_scope: bool = False) -> Dict[str, List[Violation]]:
+    """CTA findings of a rewrite `out` against its source `src`; `pairs` = align_documents(src, out).
+    `paragraph_scope` (strength rewrite, WP-19): a deadline or contact channel the rewritten CTA "adds" is new only
+    when the CTA's whole source paragraph lacks it, because a rewrite may merge the neighbouring sentence that
+    carried it into the CTA sentence."""
     if pairs is None:
         pairs = align_documents(src, out)
     S, R = cta.analyse(src), cta.analyse(out)
@@ -416,6 +420,12 @@ def compare(src: Document, out: Document, pairs: Optional[Sequence[Pair]] = None
     dn_r_keys = {d.key for d in R.deontic if d.key and d.canon not in canon_s}   # obligations the rewrite introduced
     dn_s_keys = {d.key for d in S.deontic if d.key and d.canon not in canon_r}   # obligations the rewrite removed
     src_grams: List[Set[str]] = []                                               # built on first use
+
+    def own_source(s: CtaDetail) -> str:
+        if not paragraph_scope:
+            return s.text
+        start, end = src.paragraphs[src.units[s.index].para]
+        return src.text[start:end]
 
     def window_of(r: CtaDetail) -> str:
         return " ".join(texts[x] for x in (r.index - 1, r.index, r.index + 1) if 0 <= x < len(texts))
@@ -528,7 +538,7 @@ def compare(src: Document, out: Document, pairs: Optional[Sequence[Pair]] = None
                     add("cta_deadline_changed", s, r, "changed", ", ".join(su.deadline))
                     break
         if not su.deadline and ru.deadline:
-            src_skel = _skeleton(_norm(s.text))
+            src_skel = _skeleton(_norm(own_source(s)))
             if any(_skeleton(_norm(d)) not in src_skel for d in ru.deadline):
                 add("cta_deadline_changed", s, r, "added", "")
         # channel
@@ -537,7 +547,7 @@ def compare(src: Document, out: Document, pairs: Optional[Sequence[Pair]] = None
         if lost:
             add("cta_channel_changed", s, r, "lost %d" % len(lost), _join(lost))
         else:
-            stext = _norm(s.text)
+            stext = _norm(own_source(s))
             new_hard = [c for c in _chan_norm(ru.channel) if _HARD_CHANNEL.search(c) and c not in stext]
             if new_hard:
                 add("cta_channel_changed", s, r, "added %d" % len(new_hard), "")

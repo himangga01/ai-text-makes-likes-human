@@ -1,0 +1,378 @@
+{
+  "schema": "sejong-plan/1",
+  "engine": {
+    "id": "super-sejong",
+    "version": "2.0.0"
+  },
+  "chunk": {
+    "index": 1,
+    "total": 1,
+    "sourceSha256": "28186eb93a84d35609a151c20ac820cb069ceaeaad3021900298dd0b20875fed",
+    "chars": 147
+  },
+  "options": {
+    "inputKind": "direct-text",
+    "strength": "rewrite",
+    "genre": "blog",
+    "fixColloquial": false,
+    "deterministicFix": "all",
+    "openReview": false,
+    "allowFullText": true,
+    "mode": "rewrite"
+  },
+  "sentences": [
+    {
+      "id": "S1",
+      "start": 0,
+      "end": 9,
+      "startU16": 0,
+      "endU16": 9,
+      "para": 0,
+      "kind": "heading",
+      "voice": {
+        "level": "NOMINAL",
+        "mood": "DECL",
+        "honSi": false,
+        "siCount": 0,
+        "stance": null,
+        "persona": [],
+        "humble": false,
+        "cmc": [],
+        "discourse": [],
+        "final": "소식"
+      },
+      "cta": null,
+      "meaning": [],
+      "findings": []
+    },
+    {
+      "id": "S2",
+      "start": 11,
+      "end": 37,
+      "startU16": 11,
+      "endU16": 37,
+      "para": 1,
+      "kind": "body",
+      "voice": {
+        "level": "HAPSYO",
+        "mood": "DECL",
+        "honSi": false,
+        "siCount": 0,
+        "stance": "ㅂ니다",
+        "persona": [
+          "first_humble"
+        ],
+        "humble": false,
+        "cmc": [],
+        "discourse": [],
+        "final": "엽니다."
+      },
+      "cta": null,
+      "meaning": [],
+      "findings": []
+    },
+    {
+      "id": "S3",
+      "start": 38,
+      "end": 57,
+      "startU16": 38,
+      "endU16": 57,
+      "para": 1,
+      "kind": "body",
+      "voice": {
+        "level": "HAPSYO",
+        "mood": "DECL",
+        "honSi": false,
+        "siCount": 0,
+        "stance": "ㅂ니다",
+        "persona": [],
+        "humble": false,
+        "cmc": [],
+        "discourse": [],
+        "final": "합니다."
+      },
+      "cta": null,
+      "meaning": [],
+      "findings": [
+        "F1"
+      ]
+    },
+    {
+      "id": "S4",
+      "start": 58,
+      "end": 80,
+      "startU16": 58,
+      "endU16": 80,
+      "para": 1,
+      "kind": "body",
+      "voice": {
+        "level": "HAPSYO",
+        "mood": "DECL",
+        "honSi": false,
+        "siCount": 0,
+        "stance": "ㅂ니다",
+        "persona": [],
+        "humble": false,
+        "cmc": [],
+        "discourse": [],
+        "final": "합니다."
+      },
+      "cta": null,
+      "meaning": [
+        "Q_ALL:1",
+        "AX_BUYSELL:-1"
+      ],
+      "findings": []
+    },
+    {
+      "id": "S5",
+      "start": 82,
+      "end": 111,
+      "startU16": 82,
+      "endU16": 111,
+      "para": 2,
+      "kind": "body",
+      "voice": {
+        "level": "HAEYO",
+        "mood": "DECL",
+        "honSi": false,
+        "siCount": 0,
+        "stance": "ㄹ게요",
+        "persona": [],
+        "humble": true,
+        "cmc": [
+          "ㅋㅋ"
+        ],
+        "discourse": [],
+        "final": "드릴게요"
+      },
+      "cta": null,
+      "meaning": [],
+      "findings": []
+    },
+    {
+      "id": "S6",
+      "start": 112,
+      "end": 126,
+      "startU16": 112,
+      "endU16": 126,
+      "para": 2,
+      "kind": "body",
+      "voice": {
+        "level": "HAEYO",
+        "mood": "DECL",
+        "honSi": false,
+        "siCount": 0,
+        "stance": null,
+        "persona": [],
+        "humble": false,
+        "cmc": [],
+        "discourse": [],
+        "final": "500원이에요."
+      },
+      "cta": null,
+      "meaning": [],
+      "findings": []
+    },
+    {
+      "id": "S7",
+      "start": 127,
+      "end": 146,
+      "startU16": 127,
+      "endU16": 146,
+      "para": 2,
+      "kind": "body",
+      "voice": {
+        "level": "HAEYO",
+        "mood": "IMPER",
+        "honSi": true,
+        "siCount": 2,
+        "stance": null,
+        "persona": [],
+        "humble": false,
+        "cmc": [],
+        "discourse": [],
+        "final": "주세요."
+      },
+      "cta": "C1",
+      "meaning": [],
+      "findings": []
+    }
+  ],
+  "protected": [
+    {
+      "kind": "heading",
+      "start": 0,
+      "end": 9,
+      "policy": "freeze"
+    },
+    {
+      "kind": "number",
+      "start": 26,
+      "end": 28,
+      "policy": "freeze"
+    },
+    {
+      "kind": "cmc",
+      "start": 109,
+      "end": 111,
+      "policy": "keep-token"
+    },
+    {
+      "kind": "number",
+      "start": 116,
+      "end": 122,
+      "policy": "freeze"
+    }
+  ],
+  "ctaLedger": [
+    {
+      "id": "C1",
+      "sentence": "S7",
+      "form": "request",
+      "force": 4,
+      "tier": "engage",
+      "polarity": "pos",
+      "action": [
+        "남겨"
+      ],
+      "object": null,
+      "condition": null,
+      "deadline": [],
+      "channel": [
+        "댓글"
+      ],
+      "benefit": [],
+      "intensity": [],
+      "level": "haeyo",
+      "honSi": true
+    }
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "rule": "SSJ-A01",
+      "tier": "FIX",
+      "action": "request",
+      "sentence": "S3",
+      "start": 38,
+      "end": 42,
+      "fix": null
+    }
+  ],
+  "requests": [
+    {
+      "id": "R1",
+      "sentence": "S3",
+      "rules": [
+        "SSJ-A01"
+      ],
+      "tier": "FIX",
+      "allowSplit": false,
+      "guides": [
+        "'왜냐하면'으로 시작한 문장은 '~기 때문이다/때문입니다'처럼 이유 표현으로 맺는다. 문장 끝의 말투 등급은 그대로 둔다."
+      ]
+    }
+  ],
+  "deterministic": [],
+  "profile": {
+    "dominant": "HAPSYO",
+    "share": 0.5,
+    "mixed": true,
+    "line": "합쇼 50%, 해요 서술·CTA 섞임"
+  },
+  "seam": {
+    "prev": [
+      0,
+      0
+    ],
+    "next": [
+      0,
+      0
+    ]
+  },
+  "openReview": {
+    "enabled": false,
+    "maxSentences": 0
+  },
+  "needsModel": true,
+  "stats": {
+    "findingsByTier": {
+      "FIX": 1,
+      "SUGGEST": 0,
+      "LEAVE": 0
+    },
+    "requestsByTier": {
+      "FIX": 1,
+      "SUGGEST": 0
+    },
+    "deterministicFixes": 0,
+    "deterministicDropped": 0,
+    "nominable": 0
+  },
+  "paragraphs": [
+    {
+      "id": "P1",
+      "para": 0,
+      "start": 0,
+      "end": 9,
+      "startU16": 0,
+      "endU16": 9,
+      "sentences": [
+        "S1"
+      ],
+      "editable": false,
+      "level": "NOMINAL",
+      "honSi": false,
+      "humble": false,
+      "persona": [],
+      "questions": 0,
+      "requests": 0,
+      "proposals": 0
+    },
+    {
+      "id": "P2",
+      "para": 1,
+      "start": 11,
+      "end": 80,
+      "startU16": 11,
+      "endU16": 80,
+      "sentences": [
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "editable": true,
+      "level": "HAPSYO",
+      "honSi": false,
+      "humble": false,
+      "persona": [
+        "first_humble"
+      ],
+      "questions": 0,
+      "requests": 0,
+      "proposals": 0
+    },
+    {
+      "id": "P3",
+      "para": 2,
+      "start": 82,
+      "end": 146,
+      "startU16": 82,
+      "endU16": 146,
+      "sentences": [
+        "S5",
+        "S6",
+        "S7"
+      ],
+      "editable": true,
+      "level": "HAEYO",
+      "honSi": true,
+      "humble": true,
+      "persona": [],
+      "questions": 0,
+      "requests": 1,
+      "proposals": 0
+    }
+  ]
+}

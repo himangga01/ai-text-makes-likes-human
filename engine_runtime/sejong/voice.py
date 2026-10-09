@@ -279,7 +279,8 @@ def _level(sentence: str, fin: _Final) -> Tuple[str, str]:
     # HAPSYO: -(스)ㅂ니다 / -(스)ㅂ니까 / -십시오 / -답니다
     if len(w) >= 3 and w[-2:] in ("니다", "니까") and (jong(w[-3]) == 17 or w[-3] in "습읍"):
         return HAPSYO, ("답니다" if w.endswith(("답니다", "랍니다", "냅니다", "잡니다")) else "ㅂ니" + w[-1])
-    if w.endswith(("십시오", "십시요", "옵소서", "나이다", "나이까", "십시다")):
+    # archaic 하십시오-level -나이다 only with 옵/사오 (비옵나이다); 하나이다 is 하나 "one" + 이다 (해라체)
+    if w.endswith(("십시오", "십시요", "옵소서", "옵나이다", "사오나이다", "나이까", "십시다")):
         return HAPSYO, w[-3:]
     if len(w) >= 3 and w.endswith("시다") and jong(w[-3]) == 17:          # 갑시다 / 합시다 (NIKL: 하오체 청유)
         return HAO, "ㅂ시다"
@@ -355,6 +356,11 @@ def _level(sentence: str, fin: _Final) -> Tuple[str, str]:
     return NOMINAL, "명사"
 
 
+# Verbs whose stem itself ends in 나 (끝나다, 만나다, 일어나다 …): their 해요체 form ends in 나요 like the question
+# ending -나요 (하나요, 있나요), which stays a question even with a period.
+_NA_STEM_YO = ("끝나요", "만나요", "지나요", "떠나요", "어나요", "아나요", "타나요", "겨나요", "드러나요", "빠져나요")
+
+
 def _mood(fin: _Final, level: str, ending: str) -> str:
     """Sentence type (T2 mood_of). Non-finite sentences are INTERR with a final '?', else DECL."""
     w, tail = fin.word, fin.tail
@@ -362,6 +368,11 @@ def _mood(fin: _Final, level: str, ending: str) -> str:
         return INTERR if "?" in tail else DECL
     if w in ("안녕하세요", "안녕하십니까", "안녕하시오", "안녕하신가", "안녕하셨어요", "안녕하셨습니까"):
         return INTERR if "?" in tail else DECL
+    # 끝나요. 만나요. 가요. end in 나요/가요 because the stem does (끝나-, 가-): with a period and no '?' they state,
+    # they do not ask (lead check of WP-19, 2026-10-08: "5시에 끝나요." read as a question).
+    if "?" not in tail and "." in tail and (w.endswith(_NA_STEM_YO)
+                                           or (w.endswith("가요") and not w.endswith(("인가요", "는가요", "던가요", "은가요")))):
+        return DECL
     if "?" in tail or w.endswith(("니까", "나요", "까요", "가요", "는지요", "을까", "할까", "냐", "느냐", "는가", "ㄴ가", "던가")) \
             or ending in ("냐", "느냐", "ㄹ까", "ㄹ까요", "을까요", "나요", "는가", "니"):
         return INTERR

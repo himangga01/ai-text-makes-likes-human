@@ -283,8 +283,42 @@ export function planProblems(data: unknown, schema: JsonSchema): string[] {
   const review = plan.openReview;
   if (plan.options.openReview !== review.enabled) problems.push('$.openReview.enabled: differs from options.openReview');
   if (!review.enabled && review.maxSentences !== 0) problems.push('$.openReview.maxSentences: must be 0 when disabled');
-  if (plan.needsModel !== (plan.requests.length > 0 || review.enabled)) {
+  const rewrite = plan.options.mode === 'rewrite';
+  if (rewrite !== (plan.options.strength === 'rewrite') || rewrite !== (plan.paragraphs !== undefined)) {
+    problems.push('$.options.mode: rewrite mode, strength rewrite and paragraphs go together');
+  } else if (rewrite) {
+    problems.push(...paragraphProblems(plan, chars));
+    if (plan.needsModel !== plan.paragraphs!.some(p => p.editable)) {
+      problems.push('$.needsModel: must equal (some paragraph is editable) in rewrite mode');
+    }
+  } else if (plan.needsModel !== (plan.requests.length > 0 || review.enabled)) {
     problems.push('$.needsModel: must equal (requests non-empty or openReview.enabled)');
+  }
+  return problems;
+}
+
+/** Rewrite plans (WP-19): P1..Pn in order, each covering a run of the plan's sentences, all of them once (io.py). */
+function paragraphProblems(plan: Plan, chars: number): string[] {
+  const problems: string[] = [];
+  const spans = new Map(plan.sentences.map(s => [s.id, s]));
+  const covered: string[] = [];
+  let previousEnd = 0;
+  plan.paragraphs!.forEach((p, index) => {
+    const where = `$.paragraphs[${index}]`;
+    if (p.id !== `P${index + 1}`) problems.push(`${where}: ids must run P1, P2, ... in order`);
+    if (!(previousEnd <= p.start && p.start <= p.end && p.end <= chars) || p.startU16 > p.endU16 ||
+        p.startU16 < p.start || p.endU16 < p.end) problems.push(`${where}: offsets out of order`);
+    previousEnd = p.end;
+    for (const id of p.sentences) {
+      const sentence = spans.get(id);
+      if (!sentence || !(p.start <= sentence.start && sentence.start <= sentence.end && sentence.end <= p.end)) {
+        problems.push(`${where}.sentences: ${id} is not inside the paragraph`);
+      }
+    }
+    covered.push(...p.sentences);
+  });
+  if (covered.length !== plan.sentences.length || covered.some((id, index) => plan.sentences[index]!.id !== id)) {
+    problems.push('$.paragraphs: must list every sentence once, in order');
   }
   return problems;
 }
@@ -301,9 +335,15 @@ export function checkProblems(data: unknown, schema: JsonSchema): string[] {
   }
   problems.push(...duplicates(report.sentences, 'sentences'), ...duplicates(report.retry, 'retry'));
   if (report.retry.length && (attempt !== 1 || report.policy !== 'retry')) problems.push('$.retry: only at attempt 1 with policy retry');
+  // One entry per retried request: a sentence or open-review request names its one sentence; a paragraph of rewrite
+  // mode (P…, WP-19) names its first sentence and stands for every sentence of the paragraph (io.py check_problems).
   const retrying = new Map(report.sentences.filter(s => s.status === 'retry').map(s => [s.id, s.request]));
-  const listed = new Map(report.retry.map(r => [r.sentence, r.id]));
-  if (listed.size !== retrying.size || [...listed].some(([sentence, id]) => !retrying.has(sentence) || retrying.get(sentence) !== id)) {
+  const ids = new Set(report.retry.map(r => r.id));
+  const requests = new Set(retrying.values());
+  const entrySentences = new Set(report.retry.map(r => r.sentence));
+  if (ids.size !== requests.size || [...requests].some(request => request === null || !ids.has(request)) ||
+      report.retry.some(r => retrying.get(r.sentence) !== r.id) ||
+      [...retrying].some(([sentence, request]) => !String(request).startsWith('P') && !entrySentences.has(sentence))) {
     problems.push('$.retry: must list exactly the sentences with status retry and their requests');
   }
   return problems;
@@ -436,7 +476,7 @@ export function parseSejongManifest(value: unknown): SejongManifest {
     if (block.options !== undefined) {
       const options = record(block.options, 'sejong.options');
       if (options.inputKind !== 'direct-text' && options.inputKind !== 'text-file') throw invalid('sejong.options.inputKind is unknown');
-      if (!['normal', 'medium', 'strong', 'very-strong'].includes(options.strength as string)) {
+      if (!['normal', 'medium', 'strong', 'very-strong', 'rewrite'].includes(options.strength as string)) {
         throw invalid('sejong.options.strength is unknown');
       }
       manifest.sejong.options = { inputKind: options.inputKind, strength: options.strength as RewriteStrength };
@@ -646,13 +686,16 @@ export class SejongPython {
     return parsed;
   }
 
-  /** Legacy gate JSON on stdout (DESIGN 5.1 `verify`), mapped exactly as PythonEngine.verify() maps it. */
-  async verifyDocument(before: string, after: string, signal: AbortSignal, attempt: 1 | 2 = 1, context?: string): Promise<GateResult> {
+  /** Legacy gate JSON on stdout (DESIGN 5.1 `verify`), mapped exactly as PythonEngine.verify() maps it. `mode`
+   * 'rewrite' verifies per paragraph with the rules of strength rewrite (WP-19); the default is the edit gate. */
+  async verifyDocument(before: string, after: string, signal: AbortSignal, attempt: 1 | 2 = 1, context?: string,
+    mode?: 'edit' | 'rewrite'): Promise<GateResult> {
     const beforePath = path.resolve(before);
     const result = await this.run('verify', [
       '--before', beforePath, '--after', path.resolve(after),
       ...(context ? ['--context', path.resolve(context)] : []),
-      '--attempt', String(attempt)
+      '--attempt', String(attempt),
+      ...(mode === 'rewrite' ? ['--mode', 'rewrite'] : [])
     ], path.dirname(beforePath), signal);
     if (![0, 1, 2, 3].includes(result.exitCode)) throw invalid('Unexpected gate exit code');
     const exitCode = result.exitCode as 0 | 1 | 2 | 3;

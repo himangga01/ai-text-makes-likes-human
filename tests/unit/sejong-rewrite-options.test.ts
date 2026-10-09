@@ -19,7 +19,12 @@ describe('rewrite option descriptions per engine', () => {
     SEJONG_REWRITE_OPTIONS.forEach((option, index) => expect(option.description).not.toBe(LEGACY_REWRITE_OPTIONS[index]!.description));
     // Strength never relaxes a guard in v2, so no description promises broad restructuring.
     for (const option of SEJONG_REWRITE_OPTIONS) expect(option.description).not.toMatch(/크게 바꿉니다|적극적으로 바꿉니다/u);
-    for (const option of SEJONG_REWRITE_OPTIONS.slice(1)) expect(option.description).toContain('말투와 뜻은 그대로');
+    for (const option of SEJONG_REWRITE_OPTIONS.slice(1, 4)) expect(option.description).toContain('말투와 뜻은 그대로');
+    // rewrite (WP-19): broad rewriting by paragraph, the voice fitted per paragraph, meaning and CTAs kept
+    const rewrite = SEJONG_REWRITE_OPTIONS.find(option => option.id === 'rewrite')!;
+    expect(rewrite.label).toBe('매우 강하게(다시쓰기)');
+    expect(rewrite.description).toMatch(/문단마다/u);
+    expect(rewrite.description).toMatch(/뜻·행동 요청은 그대로/u);
   });
 
   it('leaves parsing and the legacy instructions untouched', () => {
