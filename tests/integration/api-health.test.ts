@@ -71,7 +71,7 @@ describe("GET /api/health", () => {
       expect(await response.json()).toEqual({
         rewriteOptions: expect.arrayContaining([{id:'very-strong',label:'매우 강하게',description:expect.any(String)}]),
         modelOptions: MODEL_OPTIONS,
-        modelDefaults: { codex: { model: 'gpt-5.6-sol', effort: 'medium' }, claude: { model: 'claude-fable-5-1', effort: 'high' } },
+        modelDefaults: { codex: { model: 'gpt-6.1-sol', effort: 'xhigh' }, claude: { model: 'claude-opus-5-5', effort: 'xhigh' } },
         inputLimits: { maxInputChars: 100000, maxTextFileBytes: 1048576 },
         checkedAt: expect.any(String),
         documentsAvailable: false,
@@ -134,7 +134,7 @@ describe("GET /api/health", () => {
       expect(body).toEqual({
         rewriteOptions: expect.arrayContaining([{id:'very-strong',label:'매우 강하게',description:expect.any(String)}]),
         modelOptions: MODEL_OPTIONS,
-        modelDefaults: { codex: { model: 'gpt-5.6-sol', effort: 'medium' }, claude: { model: 'claude-fable-5-1', effort: 'high' } },
+        modelDefaults: { codex: { model: 'gpt-6.1-sol', effort: 'xhigh' }, claude: { model: 'claude-opus-5-5', effort: 'xhigh' } },
         inputLimits: { maxInputChars: 100000, maxTextFileBytes: 1048576 },
         checkedAt: expect.any(String),
         status: "degraded",

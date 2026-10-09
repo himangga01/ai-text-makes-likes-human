@@ -28,6 +28,6 @@ it('does not pin the current model defaults as a user choice when nothing was sa
   await preferences.selectRewriteStrength(loaded,'strong',()=>preferences.savePreferences(file,loaded));
   expect(JSON.parse(await readFile(file,'utf8')).models).toEqual({codex:{model:'gpt-6-sol',effort:'low'}});
   await writeFile(file,JSON.stringify({models:{claude:{model:'claude-opus-5-5'}}}));
-  expect((await preferences.loadPreferences(file)).models).toEqual({claude:{model:'claude-opus-5-5',effort:'high'}});
+  expect((await preferences.loadPreferences(file)).models).toEqual({claude:{model:'claude-opus-5-5',effort:'xhigh'}});
  } finally {await removeTestRoot(root);}
 });

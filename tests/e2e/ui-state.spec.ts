@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { MODEL_OPTIONS } from '../../src/engine/model-policy.js';
 
 const providers={codex:{ready:true,installed:true,authenticated:true,message:'Codex 사용 가능'},claude:{ready:true,installed:true,authenticated:true,message:'Claude 사용 가능'}};
-const healthy={status:'ready',modelOptions:MODEL_OPTIONS,modelDefaults:{codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-fable-5-1',effort:'high'}},providers};
+const healthy={status:'ready',modelOptions:MODEL_OPTIONS,modelDefaults:{codex:{model:'gpt-6.1-sol',effort:'xhigh'},claude:{model:'claude-opus-5-5',effort:'xhigh'}},providers};
 const ndjson=(values:unknown[])=>values.map(x=>JSON.stringify(x)).join('\n')+'\n';
 const completed=ndjson([{type:'result-start'},{type:'result-delta',text:'다듬은 결과'},{type:'done',chunks:1,elapsedMs:1}]);
 async function ready(page:Page){await page.goto('/');await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');}
@@ -21,25 +21,25 @@ test('A6: pre-health fallback matches current defaults and only the engine defau
   let release!:()=>void;const held=new Promise<void>(resolve=>{release=resolve;});
   await page.route('**/api/health',async r=>{await held;await r.fulfill({json:healthy});});
   await page.goto('/');
-  await expect(page.locator('#claude-model')).toHaveValue('claude-fable-5-1');await expect(page.locator('#claude-effort')).toHaveValue('high');
-  await expect(page.locator('#codex-model')).toHaveValue('gpt-5.6-sol');await expect(page.locator('#codex-effort')).toHaveValue('medium');
+  await expect(page.locator('#claude-model')).toHaveValue('claude-opus-5-5');await expect(page.locator('#claude-effort')).toHaveValue('xhigh');
+  await expect(page.locator('#codex-model')).toHaveValue('gpt-6.1-sol');await expect(page.locator('#codex-effort')).toHaveValue('xhigh');
   release();await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');
-  await expect(page.locator('#claude-effort option[value="high"]')).toContainText('기본');
-  await expect(page.locator('#claude-effort option[value="medium"]')).not.toContainText('기본');
-  await expect(page.locator('#codex-effort option[value="medium"]')).toContainText('기본');
+  await expect(page.locator('#claude-effort option[value="xhigh"]')).toContainText('기본');
+  await expect(page.locator('#claude-effort option[value="high"]')).not.toContainText('기본');
+  await expect(page.locator('#codex-effort option[value="xhigh"]')).toContainText('기본');
   await expect(page.locator('#codex-effort option')).toHaveCount(6);
 });
 
 test('A4/E9: removed saved models fall back to engine defaults, persist, and are announced',async({page})=>{
-  await page.addInitScript(()=>{if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.setItem('humanize-model-settings',JSON.stringify({codex:{model:'gpt-5.5',effort:'xhigh'},claude:{model:'claude-opus-5-5',effort:'ultra'}}));}});
+  await page.addInitScript(()=>{if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.setItem('humanize-model-settings',JSON.stringify({codex:{model:'gpt-5.5',effort:'xhigh'},claude:{model:'claude-fable-5-1',effort:'ultra'}}));}});
   await page.route('**/api/health',r=>r.fulfill({json:healthy}));
   await ready(page);
-  await expect(page.locator('#codex-model')).toHaveValue('gpt-5.6-sol');await expect(page.locator('#codex-effort')).toHaveValue('medium');
-  await expect(page.locator('#claude-model')).toHaveValue('claude-opus-5-5');await expect(page.locator('#claude-effort')).toHaveValue('high');
+  await expect(page.locator('#codex-model')).toHaveValue('gpt-6.1-sol');await expect(page.locator('#codex-effort')).toHaveValue('xhigh');
+  await expect(page.locator('#claude-model')).toHaveValue('claude-fable-5-1');await expect(page.locator('#claude-effort')).toHaveValue('xhigh');
   await expect(page.locator('#status-message')).toContainText('gpt-5.5');
   // The removed choice is dropped rather than pinned, so later server defaults still apply.
   const saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('humanize-model-settings')!));
-  expect(saved.codex).toBeUndefined();expect(saved.claude).toMatchObject({model:'claude-opus-5-5'});
+  expect(saved.codex).toBeUndefined();expect(saved.claude).toMatchObject({model:'claude-fable-5-1'});
 });
 
 test('E9: a stale model rejection refreshes the model list and tells the user',async({page})=>{

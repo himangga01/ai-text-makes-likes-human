@@ -1,5 +1,21 @@
 # Works Log
 
+## 2026-10-09 — Default models changed to GPT-6.1 Sol / Claude Opus 5.5, both at xhigh
+
+**Request (user):** "기본 모델 변경, 코덱스는 지피티 6.1 솔 / 클로드는 오푸스 5.5 / 추론레벨은 둘다 xhigh", then "수정후 서버반영, 재시작, 깃에 커푸".
+
+**What changed**
+- `src/engine/model-policy.ts`: `HUMANIZE_MODEL` `gpt-5.6-sol` → `gpt-6.1-sol`, `HUMANIZE_REASONING_EFFORT` `medium` → `xhigh`; `CLAUDE_MODEL` `claude-fable-5-1` → `claude-opus-5-5`, `CLAUDE_REASONING_EFFORT` `high` → `xhigh`. The default model is listed first in each provider's options (GPT-5.6 Sol and Fable 5.1 move down). No model was added or removed.
+- Pre-health fallbacks so the page never flashes the old defaults: `public/app.js` (`fallbackModelDefaults`, initial `modelOptions`) and the static `<option>`s in `public/index.html`.
+- Docs: README (defaults; the benchmark note no longer claims the engine runs `medium`), `docs/operations.md`, `docs/code-analysis.md`, `docs/service-analysis.md` (counts were stale: now 7 Codex / 6 Claude).
+- Tests: unit/integration assertions on the defaults and the Claude option order; e2e specs (`ui-state`, `ui-state-r2`, `local-model-defaults`). `local-model-defaults.spec.ts` had already been stale since the Haiku 5.5 commit `f84d388` (option list without Haiku); the e2e suite was not run for that commit, which is how it slipped. The A4 e2e case now seeds a saved `claude-fable-5-1`/`ultra` so it still tests a kept non-default model with an invalid effort.
+- Saved user choices are unaffected: only explicit selections are stored, so users who never chose a model get the new defaults; explicit choices stay.
+
+**Verification**
+- Build exit 0; vitest 739 passed / 9 skipped (product venv as `PYTHON_COMMAND`); Playwright e2e on side port 7899 (`E2E_PORT=7899`, `PYTHON_COMMAND` set) 54 passed / 9 skipped. The first e2e attempt timed out because the side server's health was 503 ("Python 3.11 이상이 필요합니다") without `PYTHON_COMMAND`; the next run caught the stale static `<option>`s in `index.html`, fixed above.
+- Live calls with the production runner flags and the legacy prompt, 527-char three-paragraph synthetic sample: `gpt-6.1-sol` xhigh OK in 191,705 ms; `claude-opus-5-5` xhigh OK in 54,074 ms.
+- Latency risk, not yet resolved: recent real codex jobs are one ~2,700-char chunk taking 55–84 s at `gpt-5.6-sol`/medium with 2 calls. GPT-6.1 Sol at xhigh took 192 s for 527 chars, so a full chunk may approach the 10-minute `chunkTimeoutMs`.
+
 ## 2026-10-09 — Rewrite strength merged and deployed; GPT-6.1 Sol and Claude Haiku 5.5 added
 
 **Request (user):** "깃 메인에 커밋푸쉬하고, 서버 반영 서버 재시작해, 그리고 최근데 코덱스랑 클로드 모델들이 새로 많이 추가됨 모델 업데이트들 해주고 수정되면 바로 서버반영 재시작해".

@@ -12,7 +12,7 @@
 - 위 접수 수에는 일반 텍스트 업로드 예약·대기·실행 중 변환이 포함됨. Office 업로드·파싱은 별도의 최대 3개 문서 보관소를 사용하고, 변환할 때 같은 실행 큐를 사용함. 완료한 Office 결과도 만료·삭제 전까지 보관 자리를 점유함
 - 텍스트 자동 라우팅: 기본 활성화. 15,000자 이하의 `light`·`standard` 문서는 본문 1개 구간, `heavy`·15,000자 초과·안전하게 판정할 수 없는 문서는 청킹. 단일 구간도 검증 결과에 따라 선택한 CLI를 한 번 더 호출할 수 있음
 - 청크 동시 Codex 실행: 기본 1개. `CODEX_CHUNK_CONCURRENCY=2`를 명시한 실험에서만 최대 2개
-- 변환 모델 기본값: GPT는 `gpt-5.6-sol`, reasoning effort `medium`; Claude는 `claude-fable-5-1`, effort `high`. 연결 설정에서 바꿀 수 있으며 `/api/health`의 `modelDefaults`로 제공
+- 변환 모델 기본값: GPT는 `gpt-6.1-sol`, reasoning effort `xhigh`; Claude는 `claude-opus-5-5`, effort `xhigh`. 연결 설정에서 바꿀 수 있으며 `/api/health`의 `modelDefaults`로 제공
 - 모델 거부: CLI가 선택한 모델을 알지 못하거나 계정에 권한이 없으면 `MODEL_UNAVAILABLE`로 안내하고 재시도하지 않음
 - CLI 실행 실패: 로그인 만료·사용 한도·네트워크 오류 등으로 CLI가 실패하면 `ENGINE_FAILED`로 작업을 중단하고 재시도할 수 있음을 알림. 원문을 결과로 돌려주지 않음. 로그에는 종료 코드와 CLI 상태 값만 남김
 - 시간 초과(`ENGINE_TIMEOUT`)는 작업을 중단함. 형식이 잘못된 모델 응답만 해당 구간을 재시도한 뒤 원문으로 되돌리며, 모든 구간의 응답이 쓸 수 없으면 `ENGINE_OUTPUT_INVALID`로 중단함

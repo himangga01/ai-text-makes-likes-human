@@ -80,10 +80,10 @@ let resultGeneration = 0;
 let comparisonReady = false;
 let elapsedStarted;
 let elapsedInterval;
-const fallbackModelDefaults={codex:{model:'gpt-5.6-sol',effort:'medium'},claude:{model:'claude-fable-5-1',effort:'high'}};
+const fallbackModelDefaults={codex:{model:'gpt-6.1-sol',effort:'xhigh'},claude:{model:'claude-opus-5-5',effort:'xhigh'}};
 let modelDefaults=fallbackModelDefaults;
 let inputLimits=DEFAULT_INPUT_LIMITS;
-let modelOptions={codex:[{id:'gpt-5.6-sol',label:'GPT-5.6 Sol',efforts:['low','medium','high','xhigh','max','ultra']}],claude:[{id:'claude-fable-5-1',label:'Claude Fable 5.1',efforts:['low','medium','high','xhigh','max']}]};
+let modelOptions={codex:[{id:'gpt-6.1-sol',label:'GPT-6.1 Sol',efforts:['low','medium','high','xhigh','max','ultra']}],claude:[{id:'claude-opus-5-5',label:'Claude Opus 5.5',efforts:['low','medium','high','xhigh','max']}]};
 // Only explicit choices (storage, desktop preferences, the selects) are saved; everything else
 // resolves against the server's modelDefaults so a default change reaches users who never chose.
 let savedModels={};

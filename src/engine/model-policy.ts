@@ -1,8 +1,8 @@
-export const HUMANIZE_MODEL = "gpt-5.6-sol" as const;
-export const HUMANIZE_REASONING_EFFORT = "medium" as const;
+export const HUMANIZE_MODEL = "gpt-6.1-sol" as const;
+export const HUMANIZE_REASONING_EFFORT = "xhigh" as const;
 
-export const CLAUDE_MODEL = "claude-fable-5-1" as const;
-export const CLAUDE_REASONING_EFFORT = "high" as const;
+export const CLAUDE_MODEL = "claude-opus-5-5" as const;
+export const CLAUDE_REASONING_EFFORT = "xhigh" as const;
 
 export type EngineChoice = "codex" | "claude";
 
@@ -19,17 +19,17 @@ const claudeEfforts = ['low', 'medium', 'high', 'xhigh', 'max'];
 // These are selectable configurations, not a promise of account model access.
 export const MODEL_OPTIONS = {
   codex: [
-    { id: HUMANIZE_MODEL, label: 'GPT-5.6 Sol', efforts: codexEfforts },
-    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol', efforts: codexEfforts },
+    { id: HUMANIZE_MODEL, label: 'GPT-6.1 Sol', efforts: codexEfforts },
     { id: 'gpt-6-astra', label: 'GPT-6 Astra', efforts: codexEfforts },
     { id: 'gpt-6-sol', label: 'GPT-6 Sol', efforts: codexEfforts },
     { id: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: codexEfforts.slice(0, 5) },
+    { id: 'gpt-5.6-sol', label: 'GPT-5.6 Sol', efforts: codexEfforts },
     { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra', efforts: codexEfforts },
     { id: 'gpt-5.6-luna', label: 'GPT-5.6 Luna', efforts: codexEfforts.slice(0, 5) }
   ],
   claude: [
-    { id: CLAUDE_MODEL, label: 'Claude Fable 5.1', efforts: claudeEfforts },
-    { id: 'claude-opus-5-5', label: 'Claude Opus 5.5', efforts: claudeEfforts },
+    { id: CLAUDE_MODEL, label: 'Claude Opus 5.5', efforts: claudeEfforts },
+    { id: 'claude-fable-5-1', label: 'Claude Fable 5.1', efforts: claudeEfforts },
     { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5', efforts: claudeEfforts },
     { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5', efforts: claudeEfforts },
     { id: 'claude-sonnet-5', label: 'Claude Sonnet 5', efforts: claudeEfforts },

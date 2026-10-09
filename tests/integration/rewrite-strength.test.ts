@@ -114,7 +114,7 @@ it('accepts real broad syntax restructuring of eligible sentences without changi
   const rewritten='자료의 정확성이 이번 검토에서 중요하다. 담당자는 자료를 정리한다. 이 방안은 경쟁력이 강하다.\n';
   const {output,calls}=await run(source,()=>rewritten);
   expect(output).toBe(rewritten);
-  expect(calls[0]!.args).toContain('gpt-5.6-sol');
+  expect(calls[0]!.args).toContain('gpt-6.1-sol');
 },30000);
 it('normal eligible unchanged text is accepted without artificial edits or retry',async()=>{
   const source='오늘 하늘은 맑다. 바람은 조용하다.\n';

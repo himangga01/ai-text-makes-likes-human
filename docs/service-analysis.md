@@ -32,7 +32,7 @@ Sources: [README](../README.md), [Code Analysis](code-analysis.md), [Office supp
 
 Runtime preflight permits either provider independently. The Windows `setup-portal.cmd` helper still requires Codex installation/login, so its normal setup path is stricter than the Claude-only runtime.
 
-The source allowlist contains six Codex and five Claude model IDs. Defaults are `gpt-5.6-sol`/`medium` and `claude-fable-5-1`/`high`. These are selectable source settings, not account-access guarantees. Skills use the host's model instead of the application menu.
+The source allowlist contains seven Codex and six Claude model IDs. Defaults are `gpt-6.1-sol`/`xhigh` and `claude-opus-5-5`/`xhigh`. These are selectable source settings, not account-access guarantees. Skills use the host's model instead of the application menu.
 
 Sources: [preflight](../src/process/preflight.ts), [setup helper](../setup-portal.cmd), [model policy](../src/engine/model-policy.ts), [desktop guide](desktop.md), [skill guide](skills-guide.md).
 

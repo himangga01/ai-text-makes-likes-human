@@ -8,8 +8,8 @@ import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
 import type { CommandRequest } from '../../src/process/command-runner.js';
 
 it('defaults remain unchanged and provider/model effort combinations are validated',()=>{
-  expect(parseModelSettings('codex')).toEqual({model:'gpt-5.6-sol',effort:'medium'});
-  expect(parseModelSettings('claude')).toEqual({model:'claude-fable-5-1',effort:'high'});
+  expect(parseModelSettings('codex')).toEqual({model:'gpt-6.1-sol',effort:'xhigh'});
+  expect(parseModelSettings('claude')).toEqual({model:'claude-opus-5-5',effort:'xhigh'});
   expect(()=>parseModelSettings('codex','claude-opus-5','high')).toThrow();
   expect(()=>parseModelSettings('codex','gpt-5.6-luna','ultra')).toThrow();
   expect(()=>parseModelSettings('claude','claude-sonnet-5','ultra')).toThrow();
@@ -49,8 +49,8 @@ for(const kind of ['codex','claude'] as const)it(`${kind} receives per-request s
 
 it('retains distinct, correctly labelled Claude model choices',()=>{
   expect(MODEL_OPTIONS.claude.map(x=>[x.id,x.label])).toEqual([
-    ['claude-fable-5-1','Claude Fable 5.1'],
     ['claude-opus-5-5','Claude Opus 5.5'],
+    ['claude-fable-5-1','Claude Fable 5.1'],
     ['claude-sonnet-5-5','Claude Sonnet 5.5'],
     ['claude-haiku-5-5','Claude Haiku 5.5'],
     ['claude-sonnet-5','Claude Sonnet 5'],
