@@ -1,3 +1,6 @@
+import http from 'node:http';
+import https from 'node:https';
+import { Readable } from 'node:stream';
 import type { TransformEvent } from '../contracts.js';
 
 /** HTTP client of the LAN portal for the MCP server: the portal's queue, engines and checks do the work, so an MCP
@@ -14,7 +17,7 @@ export interface TextResult { text: string; warnings: string[]; sourceChars: num
 export interface DocumentResult { bytes: Uint8Array; name: string; format: 'docx' | 'pptx'; warnings: string[]; chunks: number; elapsedMs: number }
 
 export class PortalClient {
-  constructor(readonly baseUrl: string, private readonly fetcher: typeof fetch = fetch) {}
+  constructor(readonly baseUrl: string, private readonly fetcher: typeof fetch = httpFetch) {}
 
   async health(signal?: AbortSignal): Promise<Record<string, unknown>> {
     const response = await this.request('/api/health', { signal });
@@ -77,6 +80,33 @@ export class PortalClient {
     }
   }
 }
+
+/** `fetch` over node:http(s). Node's built-in fetch (undici) drops a response whose headers or body stay silent for
+ * 5 minutes, and a portal job can be silent longer (waiting in the queue, one chunk may take up to 10 minutes), so the
+ * MCP server would fail a job the portal is still running. node:http has no idle limit; the caller's signal still
+ * cancels, and the client's own tool timeout bounds the call. */
+export const httpFetch: typeof fetch = async (input, init = {}) => {
+  const url = new URL(input instanceof Request ? input.url : input);
+  const raw = init.body;
+  if (raw != null && typeof raw !== 'string' && !ArrayBuffer.isView(raw)) throw new TypeError('httpFetch sends string or byte bodies only');
+  const body = raw == null ? undefined : typeof raw === 'string' ? Buffer.from(raw) : Buffer.from(raw.buffer, raw.byteOffset, raw.byteLength);
+  const headers = Object.fromEntries(new Headers(init.headers));
+  if (body) headers['content-length'] = String(body.length);
+  return await new Promise<Response>((resolve, reject) => {
+    const request = (url.protocol === 'https:' ? https : http).request(url,
+      { method: init.method ?? 'GET', headers, signal: init.signal ?? undefined }, response => {
+        const responseHeaders = new Headers();
+        for (const [name, value] of Object.entries(response.headers))
+          for (const item of [value ?? []].flat()) responseHeaders.append(name, item);
+        const status = response.statusCode ?? 502;
+        const empty = status === 204 || status === 205 || status === 304 || init.method === 'HEAD';
+        if (empty) response.on('error', () => undefined).resume();
+        resolve(new Response(empty ? null : Readable.toWeb(response) as ReadableStream<Uint8Array>, { status, headers: responseHeaders }));
+      });
+    request.on('error', reject);
+    request.end(body);
+  });
+};
 
 function jobQuery(options: JobOptions, extra: Record<string, string> = {}): string {
   return new URLSearchParams({ engine: options.engine, ...(options.model ? { model: options.model } : {}),

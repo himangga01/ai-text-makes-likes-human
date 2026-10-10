@@ -5,6 +5,7 @@ PC에 설치·로그인된 **Claude Code 또는 Codex CLI**와 Humanize KR 규�
 - **Windows 앱:** `release/HumanizeKR-0.4.0-win-x64-self-signed.exe`를 실행하고 Claude Code·Codex 중 사용할 엔진을 선택합니다. 앱에 Electron과 Python이 포함되어 있어 앱용 Node.js·Python 설치나 포털 실행이 필요하지 않습니다.
 - **Claude·Codex 스킬:** `release/`의 호스트별 ZIP 또는 설치 도우미로 `humanize-kr`를 추가합니다. `/humanize-kr` 또는 `$humanize-kr`로 현재 세션에서 윤문합니다.
 - **LAN 포털:** 아래의 Windows 서버 설정과 `start-portal.cmd`를 사용합니다.
+- **MCP 서버:** Claude Code·Codex 같은 MCP 클라이언트가 포털을 도구(`humanize_text`·`humanize_file`·`humanize_status`)로 부릅니다. 등록과 사용법은 [MCP 서버로 쓰기](#mcp-서버로-쓰기)에 있습니다.
 
 앱 실행·스킬 설치·개발 빌드 안내는 [docs/desktop.md](docs/desktop.md)에 있습니다. EXE와 ZIP은 빌드 산출물이므로 Git 소스 이력에 포함하지 않습니다.
 
@@ -139,21 +140,94 @@ TXT·MD·DOCX·PPTX는 파일 경로를 지정해 요청합니다. 예를 들어
 
 ## MCP 서버로 쓰기
 
-Claude Code·Codex처럼 MCP를 지원하는 에이전트는 포털을 도구로 바로 부를 수 있습니다. MCP 서버는 포털에 작업을 맡기므로 웹 화면과 같은 대기열·모델·보존 검사를 거친 결과만 돌려줍니다. 포털이 실행 중이어야 합니다.
+Claude Code·Codex처럼 MCP를 지원하는 에이전트는 포털을 도구로 바로 부를 수 있습니다. 도구 호출 하나가 포털 작업 하나라서 웹 화면과 같은 대기열·모델·보존 검사를 거친 결과만 돌려줍니다. 추가로 설치할 패키지는 없습니다.
 
-| 도구 | 하는 일 |
-|---|---|
-| `humanize_text` | 글을 다듬어 검증된 결과를 돌려줍니다. 강도 5단계를 고를 수 있습니다. |
-| `humanize_file` | TXT·MD·DOCX·PPTX를 다듬어 원본 옆에 `<이름>-humanized` 새 파일로 저장합니다. 원본과 기존 파일은 덮어쓰지 않습니다. 강도는 TXT·MD에만 적용됩니다. |
-| `humanize_status` | 포털 상태, 강도 설명, 모델 목록과 기본값을 알려 줍니다. |
+### 준비
 
-`npm run build` 뒤 `dist/mcp/server.js`를 등록합니다. 예를 들어 Claude Code에서는 다음과 같습니다.
+1. 포털이 실행 중이어야 합니다. 이 Mac에서는 Hermes 서비스가 `http://127.0.0.1:7882`로 띄워 둡니다.
+2. 저장소에서 `npm run build`를 한 번 실행해 `dist/mcp/server.js`를 만듭니다. 실행에는 Node 24가 필요하며 Hermes의 Node(`~/.hermes/node/bin/node`)를 그대로 쓰면 됩니다.
+
+### 등록하기
+
+**Claude Code** — 한 번만 등록하면 됩니다. `-s user`를 붙이면 모든 프로젝트에서, 빼면 지금 프로젝트에서만 쓸 수 있습니다.
 
 ```bash
-claude mcp add humanize-kr -- ~/.hermes/node/bin/node <저장소 경로>/dist/mcp/server.js
+claude mcp add -s user humanize-kr -- ~/.hermes/node/bin/node /Users/wisdom/wisdom_project/gpt/ai-text-makes-likes-human/dist/mcp/server.js
+claude mcp list        # humanize-kr가 Connected로 나오면 준비 완료
 ```
 
-Codex 등록, 다른 PC에서 쓰는 방법(`HUMANIZE_PORTAL_URL`), 시간 제한 설정과 문제 해결은 영문 [MCP Server Guide](docs/mcp.md)를 참고하세요.
+세션 안에서는 `/mcp`로 연결 상태를 볼 수 있습니다.
+
+**Codex** — `~/.codex/config.toml`에 아래를 넣습니다. Codex는 도구 호출을 기본 60초에 끊기 때문에 `tool_timeout_sec`를 넉넉하게 잡아야 합니다. 윤문은 대기열을 포함해 몇 분에서 수십 분 걸릴 수 있으므로 1시간(3600초)을 권장합니다.
+
+```toml
+[mcp_servers.humanize-kr]
+command = "/Users/wisdom/.hermes/node/bin/node"
+args = ["/Users/wisdom/wisdom_project/gpt/ai-text-makes-likes-human/dist/mcp/server.js"]
+tool_timeout_sec = 3600
+```
+
+**그 밖의 MCP 클라이언트** — stdio 방식으로 명령 `node`, 인자 `<저장소 경로>/dist/mcp/server.js`를 등록합니다.
+
+설정을 바꾸지 않고 먼저 시험해 보려면 다음을 실행합니다.
+
+```bash
+echo "humanize_status를 한 번 호출하고 상태를 알려 줘." | claude -p --strict-mcp-config \
+  --mcp-config '{"mcpServers":{"humanize-kr":{"command":"node","args":["<저장소 경로>/dist/mcp/server.js"]}}}' \
+  --allowedTools mcp__humanize-kr__humanize_status
+```
+
+### 도구
+
+| 도구 | 하는 일 | 인자 |
+|---|---|---|
+| `humanize_text` | 글을 다듬어 검증된 결과와 짧은 보고(강도·구간 수·시간·안내)를 돌려줍니다. | `text`(필수, 최대 100,000자), `strength`, `engine`, `model`, `effort` |
+| `humanize_file` | TXT·MD·DOCX·PPTX를 다듬어 새 파일로 저장하고 저장 위치를 알려 줍니다. | `path`(필수, 절대 경로), `outputPath`, `strength`, `engine`, `model`, `effort` |
+| `humanize_status` | 포털 상태, 강도 설명, 모델 목록과 기본값, 입력 한도, 대기 작업 수를 알려 줍니다. | 없음 |
+
+- `strength`: `normal`(보통, 기본값), `medium`(중간), `strong`(강하게), `very-strong`(매우 강하게), `rewrite`(매우 강하게·다시쓰기). 직접 입력한 글과 TXT·MD 파일에 적용되며, DOCX·PPTX에 강도를 주면 오류로 돌려보냅니다.
+- `engine`: `codex`(기본값) 또는 `claude`. `model`·`effort`를 생략하면 포털 기본값을 씁니다. 쓸 수 있는 값은 `humanize_status`가 알려 줍니다.
+
+### 사용 예
+
+등록한 뒤에는 에이전트에게 평소처럼 말하면 됩니다. 에이전트가 알맞은 도구를 골라 부릅니다.
+
+```text
+humanize-kr로 다음 글을 중간 강도로 다듬어 줘: 본 보고서는 시장 동향에 대한 분석을 수행한다.
+/Users/wisdom/문서/보고서.md를 강하게 다듬어 줘.
+/Users/wisdom/문서/발표.pptx를 다듬어 줘.
+윤문 포털 상태 알려 줘.
+```
+
+### 파일 저장 규칙
+
+- 결과는 원본 옆에 `<이름>-humanized.<확장자>`로 저장합니다. 같은 이름이 있으면 `-humanized-2`, `-humanized-3`…으로 번호를 붙입니다. 원본과 기존 파일은 덮어쓰지 않습니다.
+- `outputPath`로 저장 위치를 정할 수 있습니다. 절대 경로여야 하고 원본과 확장자가 같으며 아직 없는 파일이어야 합니다.
+- TXT·MD는 웹 화면과 같은 방식(UTF-8, BOM 있는 UTF-16, CP949)으로 읽어 UTF-8로 저장하며 최대 1 MiB입니다. DOCX·PPTX는 최대 50 MiB이며 서식을 지킨 같은 형식의 파일로 저장합니다.
+
+### 다른 PC에서 쓰기
+
+같은 LAN의 다른 PC에서도 쓸 수 있습니다. 그 PC에 이 저장소를 받아 빌드한 뒤 포털 주소를 `HUMANIZE_PORTAL_URL`로 넘깁니다. 파일은 MCP 서버가 도는 PC에서 읽고 저장합니다.
+
+```bash
+claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node <저장소 경로>/dist/mcp/server.js
+```
+
+Codex는 `[mcp_servers.humanize-kr]` 표에 `env = { HUMANIZE_PORTAL_URL = "http://192.168.0.10:7882" }`를 더합니다. 포털은 사설망 접속만 받고 로그인이 없으므로 MCP 서버도 포털 PC나 같은 LAN에서만 씁니다.
+
+### 시간 제한과 문제 해결
+
+MCP 서버 자체에는 시간 제한이 없고, 포털이 한 구간을 10분 넘게 처리하면 작업을 `ENGINE_TIMEOUT`으로 끝냅니다. 그래서 클라이언트 쪽 제한을 넉넉하게 잡아도 호출이 끝없이 걸려 있지 않습니다.
+
+| 증상 | 원인과 해결 |
+|---|---|
+| `PORTAL_UNREACHABLE` | 포털이 꺼져 있거나 `HUMANIZE_PORTAL_URL`이 틀렸습니다. `node dist/ops/hermes-service.js status`로 확인합니다. |
+| 1분쯤 지나 클라이언트가 포기함 | 클라이언트의 도구 시간 제한이 짧습니다. Codex는 `tool_timeout_sec`, Claude Code는 `MCP_TOOL_TIMEOUT`(밀리초, 예: `MCP_TOOL_TIMEOUT=3600000 claude`)을 늘립니다. |
+| `QUEUE_FULL` | 포털이 이미 작업 3건을 받았습니다. 잠시 뒤 다시 시도합니다. |
+| `INVALID_MODEL_SETTINGS` | 제공하지 않는 모델이나 추론 수준입니다. `humanize_status`로 목록을 확인합니다. |
+| "DOCX·PPTX는 … 보통으로만" | Office 파일에 강도를 줬습니다. `strength`를 빼고 다시 요청합니다. |
+
+영문 상세 안내는 [MCP Server Guide](docs/mcp.md)에 있습니다.
 
 ## LAN 웹 포털: 처음 한 번만 설정하기
 
