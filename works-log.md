@@ -1,5 +1,38 @@
 # Works Log
 
+## 2026-10-10 — Version 0.5.0; Windows MCP registration examples; merged and deployed
+
+**Requests (user):** "README의 등록 예시도 Mac 경로 기준 -> 야 윈도우용도 해야할것 아냐", then mid-turn "버전 번호 올려".
+
+- **Version bump to 0.5.0** (my recommendation in the rebuild plan).
+  - Changed: `package.json` and `package-lock.json` (root entries only; three dependencies that are themselves at 0.4.0 were left alone); the artifact names in README, `docs/desktop.md` and `docs/skills-guide.md` (install commands, header, release-notes list); the plan's decision section.
+  - New: `docs/releases/0.5.0.md`.
+  - Dated snapshot lines were left as they are, because they record what was inspected at the time: "Application version 0.4.0" in `code-analysis.md`, `service-analysis.md` and `operations.md`.
+  - The MCP `serverInfo.version` reads `package.json`, so it follows.
+  - **Not done:** EXE and ZIPs at 0.5.0 are not built (Windows).
+- **Windows MCP examples**, in the README and in `docs/mcp.md`:
+  - Build and portal notes:
+    - `npm.cmd run build`, plus a warning that an existing Windows portal skips the build while `dist\server.js` exists.
+    - `start-portal.cmd`, and finding Node with `where.exe node`.
+  - Registration:
+    - Claude Code in PowerShell: `claude mcp add -s user humanize-kr -- node C:\work\…\dist\mcp\server.js`.
+    - Codex in `%USERPROFILE%\.codex\config.toml`, with single-quoted TOML literal strings so the backslashes need no escaping.
+  - Windows variants of the LAN `-e HUMANIZE_PORTAL_URL`, `MCP_TOOL_TIMEOUT` (`$env:` form) and `PORTAL_UNREACHABLE` rows.
+  - A registration check that works on both OSes: `claude -p "…" --allowedTools mcp__humanize-kr__humanize_status`.
+  - A Windows file path in the example prompts.
+  - **Rejected:** a Windows one-off `--mcp-config` JSON example. PowerShell 5.1 strips inner double quotes for native commands, and `Set-Content -Encoding utf8` writes a BOM, so it would need an untested workaround. The registration check covers the need.
+  - **Not run on Windows.** The rebuild plan now includes a Windows MCP check.
+- **Verification:** vitest 764 passed / 9 skipped on the branch; typecheck clean.
+- **Commit:** `ad1da4d` on `chore/v0.5.0` (worktree `.worktrees/v050`).
+- **Merge and deploy**, on the user's request "커푸, 서버 반영 재시작":
+  - The 3 personal-line files were stashed by tag. Main was fast-forwarded to `ad1da4d`, then the stash was applied (clean; the personal line in `docs/skills-guide.md` sits at line 32, away from the edited lines) and dropped by its index.
+  - `npm run build` and the skill-bridge bundle rebuilt.
+  - The portal was idle (0 active, 0 queued) and restarted: PID 15246 → 38942, `SUPER_SEJONG_V2_SHADOW=1` present in the process environment. `/api/health` reports ready and the 5 strengths.
+  - The health payload carries no app version. Through `dist/mcp/server.js`:
+    - initialize reported `serverInfo.version` 0.5.0.
+    - `humanize_text` at normal returned "본 보고서는 시장 동향을 분석한다." with 5 progress notifications in 15.5 s.
+  - The worktree and branch were removed after the merge.
+
 ## 2026-10-10 — Windows skill ZIP rebuild: plan only
 
 **Requests (user):** "스킬 ZIP 다시 만들어", then mid-turn "윈도우 피시에서 수정할께", "수정 게획만 작성하고", "깃에 커푸해".
