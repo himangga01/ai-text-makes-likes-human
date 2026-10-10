@@ -31,18 +31,30 @@ stdio MCP support — can call the portal as tools instead of going through the 
 
 ## Register the server
 
-Build once (`npm run build`), then register `dist/mcp/server.js` with your client. Use the Node of the Hermes service
-(`~/.hermes/node/bin/node`) or any Node 24.
+Build once, then register `dist/mcp/server.js` with your client:
+
+- **Mac:** `npm run build`, with the Node of the Hermes service (`~/.hermes/node/bin/node`) or any Node 24.
+- **Windows (PowerShell):** `npm.cmd run build`, with the Node.js installed for the portal (`where.exe node`, usually `C:\Program Files\nodejs\node.exe`).
+
+An existing Windows portal does not rebuild while `dist\server.js` exists, so build by hand after pulling. The portal itself is started by the Hermes service on the Mac, and by `start-portal.cmd` on Windows; both listen on `http://127.0.0.1:7882`. In the Windows examples below, `C:\work\ai-text-makes-likes-human` stands for wherever the repository was cloned.
 
 Claude Code (`-s user` makes it available in every project; without it the server is added for the current project
 only). Check it with `claude mcp list`, or `/mcp` inside a session:
 
 ```bash
+# Mac
 claude mcp add -s user humanize-kr -- ~/.hermes/node/bin/node /Users/wisdom/wisdom_project/gpt/ai-text-makes-likes-human/dist/mcp/server.js
 ```
 
-Codex (`~/.codex/config.toml`). Codex stops a tool call after 60 seconds by default, and a rewrite can take several
-minutes plus queue time, so raise `tool_timeout_sec` (see [Time limits](#time-limits)):
+```powershell
+# Windows
+claude mcp add -s user humanize-kr -- node C:\work\ai-text-makes-likes-human\dist\mcp\server.js
+```
+
+Codex stops a tool call after 60 seconds by default, and a rewrite can take several minutes plus queue time, so raise
+`tool_timeout_sec` (see [Time limits](#time-limits)). `codex mcp add` cannot set it, so edit the file.
+
+Mac (`~/.codex/config.toml`):
 
 ```toml
 [mcp_servers.humanize-kr]
@@ -51,9 +63,24 @@ args = ["/Users/wisdom/wisdom_project/gpt/ai-text-makes-likes-human/dist/mcp/ser
 tool_timeout_sec = 3600
 ```
 
+Windows (`%USERPROFILE%\.codex\config.toml`). The single-quoted TOML literal strings keep the backslashes as they are:
+
+```toml
+[mcp_servers.humanize-kr]
+command = 'C:\Program Files\nodejs\node.exe'
+args = ['C:\work\ai-text-makes-likes-human\dist\mcp\server.js']
+tool_timeout_sec = 3600
+```
+
+To check a registration on either OS:
+
+```bash
+claude -p "Call humanize_status once and report the status." --allowedTools mcp__humanize-kr__humanize_status
+```
+
 Any other stdio MCP client: command `node`, argument `<repo>/dist/mcp/server.js`.
 
-To try it without changing any client configuration:
+To try it on the Mac without changing any client configuration:
 
 ```bash
 echo "Call humanize_status once and report the status." | claude -p --strict-mcp-config \
@@ -73,6 +100,8 @@ On another computer, check out and build this repository there, then pass the ad
 claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node <repo>/dist/mcp/server.js
 ```
 
+On Windows the same command takes the Windows path, e.g. `node C:\work\ai-text-makes-likes-human\dist\mcp\server.js`.
+
 For Codex, add `env = { HUMANIZE_PORTAL_URL = "http://192.168.0.10:7882" }` to the `[mcp_servers.humanize-kr]` table.
 `humanize_file` reads and writes files on the computer where the MCP server runs and uploads them to the portal.
 
@@ -86,7 +115,7 @@ apply:
 
 | Layer | Limit |
 |---|---|
-| MCP client | Codex: `tool_timeout_sec`, 60 s by default; set it to `3600` (1 hour) as above, or higher for very long documents. Claude Code: if a call is cut off, start Claude Code with a larger `MCP_TOOL_TIMEOUT` in milliseconds, e.g. `MCP_TOOL_TIMEOUT=3600000 claude`. |
+| MCP client | Codex: `tool_timeout_sec`, 60 s by default; set it to `3600` (1 hour) as above, or higher for very long documents. Claude Code: if a call is cut off, start Claude Code with a larger `MCP_TOOL_TIMEOUT` in milliseconds: `MCP_TOOL_TIMEOUT=3600000 claude` on the Mac, `$env:MCP_TOOL_TIMEOUT='3600000'; claude` in Windows PowerShell. |
 | MCP server | No limit of its own. It talks to the portal over `node:http`, because Node's built-in `fetch` drops a response that stays silent for 5 minutes, and a queued job or one long chunk sends nothing for that long. |
 | Portal | Each chunk may run up to 10 minutes; a chunk that runs longer fails the job with `ENGINE_TIMEOUT`. A stuck job therefore ends on the portal side, and a generous client limit does not leave a call hanging forever. |
 
@@ -94,7 +123,7 @@ apply:
 
 | Symptom | Cause and fix |
 |---|---|
-| `PORTAL_UNREACHABLE` | The portal is not running or `HUMANIZE_PORTAL_URL` is wrong. Check `node dist/ops/hermes-service.js status`. |
+| `PORTAL_UNREACHABLE` | The portal is not running or `HUMANIZE_PORTAL_URL` is wrong. On the Mac check `node dist/ops/hermes-service.js status`; on Windows check that the `start-portal.cmd` window is open and `http://localhost:7882` loads. |
 | The client gives up after about a minute | The client's tool timeout is shorter than the job. Raise it (Codex `tool_timeout_sec`; Claude Code `MCP_TOOL_TIMEOUT`, in milliseconds); see [Time limits](#time-limits). |
 | `ENGINE_TIMEOUT` | One chunk ran longer than 10 minutes on the portal. Retry, or choose a lighter model or effort. |
 | `QUEUE_FULL` | Three jobs are already accepted. Retry when the queue drains. |

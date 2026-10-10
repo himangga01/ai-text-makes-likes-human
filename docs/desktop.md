@@ -4,7 +4,7 @@
 
 ## Windows 앱 실행
 
-`HumanizeKR-0.4.0-win-x64-self-signed.exe` 한 개를 원하는 폴더에 두고 실행합니다. 설치 마법사나 관리자 권한이 필요하지 않습니다. 내부 리소스는 실행할 때 TEMP에 추출됩니다.
+`HumanizeKR-0.5.0-win-x64-self-signed.exe` 한 개를 원하는 폴더에 두고 실행합니다. 설치 마법사나 관리자 권한이 필요하지 않습니다. 내부 리소스는 실행할 때 TEMP에 추출됩니다.
 
 1. 사용할 **Claude Code 또는 Codex의 네이티브 CLI**를 PC에 설치하고 로그인해 둡니다.
 2. EXE를 실행합니다. 두 CLI를 각각 점검하므로 한쪽만 준비되어 있어도 사용할 수 있습니다.
@@ -81,6 +81,6 @@ node scripts/smoke-portable.mjs
 
 EXE, 스킬 ZIP, SHA-256 및 `build-info.json`은 `release/`에 생성됩니다. `build-info.json`은 앱·Electron·Python 버전, engine commit, EXE hash를 기록합니다. 빌드와 검증은 원격 업로드나 기존 운영 서버 재시작을 수행하지 않습니다.
 
-초기 타깃은 Windows x64입니다. 실제 검증한 OS와 CLI는 릴리스 검증 기록에 남깁니다. 기본 EXE와 별도로 `HumanizeKR-0.4.0-win-x64-self-signed.exe` 자체서명본도 제공합니다. 자체서명은 공개적으로 신뢰되는 인증서가 아니므로 Windows 경고가 남을 수 있습니다. 업데이트는 기존 앱을 닫고 새 EXE를 실행하는 방식입니다.
+초기 타깃은 Windows x64입니다. 실제 검증한 OS와 CLI는 릴리스 검증 기록에 남깁니다. 기본 EXE와 별도로 `HumanizeKR-0.5.0-win-x64-self-signed.exe` 자체서명본도 제공합니다. 자체서명은 공개적으로 신뢰되는 인증서가 아니므로 Windows 경고가 남을 수 있습니다. 업데이트는 기존 앱을 닫고 새 EXE를 실행하는 방식입니다.
 
 `update-humanize-engine`은 원본 저장소를 사용자 포크에 먼저 동기화·push한 뒤 서비스와 EXE·스킬을 갱신합니다. 포크가 오래됐다는 이유로 작업을 종료하지 않습니다. 현재 엔진 핀은 `9747f036cdc28a1a8aea4dc71fef1f7846eb96f7`이며 [0.2.1 갱신 기록](releases/0.2.1.md)에 검증 결과가 있습니다.

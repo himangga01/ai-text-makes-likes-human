@@ -9,7 +9,7 @@ This repository ships two agent skills. Both run inside an existing Claude Code 
 
 Use `humanize-kr` for everyday rewriting. Use `update-humanize-engine` only for engine maintenance. It never rewrites user text.
 
-Source reviewed on October 9, 2026: application `0.4.0`, default engine pinned to fork commit `9747f03` (Humanize label 2.3.2), Super Sejong v2 `2.1.0` bundled (opt-in with `SUPER_SEJONG_ENGINE=v2`). Direct text supports five rewrite strengths, including `rewrite` (매우 강하게(다시쓰기)), and standalone HTML comparison. The skill rewrites with the host session's own model; the portal's model defaults do not apply to it. An existing ZIP or installed skill may contain an earlier bridge/Gateway despite the same version label. This update did not rebuild the Windows skill ZIPs. See [Code Analysis](code-analysis.md) and [Service Analysis](service-analysis.md).
+Source reviewed on October 10, 2026: application `0.5.0`, default engine pinned to fork commit `9747f03` (Humanize label 2.3.2), Super Sejong v2 `2.1.0` bundled (opt-in with `SUPER_SEJONG_ENGINE=v2`). Direct text and TXT/MD files support five rewrite strengths, including `rewrite` (매우 강하게(다시쓰기)); standalone HTML comparison is for direct text. The skill rewrites with the host session's own model; the portal's model defaults do not apply to it. The 0.5.0 ZIPs are built on a Windows PC ([rebuild plan](plans/2026-10-10-windows-skill-zip-rebuild.md)). A 0.4.0 ZIP or installed skill has an earlier bridge/Gateway; for example it rejects a strength for TXT/MD files. See [Code Analysis](code-analysis.md) and [Service Analysis](service-analysis.md).
 
 ---
 
@@ -49,11 +49,11 @@ Each ZIP bundles Python 3.14 (with `lxml`), Node 24.19.0, the Gateway, the Node 
 ```powershell
 # Claude Code (installs to %USERPROFILE%\.claude\skills\humanize-kr)
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 `
-  -HostName Claude -Scope User -Archive .\release\humanize-kr-claude-0.4.0-win-x64.zip -Replace
+  -HostName Claude -Scope User -Archive .\release\humanize-kr-claude-0.5.0-win-x64.zip -Replace
 
 # Codex (installs to %USERPROFILE%\.agents\skills\humanize-kr)
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 `
-  -HostName Codex -Scope User -Archive .\release\humanize-kr-codex-0.4.0-win-x64.zip -Replace
+  -HostName Codex -Scope User -Archive .\release\humanize-kr-codex-0.5.0-win-x64.zip -Replace
 ```
 
 | Option | Effect |
@@ -347,4 +347,5 @@ python .agents/skills/update-humanize-engine/scripts/test_check_upstream.py
 - [Desktop app and skill installation](desktop.md)
 - [Office document support](documents.md)
 - [Operations and macOS service management](operations.md)
+- [0.5.0 release notes](releases/0.5.0.md)
 - [0.4.0 release notes](releases/0.4.0.md)

@@ -2,14 +2,14 @@
 
 PC에 설치·로그인된 **Claude Code 또는 Codex CLI**와 Humanize KR 규칙으로 한국어 문체를 다듬습니다. Windows portable 앱, Claude·Codex 윤문 스킬, 기존 LAN 웹 포털을 제공합니다.
 
-- **Windows 앱:** `release/HumanizeKR-0.4.0-win-x64-self-signed.exe`를 실행하고 Claude Code·Codex 중 사용할 엔진을 선택합니다. 앱에 Electron과 Python이 포함되어 있어 앱용 Node.js·Python 설치나 포털 실행이 필요하지 않습니다.
+- **Windows 앱:** `release/HumanizeKR-0.5.0-win-x64-self-signed.exe`를 실행하고 Claude Code·Codex 중 사용할 엔진을 선택합니다. 앱에 Electron과 Python이 포함되어 있어 앱용 Node.js·Python 설치나 포털 실행이 필요하지 않습니다.
 - **Claude·Codex 스킬:** `release/`의 호스트별 ZIP 또는 설치 도우미로 `humanize-kr`를 추가합니다. `/humanize-kr` 또는 `$humanize-kr`로 현재 세션에서 윤문합니다.
 - **LAN 포털:** 아래의 Windows 서버 설정과 `start-portal.cmd`를 사용합니다.
 - **MCP 서버:** Claude Code·Codex 같은 MCP 클라이언트가 포털을 도구(`humanize_text`·`humanize_file`·`humanize_status`)로 부릅니다. 등록과 사용법은 [MCP 서버로 쓰기](#mcp-서버로-쓰기)에 있습니다.
 
 앱 실행·스킬 설치·개발 빌드 안내는 [docs/desktop.md](docs/desktop.md)에 있습니다. EXE와 ZIP은 빌드 산출물이므로 Git 소스 이력에 포함하지 않습니다.
 
-현재 소스의 구조와 제약은 [코드 분석](docs/code-analysis.md), 사용 흐름과 운영 범위는 [서비스 분석](docs/service-analysis.md)에 정리했습니다(2026-10-03 검토 작업 트리 기준). 소스·운영 서버·EXE·설치된 스킬은 갱신 시점이 다를 수 있으므로 `0.4.0` 버전명만으로 같은 코드라고 판단하지 않습니다.
+현재 소스의 구조와 제약은 [코드 분석](docs/code-analysis.md), 사용 흐름과 운영 범위는 [서비스 분석](docs/service-analysis.md)에 정리했습니다(2026-10-03 검토 작업 트리 기준). 소스·운영 서버·EXE·설치된 스킬은 갱신 시점이 다를 수 있으므로 버전명만으로 같은 코드라고 판단하지 않습니다. 0.5.0의 EXE와 스킬 ZIP은 Windows PC에서 빌드합니다([재빌드 계획](docs/plans/2026-10-10-windows-skill-zip-rebuild.md)). 변경 내역은 [0.5.0 릴리스 노트](docs/releases/0.5.0.md)에 있습니다.
 
 직접 입력하거나 붙여넣은 텍스트와 TXT·MD 파일은 **보통·중간·강하게·매우 강하게·매우 강하게(다시쓰기)** 중 변환 강도를 선택합니다. 각 버튼에서 편집 범위 설명을 볼 수 있습니다. 완료 후 추가·변경된 문구는 연노랑, 삭제된 문구는 빨강 취소선으로 표시하며 **최종문**으로 전환해 정리된 결과를 확인할 수 있습니다. 복사·저장은 삭제 표시를 제외한 최종 문구만 사용합니다. 변경 표시는 직접 입력에만 적용합니다. TXT·MD 파일은 고른 강도로 다듬고 결과에 사용한 강도를 표시합니다. DOCX·PPTX는 서식을 지키기 위해 강도 선택 없이 보통으로 다듬습니다.
 
@@ -84,14 +84,14 @@ PC에 설치·로그인된 **Claude Code 또는 Codex CLI**와 Humanize KR 규�
 
 ### 설치 또는 업데이트
 
-아래는 두 호스트용 `0.4.0` 스킬 ZIP의 설치·업데이트 안내입니다. 프로젝트 루트에서 사용할 호스트의 명령을 실행합니다. 해당 ZIP이 `release/`에 있어야 하며, ZIP은 Git 소스에 포함되지 않습니다. 실제 설치본에 반영된 수정은 배포물과 설치 기록을 기준으로 확인합니다.
+아래는 두 호스트용 `0.5.0` 스킬 ZIP의 설치·업데이트 안내입니다. 프로젝트 루트에서 사용할 호스트의 명령을 실행합니다. 해당 ZIP이 `release/`에 있어야 하며, ZIP은 Git 소스에 포함되지 않습니다. 실제 설치본에 반영된 수정은 배포물과 설치 기록을 기준으로 확인합니다.
 
 ```powershell
 # Claude Code
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 -HostName Claude -Scope User -Archive .\release\humanize-kr-claude-0.4.0-win-x64.zip -Replace
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 -HostName Claude -Scope User -Archive .\release\humanize-kr-claude-0.5.0-win-x64.zip -Replace
 
 # Codex
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 -HostName Codex -Scope User -Archive .\release\humanize-kr-codex-0.4.0-win-x64.zip -Replace
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-humanize-skill.ps1 -HostName Codex -Scope User -Archive .\release\humanize-kr-codex-0.5.0-win-x64.zip -Replace
 ```
 
 `-Replace`는 기존 스킬을 백업한 뒤 갱신합니다. Claude는 `%USERPROFILE%\.claude\skills\humanize-kr`, Codex는 `%USERPROFILE%\.agents\skills\humanize-kr`에 설치됩니다. 스킬이 목록에 바로 보이지 않으면 새 세션을 시작하세요.
@@ -144,21 +144,37 @@ Claude Code·Codex처럼 MCP를 지원하는 에이전트는 포털을 도구로
 
 ### 준비
 
-1. 포털이 실행 중이어야 합니다. 이 Mac에서는 Hermes 서비스가 `http://127.0.0.1:7882`로 띄워 둡니다.
-2. 저장소에서 `npm run build`를 한 번 실행해 `dist/mcp/server.js`를 만듭니다. 실행에는 Node 24가 필요하며 Hermes의 Node(`~/.hermes/node/bin/node`)를 그대로 쓰면 됩니다.
+1. **포털을 띄웁니다.** 이 Mac에서는 Hermes 서비스가 `http://127.0.0.1:7882`로 띄워 둡니다. Windows에서는 아래 [LAN 웹 포털](#lan-웹-포털-처음-한-번만-설정하기) 설정을 마친 뒤 `start-portal.cmd`로 띄웁니다. 주소는 같습니다.
+2. **MCP 서버를 빌드합니다.** 저장소에서 빌드를 한 번 실행해 `dist/mcp/server.js`를 만듭니다. 기존 Windows 포털은 `dist\server.js`가 있으면 다시 빌드하지 않으므로, 최신 코드를 받은 뒤에는 직접 빌드해야 합니다.
+   - Mac: `npm run build`
+   - Windows(PowerShell): `npm.cmd run build`
+3. **Node 24가 필요합니다.** Mac에서는 Hermes의 Node(`~/.hermes/node/bin/node`)를 그대로 씁니다. Windows에서는 포털용으로 설치한 Node.js(`node`)를 씁니다. 위치는 `where.exe node`로 확인합니다(보통 `C:\Program Files\nodejs\node.exe`).
 
 ### 등록하기
 
-**Claude Code** — 한 번만 등록하면 됩니다. `-s user`를 붙이면 모든 프로젝트에서, 빼면 지금 프로젝트에서만 쓸 수 있습니다.
+한 번만 등록하면 됩니다. 아래 Windows 예시의 저장소 경로 `C:\work\ai-text-makes-likes-human`은 예시이므로 실제로 받은 위치로 바꿉니다.
+
+**Claude Code** — `-s user`를 붙이면 모든 프로젝트에서, 빼면 지금 프로젝트에서만 쓸 수 있습니다.
+
+Mac:
 
 ```bash
 claude mcp add -s user humanize-kr -- ~/.hermes/node/bin/node /Users/wisdom/wisdom_project/gpt/ai-text-makes-likes-human/dist/mcp/server.js
 claude mcp list        # humanize-kr가 Connected로 나오면 준비 완료
 ```
 
+Windows(PowerShell):
+
+```powershell
+claude mcp add -s user humanize-kr -- node C:\work\ai-text-makes-likes-human\dist\mcp\server.js
+claude mcp list        # humanize-kr가 Connected로 나오면 준비 완료
+```
+
 세션 안에서는 `/mcp`로 연결 상태를 볼 수 있습니다.
 
-**Codex** — `~/.codex/config.toml`에 아래를 넣습니다. Codex는 도구 호출을 기본 60초에 끊기 때문에 `tool_timeout_sec`를 넉넉하게 잡아야 합니다. 윤문은 대기열을 포함해 몇 분에서 수십 분 걸릴 수 있으므로 1시간(3600초)을 권장합니다.
+**Codex** — 설정 파일에 아래 표를 넣습니다. Codex는 도구 호출을 기본 60초에 끊기 때문에 `tool_timeout_sec`를 넉넉하게 잡아야 합니다. 윤문은 대기열을 포함해 몇 분에서 수십 분 걸릴 수 있으므로 1시간(3600초)을 권장합니다. `codex mcp add` 명령으로는 이 값을 넣을 수 없으니 파일을 직접 고칩니다.
+
+Mac(`~/.codex/config.toml`):
 
 ```toml
 [mcp_servers.humanize-kr]
@@ -167,9 +183,26 @@ args = ["/Users/wisdom/wisdom_project/gpt/ai-text-makes-likes-human/dist/mcp/ser
 tool_timeout_sec = 3600
 ```
 
+Windows(`%USERPROFILE%\.codex\config.toml`). 작은따옴표로 감싸면 TOML이 역슬래시를 그대로 둡니다.
+
+```toml
+[mcp_servers.humanize-kr]
+command = 'C:\Program Files\nodejs\node.exe'
+args = ['C:\work\ai-text-makes-likes-human\dist\mcp\server.js']
+tool_timeout_sec = 3600
+```
+
+`codex mcp list`에 `humanize-kr`가 보이면 등록된 것입니다.
+
 **그 밖의 MCP 클라이언트** — stdio 방식으로 명령 `node`, 인자 `<저장소 경로>/dist/mcp/server.js`를 등록합니다.
 
-설정을 바꾸지 않고 먼저 시험해 보려면 다음을 실행합니다.
+**등록 확인** — 등록한 뒤 다음을 실행해 상태가 `ready`로 나오면 됩니다. Mac·Windows 모두 같은 명령입니다.
+
+```bash
+claude -p "humanize_status를 한 번 호출하고 상태를 알려 줘." --allowedTools mcp__humanize-kr__humanize_status
+```
+
+Mac에서 설정을 바꾸지 않고 먼저 시험해 보려면 다음을 실행합니다.
 
 ```bash
 echo "humanize_status를 한 번 호출하고 상태를 알려 줘." | claude -p --strict-mcp-config \
@@ -195,9 +228,11 @@ echo "humanize_status를 한 번 호출하고 상태를 알려 줘." | claude -p
 ```text
 humanize-kr로 다음 글을 중간 강도로 다듬어 줘: 본 보고서는 시장 동향에 대한 분석을 수행한다.
 /Users/wisdom/문서/보고서.md를 강하게 다듬어 줘.
-/Users/wisdom/문서/발표.pptx를 다듬어 줘.
+C:\문서\발표.pptx를 다듬어 줘.
 윤문 포털 상태 알려 줘.
 ```
+
+파일 경로는 MCP 서버가 도는 PC 기준의 절대 경로입니다(Mac은 `/Users/...`, Windows는 `C:\...`).
 
 ### 파일 저장 규칙
 
@@ -210,7 +245,13 @@ humanize-kr로 다음 글을 중간 강도로 다듬어 줘: 본 보고서는 �
 같은 LAN의 다른 PC에서도 쓸 수 있습니다. 그 PC에 이 저장소를 받아 빌드한 뒤 포털 주소를 `HUMANIZE_PORTAL_URL`로 넘깁니다. 파일은 MCP 서버가 도는 PC에서 읽고 저장합니다.
 
 ```bash
+# Mac
 claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node <저장소 경로>/dist/mcp/server.js
+```
+
+```powershell
+# Windows(PowerShell)
+claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node C:\work\ai-text-makes-likes-human\dist\mcp\server.js
 ```
 
 Codex는 `[mcp_servers.humanize-kr]` 표에 `env = { HUMANIZE_PORTAL_URL = "http://192.168.0.10:7882" }`를 더합니다. 포털은 사설망 접속만 받고 로그인이 없으므로 MCP 서버도 포털 PC나 같은 LAN에서만 씁니다.
@@ -221,8 +262,8 @@ MCP 서버 자체에는 시간 제한이 없고, 포털이 한 구간을 10분 �
 
 | 증상 | 원인과 해결 |
 |---|---|
-| `PORTAL_UNREACHABLE` | 포털이 꺼져 있거나 `HUMANIZE_PORTAL_URL`이 틀렸습니다. `node dist/ops/hermes-service.js status`로 확인합니다. |
-| 1분쯤 지나 클라이언트가 포기함 | 클라이언트의 도구 시간 제한이 짧습니다. Codex는 `tool_timeout_sec`, Claude Code는 `MCP_TOOL_TIMEOUT`(밀리초, 예: `MCP_TOOL_TIMEOUT=3600000 claude`)을 늘립니다. |
+| `PORTAL_UNREACHABLE` | 포털이 꺼져 있거나 `HUMANIZE_PORTAL_URL`이 틀렸습니다. Mac은 `node dist/ops/hermes-service.js status`로 확인합니다. Windows는 `start-portal.cmd` 창이 열려 있는지, 브라우저에서 `http://localhost:7882`가 열리는지 확인합니다. |
+| 1분쯤 지나 클라이언트가 포기함 | 클라이언트의 도구 시간 제한이 짧습니다. Codex는 `tool_timeout_sec`를 늘립니다. Claude Code는 `MCP_TOOL_TIMEOUT`(밀리초)을 늘려 시작합니다. Mac은 `MCP_TOOL_TIMEOUT=3600000 claude`, Windows PowerShell은 `$env:MCP_TOOL_TIMEOUT='3600000'; claude`입니다. |
 | `QUEUE_FULL` | 포털이 이미 작업 3건을 받았습니다. 잠시 뒤 다시 시도합니다. |
 | `INVALID_MODEL_SETTINGS` | 제공하지 않는 모델이나 추론 수준입니다. `humanize_status`로 목록을 확인합니다. |
 | "DOCX·PPTX는 … 보통으로만" | Office 파일에 강도를 줬습니다. `strength`를 빼고 다시 요청합니다. |

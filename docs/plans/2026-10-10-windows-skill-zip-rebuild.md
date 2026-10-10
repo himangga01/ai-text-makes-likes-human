@@ -1,6 +1,6 @@
 # Windows 스킬 ZIP 재빌드 계획
 
-작성일: 2026-10-10 · 기준: main `63d2e4b` · 작업 위치: Windows PC
+작성일: 2026-10-10 · 기준: main `63d2e4b`, 버전 0.5.0 · 작업 위치: Windows PC
 
 스킬 ZIP 빌드(`npm run skills:build`)와 패키지 검증(`scripts/verify-skill-packages.mjs`)은 Windows 전용이다. 빌드 중에 내장 Windows `python.exe`·`node.exe`를 직접 실행하고, 검증은 PowerShell 설치 도우미로 ZIP을 실제로 설치해 본다. 그래서 Mac에서는 만들 수 없고, 이 계획대로 Windows PC에서 진행한다.
 
@@ -73,11 +73,14 @@ powershell -ExecutionPolicy Bypass -File release\install-humanize-skill.ps1 -Hos
 
 ## 8. 결정이 필요한 것
 
-- **버전 번호.** 지금 `package.json`은 0.4.0이라서 새 ZIP의 파일 이름이 9월 배포본과 같다. README도 "버전명만으로 같은 코드라고 판단하지 않는다"고 경고한다. **권장:** 0.5.0으로 올리고 `docs/releases/0.5.0.md`를 쓴다. 다만 버전을 바꾸면 데스크톱 EXE 이름도 바뀌므로 함께 결정한다.
+- **버전 번호 — 결정됨(2026-10-10).** 사용자 요청으로 0.5.0으로 올렸다. `package.json`, 문서 속 ZIP·EXE 이름, [0.5.0 릴리스 노트](../releases/0.5.0.md)에 반영했다. 그래서 빌드 결과는 `humanize-kr-{claude,codex}-0.5.0-win-x64.zip`이고, EXE는 `HumanizeKR-0.5.0-win-x64*.exe`다. 빌드와 검증을 마치면 릴리스 노트의 "검증 범위"와 "배포"를 실제 결과로 고친다.
 - **데스크톱 앱 EXE.** Windows 앱(`release/HumanizeKR-*-win-x64-self-signed.exe`)도 0.4.0 이후 서버 변경이 반영되지 않았다. "서버 로직을 바꾸면 모든 사용 경로를 함께 갱신한다"는 원칙에 따르면 같이 다시 만드는 것이 맞다. 같은 PC에서 이어서 하려면 [docs/desktop.md](../desktop.md)의 순서를 따른다(`desktop:build` → `test:desktop` → `desktop:portable` → `smoke-portable.mjs`).
 
 ## 9. 이 계획 밖에 남은 것
 
 - **Hermes `portal-service` 스킬**(Mac, `~/.hermes/skills/portal-service/SKILL.md`). 아직 강도를 4개로 적고 있다. 5단계(`rewrite` 포함)와 TXT·MD 강도를 반영하도록 사용자가 직접 고친다.
-- **MCP 서버.** ZIP에 들어가지 않는다. 포털을 부르는 별도 경로라서 포털 PC에서 `dist/mcp/server.js`로 쓴다. Windows PC에서도 쓰려면 저장소를 빌드한 뒤 `HUMANIZE_PORTAL_URL`로 포털 주소를 넘긴다([MCP Server Guide](../mcp.md)).
+- **MCP 서버.** ZIP에 들어가지 않는다. 포털을 부르는 별도 경로라서 `dist/mcp/server.js`로 쓴다. README에 Windows 등록 예시(Claude Code는 PowerShell 명령, Codex는 `%USERPROFILE%\.codex\config.toml`)를 넣었지만 Windows에서 실행해 보지는 않았다. 같은 PC에서 하는 김에 확인한다.
+  1. `npm.cmd run build`로 빌드한다.
+  2. README "MCP 서버로 쓰기"의 Windows 예시대로 등록한다.
+  3. `claude -p "humanize_status를 한 번 호출하고 상태를 알려 줘." --allowedTools mcp__humanize-kr__humanize_status`로 `ready`가 나오는지 본다. 포털이 다른 PC에 있으면 `HUMANIZE_PORTAL_URL`을 넘긴다.
 - **플러그인.** 이 저장소에는 아직 없다.
