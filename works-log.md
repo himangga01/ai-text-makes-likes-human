@@ -1,5 +1,34 @@
 # Works Log
 
+## 2026-10-10 — Rewrite strength for TXT/MD file inputs
+
+**Request (user):** "파일로 넣을때도 강도 레벨 선택가능하게 해야지!", then mid-task "수정하고 메인 브랜치에 최신 코드 커푸하고 서버반영 재시작해".
+
+**Before:** a loaded TXT/MD file was pinned to normal. The portal hid the strength controls and sent `strength=normal`. `parseRewriteOptions`, desktop IPC and `skill_bridge.options` rejected any other strength for `inputKind: text-file`. Super Sejong v2 planned every text-file job FIX-only with no open review. This was a scoping choice of the 2026-09-10 plan ("파일 입력까지 확대하는 것은 별도 변경이다"), not a technical limit: direct text and TXT/MD already share one chunked pipeline.
+
+**Change (`6379973`, worked in worktree `.worktrees/file-strength`, fast-forwarded to main)**
+- `parseRewriteOptions` and `skill_bridge.options` accept all five strengths for `text-file`.
+- Legacy engine: `legacyRewriteOptions` now also routes a text file above normal to `inputKind: direct-text` at that strength. Every legacy call site already goes through it: prompt builder, candidate review, the bridge ops, and `HumanizeEngine.decideAndDeliver`; `text-edits.ts` now does too. So a file at strength S gets exactly the direct-text treatment at S: strength prompt, sentence map, strict `checkDirectTextFidelity`, protected-sentence restoration at very-strong, and the full-document check. `requestedStrength` in diagnostics and the v2 shadow keep the request (`text-file`/S).
+- Decision: a file at **normal** keeps the old file route (no rewrite policy, structure guard only), so existing file jobs and Hermes file jobs without `--input-kind` behave exactly as before. The direct-text guard includes `checkStructuralFidelity` and freezes `#` headings, so Markdown structure stays protected above normal.
+- Skill Gateway: `strength_route()` mirrors the routing rule for `instructionsPath`/`sentencesPath`, reply parsing, the chunk guard and the finalize check. Comparison HTML stays direct-text only. DOCX/PPTX reject a strength above normal with a new message ("Strength is available for direct text and TXT/MD files only").
+- Super Sejong v2 (`plan.py`): a text file is planned like direct text at its strength. At normal it stays FIX-only with no open review, even under `SUPER_SEJONG_OPEN_REVIEW=always`.
+- UI: strength controls show for direct text and TXT/MD, not DOCX/PPTX. The request sends the chosen strength, and the result shows "사용한 변환 강도 · …" for files too. The diff view stays direct-text only. Help text: "직접 입력한 글과 TXT·MD 파일에 적용됩니다. DOCX·PPTX 문서는 서식을 지키기 위해 보통으로 다듬습니다."
+- Docs: README, `docs/skills-guide.md` §1.4 and the error table, `SKILL.md`, `references/workflow.md` (read `instructionsPath` whenever it is present), and the analysis docs.
+
+**Not done, by decision:** DOCX/PPTX strength. Office edits are before/after replacements inside formatting runs, PPTX text has maxChars, and v2 Office uses its own per-block plans. Strength there would need its own design: prompt scope, a v2 block-plan mapping, and an Office rewrite that cannot merge or split sentences. Offered to the user as a follow-up. The Windows skill ZIPs were not rebuilt (needs Windows). `ENGINE_VERSION` was not bumped: plans for every previously valid input are unchanged; only the newly allowed text-file/S>normal input is new.
+
+**Tests**
+- New: legacy routing and prompt equality for file vs direct text at medium/strong/very-strong; integration through the web route showing that a file at strong blocks a participant swap that the file route at normal lets through (rolledBackChunks 1); file at rewrite → very-strong prompt with requestedStrength rewrite; legacy Gateway file job at strong (instructions, sentence spans, strict retry) and at rewrite and normal; v2 Gateway file plan equals the direct-text plan at strong; v2 file at normal under OPEN_REVIEW=always has no review.
+- Updated the tests that encoded "file = normal only", including two e2e tests.
+- Results: vitest 755 passed / 9 skipped; Python skills 717 OK and documents 93 OK under both `SUPER_SEJONG_ENGINE=legacy` and `v2`; Playwright 54 passed / 9 skipped.
+
+**Deployment**
+- Pushed `21a1142..6379973` to origin/main. Built `dist` and rebuilt the skill bridge.
+- Restarted with `SUPER_SEJONG_V2_SHADOW=1`. New PID 48758 is healthy and idle, and the flag is present in its environment.
+- Live checks: the served page has the new help text; `inputKind=text-file&strength=maximum` → 400 `INVALID_REWRITE_OPTIONS`; the live bridge returns `{text-file, strong}` and `{text-file, rewrite}`; dist carries the new routing.
+- No real model job was run on the live server.
+- The user's personal lines in the three skill docs were stashed by tag around the merge, reapplied cleanly, and remain uncommitted.
+
 ## 2026-10-09 — Preservation-check false positives fixed in the legacy guard and in Super Sejong v2
 
 **Requests (user):** "보존 검사 오판 수정하고 메인에 커푸", then mid-task "우리 세종엔진도 수정해 오판 관련해서".
