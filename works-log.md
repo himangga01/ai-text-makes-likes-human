@@ -1,5 +1,81 @@
 # Works Log
 
+## 2026-10-10 — Windows skill ZIP rebuild: plan only
+
+**Requests (user):** "스킬 ZIP 다시 만들어", then mid-turn "윈도우 피시에서 수정할께", "수정 게획만 작성하고", "깃에 커푸해".
+
+- **Why it cannot be built on this Mac:**
+  - `scripts/package-skills.mjs`, `prepare-node.mjs` and `prepare-document-deps.mjs` spawn the embedded Windows `python.exe` and `node.exe` to unzip and zip, and run the `lxml` and `node --version` smoke checks.
+  - `verify-skill-packages.mjs` installs through `powershell.exe`.
+- **Considered, then dropped on the user's word:** a cross-build path that uses the host Python for unzipping and zipping and skips the Windows-binary smoke checks off Windows. The user will do the work on the Windows PC. No repository code was changed.
+- **Plan written:** `docs/plans/2026-10-10-windows-skill-zip-rebuild.md`.
+  - **Why rebuild:** the last shipped ZIPs are 0.4.0 (2026-09-10). Since `b28dae7` there are 70 commits in the paths the ZIPs carry: v2 engine, `rewrite`, the false-positive fixes, and TXT/MD strength, which the 0.4.0 ZIP rejects.
+  - **Pre-checks:** a clean Windows checkout. The Mac-only personal lines must not reach the ZIP.
+  - **Verifier gaps to fix first:**
+    - Its final message says "four" strengths while it checks five.
+    - No TXT/MD strength check.
+    - No check that an Office file refuses a strength (`--input-kind text-file --strength strong` gives "Strength is available for direct text and TXT/MD files only"; without `--input-kind` the error is "Strength requires explicit input kind").
+  - **Steps:** tests; then `skills:build` and `verify-skill-packages.mjs`; then install for both hosts and a real use check.
+  - **Decisions left to the user:**
+    - Bump to 0.5.0 (recommended). Today the ZIP names equal the September ones.
+    - Rebuild the desktop EXE as well, under the new all-surfaces rule.
+  - **Outside the plan:**
+    - Hermes `portal-service` skill (4 strengths; user edits).
+    - The MCP server is not in the ZIPs.
+    - No plugin exists.
+
+## 2026-10-10 — MCP server for the portal
+
+**Requests (user):** "그리고 우리 MCP 서버 지원하냐?" (answer: no; the product had no MCP server, and the Claude runner starts the CLI with `--strict-mcp-config` and no servers), then "mcp 기능 추가". Same turn, before it: "커푸, 서버 반영 재시작". That committed and pushed the works-log as `85212cc`, rebuilt, and restarted the portal: PID 52604, `SUPER_SEJONG_V2_SHADOW=1` present.
+
+**Design decisions**
+- **Thin client of the portal.** The MCP server calls the portal's HTTP API. It does not run the engine in its own process, so MCP jobs share the queue (3 accepted), engines, model policy, preservation checks and Office lifecycle with the web page.
+- **stdio transport, no dependency.** `@modelcontextprotocol/sdk` was not added; the project's only runtime dependency stays express. The tools-only subset is hand-written: initialize with version negotiation (2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05), ping, tools/list, tools/call, `notifications/progress` when a progress token is given, and `notifications/cancelled`, which aborts the portal job and sends no response. Batches get -32600. Tool failures are `isError` results carrying the portal's code.
+- **Three tools.**
+  - `humanize_text`: direct text at any strength.
+  - `humanize_file`: TXT/MD at any strength; DOCX/PPTX at the default through upload → transform → result → DELETE. A strength for an Office file is refused.
+  - `humanize_status`: the `/api/health` payload.
+- **File safety.** Paths must be absolute and only .txt/.md/.docx/.pptx are read. Size limits are 1 MiB for TXT/MD and 50 MiB for Office. Output goes to `<stem>-humanized[-N].<ext>`, or to an `outputPath` with the same extension that is not the source. The file is opened with `wx`, so nothing is overwritten, and a failed write removes the partial file. TXT/MD decoding mirrors `public/text-file.js` (BOM, strict UTF-8, CP949; NUL without BOM refused), and the output is UTF-8.
+- **Portal address.** `HUMANIZE_PORTAL_URL` sets it; the default is `http://127.0.0.1:7882`. The portal's LAN-only rule still applies.
+- **Rejected:** an `npm run mcp` script. npm's banner on stdout would corrupt the stdio protocol.
+
+**Files:** `src/mcp/{server,session,portal-client}.ts`, `tests/integration/mcp-server.test.ts`, `docs/mcp.md` (registration for Claude Code and Codex; Codex needs `tool_timeout_sec`, default 60 s), a README section, and a code-map row. First commit `f79f3de` on branch `feat/mcp`.
+
+**Follow-up requests (user):** "메인깃에 반영, 리드미 파일 업데이트 엠시피 서버 사용법 추가, 서버 적용 서버 재시작", then mid-turn "코덱스 시간제한 넉넉하게 수정해" and "시간제한 수정하고 깃, 서버 모두 반영 재시작해". Commit `63d2e4b`:
+- **Codex timeout.** The documented `tool_timeout_sec` went from 900 to 3600. A call lasts as long as its portal job plus queue time, behind up to two accepted jobs. The portal ends a stuck job on its own, because one chunk may run at most 10 minutes (`chunkTimeoutMs`, else `ENGINE_TIMEOUT`), so a long client limit cannot leave a call hanging forever. `docs/mcp.md` gained a "Time limits" section covering the client, the MCP server and the portal.
+- **Bug found while checking the timeouts: a 5-minute idle cutoff in the MCP server itself.** Node's built-in `fetch` (undici) uses `headersTimeout` and `bodyTimeout` of 300 s. The portal sends no heartbeat: a queued job emits one `queued` event, and a long chunk emits nothing until it finishes. So any silence over 5 minutes would have failed the MCP call while the portal kept working, and raising the Codex limit alone would not have helped. Fix: `httpFetch` in `portal-client.ts`, a `fetch`-shaped wrapper over `node:http(s)` with no idle limit. It sets an explicit content-length, uses a null body for 204/205/304, and keeps the abort signal. It is now the `PortalClient` default. Rejected: adding the `undici` package for an `Agent({ bodyTimeout: 0 })`, which would be a new dependency; and portal heartbeat events, which would change the web stream protocol.
+- **README.** The MCP section was rewritten as a full Korean usage guide: setup, Claude Code (`-s user`, `claude mcp list`, `/mcp`) and Codex registration, a one-off try, the tools and arguments, example prompts, file-saving rules, other PCs (`-e HUMANIZE_PORTAL_URL=…`; the name goes before the variadic `-e`), time limits, and troubleshooting. An MCP bullet was added to the intro.
+
+**Verification**
+- vitest 764 passed / 9 skipped, 9 of them new MCP tests: protocol, argument errors, unreachable portal, direct-text job with strength/model/effort and progress, portal refusal code, CP949 TXT → UTF-8 output with numbering and no overwrite, the Office lifecycle including DELETE, cancellation, and real stdio over `tsx` including parse error and clean exit.
+- No Python or browser code changed, so the Python and e2e suites were not rerun.
+- Live, through `dist/mcp/server.js` against the running portal:
+  - `humanize_status` returned ready, 5 strengths, and the defaults gpt-6.1-sol/high and claude-opus-5-5/xhigh.
+  - One real `humanize_text` at medium returned "담당자는 자료를 정리한다. 이 방안은 경쟁력이 강하다." with 5 progress notifications (22.3 s).
+  - A one-off Claude Code client (`claude -p --strict-mcp-config --mcp-config …`, Haiku 5.5, no config written) connected, listed the tools and called `humanize_status`: "ready — normal, medium, strong, very-strong, rewrite".
+- After `63d2e4b`:
+  - vitest 764 passed / 9 skipped. The 9 MCP integration tests now run through `httpFetch`, covering cancellation, the Office lifecycle and the unreachable portal.
+  - Silent-stream check: a local server sends one line, stays silent for 320 s, then sends the last line. Built-in `fetch` failed after 301 s with `UND_ERR_BODY_TIMEOUT`; `httpFetch` received both lines after 320 s.
+- **Deployment.**
+  - `feat/mcp` was fast-forwarded into main. It touched none of the uncommitted personal files, so no stash was needed.
+  - Pushed `85212cc..63d2e4b`.
+  - `npm run build` and the skill-bridge bundle were rebuilt, so `dist/mcp/server.js` exists in the main tree.
+  - The portal was idle (0 active, 0 queued) and was restarted: PID 52604 → 15246, `SUPER_SEJONG_V2_SHADOW=1` confirmed in the process environment.
+- **Live check after the restart.** The main tree's `dist/mcp/server.js` was driven over stdio:
+  - initialize negotiated 2025-11-25, version 0.4.0.
+  - tools/list returned the 3 tools.
+  - `humanize_status` returned ready, pid 15246.
+  - `humanize_text` at normal returned "본 보고서는 시장 동향을 분석한다." with 5 progress notifications in 18.8 s.
+- **Registration**, on the user's request "클로드 코드랑 코덱스 둘 다 등록해줘":
+  - Claude Code: `claude mcp add -s user humanize-kr -- ~/.hermes/node/bin/node <repo>/dist/mcp/server.js`. It writes `~/.claude.json`; `claude mcp get` reported "✔ Connected".
+  - Codex: the `[mcp_servers.humanize-kr]` table, with `tool_timeout_sec = 3600`, was appended to `~/.codex/config.toml`. `codex mcp add` cannot set the timeout. The file was backed up first as `config.toml.bak-2026-10-10-humanize-kr`. `codex mcp get` shows the table.
+  - Real calls through the registered configs:
+    - `claude -p` (Haiku 5.5) called `humanize_status` and got ready plus the 5 strength ids.
+    - `codex exec --ephemeral` (gpt-6-luna, low) did the same.
+  - Codex also logged an unrelated failure: a revoked OAuth grant for the user's own `notion` MCP server.
+  - Hermes was not registered, because `~/.hermes` is never written.
+- **Standing rule from the user:** "이제부터 서버 로직 변경하면, 스킬, 플러그인, 엠시피 서버까지 모두 같이 변경해야해". Saved as a memory. Every server-logic change must update the skill, plugin (none exists yet) and MCP server surfaces in the same change.
+
 ## 2026-10-10 — Rewrite strength for TXT/MD file inputs
 
 **Request (user):** "파일로 넣을때도 강도 레벨 선택가능하게 해야지!", then mid-task "수정하고 메인 브랜치에 최신 코드 커푸하고 서버반영 재시작해".
