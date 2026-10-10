@@ -55,9 +55,9 @@ def options(input_kind=None, strength=None, offline=False):
         if strength is not None:
             raise ValueError("Strength requires explicit input kind")
         return None
-    if input_kind == "text-file":
-        if strength not in (None, "normal"):
-            raise ValueError("Strength is available for direct text only")
+    # A TXT/MD file takes every strength too (owner request 2026-10-10); it needs Node only above normal, where the
+    # legacy engine runs it on the direct-text route (strength_route in skill_gateway, legacyRewriteOptions).
+    if input_kind == "text-file" and strength in (None, "normal"):
         return {"inputKind": input_kind, "strength": "normal"}
     if offline:
         return {"inputKind": input_kind, "strength": strength or "normal"}

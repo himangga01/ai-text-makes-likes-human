@@ -1,4 +1,4 @@
-import type { RewriteOptions } from './rewrite-policy.js';
+import { legacyRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { sourceSentences } from './direct-text-fidelity.js';
 import { EngineError } from './errors.js';
 import { parseEngineResult, type CodexResult } from './codex-runner.js';
@@ -18,7 +18,7 @@ export function parseTextResult(raw: string, source: string, label = 'CLI', opti
     if (value.edits.length) return fail();
     return parseEngineResult(raw, label);
   }
-  const sentences = options?.inputKind === 'direct-text' ? sourceSentences(source) : undefined;
+  const sentences = legacyRewriteOptions(options)?.inputKind === 'direct-text' ? sourceSentences(source) : undefined;
   let fidelityIssues = 0;
   const intervals: Array<{ at: number; before: string; after: string }> = [];
   for (const edit of value.edits) {

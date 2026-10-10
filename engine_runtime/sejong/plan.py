@@ -23,16 +23,19 @@ modules (nothing here detects anything itself):
 
 Strength -> requested tiers (3.4 with lead decision 9.2a item 2):
 
-  normal, and every text-file job     FIX
+  normal                              FIX
   medium, strong, very-strong         FIX + SUGGEST (SUGGEST off under SUPER_SEJONG_MODE=off)
   open review                         config.open_review_enabled (default: medium and up), never for a
-                                      text-file job; maxSentences = max(3, ceil(0.1 * n)) over the n
+                                      text-file job at normal; maxSentences = max(3, ceil(0.1 * n)) over the n
                                       sentences the writer may nominate (body, list, quote or button units
                                       with Hangul, not wholly frozen). A chunk with no such sentence gets no
                                       open review, so it never costs a call for nothing
   allowSplit                          a request with a rule that allows splitting (CLR-LONG), strength
                                       medium and up
   allowFullText                       very-strong and rewrite
+
+A text-file job takes every strength (owner request 2026-10-10) and is planned like direct text at it; at normal it
+keeps the file route of before (FIX only, no open review whatever SUPER_SEJONG_OPEN_REVIEW says).
 
 Strength rewrite (WP-19, 매우 강하게(다시쓰기)): FIX + SUGGEST requests are computed as above and sent as context
 only, there is no open review, allowFullText is true, options.mode is "rewrite" and plan.paragraphs lists every
@@ -90,13 +93,15 @@ def _sha256(text: str) -> str:
 # --------------------------------------------------------------------------
 def requested_tiers(options: Options, flags: C.Flags) -> Tuple[str, ...]:
     """The finding tiers that become requests (3.4)."""
-    if options.strength == "normal" or options.input_kind == "text-file":
+    if options.strength == "normal":
         return ("FIX",)
     return ("FIX", "SUGGEST") if C.suggest_requests_enabled(flags) else ("FIX",)
 
 
 def review_wanted(options: Options, flags: C.Flags) -> bool:
-    return options.input_kind != "text-file" and C.open_review_enabled(flags, options.strength)
+    if options.input_kind == "text-file" and options.strength == "normal":
+        return False
+    return C.open_review_enabled(flags, options.strength)
 
 
 def review_limit(nominable: int) -> int:

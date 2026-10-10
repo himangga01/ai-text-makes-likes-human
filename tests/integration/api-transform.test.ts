@@ -152,7 +152,7 @@ describe("POST /api/transform", () => {
     }
   });
 
-  it.each(['strength=strong','inputKind=text-file&strength=strong','inputKind=direct-text&strength=maximum','inputKind=direct-text&strength=normal&strength=strong'])('rejects invalid rewrite options before queue reservation: %s',async query=>{
+  it.each(['strength=strong','inputKind=text-file&strength=maximum','inputKind=direct-text&strength=maximum','inputKind=direct-text&strength=normal&strength=strong'])('rejects invalid rewrite options before queue reservation: %s',async query=>{
     const test=await createTestApp({transform:async()=>{throw new Error('must not run');}});
     try {
       test.queue.reserve('one');test.queue.reserve('two');test.queue.reserve('three');

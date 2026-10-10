@@ -102,7 +102,7 @@ Type the request **in the host's chat input**, not in a terminal.
 
 Requests can be written in Korean or English. For Codex, replace the prefix with `$humanize-kr`.
 
-### 1.4 Rewrite strength (direct text only)
+### 1.4 Rewrite strength (direct text and TXT/MD files)
 
 | Strength | Gateway value | Editing scope |
 |---|---|---|
@@ -115,7 +115,9 @@ Requests can be written in Korean or English. For Codex, replace the prefix with
 - If no strength is given, `normal` is used. The strength is fixed for the life of a job.
 - Strength is **not a guarantee** of how much text changes. Protected sentences (numbers, conditions, quotations) stay verbatim.
 - If preservation cannot be confirmed after at most one conservative retry, the chunk reverts to the source.
-- Strength and comparison do not apply to file inputs. The Gateway rejects `--strength` without `--input-kind`, any strength other than `normal` for `--input-kind text-file`, `direct-text` for Office files, and `--comparison-output` for Office documents.
+- TXT/MD files take every strength since October 10, 2026: pass `--input-kind text-file --strength <value>`. Above `normal`, a file job runs exactly like direct text at that strength (instructions, sentence spans, strict preservation check). A file at `normal`, or without `--input-kind`, keeps the file route of before.
+- DOCX/PPTX keep the default strength, because their edits stay inside formatting runs. Comparison HTML is for direct text only.
+- The Gateway rejects `--strength` without `--input-kind`, any strength other than `normal` for an Office file, `direct-text` for Office files, and `--comparison-output` for anything but direct text.
 
 ### 1.5 Change comparison HTML (direct text only)
 
@@ -170,7 +172,7 @@ Commands (prefix each with `<python> engine_runtime/skill_gateway.py`):
 
 | Command | Arguments | Result |
 |---|---|---|
-| `prepare` | `--input <file>` `[--input-kind direct-text]` `[--strength <value>]` | Creates a job. Returns `job`, `sourceHash`, `status`, and paths for the first chunk. DOCX/PPTX return `kind: document`. |
+| `prepare` | `--input <file>` `[--input-kind direct-text\|text-file]` `[--strength <value>]` | Creates a job. Returns `job`, `sourceHash`, `status`, and paths for the first chunk. DOCX/PPTX return `kind: document`. |
 | `next` | `--job <job>` | Returns the next pending chunk. Use it to resume after an interruption. |
 | `accept` | `--job` `--chunk` `--attempt 1\|2` `--source-hash` `--response <json>` | Verifies one rewritten chunk. Returns the next `status`, `chunk`, and `attempt` to follow exactly. |
 | `finalize` | `--job` `--output <new file>` `[--comparison-output <new .html>]` | Reassembles and verifies the full document, then writes the output. Returns `status: done` with `outputPath` and `comparisonPath`. |
@@ -185,7 +187,7 @@ Prepare returns these paths when `status` is `rewrite`:
 
 - `inputPath`: the chunk text to rewrite.
 - `rulesPath`: Korean rewriting rules.
-- `instructionsPath` and `sentencesPath`: direct text only. Re-read them on **every** attempt. They carry the strength, retry policy, and sentence spans.
+- `instructionsPath` and `sentencesPath`: direct text, and TXT/MD files above `normal`. Whenever they are present, re-read them on **every** attempt. They carry the strength, retry policy, and sentence spans.
 - `responsePath`: where the host writes its answer.
 
 Response format for text chunks (UTF-8 JSON, no code fences inside the text):
@@ -214,7 +216,8 @@ Input decoding for TXT/MD uses UTF-16 when a UTF-16 BOM is present. Otherwise it
 |---|---|
 | Skill not listed | Start a new host session. Check the install path (`.claude/skills` for Claude, `.agents/skills` for Codex). |
 | `Direct text requires the bundled Node bridge` | Node is missing or the bridge was not built. Run `node scripts/build-skill-bridge.mjs` (source install) or set `NODE_COMMAND`. |
-| `Strength requires explicit input kind` / `Strength is available for direct text only` | `--strength` was passed for a file. Use `--input-kind direct-text` for chat text, or drop `--strength`. |
+| `Strength requires explicit input kind` | `--strength` was passed without `--input-kind`. Add `--input-kind direct-text` for chat text or `--input-kind text-file` for a TXT/MD file. |
+| `Strength is available for direct text and TXT/MD files only` | `--strength` above `normal` was passed for DOCX/PPTX. Drop `--strength`. |
 | `Office files cannot be direct text` / `Comparison export is available for direct text only` | Direct-text options were used with DOCX/PPTX. Remove them. |
 | Source hash or manifest mismatch, `operation.lock` conflict | The source changed or another call is still running. Wait for it to finish, or start a new job with `prepare`. Do not delete unknown locks or edit state files. |
 | Some sentences unchanged or restored | Expected. Protection or verification kept the source. Check the returned warnings. |

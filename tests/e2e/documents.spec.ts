@@ -19,6 +19,7 @@ test('Office upload previews text, sends selected CLI and downloads original for
   await page.locator('#text-file-input').setInputFiles(path.resolve('tests/fixtures/documents/mixed.docx'));
   await expect(page.locator('#source-text')).toHaveValue('[문단 1]\n테스트 원문');
   await expect(page.locator('#source-text')).toHaveJSProperty('readOnly',true);
+  await expect(page.locator('#rewrite-controls')).toBeHidden();   // DOCX/PPTX keep the default strength
   await page.locator('#engine-option-claude').click();
   await page.locator('#transform-button').click();
   await expect(page.locator('#status-chip')).toContainText('완료');expect(selected).toBe('claude');

@@ -1,6 +1,6 @@
 ---
 name: humanize-kr
-description: "한국어 원문·TXT·MD·DOCX·PPTX의 번역투와 기계적인 문체를 다듬을 때 사용한다. 직접 입력은 변환 강도와 HTML 변경 비교를 지원하며, Word·PowerPoint는 서식과 구조를 보존하고 같은 형식의 새 파일로 검증해 저장한다."
+description: "한국어 원문·TXT·MD·DOCX·PPTX의 번역투와 기계적인 문체를 다듬을 때 사용한다. 직접 입력과 TXT·MD는 변환 강도를, 직접 입력은 HTML 변경 비교도 지원하며, Word·PowerPoint는 서식과 구조를 보존하고 같은 형식의 새 파일로 검증해 저장한다."
 ---
 
 # 한국어 문장 다듬기
@@ -9,7 +9,7 @@ description: "한국어 원문·TXT·MD·DOCX·PPTX의 번역투와 기계적인
 
 먼저 [references/workflow.md](references/workflow.md)를 읽고 파일 기반 Gateway의 prepare → next → accept → finalize → cleanup 순서를 따른다. Gateway는 모델을 호출하지 않으며 원문 복원·내용 보존 검증·재시도 결정을 담당한다.
 
-대화로 받은 원문은 UTF-8 임시 파일에 쓰되 `--input-kind direct-text`로 명시한다. 강도는 보통(normal, 기본값)·중간(medium)·강하게(strong)·매우 강하게(very-strong)·매우 강하게(다시쓰기)(rewrite)다. 직접 입력에서는 Gateway의 instructionsPath와 sentencesPath를 읽고 앱과 같은 편집 범위·보호 규칙을 적용한다. 보호 문장은 숫자·날짜·인용과 가능성·부정·의무·조건 표현을 원문 그대로 두고 그 밖의 어색한 표현만 고친다. 주어가 여럿인 문장에서는 주체·대상·값의 순서를 바꾸지 않는다. 사용자가 변경 비교를 요청하면 최종 검증문과 독립 HTML 비교 파일을 함께 제공한다. TXT/MD/DOCX/PPTX 파일 입력에는 강도 변경과 비교 내보내기를 적용하지 않는다.
+대화로 받은 원문은 UTF-8 임시 파일에 쓰되 `--input-kind direct-text`로 명시한다. 강도는 보통(normal, 기본값)·중간(medium)·강하게(strong)·매우 강하게(very-strong)·매우 강하게(다시쓰기)(rewrite)다. TXT/MD 파일도 사용자가 강도를 요청하면 `--input-kind text-file --strength <강도>`로 준비한다. Gateway가 instructionsPath와 sentencesPath를 주면(직접 입력, 보통보다 높은 강도의 TXT/MD) 매 시도 읽고 앱과 같은 편집 범위·보호 규칙을 적용한다. 보호 문장은 숫자·날짜·인용과 가능성·부정·의무·조건 표현을 원문 그대로 두고 그 밖의 어색한 표현만 고친다. 주어가 여럿인 문장에서는 주체·대상·값의 순서를 바꾸지 않는다. 사용자가 변경 비교를 요청하면 최종 검증문과 독립 HTML 비교 파일을 함께 제공한다. 비교 내보내기는 직접 입력에만, DOCX/PPTX는 강도 없이 기본값으로 처리한다.
 
 DOCX/PPTX를 처리할 때는 [references/documents.md](references/documents.md)의 블록별 편집 계약을 사용한다. 평문으로 변환해 다시 문서를 만들지 않는다.
 

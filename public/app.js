@@ -273,6 +273,11 @@ function directTextInput() {
   return !sourceFile && !officeDocument;
 }
 
+/** Direct text and TXT/MD files take a rewrite strength; DOCX/PPTX keep their block edits at the default. */
+function strengthInput() {
+  return !officeDocument;
+}
+
 function setResultMode(nextMode, focusFinal = false) {
   resultMode = nextMode;
   const showComparison = runCompleted && comparisonReady && directTextInput() && nextMode === "diff";
@@ -303,11 +308,13 @@ function clearCompletedResult() {
 
 function renderCompletedResult(run) {
   elements.result.value = finalText;
-  if (run.inputKind === "direct-text") {
+  if (run.strength) {
     const option = rewriteOptions.find(candidate => candidate.id === run.strength)
       ?? bundledRewriteOptions.find(candidate => candidate.id === run.strength);
     elements.resultStrength.textContent = `사용한 변환 강도 · ${option?.label ?? run.strength}`;
-    elements.resultStrength.hidden = false;
+  }
+  elements.resultStrength.hidden = !run.strength;
+  if (run.inputKind === "direct-text") {
     elements.resultViewControls.hidden = false;
     resultMode = "diff";
     setResultMode("diff");
@@ -326,7 +333,6 @@ function renderCompletedResult(run) {
       });
     }, 0);
   } else {
-    elements.resultStrength.hidden = true;
     elements.resultViewControls.hidden = true;
     resultDiff.reset();
     setResultMode("final");
@@ -359,7 +365,7 @@ function applyProgress(event) {
 function refreshControls() {
   const hasSource = elements.source.value.trim().length > 0;
   const canDownload = Boolean(resultDownloadName && finalText);
-  const showRewriteControls = directTextInput();
+  const showRewriteControls = strengthInput();
   const sourceChars = sourceCharacterCount(), overLimit = overInputLimit();
   elements.sourceCount.textContent = overLimit
     ? `${sourceChars.toLocaleString("ko-KR")} / ${inputLimits.maxInputChars.toLocaleString("ko-KR")}자`
@@ -463,7 +469,7 @@ async function startTransform() {
       : desktop ? getTextDownloadName(sourceFile?.fileName) : undefined;
   const inputKind = officeDocument ? undefined : sourceFile ? "text-file" : "direct-text";
   const sourceSnapshot = normalizeLineEndings(elements.source.value);
-  const strength = inputKind === "direct-text" ? rewriteStrength : inputKind === "text-file" ? "normal" : undefined;
+  const strength = inputKind ? rewriteStrength : undefined;
   clearCompletedResult();
   activeRun = { sourceSnapshot, inputKind, strength, streamedText: "" };
   clearWarnings();

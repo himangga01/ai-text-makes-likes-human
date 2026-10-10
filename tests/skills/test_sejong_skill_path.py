@@ -140,13 +140,14 @@ class SkillPathCase(unittest.TestCase):
         self.assertEqual(result.returncode, 0 if succeeds else 1, result.stdout + result.stderr)
         return json.loads(result.stdout)
 
-    def prepare(self, text=BLOG, kind="direct-text", strength="medium", env=None):
+    def prepare(self, text=BLOG, kind="direct-text", strength=None, env=None):
+        """strength None: medium for direct text, none (normal) for a file."""
         self.input.write_text(text, encoding="utf-8", newline="")
         args = ["prepare", "--input", self.input]
         if kind:
             args += ["--input-kind", kind]
-            if kind == "direct-text":
-                args += ["--strength", strength]
+            if kind == "direct-text" or strength:
+                args += ["--strength", strength or "medium"]
         return self.call(*args, env=env)
 
     def write_reply(self, state, response):
@@ -302,10 +303,7 @@ class ProtocolTests(SkillPathCase):
         self.assertIn("기 때문입니다", output.read_text(encoding="utf-8"))
         self.assertIn("최종문", html.read_text(encoding="utf-8"))
 
-    def test_a_text_file_job_gets_only_fix_requests_and_rejects_strength(self):
-        self.input.write_text(BLOG, encoding="utf-8")
-        self.call("prepare", "--input", self.input, "--input-kind", "text-file", "--strength", "strong", succeeds=False)
-        self.assertFalse(self.jobs.exists())
+    def test_a_text_file_job_at_normal_gets_only_fix_requests(self):
         state = self.prepare(BLOG, kind="text-file")
         self.assertEqual(state["rewriteOptions"], {"inputKind": "text-file", "strength": "normal"})
         plan = self.plan_of(state)
@@ -314,6 +312,16 @@ class ProtocolTests(SkillPathCase):
         legacy_file = self.prepare(BLOG, kind=None)                      # no input kind: a file job, the same plan
         self.assertNotIn("rewriteOptions", legacy_file)
         self.assertEqual(self.plan_of(legacy_file).options.input_kind, "text-file")
+
+    def test_a_text_file_job_above_normal_is_planned_like_direct_text(self):
+        # Owner request 2026-10-10: the file takes the strength; its plan matches the direct-text plan at it.
+        file_state = self.prepare(BLOG, kind="text-file", strength="strong")
+        self.assertEqual(file_state["rewriteOptions"], {"inputKind": "text-file", "strength": "strong"})
+        direct_state = self.prepare(BLOG, kind="direct-text", strength="strong")
+        file_plan, direct_plan = self.plan_of(file_state), self.plan_of(direct_state)
+        self.assertEqual((file_plan.options.input_kind, file_plan.options.strength), ("text-file", "strong"))
+        self.assertEqual(([(r.sentence, r.tier) for r in file_plan.requests], file_plan.open_review.enabled),
+                         ([(r.sentence, r.tier) for r in direct_plan.requests], direct_plan.open_review.enabled))
 
 
 # ==========================================================================

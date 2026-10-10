@@ -8,10 +8,28 @@ it('validates strength and isolates absent legacy and file requests', () => {
   for (const strength of ['normal','medium','strong','very-strong']) {
     expect(policy.parseRewriteOptions('direct-text',strength)).toEqual({inputKind:'direct-text',strength});
   }
-  expect(policy.parseRewriteOptions('text-file','normal')).toEqual({inputKind:'text-file',strength:'normal'});
-  for (const [kind,strength] of [[undefined,'strong'],['text-file','strong'],['direct-text','maximum'],['direct-text',['normal']],['other','normal'],[null,undefined],['direct-text',null]]) {
+  expect(policy.parseRewriteOptions('text-file')).toEqual({inputKind:'text-file',strength:'normal'});
+  for (const strength of ['normal','medium','strong','very-strong','rewrite']) {
+    expect(policy.parseRewriteOptions('text-file',strength)).toEqual({inputKind:'text-file',strength});
+  }
+  for (const [kind,strength] of [[undefined,'strong'],['text-file','maximum'],['direct-text','maximum'],['direct-text',['normal']],['other','normal'],[null,undefined],['direct-text',null]]) {
     expect(()=>policy.parseRewriteOptions(kind,strength)).toThrow();
   }
+});
+it('runs a text file above normal on the direct-text route of the legacy engine and keeps normal on the file route', () => {
+  expect(policy.legacyRewriteOptions({inputKind:'text-file',strength:'normal'})).toEqual({inputKind:'text-file',strength:'normal'});
+  for (const strength of ['medium','strong','very-strong'] as const) {
+    expect(policy.legacyRewriteOptions({inputKind:'text-file',strength})).toEqual({inputKind:'direct-text',strength});
+  }
+  expect(policy.legacyRewriteOptions({inputKind:'text-file',strength:'rewrite'})).toEqual({inputKind:'direct-text',strength:'very-strong'});
+  expect(policy.legacyRewriteOptions(undefined)).toBeUndefined();
+  const file = (strength: string) => buildHumanizePrompt({source:'원문이다.',quickRules:'규칙',attempt:1,nonce:'file',rewriteOptions:{inputKind:'text-file',strength}} as any);
+  const direct = (strength: string) => buildHumanizePrompt({source:'원문이다.',quickRules:'규칙',attempt:1,nonce:'file',rewriteOptions:{inputKind:'direct-text',strength}} as any);
+  for (const strength of ['medium','strong','very-strong']) expect(file(strength)).toBe(direct(strength));
+  expect(file('strong')).toContain('요청 강도: strong');
+  expect(file('strong')).toContain('source_sentence_spans');
+  expect(file('normal')).not.toContain('<rewrite_policy>');
+  expect(file('normal')).not.toContain('source_sentence_spans');
 });
 it('very strong prompt asks for broad sentence restructuring and overrides local-only rules', () => {
   const prompt = buildHumanizePrompt({source:'원문이다.',quickRules:'국소 교정 규칙',attempt:1,nonce:'scope',rewriteOptions:{inputKind:'direct-text',strength:'very-strong'}} as any);

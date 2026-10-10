@@ -40,10 +40,10 @@ describe('the rewrite strength in the option lists', () => {
     expect(LEGACY_REWRITE_OPTIONS[4]!.description).toContain('가장 크게 다시 씁니다');
   });
 
-  it('parses for direct text only', () => {
+  it('parses for direct text and TXT/MD files', () => {
     expect(parseRewriteStrength('rewrite')).toBe('rewrite');
     expect(parseRewriteOptions('direct-text', 'rewrite')).toEqual({ inputKind: 'direct-text', strength: 'rewrite' });
-    expect(() => parseRewriteOptions('text-file', 'rewrite')).toThrow();
+    expect(parseRewriteOptions('text-file', 'rewrite')).toEqual({ inputKind: 'text-file', strength: 'rewrite' });
     expect(() => parseRewriteStrength('rewrite-all')).toThrow();
   });
 

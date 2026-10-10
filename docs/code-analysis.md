@@ -113,7 +113,7 @@ Sources: [limits](../src/engine/input-limits.ts), [body reception](../src/transp
 
 Direct-text guards preserve line layout, Markdown markers/headings, sentence counts/order and recognized concepts. Protected sentences (numbers, quotations, modality, negation, conditions, multiple explicit subjects) may be rephrased only when their numbers (in order), quotation marks and modality/negation/condition markers survive by meaning class (possibility, impossibility, obligation, negation, condition, cause, hedge, order, progressive; e.g. 가능 ↔ 수 있, 경우 ↔ -면); with several explicit subjects the nouns must also keep their relative order, so participants and values cannot swap. Light nouns (진행·실시·시행) may be dropped and a noun may become its 하다/되다/받다 verb. Newly introduced protected meaning is rejected. These are lexical/structural heuristics, not semantic-equivalence proof.
 
-TXT/MD and legacy requests use structural checks for line layout, Markdown markers, prompt-boundary echo and duplicated source sentences. Sentence split/merge may be allowed by file-editing rules; Python additionally checks dropped content. Direct-text sentence-count/strength policy does not apply to files.
+TXT/MD and legacy requests use structural checks for line layout, Markdown markers, prompt-boundary echo and duplicated source sentences. Sentence split/merge may be allowed by file-editing rules; Python additionally checks dropped content. Direct-text sentence-count/strength policy does not apply to files at normal; a TXT/MD file above normal runs on the direct-text policy at its strength (`legacyRewriteOptions`, since 2026-10-10).
 
 The production wrapper in `engine_runtime/workflow.py` upgrades recognized quote, heading, footnote, number injection/loss, signed quantity, Latin/Hanja name-set and sentence-drop failures to abort. Upstream advisory fact checks therefore do not describe the application's final policy. Character change rate still warns at 30% and aborts at 50%.
 
@@ -162,7 +162,7 @@ Text source/intermediate/result files live in private workspaces until normal co
 
 Transformation logs contain metadata and fixed failure reasons, not intentionally source/result bodies. CLI streams have a combined output budget; captured text and Python details remain transient. Desktop settings persist CLI paths and explicit engine/model/effort/strength choices without document history. Skill jobs remain until cleanup; host conversation retention is governed by the host.
 
-Browser warnings remain in a deduplicated panel and affect the completion label. Direct-text diff uses the final verified output; copy/export excludes displayed deletions. Diff operation/time/node budgets may produce a coarse whole replacement. File input lacks strength/comparison. Editing loaded TXT/MD clears metadata and makes the next job direct text.
+Browser warnings remain in a deduplicated panel and affect the completion label. Direct-text diff uses the final verified output; copy/export excludes displayed deletions. Diff operation/time/node budgets may produce a coarse whole replacement. TXT/MD input takes a strength but no comparison; Office input takes neither. Editing loaded TXT/MD clears metadata and makes the next job direct text.
 
 Electron disables renderer Node integration, enables context isolation/sandbox, denies navigation/new windows and checks IPC sender/frame. Local processing uses a utility worker, not an HTTP server. Native saves reject the opened source path; Office saves hold a read lease through the dialog/copy.
 

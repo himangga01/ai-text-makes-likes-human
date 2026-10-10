@@ -436,8 +436,8 @@ class RewriteCliTests(unittest.TestCase):
             sys.path.remove(str(ROOT / "engine_runtime"))
         self.assertEqual(skill_bridge.options("direct-text", "rewrite", offline=True),
                          {"inputKind": "direct-text", "strength": "rewrite"})
-        with self.assertRaises(ValueError):
-            skill_bridge.options("text-file", "rewrite", offline=True)
+        self.assertEqual(skill_bridge.options("text-file", "rewrite", offline=True),
+                         {"inputKind": "text-file", "strength": "rewrite"})
         with self.assertRaises(ValueError):
             skill_bridge.options("direct-text", "rewrite-all", offline=True)
 

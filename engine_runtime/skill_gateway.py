@@ -64,6 +64,15 @@ def sejong() -> types.SimpleNamespace:
     return _SEJONG
 
 
+def strength_route(options) -> bool:
+    """Whether a legacy job runs on the direct-text route (strength prompt, sentence map, strict fidelity guard):
+    direct text, and a TXT/MD file above normal (owner request 2026-10-10), as legacyRewriteOptions decides in the
+    bridge. A file at normal and a job without options keep the file route (structure guard only)."""
+    options = options or {}
+    return options.get("inputKind") == "direct-text" or \
+        (options.get("inputKind") == "text-file" and options.get("strength", "normal") != "normal")
+
+
 def engine_changed(state: dict) -> bool:
     """A job runs on the engine it was prepared with: the selected engine, and its version file, must be unchanged."""
     recorded = state.get("engine", "legacy")
@@ -230,7 +239,7 @@ def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
         return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
                 "inputPath": str(job / f"source-{chunk['index']}.txt"), "instructionsPath": str(instructions),
                 "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json")}
-    if state.get("rewriteOptions", {}).get("inputKind") == "direct-text":
+    if strength_route(state.get("rewriteOptions")):
         context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"],
                          source=(job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"),
                          quickRules=(Path(state["vendor"]) / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
@@ -258,7 +267,7 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     before = job / f"source-{chunk_id}.txt"
     source = before.read_text(encoding="utf-8")
     options = state.get("rewriteOptions", {})
-    direct = options.get("inputKind") == "direct-text"
+    direct = strength_route(options)
     raw = json.loads(response_path.read_text(encoding="utf-8-sig"))
     response = bridge("parse", **options, source=source, response=raw) if direct else validate_response(raw)
     output = safe_leaf(job, chunk["rewritten_file"])
@@ -348,7 +357,7 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparis
         vendor = Path(state["vendor"])
         script(vendor, "reassemble_chunks.py", "--run-dir", job, "--output", "final.md", "--report", "assembly.json", "--strict")
         result = job / "final.md"
-        if direct and bridge("check", **state["rewriteOptions"],
+        if strength_route(state.get("rewriteOptions")) and bridge("check", **state["rewriteOptions"],
                              source=safe_leaf(job, manifest["source_file"]).read_text(encoding="utf-8"),
                              candidate=result.read_text(encoding="utf-8"))["violations"]:
             raise ValueError("Full source fidelity validation failed; no output was exported")
@@ -426,7 +435,7 @@ def prepare_v2(input_path: Path, root: Path, input_kind=None, strength=None) -> 
         (job / "01_input.txt").write_text(text, encoding="utf-8", newline="")
         manifest = sj.chunk.prepare(job, genre=genre)
         source = stage_chunks(job, manifest)
-        # A file job (no input kind) is a text-file job: FIX requests only, no open review (DESIGN 3.4).
+        # A file job (no input kind) is a text-file job at normal: FIX requests only, no open review (DESIGN 3.4).
         plan_options = sj.Options(input_kind=(options or {}).get("inputKind", "text-file"),
                                   strength=(options or {}).get("strength", "normal"), genre=genre,
                                   fix_colloquial=flags.fix_colloquial, deterministic_fix=flags.deterministic_fix)
@@ -726,7 +735,9 @@ def main() -> int:
             if args.command == "prepare":
                 if args.input_kind == "direct-text":
                     raise ValueError("Office files cannot be direct text")
-                rewrite_options(args.input_kind, args.strength)
+                # Office edits stay inside formatting runs, so DOCX/PPTX keep the default strength.
+                if rewrite_options(args.input_kind, args.strength, offline=True) not in (None, {"inputKind": "text-file", "strength": "normal"}):
+                    raise ValueError("Strength is available for direct text and TXT/MD files only")
             if args.command == "finalize" and args.comparison_output is not None:
                 raise ValueError("Comparison export is available for direct text only")
             from documents.workflow import dispatch

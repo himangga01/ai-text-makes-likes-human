@@ -108,7 +108,7 @@ test("direct text strength is described, captured, persisted, and shown with its
   await expect(page.locator('#rewrite-strength input[value="strong"]')).toBeChecked();
 });
 
-test("text files exclude direct-text controls and send only the text-file policy", async ({ page }) => {
+test("text files take the chosen strength and keep the final view without the diff", async ({ page }) => {
   let requestUrl = "";
   await page.route("**/api/transform*", route => {
     requestUrl = route.request().url();
@@ -130,13 +130,16 @@ test("text files exclude direct-text controls and send only the text-file policy
     mimeType: "text/markdown",
     buffer: Buffer.from("파일 원문", "utf8")
   });
-  await expect(page.locator("#rewrite-controls")).toBeHidden();
-  await expect(page.locator("#result-view-controls")).toBeHidden();
+  await expect(page.locator("#rewrite-controls")).toBeVisible();
+  await expect(page.locator("#rewrite-strength-help")).toContainText("TXT·MD 파일");
+  await expect(page.locator('#rewrite-strength input[value="very-strong"]')).toBeChecked();
   await page.locator("#transform-button").click();
   await expect(page.locator("#status-chip")).toHaveText("완료");
   const query = new URL(requestUrl).searchParams;
   expect(query.get("inputKind")).toBe("text-file");
-  expect(query.get("strength")).toBe("normal");
+  expect(query.get("strength")).toBe("very-strong");
+  await expect(page.locator("#result-strength")).toHaveText("사용한 변환 강도 · 매우 강하게");
+  await expect(page.locator("#result-view-controls")).toBeHidden();
   await expect(page.locator("#result-text")).toBeVisible();
   await expect(page.locator("#result-text")).toHaveValue("파일 결과");
 
@@ -300,7 +303,8 @@ test("TXT imports disable strength and transform controls until reading settles"
 
   await page.evaluate(() => (window as Window & { __releaseTextRead(): void }).__releaseTextRead());
   await expect(page.locator("#source-text")).toHaveValue("늦게 읽은 파일");
-  await expect(page.locator("#rewrite-controls")).toBeHidden();
+  await expect(page.locator("#rewrite-controls")).toBeVisible();   // a TXT/MD file takes a strength too
+  await expect(page.locator('#rewrite-strength input[value="normal"]')).toBeEnabled();
   await expect(page.locator("#transform-button")).toBeEnabled();
 });
 

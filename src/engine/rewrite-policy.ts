@@ -30,11 +30,16 @@ export const REWRITE_OPTIONS = rewriteOptionChoices();
 export interface RewriteOptions { inputKind: 'direct-text' | 'text-file'; strength: RewriteStrength }
 
 /** The options the legacy engine works with: `rewrite` (매우 강하게(다시쓰기), WP-19) runs exactly as very-strong there,
- * so its prompts, guards and restoration are those of very-strong; the four other strengths are returned unchanged. */
+ * so its prompts, guards and restoration are those of very-strong; the four other strengths keep their id.
+ * A TXT/MD file above normal (owner request 2026-10-10) runs on the direct-text route at that strength: the same
+ * strength prompt, sentence map and strict fidelity guard. A file at normal keeps the file route (structure guard). */
 export function legacyRewriteOptions(options: RewriteOptions): RewriteOptions;
 export function legacyRewriteOptions(options: RewriteOptions | undefined): RewriteOptions | undefined;
 export function legacyRewriteOptions(options: RewriteOptions | undefined): RewriteOptions | undefined {
-  return options?.strength === 'rewrite' ? { ...options, strength: 'very-strong' } : options;
+  if (!options) return options;
+  const inputKind = options.inputKind === 'text-file' && options.strength !== 'normal' ? 'direct-text' : options.inputKind;
+  const strength = options.strength === 'rewrite' ? 'very-strong' : options.strength;
+  return inputKind === options.inputKind && strength === options.strength ? options : { inputKind, strength };
 }
 
 export function parseRewriteStrength(value: unknown): RewriteStrength {
@@ -44,9 +49,7 @@ export function parseRewriteStrength(value: unknown): RewriteStrength {
 export function parseRewriteOptions(inputKind?: unknown, strength?: unknown): RewriteOptions | undefined {
   if (inputKind === undefined && strength === undefined) return undefined;
   if (inputKind !== 'direct-text' && inputKind !== 'text-file') throw new Error('입력 종류를 확인해 주세요.');
-  const selected = strength === undefined ? 'normal' : parseRewriteStrength(strength);
-  if (inputKind === 'text-file' && selected !== 'normal') throw new Error('변환 강도는 직접 입력에서만 선택할 수 있습니다.');
-  return { inputKind, strength: selected };
+  return { inputKind, strength: strength === undefined ? 'normal' : parseRewriteStrength(strength) };
 }
 
 export function rewriteInstructions(requested: RewriteOptions | undefined, attempt: 1 | 2, reviewingCandidate = false): string {

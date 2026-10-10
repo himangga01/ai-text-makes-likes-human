@@ -132,6 +132,22 @@ it('legacy and text-file requests retain their existing relation-check behavior'
   }
 },30000);
 
+it('a text file above normal gets the direct-text strength prompt and guard',async()=>{
+  const source='민수는 사과를 샀고 지수는 배를 샀다. 오늘 장터는 조용하다.\n';
+  const {output,result,calls}=await run(source,s=>s.replace('민수는 사과를 샀고 지수는 배를 샀다','지수는 사과를 샀고 민수는 배를 샀다'),'codex',{inputKind:'text-file',strength:'strong'},true);
+  expect(calls[0]!.stdin).toContain('요청 강도: strong');
+  expect(calls[0]!.stdin).toContain('source_sentence_spans');
+  // The file route at normal lets this role swap through (test above); the strength route keeps the source.
+  expect(output).toBe(source);
+  expect(result.diagnostics).toMatchObject({requestedStrength:'strong',rolledBackChunks:1});
+  expect(result.diagnostics.fidelityGuardFailures).toBeGreaterThan(0);
+},30000);
+it('a text file at rewrite runs as very-strong in the legacy engine and reports the requested strength',async()=>{
+  const source='오늘 하늘은 맑다. 바람은 조용하다.\n';
+  const {calls,result}=await run(source,s=>s,'codex',{inputKind:'text-file',strength:'rewrite'},true);
+  expect(calls[0]!.stdin).toContain('요청 강도: very-strong');
+  expect(result.diagnostics.requestedStrength).toBe('rewrite');
+},30000);
 it.each(['codex','claude'] as const)('web query reaches real %s runner prompt and does not bleed into model settings',async kind=>{
  const source='오늘 하늘은 맑다. 바람은 조용하다.\n';
  const {calls,result}=await run(source,s=>s,kind,{inputKind:'direct-text',strength:'medium'},true);

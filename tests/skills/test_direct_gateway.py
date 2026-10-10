@@ -46,10 +46,30 @@ class DirectGatewayTest(unittest.TestCase):
             self.call("cleanup", "--job", state["job"])
 
     def test_invalid_options_create_no_jobs(self):
-        for options in (("--strength", "strong"), ("--input-kind", "text-file", "--strength", "strong"),
+        for options in (("--strength", "strong"), ("--input-kind", "text-file", "--strength", "other"),
                         ("--input-kind", "other"), ("--input-kind", "direct-text", "--strength", "other")):
             self.call("prepare", "--input", self.input, *options, succeeds=False)
         self.assertFalse((self.root / "jobs").exists())
+
+    def test_text_file_above_normal_takes_the_direct_text_route(self):
+        # Owner request 2026-10-10: a TXT/MD file takes every strength; above normal it gets the strength prompt,
+        # the sentence map and the strict guard, at normal it keeps the file route.
+        state = self.call("prepare", "--input", self.input, "--input-kind", "text-file", "--strength", "strong")
+        self.assertEqual(state["rewriteOptions"], {"inputKind": "text-file", "strength": "strong"})
+        self.assertIn("요청 강도: strong", Path(state["instructionsPath"]).read_text(encoding="utf-8"))
+        self.assertTrue(Path(state["sentencesPath"]).is_file())
+        text = Path(state["inputPath"]).read_text(encoding="utf-8").replace("12명", "13명")
+        state = self.accept(state, text)
+        self.assertEqual(state["decision"], "retry")
+        self.assertIn("DIRECT_TEXT_FIDELITY_RESTRICTED", " ".join(state["warnings"]))
+        self.call("cleanup", "--job", state["job"])
+        rewrite = self.call("prepare", "--input", self.input, "--input-kind", "text-file", "--strength", "rewrite")
+        self.assertIn("요청 강도: very-strong", Path(rewrite["instructionsPath"]).read_text(encoding="utf-8"))
+        self.call("cleanup", "--job", rewrite["job"])
+        plain = self.call("prepare", "--input", self.input, "--input-kind", "text-file")
+        self.assertEqual(plain["rewriteOptions"], {"inputKind": "text-file", "strength": "normal"})
+        self.assertNotIn("instructionsPath", plain)
+        self.call("cleanup", "--job", plain["job"])
 
     def test_protected_change_retries_then_rolls_back(self):
         state = self.prepare("strong")

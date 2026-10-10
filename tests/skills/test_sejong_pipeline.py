@@ -120,8 +120,15 @@ class PlanTests(unittest.TestCase):
                          (False, True, True))                                # 9.2a item 2: medium has open review
         self.assertEqual(medium.open_review.max_sentences, 3)               # max(3, ceil(0.1 * 4))
         self.assertEqual([p.options.allow_full_text for p in (normal, medium, strong, very)], [False, False, False, True])
+        # A text file is planned like direct text at its strength (owner request 2026-10-10); at normal it keeps the
+        # file route: FIX only and no open review, even when SUPER_SEJONG_OPEN_REVIEW=always reviews direct text.
         text_file = plan_for(self.TEXT, "very-strong", "report", kind="text-file")
-        self.assertEqual((self.tiers(text_file), text_file.open_review.enabled), (["FIX"], False))
+        self.assertEqual((self.tiers(text_file), text_file.open_review.enabled, text_file.options.allow_full_text),
+                         (self.tiers(very), very.open_review.enabled, True))
+        always = config.Flags.from_env({"SUPER_SEJONG_OPEN_REVIEW": "always"})
+        plain_file = plan_for(self.TEXT, "normal", "report", kind="text-file", flags=always)
+        self.assertEqual((self.tiers(plain_file), plain_file.open_review.enabled), (["FIX"], False))
+        self.assertTrue(plan_for(self.TEXT, "normal", "report", flags=always).open_review.enabled)
         off = plan_for(self.TEXT, "medium", "report", flags=config.Flags.from_env({"SUPER_SEJONG_MODE": "off"}))
         self.assertEqual((self.tiers(off), off.open_review.enabled), (["FIX"], False))
         late = plan_for(self.TEXT, "medium", "report", flags=config.Flags.from_env({"SUPER_SEJONG_OPEN_REVIEW": "strong"}))

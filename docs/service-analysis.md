@@ -41,7 +41,7 @@ Sources: [preflight](../src/process/preflight.ts), [setup helper](../setup-porta
 | Input | Controls/result | Portal/desktop limits |
 | --- | --- | --- |
 | Typed/pasted text | Five strengths (매우 강하게(다시쓰기) added 2026-10-08), final-text comparison/copy, desktop text save. | 100,000 normalized Unicode code points. |
-| TXT/MD | Preview/encoding, normal file-editing policy without strength/comparison; browser MD download, desktop TXT/MD save. | 1 MiB file and 100,000 normalized code points. |
+| TXT/MD | Preview/encoding; every strength (above normal the direct-text policy, at normal the file-editing policy), no comparison; browser MD download, desktop TXT/MD save. | 1 MiB file and 100,000 normalized code points. |
 | DOCX/PPTX | Location-based block preview/counts/warnings and new verified same-format file. | 50 MiB package, 100,000 extracted characters, 200 PPTX slides plus ZIP/XML limits. |
 
 TXT/MD decoding supports UTF-8/BOM, BOM-marked UTF-16 and CP949/EUC-KR. Browser selection is local. Office selection uploads/parses the package for preview; LLM rewriting still requires the transform button. The Office preview is not a rendered page/slide.
