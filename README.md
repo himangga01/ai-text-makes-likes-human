@@ -137,6 +137,24 @@ TXT·MD·DOCX·PPTX는 파일 경로를 지정해 요청합니다. 예를 들어
 
 일반 윤문에는 `humanize-kr`를 사용합니다. `update-humanize-engine`은 오픈소스 엔진 갱신을 위한 개발용 관리 스킬입니다. 자세한 설치 안내는 [Windows 앱·스킬 안내](docs/desktop.md), 처리 절차는 [스킬 설명](skills/humanize-kr/SKILL.md)을 참고하세요. 두 스킬의 설치·호출·Gateway 명령·문제 해결을 정리한 영문 가이드는 [Skills Usage Guide](docs/skills-guide.md)에 있습니다.
 
+## MCP 서버로 쓰기
+
+Claude Code·Codex처럼 MCP를 지원하는 에이전트는 포털을 도구로 바로 부를 수 있습니다. MCP 서버는 포털에 작업을 맡기므로 웹 화면과 같은 대기열·모델·보존 검사를 거친 결과만 돌려줍니다. 포털이 실행 중이어야 합니다.
+
+| 도구 | 하는 일 |
+|---|---|
+| `humanize_text` | 글을 다듬어 검증된 결과를 돌려줍니다. 강도 5단계를 고를 수 있습니다. |
+| `humanize_file` | TXT·MD·DOCX·PPTX를 다듬어 원본 옆에 `<이름>-humanized` 새 파일로 저장합니다. 원본과 기존 파일은 덮어쓰지 않습니다. 강도는 TXT·MD에만 적용됩니다. |
+| `humanize_status` | 포털 상태, 강도 설명, 모델 목록과 기본값을 알려 줍니다. |
+
+`npm run build` 뒤 `dist/mcp/server.js`를 등록합니다. 예를 들어 Claude Code에서는 다음과 같습니다.
+
+```bash
+claude mcp add humanize-kr -- ~/.hermes/node/bin/node <저장소 경로>/dist/mcp/server.js
+```
+
+Codex 등록, 다른 PC에서 쓰는 방법(`HUMANIZE_PORTAL_URL`), 시간 제한 설정과 문제 해결은 영문 [MCP Server Guide](docs/mcp.md)를 참고하세요.
+
 ## LAN 웹 포털: 처음 한 번만 설정하기
 
 서버로 사용할 Windows PC에 다음 프로그램이 필요합니다.

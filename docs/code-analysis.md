@@ -52,6 +52,7 @@ The frontend is plain JavaScript, HTML and CSS. The server uses strict TypeScrip
 | Browser | [app.js](../public/app.js), [transport.js](../public/transport.js), [document-file.js](../public/document-file.js), [text-file.js](../public/text-file.js) | Input/readiness, completion/cancellation, warnings and exports. |
 | Comparison | [result-diff.js](../public/result-diff.js), [text-diff.js](../public/text-diff.js) | Direct-text comparison, final-text copying and bounded diff computation. |
 | Host skills | [skill_gateway.py](../engine_runtime/skill_gateway.py), [skill_bridge.py](../engine_runtime/skill_bridge.py), [workflow.py](../engine_runtime/workflow.py), [skill-bridge.ts](../scripts/skill-bridge.ts) | File-based state, shared validation and host-provided edits. |
+| MCP server | [server.ts](../src/mcp/server.ts), [session.ts](../src/mcp/session.ts), [portal-client.ts](../src/mcp/portal-client.ts) | stdio JSON-RPC tools (`humanize_text`, `humanize_file`, `humanize_status`) that run each call as one portal job; see [mcp.md](mcp.md). |
 | Supervision | [hermes-service.ts](../src/ops/hermes-service.ts), [server-lock.ts](../src/runtime/server-lock.ts) | Desired state, process identity, serialized control and ownership/recovery. |
 
 ## 3. HTTP and Event Contract
