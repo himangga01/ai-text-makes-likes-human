@@ -1,5 +1,339 @@
 # Works Log
 
+## 2026-10-24 — Mac disk cleanup (A1–A8 of the disk report)
+
+**Request:** a disk-usage report and a list of what can be cleaned, then "a1 a2 a3 a4 a5 a6 a7 a8 모두 삭제해줘".
+
+**Before:**
+- Data volume 192 GB consumed, 27 GiB available (88%).
+- Main users: aerial wallpaper videos 24.2 GB; Chrome `code_sign_clone` copies 22.5 GB; `~/.hermes/work` 18.5 GB; `~/.lmstudio` 14.9 GB; `~/.codex` 14.4 GB; Claude desktop `vm_bundles` 10.1 GB; `~/.hermes/backups` 10.4 GB.
+- About 29 GB was in system areas `du` cannot read: the local Time Machine snapshot, Spotlight and logs.
+
+**Deleted.** Each target was re-checked right before deletion with `lsof`, `pgrep` and the `current` symlinks.
+- **A1:** 16 of the 17 Chrome clones under `/private/var/folders/21/…/X/com.google.Chrome.code_sign_clone/`, about 21 GB. Kept `XoU3xd`, the only clone a process held open (Chrome PID 5271, started Oct 20). Chrome leaves one 1.41 GB clone per unclean exit; 17 piled up from Oct 17 to Oct 24.
+- **A2:** the 38 aerial videos in `~/Library/Application Support/com.apple.wallpaper/aerials/videos`, 24.2 GB. macOS re-downloads the one in use.
+- **A3:** `~/.lmstudio`, 14.9 GB. The app was already gone from `/Applications`, no process ran, the last use was 2026-07-20, and Hermes config has no reference. On request I then removed the "Added by LM Studio CLI (lms)" block, three lines, from `~/.zshrc`. `zsh -n` passes, and a clean login shell (`env -i … zsh -l -i`) has no lmstudio entry in PATH and still resolves node, npm, codex and claude from `~/.local/bin`.
+- **A4:** old Codex releases.
+  - standalone: removed 0.144.6–0.161.0 (15); kept 0.162.0 and 0.163.0 (`current`).
+  - app-server-daemon: removed 0.157.1–0.162.0 (10); kept 0.162.1 and 0.163.0 (`current`).
+  - `~/.codex/packages` went from 8.7 GB to 1.3 GB.
+- **A5:** `~/.cache/codex-runtimes/codex-runtime-install-NuKZJh`, 1.9 GB, a leftover install from 2026-08-31. `codex-primary-runtime` is kept.
+- **A6:**
+  - `npm cache clean --force`;
+  - removed `~/Library/Caches/{Google,pip,electron,orca-updater}` and `~/.cache/uv`.
+- **A7:** Playwright `chromium-1243` and `chromium_headless_shell-1243`. No project's `playwright-core` asks for revision 1243: this repo and hermes-agent use 1234, and the wisdom_web_portal copies use 1228.
+- **A8:** my scratchpad `node-24.22.1`, 0.25 GB.
+
+**Result:**
+- Container free space went only from 27 GiB to 31 GB.
+- The rest, about 70 GB, is held by the purgeable local snapshot `com.apple.TimeMachine.2026-10-20-080057.local`. Time Machine runs weekly (`AutoBackupInterval = 604800`), and its last backup was 2026-10-20 08:17, so the snapshot stays until the next backup or until macOS purges it under pressure.
+- I did not delete the snapshot or start a backup. Neither was in the approved list, and deleting a snapshot needs `sudo`.
+
+**Not touched (B list, awaiting the owner):**
+- Claude Cowork VM;
+- Hermes backups (including today's 9.67 GB `pre-update-2026-10-24-143756.zip`);
+- `~/.hermes/work`;
+- old Node backups;
+- `~/.codex/sessions`.
+
+## 2026-10-23 — Global Node 24.18.0 → 24.22.1 (October 2026 Node.js security release)
+
+**Request:** "node 취약점 내용 파악후 로컬피시 기분 글로벌로 업데이트해서 보안취약점 방지해라" (source: GeekNews topic 35798).
+
+**The advisory** ([nodejs.org, 2026-10-21](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)):
+- Ten CVEs. The four rated High:
+  - CVE-2026-111497: Brotli decoder out-of-bounds write, possible RCE.
+  - CVE-2026-105483 and CVE-2026-106069: TLS certificate hostname bypasses.
+  - CVE-2026-105482: `dns.resolve` truncates names containing NUL.
+- Medium: keep-alive response mix-up, non-canonical IPv4 certificate validation, `randomUUID`/`randomInt` entropy cache in snapshots and SEAs.
+- Low: Permission Model and ZipFile issues.
+- Also updated: c-ares, OpenSSL, undici and the CA store.
+- Fixed versions: 26.12.1, **24.22.1** and 22.23.4.
+
+**What "global" is on this Mac:**
+- `node` on PATH is `~/.local/bin/node`, which links to `~/.hermes/node/bin/node`. It was v24.18.0, the 24.x LTS line, and is also the portal's runtime.
+- Homebrew has no node, and there is no nvm, fnm or volta.
+- `package.json` asks for `>=24.19.0`, so 24.18.0 was also below the repo's own floor.
+
+**Install:**
+- Downloaded `node-v24.22.1-darwin-arm64.tar.gz`. Its `SHASUMS256.txt` entry matched (`shasum -a 256 -c` OK), and `codesign -v` passed.
+- The GPG signature was not checked: there is no `gpg` on the Mac.
+- Full backup at `~/.hermes/node-v24.18.0-backup-20261023` (295 MB), in the same form as the July `node-v22.23.1-backup-20260720`.
+- Replaced `bin/node` by copy-then-`mv`. The rename leaves running processes on the old inode; `cp` over a running binary could kill them.
+- Also replaced `include/node`, `share/doc/node`, `node.1`, the root docs and corepack (0.35.0 → 0.36.0).
+- Kept the global npm 12.0.1, which is newer than the bundled 11.19.1; its engines field is `^24.15.0`. Kept `@google/gemini-cli` 0.64.0.
+
+**After:**
+- node v24.22.1: OpenSSL 3.5.7 → 3.5.9, c-ares 1.34.6 → 1.34.9, undici 7.28.0 → 7.30.1.
+- ABI 137 is unchanged, so native modules need no rebuild.
+- npm, npx and corepack run, and `gemini --version` prints 0.64.0.
+- On main `c580bcb`: vitest 764 passed, 9 skipped; `tsc --noEmit` OK.
+
+**A concurrent Hermes session did the same job.**
+- The owner gave the same request to the Hermes agent (session `20261023_175508_0c744b`, gpt-6-astra, 17:55–18:02). Its work is in `~/.hermes/work/node-security-20261023`.
+- At 17:57:43 it replaced `~/.hermes/node/bin/node` again with the same official 24.22.1. The installed binary's SHA-256 matches the tarball's (`6f32069…`).
+- It took its `node-v24.18.0.backup` after my install, so that file is really v24.22.1. The only true 24.18.0 copy is my `~/.hermes/node-v24.18.0-backup-20261023`.
+- It moved the Hermes PM Node from 26.7.0 to 26.12.1, changing the darwin-arm64 pin in `hermes-agent/pm/lock.json`.
+- At 17:58:21 it restarted the portal (PID 5936 → 82710) through the service controller. The restart did **not** carry `SUPER_SEJONG_V2_SHADOW=1`: `ps eww` read 84 variables of PID 82710 and none was that one, so v2 shadow recording was off from then on.
+- It could not restart the school and office portals: they need `sudo` (`launchctl kickstart -k system/kr.jihye-office.portal`).
+- The 17:58:21 start was first puzzling because it fell inside my vitest run (17:58:04–17:58:31). The tests use fake platforms or ephemeral ports, and the hourly `portal-watchdog` cron runs only at :00. The Hermes `agent.log` then showed the other session.
+
+**Owner follow-up:** "노드 업그레이드 및 서버반영 후 문제 없으면 우리서버만 재시작".
+- `npm run build` and `scripts/build-skill-bridge.mjs` both exited 0 on v24.22.1.
+- Checks, all on v24.22.1 at main `c580bcb`:
+  - vitest: 764 passed, 9 skipped;
+  - e2e (`E2E_PORT=7899`): 54 passed, 9 skipped;
+  - Python skills: 717 OK on legacy and 717 OK on v2 (5 skipped each);
+  - documents: 93 OK.
+- Restarted with `SUPER_SEJONG_V2_SHADOW=1 … hermes-service.js restart` at 0 active and 0 queued jobs.
+  - PID 82710 → 49411, status `ready`, `restarted`.
+  - `SUPER_SEJONG_V2_SHADOW=1` is back in the process environment.
+  - The mapped `node` inode (20071285) matches the installed v24.22.1.
+  - Health on 127.0.0.1 and on 192.168.0.26 returns 200.
+- The school and lite portals had already been restarted, at 18:12:01 (PID 46456) and 18:04:30 (PID 16697), before my 18:13:46 restart. I did not do it. Both map the new binary (inode 20071285).
+
+**Open:**
+- Three humanize-kr MCP servers (PIDs 5218, 7689, 7946) still run the old 24.18.0 image. They are children of open Claude Code sessions and pick up the new Node when those sessions reopen.
+- Not changed, since they are not on PATH:
+  - `~/.hermes/tools/node-26.7.0-darwin-arm64`. The Hermes session then moved the Hermes PM Node to 26.12.1, as above;
+  - the per-task runtimes under `~/.hermes/work`;
+  - LM Studio's and Codex's private runtimes;
+  - the repo's Electron 44.2.0, which bundles its own Node.
+
+## 2026-10-11 — 대화체 문구 수정: AI pass ("탐지기 한계 돌파"), 바꿀 표현안, skill review step; v2 2.3.0 merged
+
+**Branch `feat/formal-style`, not merged, not pushed, not deployed.**
+- Commits: `2c77f14` (merge of the v2 subagent's `feat/formal-style-v2` at `a846eb9`, with its branch `works-log.md` edit dropped), `3a39344` (AI pass), `9a33f2f` (skill review step, Office approved proposals, poster rules).
+- Docs, e2e and live verification are running in parallel subagent worktrees (`feat/formal-docs`, `feat/formal-e2e`, `feat/formal-live`) and are not merged yet.
+
+### Requests
+
+1. "탐지기 한계 돌파해야함, 방법 없어?" I proposed rules plus an AI pass, with validated AI findings and proposals; the user did not object and I proceeded.
+2. A new sample: "겹치면 가장 큰 1개만 적용, 재원은 회비 수입" should become "중복 감면 불가(최대 감면 1건 적용), 감면 재원: 회비 수입".
+   - Word swaps alone can't produce this; the whole line has to be restated.
+   - This led to proposals shown as "현재 문구 → 바꿀 표현안", like the user's own table.
+3. Poster and infographic samples:
+   - particles dropped ("의견을 운영위원회에 안건으로 제안" → "의견 운영위원회 안건 제안");
+   - A와 B → A·B;
+   - X는 Y → X: Y.
+4. "병렬로 서브에이전트 활용해야지": the remaining work (docs, e2e, live runs) was split across three subagents with separate worktrees.
+5. Also "한국어로 대답해야지": progress notes had slipped into English. The memory file `respond-in-korean.md` was updated to cover mid-task notes.
+
+### What was built
+
+- **AI pass, `src/engine/formal-ai.ts`.** It uses the user's CLI and model at low effort.
+  - The model sees every unit, with the rule hits as `found` and the nearest label as `context`, plus the principles and the owner's samples.
+  - It returns extra phrases and a proposal for the whole unit.
+  - Accepted only after checks: a phrase must be inside its unit; no question or quote; a proposal stays one line and keeps the unit's marker.
+  - Each proposal gets `formalProposalIssues`: numbers, quotes, meaning (negation/condition/order classes; 면/때/시 count as one condition, Sino-Korean negation counts as negation), voice, sentence count.
+  - Units go in batches of 60 units or 5,000 characters, two calls in parallel. A failed call keeps its units' rule hits (`FORMAL_AI_PARTIAL`).
+- **Trust rules, `src/engine/formal-request.ts`.**
+  - A proposal the user picked is their approval and is applied as written, even with issues.
+  - Without a pick (skill, MCP, API), only proposals with no issues are applied.
+  - Applied proposals replace their text in `01_input.txt` before any engine step. The rest become writer targets, without the proposal.
+- **Pick resolution:** the AI list is kept by text hash for an hour (Office: on the document record). `formalAi=1` resolves the pick against that list; an unknown or expired list gives `FORMAL_LIST_CHANGED`.
+- **Web and desktop dialog:**
+  - The rule list appears at once, and the AI list replaces it when ready.
+  - "AI 검색 멈추기" lets the user stop it.
+  - Labels shown: "AI 발견", "→ 표현안", "확인 필요: …". Items needing review start unchecked.
+  - Desktop runs this in the worker process, which keeps the list.
+- **Office:**
+  - Approved proposals are written as trusted minimal edits, using a character diff so unchanged numbers stay outside every edit.
+  - Those blocks leave the batches (`formalApplied`).
+  - Each edit must fit one formatting span; otherwise the block goes to the writer, who is told to copy the proposal.
+  - A writer who wrote the approved text exactly is trusted. Trusted means structural checks only: spans, protected words, length.
+- **Skill review step:**
+  - `prepare --formal` stops at `status: formal-review` with `formalReviewPath` (the portal's AI prompt over every unit), `responsePath` and `schemaPath`.
+  - The host answers, then runs `formal-review --job --response`.
+  - The Gateway applies issue-free proposals and prepares the job normally. Office skill jobs use the same commands.
+  - A bad reply keeps the job waiting; `{"items":[]}` means rule items only.
+- **New rules:**
+  - 겹치다→중복, 가장 큰→최대, N개→N건.
+  - A label written "X은 Y" → "X: Y"; that noun still counts as a kept term.
+  - Particle chains in items (two or more particles), single A와 B → A·B. "아래와 같음" and similar fixed phrases are excluded.
+- **Samples:** `FORMAL_SAMPLE_LINES` is now shared by the writer prompt and the AI prompt, and includes both new sample sets.
+- **v2 2.3.0, from the subagent:**
+  - Plans only from the targets (`--formal-targets`), with a GAEJO level.
+  - Meaning check: on targets, a Sino-Korean negation counts as negation and `-야 해` counts as obligation.
+  - The floor opens only target headings.
+  - Office v2 works per block.
+  - Formal-off plans stay byte-identical (50 hashes).
+
+### Live runs
+
+Codex `gpt-6.1-sol`, legacy engine, constructed texts of the same kind as the samples.
+
+- **AI list, direct call:**
+  - Codex: 15.6 s, 1 call.
+  - Claude Opus 5.5: 8.2 s.
+  - Both returned the owner's target wording for the 겹치면 line.
+  - New finds: "가족이 같이 들어오면 둘째부터 반값" → "가족 동반 가입 시 둘째부터 회비 반액 감면" and "코트가 꽉 차는 저녁엔 초보반을 따로 돌림" → "저녁 시간대 코트 만석 시 초보반 별도 운영".
+  - Claude's "반값 → 50%" was flagged `numbers`, as intended.
+- **HTTP, pick:** AI list 17.0 s, transform 22.1 s.
+  - 7 picked proposals were applied, including the 겹치면 line, which was flagged `meaning` and approved by picking.
+  - The unpicked "50%" item and the question stayed as they were.
+- **HTTP, no pick:** 71.3 s.
+  - 7 issue-free proposals were applied.
+  - The remaining target (the 겹치면 line) failed the writer checks twice and its chunk rolled back. The applied proposals survived, because they were already in `01_input.txt`.
+- **DOCX, pick:**
+  - The first run failed with `INTERNAL_ERROR`. Cause: `minimal_edits` was not imported in `documents/workflow.py`. Reproduced offline with the gateway `formal` command. Fixed, and a new end-to-end gateway test now covers this path.
+  - Rerun: AI list 10.6 s, transform 10.5 s. 5 blocks were written before the writer, the numbered label included.
+
+### Verification at `9a33f2f`
+
+- vitest: 808 passed.
+- Python skills: legacy 776 (5 skipped), v2 776 (16 skipped).
+- Python documents: 93 + 93.
+- Desktop tsc: clean.
+- During the skill refactor I removed `formal_scope_v2` (the v2 helper) by accident and restored it. 8 v2 skill tests had caught it.
+
+### Parallel subagents (each in its own worktree, merged into `feat/formal-style`)
+
+- **Docs** (`b57e508`, 9 Markdown files): README, `docs/mcp.md`, the skill files, skills guide §1.4.1, design doc section 9, the 0.6.0 notes, code analysis.
+  - It found four code gaps, which I fixed in `9634e26`:
+    1. v2 Office skill jobs stopped for the review before recording their engine, so the engine check refused them.
+    2. A text job waiting for its review failed `next` and `cleanup`.
+    3. A bridge failure was reported as an invalid reply.
+    4. The detection schema allowed only 120 items, though the skill sends one prompt for the whole document.
+- **E2E** (`fc8014e`): 9 new e2e tests (AI list replacing the rule list, stop, failure, Escape, skip, Office, axe at three points), plus 6 unit tests that check the client and server pick encoding match.
+  - Two existing e2e tests had broken. The e2e server reached the real local codex CLI for `?ai=1`, and a stray `?` in the rule-list URL missed its route.
+  - Fixed: proposals with issues stayed checked when the AI list arrived; focus was lost after the search or a cancel; the live region re-read a seconds counter every second.
+- **Live** (12 Codex jobs, both engines, constructed texts):
+  - Text with a pick:
+    - v2: 0.75 s, no model call; 15 proposals applied.
+    - Legacy: 15.5 s; but the writer's comma rule changed one approved proposal.
+  - No pick: v2 34.5 s, no rollback. Legacy rolled back (62.1 s) until three fixes; afterwards 36.9 s, no retry (n=1).
+  - DOCX: 7.3 s on legacy, 7.5 s on v2; 11 blocks written before the writer.
+  - The skill review flow was run on both engines with the agent acting as the host. Edge cases (stale pick, CLI failure) also checked.
+  - Fixes:
+    - `f3b3b24`: nouns ending in 면 (감면, 대면, 서면) were read as the conditional -면.
+    - `4306d42`: 개→건 was refused by the quantity gates; they now read 개 as 건 for targets.
+    - `3934e1f`: the writer gets notes on what to keep for a target whose proposal failed its check.
+    - `045ff83`: Office warnings were shown with their code and were missing when no batch ran.
+- **Lead, after the merges** (`7175eb5`):
+  - Legacy puts an approved-proposal line back if the writer touched it.
+  - The two samples the checks cannot prove are shown only to the AI pass, never to the writer: "겹치면 … → 중복 … 불가(최대 1건)" and "기관 수와 별도로 → 미포함".
+  - One AI-failure wording for partial and total failure.
+
+### Verification at `7175eb5`
+
+- vitest: 819 passed, 9 skipped.
+- Python skills: 780 on legacy (5 skipped), 780 on v2 (18 skipped).
+- Python documents: 93 + 93.
+- e2e: 65 passed, 9 skipped (visual tests, always skipped).
+- Helper worktrees removed after merging; branches `feat/formal-docs`, `-e2e`, `-live` and `-style-v2` deleted.
+
+### Open
+
+- **Needs a decision by the user:** skill and MCP never apply a flagged proposal. So the owner's "겹치면 …" restatement happens only in the web or desktop app, where the user picks it.
+- **v2:** it freezes a number with its counter ("1개"), so the 개→건 hint costs a sentence retry there.
+- **Pre-existing:** warnings from a successful retry stay in the final list.
+- **Desktop:** the AI search cannot be cancelled inside the worker.
+- **Not done:** main merge, deployment, Windows builds.
+
+## 2026-10-11 — 대화체 문구 수정 (formal option): list first, pick, rewrite only the picked items; version 0.6.0
+
+**Branch `feat/formal-style` (worktree `.worktrees/formal`), not merged, not pushed, not deployed.** Commits: `4e672cb`…`cd414f1` (first version, 2026-10-10), `d1866d1`, `2ae974b`, `8b7c720` (rework, 2026-10-11). The Super Sejong v2 part is being redone by a subagent on `feat/formal-style-v2`; it is not merged into the branch yet.
+
+### Requests
+
+- 2026-10-10: "대화체 문구 수정하기 체크 옵션을 추가하자, 중요한 보고서, 공문용으로". Examples: "이렇게 운영합니다" → "운영 방안", "② 새로 만드는 회비 감면 3가지" → "신규 회비 감면 방안 3가지".
+- 2026-10-11, the rework:
+  - Change conversational wording into concise report wording, but **leave questions** ("궁금하시죠?" may be wanted).
+  - With the option on, **show the list of detected sentences first and let the user pick** (web and Windows app only). The skill, plugin and MCP server change everything without asking.
+  - The user's examples (a 60-page report's table heads, labels and body phrases: 한눈에→요약, 때→시, 맡음→담당, 지금 갖춘→현재, 클럽이 한 일→추진 내용, 넣지 않은→미반영, 뒤→후, 아이들→아동, 꾸준히→지속적으로, …) are **samples to generalize, not the only sentences to fix**.
+  - Version bump: the user asked whether 0.6.0 is due; I agreed (new user-facing feature) and bumped it on the branch.
+- The user's report sentences were not copied into the repository. Only word pairs went into the rules and the writer prompt; tests use constructed sentences.
+
+### First version (2026-10-10, kept as the base)
+
+- Option `formal` everywhere (HTTP `formal=1`, skill `prepare --formal`, MCP `formal`), a checkbox in the web/desktop UI.
+- Legacy live run (Codex, temporary portal on 7898): the two examples were fixed; option off left the text unchanged.
+- v2 live run left two gaps: a label line that starts a multi-line paragraph was not planned, and "궁금하시죠?" failed `cta_dropped`. The user stopped the work ("작업중단") at that point.
+
+### Rework (2026-10-11)
+
+- **Detector** `src/engine/formal-detect.ts`: deterministic, no model call, shared by server, desktop and the skill bridge.
+  - It lists label lines (headings, items, table cells, captions) and body sentences.
+  - What counts: sentence-like labels; about 50 native verbs found in every inflected form, generated from the stem (맡다→담당 covers 맡음/맡은/맡았습니다; 보낸→발송, 고른→선정, 모으는→모집); time words (때→시, 뒤→후, 매달→매월); native adverbs and nouns; clause noun phrases ("…하는 것/곳/사람/일", "참여하는 방법"); spoken endings, discourse markers, CMC marks.
+  - Never listed: questions (…?, …나요, …까요), quotes, code, URLs, range tildes ("4 ~ 5월").
+  - Forms that are ordinary words are dropped (내기, 쓰기, 열기, 내 'my', 알려진, 바로잡다, 일정한, 그때).
+- **Pick:** the web/desktop dialog sends a hex bitmask over the list (`formalPick`) and the list length (`formalTotal`). The server rebuilds the list from the text it received and refuses a mismatch (`FORMAL_LIST_CHANGED`). Without a pick (skill, MCP, plain API) every item is a target. No target means an ordinary run plus `FORMAL_NO_TARGETS`.
+- **Only targets relax the checks.**
+  - On a target, the voice lock becomes the formal rule; a label may become a noun phrase and keeps its Markdown level; the detector's hit words may change; a native negation may become a Sino-Korean one (미반영, 제외, 미담당 …); 뒤→후 counts as the same order.
+  - Every other sentence keeps the ordinary voice, heading and concept checks.
+- **Writer prompt:** `<formal_style>` with the principles, the owner's sample pairs, "the examples are samples; treat wording of the same kind the same way", and `<formal_targets>` limited to the chunk's (or Office batch's) targets with hints. The text's level may now be 개조식 (…함, …임, a noun).
+- **Surfaces:**
+  - API: `POST /api/formal/candidates` and `GET /api/documents/:id/formal-candidates` serve the list.
+  - Desktop: IPC `humanize:formal-candidates`.
+  - Skill: the Gateway resolves all targets through the bridge op `formal-candidates`.
+  - Office portal jobs: the new gateway command `formal --job --targets` records the targets before the first answer.
+  - MCP: wording only, "찾은 문구 모두, 질문 제외".
+- **Docs:** README, `docs/mcp.md`, `SKILL.md`, `references/workflow.md` and `documents.md`, skills guide §1.4.1, code analysis, design doc section 8, `docs/releases/0.6.0.md`, and a note on the Windows rebuild plan (0.5.0 was never built, so the Windows PC builds 0.6.0).
+
+### Live runs found five over-strict checks (Codex `gpt-6.1-sol`, legacy engine)
+
+The test text was constructed, of the same kind as the samples: 10 candidates, and the question was not listed.
+
+1. **Partial pick (8 of 10): rolled back.** The writer's reply was right; two checks were wrong.
+   - A label reordered its participants ("지도는 회원이 맡지 않음" → "회원의 지도 담당 제외") and failed the argument-order check. Label targets now skip it.
+   - A body sentence used a synonym the detector never listed ("근처" → "인근", "사는" → "거주하는") and failed the concept check. Body targets now pass when two thirds of their content words survive, hit words excluded.
+2. **"Fix everything": rolled back again.**
+   - Attempt 1 wrote "미담당", missing from the negation list; the list was extended.
+   - Attempt 2 passed every TS check but the Python gate said `polarity_changed`, because it did not know the targets. It now gets `--formal-targets`, and its super_sejong polarity/modality/roles checks skip target pairs. Reproduced with the saved reply: `rollback ['polarity_changed']` without targets, `accept` with them.
+3. **After the fixes:**
+   - "Fix everything" passed on attempt 1 with no warnings.
+   - HTTP partial pick: 43.9 s, no warnings. Unpicked sentences ("매달 정기 모임을 엽니다", "견적 확정 뒤") and the question were unchanged.
+4. **DOCX: numbered labels were missing from the list.**
+   - Office protects any sentence with a digit as a whole, so "회원 현황 한눈에(2025.12.31 기준)" and "… 10% 감면" were not editable.
+   - A target block now protects only its risky words (`risky_words`: numbers with their punctuation, Latin words, names, quotes) and gets an extra batch when it was not batched.
+   - Live DOCX with a pick: 40.4 s, no warnings, both labels fixed ("회원 현황 요약(2025.12.31 기준)", "가입 시 회비 일괄 납부 회원 10% 감면"), unpicked paragraphs unchanged.
+
+### Verification (tip `8b7c720`)
+
+- vitest: 797 passed, 9 skipped.
+- Python, legacy: skills 759 (5 skipped) and documents 93. One timing test (`test_100k_characters_and_linear_growth`) failed once while the v2 subagent was loading the machine; it passed on rerun.
+- Python, v2: skills 759 (14 skipped) and documents 93.
+- e2e: 56 passed. It needs `PYTHON_COMMAND` set; the system Python 3.9 makes the server report degraded and the web server never becomes ready.
+- axe on the new dialog found one real issue: meta text contrast 4.47:1. Fixed by darkening the color.
+
+### Open
+
+- Super Sejong v2 adaptation: the subagent is running. It has to follow the targets in planning, checks, Office and the skill, and it bumps the engine to 2.3.0.
+- Not done: main merge, push, deployment and restart (only on request); Windows EXE and skill ZIP builds (on the Windows PC).
+- The detector is rule-based: wording it does not know is not listed. A model pass to extend the list was considered and not built (cost and waiting time before the list shows).
+- Office: the same short text in two blocks counts as two items, but a direct-text target is matched by text, so picking one of two identical sentences permits both.
+
+## 2026-10-10 — Hermes portal-service skill: five strengths, Opus 5.5 xhigh
+
+**Request (user):** "Hermes 스킬도 5단계 강도로 고쳐줘". The standing rule is not to write under `~/.hermes`; this explicit request lifted it for this one file.
+
+- **File:** `~/.hermes/skills/portal-service/SKILL.md`. It is not in git; a backup was taken in the session scratchpad first (sha256 before the edit `b2cb5def…79b3`).
+- **Changed one sentence (line 13).**
+  - Before: "Rewrite strength normal/medium/strong/very-strong … applies to direct-text input".
+  - After: five levels, including `rewrite` (매우 강하게(다시쓰기); the default engine runs it as very-strong, v2 rewrites each paragraph). The strength applies to direct text and to TXT/MD files (`--input-kind text-file --strength <level>`). DOCX/PPTX stay at normal and refuse a strength. Comparison HTML is for direct text only.
+  - Frontmatter and every other line are unchanged (checked with `diff`).
+- **Other Hermes skills:** a grep of `~/.hermes/skills` found no other skill that lists the strengths. The blog policy (`blog_work/model-policy.json`, `runtime_strength`) was not touched.
+- **Line 21, follow-up request "Opus 5.5 xhigh로 맞춰줘":** it said the user's humanization choice is `claude-fable-5-1` with `--effort high`.
+  - Now it says `claude-opus-5-5` with `--effort xhigh`, "the portal's Claude default", matching `CLAUDE_MODEL`/`CLAUDE_REASONING_EFFORT` in `src/engine/model-policy.ts`.
+  - The effort example in line 13 changed from "high" to "(such as xhigh)".
+  - A second backup was taken first. The blog policy (Opus 5.5 high in `model-policy.json`) is separate and was not changed.
+- **Memory updated:** the Hermes skill is edited only on an explicit request in that turn.
+- **Blog humanize effort to xhigh ("블로그도 xhigh로 바꾸자"): blocked, nothing changed.**
+  - **Why it is more than one value:**
+    - `~/.hermes/blog_work/model-policy.json` (`models.opus_humanize`, effort `high`) is hash-pinned in `completion-policy.json` (`source_sha256`).
+    - `blog_status_context.py` fails closed on drift before every blog run.
+    - Seven prose copies say "--effort high": the blog skill `SKILL.md` line 241, three `references/*.md` files, and the three personal-line files in this repo.
+  - **Planned:**
+    - Change only the dedicated `opus_humanize` record (effort and argv). The shared `opus` record stays as it is.
+    - Record the request in a new `humanize.effort_change`.
+    - Re-pin the hash, update the seven prose copies, then verify with `test_blog_status_context.py` and a read-only collector run.
+  - **What happened:**
+    - Backups were taken in `~/.hermes/work/blog-model-policy-20261010-humanize-xhigh/` (9 `.bak` files).
+    - The edit and re-pin command was denied by the Claude Code auto-mode classifier, and I did not work around it.
+    - Checked afterwards: the policy hash is still `be5dc514…6f5317`, the pin matches, and `opus_humanize` is still `high`.
+  - **Left for the user:** allow the action, or make the change themselves or through Hermes.
+
 ## 2026-10-10 — Version 0.5.0; Windows MCP registration examples; merged and deployed
 
 **Requests (user):** "README의 등록 예시도 Mac 경로 기준 -> 야 윈도우용도 해야할것 아냐", then mid-turn "버전 번호 올려".
