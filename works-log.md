@@ -1,5 +1,32 @@
 # Works Log
 
+## 2026-11-07 — Portal moved to Node 24.22.2
+
+**Request:** "우리 서버 노드 24 최신임?", then "ㅇㅇ 올려". The portal ran v24.22.1; v24.22.2 was the latest 24.x.
+
+**The release:** not marked as a security release. Five V8 backports or cherry-picks and one stream fix. ABI 137 and OpenSSL 3.5.9 are unchanged.
+
+**Who changed the shared Node:** not this session.
+- The `wisdom_web_portal_lite` session updated `~/.hermes/node` at 17:16:19, between this session's download and its planned install. The details are in that repo's works-log.
+- Its backup is `~/.hermes/node-v24.22.1-backup-20261107`, which reports v24.22.1.
+- This session had downloaded the official tarball itself: SHA-256 `aa954934…385a` matched `SHASUMS256.txt`, codesign passed with team HX7739G8FX. GPG is not installed, so the signature file was not checked.
+- The installed `bin/node` has the same SHA-256 as that tarball's binary (`b6fb419f…`), and a tree diff found no other differences outside `lib/node_modules/npm` and `@google`, which were excluded. So nothing was installed twice. npm 12.0.1, corepack 0.36.0 and gemini-cli 0.64.0 still work.
+
+**Verification on v24.22.2:**
+- `tsc --noEmit`: ok.
+- vitest: 764 passed, 9 skipped.
+- e2e: 54 passed, 9 skipped, with `E2E_PORT=7899`. The first run stopped at once because 7882 is the managed service; the second because 7899 still held this session's `feat/formal-style` test server from 2026-10-24 (pid 77566). That server's command, cwd and environment were checked, then it was stopped. It will have to be started again for the next formal measurement.
+- Python skills and documents tests were not run. They do not depend on the Node version.
+
+**Restart (pid 97652 → 21344, 17:18:25):**
+- Idle beforehand, 0 active and 0 queued. `SUPER_SEJONG_V2_SHADOW=1` is set on the new process, and its binary is inode 23754417.
+- Health and page return 200 on 127.0.0.1 and 192.168.0.22.
+- A live Codex transform through 192.168.0.22 finished in 11 s with no warnings. The output equalled the input, so this shows the pipeline runs, not rewrite quality.
+
+**Open:**
+- Three humanize-kr MCP servers (pids 94787, 94882, 95070) still run the old v24.22.1 binary until their client sessions restart.
+- The school portal (1275) has its own runtime at `~/.local/opt/school-portal-node`, so later shared Node updates will not reach it.
+
 ## 2026-10-24 — Mac disk cleanup (A1–A8 of the disk report)
 
 **Request:** a disk-usage report and a list of what can be cleaned, then "a1 a2 a3 a4 a5 a6 a7 a8 모두 삭제해줘".
