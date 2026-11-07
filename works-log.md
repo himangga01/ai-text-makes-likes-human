@@ -24,7 +24,10 @@
 - A live Codex transform through 192.168.0.22 finished in 11 s with no warnings. The output equalled the input, so this shows the pipeline runs, not rewrite quality.
 
 **Open:**
-- Three humanize-kr MCP servers (pids 94787, 94882, 95070) still run the old v24.22.1 binary until their client sessions restart.
+- The humanize-kr MCP servers are stdio children of their Claude Code sessions, and Claude Code does not respawn them.
+  - Asked to restart them, this session stopped its own (pid 95070) at about 17:43. Twelve seconds later there was no new child, and this session's humanize-kr tools were gone. It needs `/mcp` → Reconnect, which only the user can run.
+  - The school session's (94787) and the office session's (94882) were left running on v24.22.1, because stopping them would only cut those sessions off.
+  - A fresh `dist/mcp/server.js` on v24.22.2 was tested separately over stdio. Initialize, tools/list (humanize_text, humanize_file, humanize_status) and a humanize_status call all answered, so a reconnect should pick up the new Node. The reconnect itself has not been tested.
 - The school portal (1275) has its own runtime at `~/.local/opt/school-portal-node`, so later shared Node updates will not reach it.
 
 ## 2026-10-24 — Mac disk cleanup (A1–A8 of the disk report)
