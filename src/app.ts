@@ -15,17 +15,21 @@ import {
 } from "./engine/humanize-engine.js";
 import { JobWorkspace } from "./engine/workspace.js";
 import { isAllowedClientAddress, isAllowedHostHeader } from "./network/private-address.js";
+import { publicHostOf } from "./network/public-hosts.js";
+import { PublicAuth, publicAuthPath } from "./network/public-auth.js";
+import { loginPage } from "./network/login-page.js";
 import { listLanUrls } from "./network/lan-addresses.js";
 export { createProductionRuntime, type ProductionRuntime } from "./runtime/create-runtime.js";
 import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
-import { NdjsonWriter } from "./transport/ndjson.js";
+import { HEARTBEAT_MS, NdjsonWriter } from "./transport/ndjson.js";
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from "./transport/public-error.js";
 import { streamRequestBody } from "./transport/request-body.js";
 import { INPUT_LIMITS, MAX_INPUT_BYTES, MAX_INPUT_CHARS } from "./engine/input-limits.js";
 import { mountDocumentRoutes } from './documents/routes.js';
 import type { DocumentEngine } from './documents/document-engine.js';
-import { MODEL_DEFAULTS, MODEL_OPTIONS, parseModelSettings, type ModelSettings } from './engine/model-policy.js';
+import { getModelDefaults, getModelOptions, type ModelSettings } from './engine/model-policy.js';
+import { parseRequestModelSettings, type ModelCatalogService } from './runtime/model-catalog.js';
 
 export interface AppLogger {
   info(value: Record<string, unknown>): void;
@@ -45,6 +49,11 @@ export interface AppDependencies {
   claudeEngine?: HumanizeService;
   preflight: PreflightReport;
   logger?: AppLogger;
+  modelCatalog?: ModelCatalogService;
+  /** Milliseconds of stream silence before a heartbeat event (tests shorten it). */
+  heartbeatMs?: number;
+  /** Password gate for public names; defaults to public-auth.json beside the jobs directory. */
+  publicAuth?: PublicAuth;
 }
 
 
@@ -71,8 +80,9 @@ async function streamResult(
 }
 
 export function createApp(dependencies: AppDependencies): Express {
-  const { config, queue, engine, claudeEngine, preflight } = dependencies;
+  const { config, queue, engine, claudeEngine, preflight, modelCatalog } = dependencies;
   const logger = dependencies.logger ?? defaultLogger;
+  const publicAuth = dependencies.publicAuth ?? new PublicAuth(publicAuthPath(config.runtimeRoot));
   const app = express();
   app.disable("x-powered-by");
 
@@ -90,7 +100,9 @@ export function createApp(dependencies: AppDependencies): Express {
       });
       return;
     }
-    if (!isAllowedHostHeader(request.headers.host)) {
+    const publicHost = publicHostOf(request.headers.host, request.socket.remoteAddress, config.publicHosts ?? []);
+    response.locals.publicHost = publicHost;
+    if (!publicHost && !isAllowedHostHeader(request.headers.host)) {
       const message = "허용되지 않은 접속 주소입니다. 서버 PC에 표시된 IP 주소(예: http://192.168.0.10:7882)로 접속해 주세요.";
       if (request.path.startsWith("/api")) {
         response.status(403).json({ code: "HOST_NOT_ALLOWED", message });
@@ -104,14 +116,52 @@ export function createApp(dependencies: AppDependencies): Express {
     next();
   });
 
+  // A public name needs the password; LAN and localhost stay as they were.
+  app.use((request, response, next) => {
+    if (!response.locals.publicHost || request.path === "/login.css" || request.path === "/api/public-login") { next(); return; }
+    const signedIn = publicAuth.verify(request.headers.cookie);
+    if (request.path === "/login" && request.method === "GET") {
+      if (signedIn) { response.redirect(303, "/"); return; }
+      // The form's POST must carry its real Origin; under no-referrer a navigation POST sends "null".
+      response.setHeader("Referrer-Policy", "same-origin");
+      response.setHeader("Cache-Control", "no-store");
+      response.status(publicAuth.configured ? 200 : 503).type("html").send(loginPage(publicAuth.configured, request.query.e));
+      return;
+    }
+    if (signedIn) { next(); return; }
+    if (request.path.startsWith("/api")) {
+      response.status(401).json({ code: "LOGIN_REQUIRED", message: "로그인이 필요합니다. 페이지를 새로 고쳐 주세요." });
+      return;
+    }
+    response.redirect(303, "/login");
+  });
+
   // Browser-origin policy is shared by text and Office entry points. Native
-  // same-LAN clients that do not send Origin remain supported.
+  // same-LAN clients that do not send Origin remain supported. A public name is served over HTTPS by the tunnel
+  // while the connector speaks plain HTTP to this listener.
   app.use('/api', (request, response, next) => {
-    const origin=request.headers.origin;
-    if (origin && origin!==`${request.protocol}://${request.headers.host}`) {
+    const origin=request.headers.origin;const publicHost=response.locals.publicHost as string|undefined;
+    if (origin && origin!==`${request.protocol}://${request.headers.host}` && !(publicHost && origin===`https://${publicHost}`)) {
       response.status(403).json({code:'ORIGIN_NOT_ALLOWED',message:'허용되지 않은 Origin입니다.'});return;
     }
     next();
+  });
+
+  app.post("/api/public-login", express.urlencoded({ extended: false, limit: "2kb" }), async (request, response) => {
+    if (!response.locals.publicHost) { response.status(404).end(); return; }
+    const body = request.body as Record<string, unknown> | undefined;
+    // cloudflared passes the visitor's address; the limiter only needs to tell visitors apart.
+    const client = String(request.headers["cf-connecting-ip"] ?? "tunnel").slice(0, 64);
+    const result = await publicAuth.login(typeof body?.password === "string" ? body.password : "", client);
+    logger.info({ event: "public_login", result: result.ok ? "ok" : result.reason });
+    if (result.ok) response.setHeader("Set-Cookie", publicAuth.sessionCookie(result.token));
+    response.redirect(303, result.ok ? "/" : `/login?e=${result.reason}`);
+  });
+
+  app.post("/api/public-logout", (_request, response) => {
+    if (!response.locals.publicHost) { response.status(404).end(); return; }
+    response.setHeader("Set-Cookie", publicAuth.clearedCookie());
+    response.redirect(303, "/login");
   });
 
   // Process supervision must not depend on external CLI/authentication latency.
@@ -125,15 +175,17 @@ export function createApp(dependencies: AppDependencies): Express {
 
   app.get("/api/health", async (_request, response) => {
     if (dependencies.refreshHealth) await dependencies.refreshHealth();
+    await modelCatalog?.whenInitialized();
     const stats = queue.stats();
+    const models = { modelOptions: getModelOptions(), modelDefaults: getModelDefaults(),
+      ...(modelCatalog ? { modelCatalog: modelCatalog.status() } : {}) };
     response.setHeader("Cache-Control", "no-store");
     if (!preflight.ready) {
       response.status(503).json({
         status: "degraded",
         providers: preflight.providers,
         rewriteOptions: REWRITE_OPTIONS,
-        modelOptions: MODEL_OPTIONS,
-        modelDefaults: MODEL_DEFAULTS,
+        ...models,
         inputLimits: INPUT_LIMITS,
         checkedAt: new Date().toISOString(),
         pid: process.pid,
@@ -148,8 +200,7 @@ export function createApp(dependencies: AppDependencies): Express {
     response.json({
       documentsAvailable: dependencies.documentEngine ? await dependencies.documentEngine.health() : false,
       rewriteOptions: REWRITE_OPTIONS,
-      modelOptions: MODEL_OPTIONS,
-      modelDefaults: MODEL_DEFAULTS,
+      ...models,
       inputLimits: INPUT_LIMITS,
       checkedAt: new Date().toISOString(),
       status: "ready",
@@ -206,8 +257,10 @@ export function createApp(dependencies: AppDependencies): Express {
     }
     const selectedEngine = engineChoice === "claude" ? claudeEngine! : engine;
     let settings: ModelSettings;
-    try { settings = parseModelSettings(engineChoice, request.query.model, request.query.effort); }
+    try { settings = await parseRequestModelSettings(modelCatalog, engineChoice, request.query.model, request.query.effort); }
     catch (error) { response.status(400).json({code:'INVALID_MODEL_SETTINGS',message:(error as Error).message}); return; }
+    // A new model id waits for one discovery; a client that left meanwhile gets no queue slot.
+    if (request.socket.destroyed) return;
 
     let rewriteOptions: RewriteOptions | undefined;
     try { rewriteOptions = parseRewriteOptions(request.query.inputKind, request.query.strength); }
@@ -235,6 +288,7 @@ export function createApp(dependencies: AppDependencies): Express {
     response.flushHeaders();
     const writer = new NdjsonWriter(response);
     writer.write({ type: "accepted", jobId, position: 0 });
+    writer.keepAlive(dependencies.heartbeatMs ?? HEARTBEAT_MS);
 
     const clientController = new AbortController();
     let completed = false;

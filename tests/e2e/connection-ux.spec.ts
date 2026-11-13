@@ -1,7 +1,7 @@
 import { test,expect } from '@playwright/test';
-import { MODEL_OPTIONS } from '../../src/engine/model-policy.js';
+import { FALLBACK_MODEL_OPTIONS } from '../../src/engine/model-policy.js';
 
-const healthy={status:'ready',modelOptions:MODEL_OPTIONS,checkedAt:'2026-09-09T07:00:00Z',providers:{
+const healthy={status:'ready',modelOptions:FALLBACK_MODEL_OPTIONS,checkedAt:'2026-09-09T07:00:00Z',providers:{
   codex:{ready:true,installed:true,authenticated:true,message:'Codex 사용 가능'},
   claude:{ready:true,installed:true,authenticated:true,message:'Claude 사용 가능'}}};
 test('model selection survives reload and uses selected CLI settings; stopwatch freezes on completion',async({page})=>{

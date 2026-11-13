@@ -13,6 +13,8 @@
 - 텍스트 자동 라우팅: 기본 활성화. 15,000자 이하의 `light`·`standard` 문서는 본문 1개 구간, `heavy`·15,000자 초과·안전하게 판정할 수 없는 문서는 청킹. 단일 구간도 검증 결과에 따라 선택한 CLI를 한 번 더 호출할 수 있음
 - 청크 동시 Codex 실행: 기본 1개. `CODEX_CHUNK_CONCURRENCY=2`를 명시한 실험에서만 최대 2개
 - 변환 모델 기본값: GPT는 `gpt-6.1-sol`, reasoning effort `high`; Claude는 `claude-opus-5-5`, effort `xhigh`. 연결 설정에서 바꿀 수 있으며 `/api/health`의 `modelDefaults`로 제공
+- 모델 목록: 서버 시작 때, 그리고 목록이 10분 넘게 지났거나 CLI 버전이 바뀌었을 때 각 CLI에서 다시 받음(프롬프트 없음, 사용량 없음). 받지 못하면 직전 목록을 계속 쓰고 1분 뒤 다시 시도함. 목록에 없는 모델 요청은 목록을 즉시 한 번 더 확인함(엔진별 30초에 1번). 출처·확인 시각은 `/api/health`의 `modelCatalog`, 바뀐 모델은 로그의 `model_catalog_updated`(추가·제거 ID), 실패는 `model_catalog_failed`(오류 코드만)
+- 기본 모델이 CLI 목록에서 빠지면 CLI가 정한 기본 모델로 바꿔 제공함. 추론 수준도 그 모델이 지원하는 값으로 맞춤
 - 모델 거부: CLI가 선택한 모델을 알지 못하거나 계정에 권한이 없으면 `MODEL_UNAVAILABLE`로 안내하고 재시도하지 않음
 - CLI 실행 실패: 로그인 만료·사용 한도·네트워크 오류 등으로 CLI가 실패하면 `ENGINE_FAILED`로 작업을 중단하고 재시도할 수 있음을 알림. 원문을 결과로 돌려주지 않음. 로그에는 종료 코드와 CLI 상태 값만 남김
 - 시간 초과(`ENGINE_TIMEOUT`)는 작업을 중단함. 형식이 잘못된 모델 응답만 해당 구간을 재시도한 뒤 원문으로 되돌리며, 모든 구간의 응답이 쓸 수 없으면 `ENGINE_OUTPUT_INVALID`로 중단함
@@ -28,6 +30,9 @@
 - 상태 갱신: `/api/health`는 3초 캐시·진행 중 조회 공유를 사용해 재점검함. 보이는 유휴 화면은 60초마다 조회하고 수동 점검·화면 복귀·관련 오류 때도 다시 조회함. 모델별 계정 권한은 실제 실행으로만 확인됨
 - 상태 수치의 범위: `activeJobs`·`queuedJobs`에는 일반 텍스트 업로드 예약과 Office 보관·파싱·다운로드가 표시되지 않음. 두 값이 0이어도 모든 작업이 끝났다는 뜻은 아님
 - 접근 범위: 소켓의 로컬·사설 IP, 로컬·사설 IP 또는 localhost Host, 제공된 Origin을 확인함. 사용자 로그인·TLS는 없으며 같은 와이파이 여부를 직접 확인하지 않음
+- 외부 주소: `runtime/public-hosts.txt`에 적힌 이름은 루프백(같은 PC의 Cloudflare Tunnel 커넥터)에서 온 요청에만 Host로 허용하고, Origin `https://<이름>`을 같은 출처로 인정함. 파일은 시작할 때 읽음(바꾸면 재시작). 시작 로그에 `외부 주소: https://<이름>`이 나옴
+- 외부 주소 비밀번호: `node dist/ops/public-password.js`로 설정함. scrypt 해시와 세션 서명 키는 `runtime/public-auth.json`(600)에 저장되며, 파일을 바꾸면 재시작 없이 바로 적용됨. 파일이 없으면 외부 주소는 로그인 화면(503)만 보여 줌. 세션은 30일. 로그인 실패는 방문자(`Cf-Connecting-Ip`)당 15분 5회, 전체 1시간 10회로 제한. 로그는 `public_login`과 결과(`ok`·`wrong`·`locked`·`unconfigured`)만 남김(주소·비밀번호 없음)
+- 스트림 연결 유지: 변환·문서 변환 응답이 20초 동안 이벤트가 없으면 `{"type":"heartbeat"}`를 보냄(Cloudflare는 100초 무응답 요청을 끊음)
 
 ## macOS 서버 운영
 

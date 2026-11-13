@@ -1,5 +1,6 @@
 import path from "node:path";
 import { selectEngine, type SejongEngineName } from "./engine/sejong/config.js";
+import { readPublicHosts } from "./network/public-hosts.js";
 
 export interface AppConfig {
   readonly projectRoot: string;
@@ -20,6 +21,8 @@ export interface AppConfig {
   readonly pythonCommand: string;
   readonly autoRoute: boolean;
   readonly chunkConcurrency: 1 | 2;
+  /** Names a local tunnel connector may present (see network/public-hosts.ts); empty keeps the portal LAN-only. */
+  readonly publicHosts?: readonly string[];
 }
 
 export function loadConfig(
@@ -36,6 +39,12 @@ export function loadConfig(
     throw new Error("CODEX_CHUNK_CONCURRENCY must be 1 or 2");
   }
 
+  // HUMANIZE_RUNTIME_ROOT lets a test instance run beside the managed service,
+  // which owns the default runtime directory and its single-instance lock.
+  const runtimeRoot = env.HUMANIZE_RUNTIME_ROOT
+    ? path.resolve(env.HUMANIZE_RUNTIME_ROOT, "jobs")
+    : path.join(projectRoot, "runtime", "jobs");
+
   return Object.freeze({
     projectRoot,
     host: env.HOST ?? "0.0.0.0",
@@ -44,11 +53,9 @@ export function loadConfig(
     maxActiveJobs: 1,
     chunkTimeoutMs: 10 * 60 * 1000,
     minFreeBytes: 1024 ** 3,
-    // HUMANIZE_RUNTIME_ROOT lets a test instance run beside the managed service,
-    // which owns the default runtime directory and its single-instance lock.
-    runtimeRoot: env.HUMANIZE_RUNTIME_ROOT
-      ? path.resolve(env.HUMANIZE_RUNTIME_ROOT, "jobs")
-      : path.join(projectRoot, "runtime", "jobs"),
+    runtimeRoot,
+    // A file, not an environment variable, so every restart path (watchdog, other operators) keeps it.
+    publicHosts: Object.freeze(readPublicHosts(path.join(path.dirname(runtimeRoot), "public-hosts.txt"))),
     vendorRoot: path.join(projectRoot, "vendor", "humanize-engine"),
     engineRoot: path.join(projectRoot, "engine_runtime", "sejong"),
     engine: selectEngine(env),

@@ -6,8 +6,8 @@ import { pipeline } from 'node:stream/promises';
 import { Transform } from 'node:stream';
 import { ArtifactStore, type DocumentRecord } from './artifact-store.js';
 import type { AppDependencies } from '../app.js';
-import { NdjsonWriter } from '../transport/ndjson.js';
-import { parseModelSettings } from '../engine/model-policy.js';
+import { HEARTBEAT_MS, NdjsonWriter } from '../transport/ndjson.js';
+import { parseRequestModelSettings } from '../runtime/model-catalog.js';
 import { EngineError } from '../engine/errors.js';
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from '../transport/public-error.js';
 
@@ -73,14 +73,23 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
     if(!deps.preflight.ready){response.status(503).json({code:'ENGINE_UNAVAILABLE',message:PUBLIC_MESSAGES.ENGINE_UNAVAILABLE});return;}
     try {
       if(deps.queue.isShuttingDown) throw new Rejection(503,'SERVER_SHUTDOWN',PUBLIC_MESSAGES.SERVER_SHUTDOWN);
-      try {record=store.get(String(request.params.id),token(request));}
-      catch(e){throw new Rejection(404,'DOCUMENT_NOT_FOUND',e instanceof Error?e.message:'문서를 찾을 수 없습니다.');}
-      if(record.busy||record.output||!record.state) throw new Rejection(409,'DOCUMENT_BUSY','진행 중이거나 완료한 문서입니다. 새로 선택해 주세요.');
+      const lookup=()=>{
+        let found;
+        try {found=store.get(String(request.params.id),token(request));}
+        catch(e){throw new Rejection(404,'DOCUMENT_NOT_FOUND',e instanceof Error?e.message:'문서를 찾을 수 없습니다.');}
+        if(found.busy||found.output||!found.state) throw new Rejection(409,'DOCUMENT_BUSY','진행 중이거나 완료한 문서입니다. 새로 선택해 주세요.');
+        return found;
+      };
+      record=lookup();
       const choice=request.query.engine;
       if(choice!=='claude'&&choice!=='codex') throw new Rejection(400,'INVALID_ENGINE','CLI를 선택해 주세요.');
       let settings;
-      try {settings=parseModelSettings(choice,request.query.model,request.query.effort);}
+      try {settings=await parseRequestModelSettings(deps.modelCatalog,choice,request.query.model,request.query.effort);}
       catch(e){throw new Rejection(400,'INVALID_MODEL_SETTINGS',(e as Error).message);}
+      // A new model id waits for one discovery: a client that left meanwhile must not start a CLI job, and
+      // another request may have taken or closed the document.
+      if(request.socket.destroyed) return;
+      record=lookup();
       if(deps.preflight.providers&&!deps.preflight.providers[choice].ready) throw new Rejection(503,'ENGINE_UNAVAILABLE','선택한 CLI의 설치·로그인 상태를 확인해 주세요.');
       reservation=deps.queue.reserve(record.id);
       if(!reservation) throw new Rejection(429,'QUEUE_FULL',PUBLIC_MESSAGES.QUEUE_FULL);
@@ -95,7 +104,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       response.setHeader('Content-Type','application/x-ndjson; charset=utf-8');response.setHeader('Cache-Control','no-store');
       response.flushHeaders();writer=new NdjsonWriter(response);
       response.once('close',()=>{if(!finished){clientClosed=true;r.controller.abort();}});
-      writer.write({type:'accepted',jobId:r.id,position:0});
+      writer.write({type:'accepted',jobId:r.id,position:0});writer.keepAlive(deps.heartbeatMs??HEARTBEAT_MS);
       await reservation.submit(async signal=>{
         const result=await engine.transform(r.state!,choice,r.dir,AbortSignal.any([signal,r.controller.signal]),event=>writer!.write(event),settings);
         if(r.deleted||r.controller.signal.aborted)throw new EngineError('CLIENT_ABORTED',true,'Document was closed during the transform');

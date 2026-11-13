@@ -1,0 +1,510 @@
+{
+ "codex": [
+  {
+   "id": "gpt-6.1-sol",
+   "model": "gpt-6.1-sol",
+   "displayName": "GPT-6.1-Sol",
+   "description": "GPT-6.1-Sol test entry",
+   "hidden": false,
+   "isDefault": true,
+   "defaultReasoningEffort": "low",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-6-astra",
+   "model": "gpt-6-astra",
+   "displayName": "GPT-6-Astra",
+   "description": "GPT-6-Astra test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-6.1-terra",
+   "model": "gpt-6.1-terra",
+   "displayName": "GPT-6.1 Terra",
+   "description": "GPT-6.1 Terra test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-6-sol",
+   "model": "gpt-6-sol",
+   "displayName": "GPT-6-Sol",
+   "description": "GPT-6-Sol test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-6-luna",
+   "model": "gpt-6-luna",
+   "displayName": "GPT-6-Luna",
+   "description": "GPT-6-Luna test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-5.6-sol",
+   "model": "gpt-5.6-sol",
+   "displayName": "GPT-5.6-Sol",
+   "description": "GPT-5.6-Sol test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-5.6-terra",
+   "model": "gpt-5.6-terra",
+   "displayName": "GPT-5.6-Terra",
+   "description": "GPT-5.6-Terra test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-5.6-luna",
+   "model": "gpt-5.6-luna",
+   "displayName": "GPT-5.6-Luna",
+   "description": "GPT-5.6-Luna test entry",
+   "hidden": false,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    }
+   ]
+  },
+  {
+   "id": "gpt-reserve",
+   "model": "gpt-reserve",
+   "displayName": "GPT-Reserve",
+   "description": "GPT-Reserve test entry",
+   "hidden": true,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    },
+    {
+     "reasoningEffort": "high",
+     "description": "high effort"
+    },
+    {
+     "reasoningEffort": "xhigh",
+     "description": "xhigh effort"
+    },
+    {
+     "reasoningEffort": "max",
+     "description": "max effort"
+    },
+    {
+     "reasoningEffort": "ultra",
+     "description": "ultra effort"
+    }
+   ]
+  },
+  {
+   "id": "codex-auto-review",
+   "model": "codex-auto-review",
+   "displayName": "Codex Auto Review",
+   "description": "Codex Auto Review test entry",
+   "hidden": true,
+   "isDefault": false,
+   "defaultReasoningEffort": "medium",
+   "supportedReasoningEfforts": [
+    {
+     "reasoningEffort": "low",
+     "description": "low effort"
+    },
+    {
+     "reasoningEffort": "medium",
+     "description": "medium effort"
+    }
+   ]
+  }
+ ],
+ "claude": [
+  {
+   "value": "default",
+   "displayName": "Default (recommended)",
+   "description": "Default (recommended) test entry",
+   "resolvedModel": "claude-opus-5-5",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "opus",
+   "displayName": "Opus 5.5",
+   "description": "Opus 5.5 test entry",
+   "resolvedModel": "claude-opus-5-5",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "fable",
+   "displayName": "Fable 5.2",
+   "description": "Fable 5.2 test entry",
+   "resolvedModel": "claude-fable-5-2",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "sonnet",
+   "displayName": "Sonnet 5.5",
+   "description": "Sonnet 5.5 test entry",
+   "resolvedModel": "claude-sonnet-5-5",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "haiku",
+   "displayName": "Haiku 5.5",
+   "description": "Haiku 5.5 test entry",
+   "resolvedModel": "claude-haiku-5-5",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-fable-5-1",
+   "displayName": "Fable 5.1",
+   "description": "Fable 5.1 test entry",
+   "resolvedModel": "claude-fable-5-1",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-haiku-4-5-20251001",
+   "displayName": "Haiku 4.5",
+   "description": "Haiku 4.5 test entry"
+  },
+  {
+   "value": "claude-sonnet-5",
+   "displayName": "Sonnet 5",
+   "description": "Sonnet 5 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-opus-5",
+   "displayName": "Opus 5",
+   "description": "Opus 5 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-fable-5",
+   "displayName": "Fable 5",
+   "description": "Fable 5 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-opus-4-8",
+   "displayName": "Opus 4.8",
+   "description": "Opus 4.8 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-opus-4-7",
+   "displayName": "Opus 4.7",
+   "description": "Opus 4.7 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-opus-4-6",
+   "displayName": "Opus 4.6",
+   "description": "Opus 4.6 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "max"
+   ]
+  },
+  {
+   "value": "claude-sonnet-4-6",
+   "displayName": "Sonnet 4.6",
+   "description": "Sonnet 4.6 test entry",
+   "supportsEffort": true,
+   "supportedEffortLevels": [
+    "low",
+    "medium",
+    "high",
+    "max"
+   ]
+  }
+ ]
+}

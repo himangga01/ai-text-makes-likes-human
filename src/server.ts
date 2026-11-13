@@ -52,6 +52,7 @@ async function main(): Promise<void> {
 
   console.log(`로컬: http://localhost:${config.port}`);
   for (const url of listLanUrls(config.port)) console.log(`와이파이: ${url}`);
+  for (const name of config.publicHosts ?? []) console.log(`외부 주소: https://${name}`);
   if (!runtime.preflight.ready) console.log(runtime.preflight.message);
 
   let shuttingDown = false;

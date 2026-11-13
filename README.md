@@ -216,7 +216,7 @@ echo "humanize_status를 한 번 호출하고 상태를 알려 줘." | claude -p
 |---|---|---|
 | `humanize_text` | 글을 다듬어 검증된 결과와 짧은 보고(강도·구간 수·시간·안내)를 돌려줍니다. | `text`(필수, 최대 100,000자), `strength`, `engine`, `model`, `effort` |
 | `humanize_file` | TXT·MD·DOCX·PPTX를 다듬어 새 파일로 저장하고 저장 위치를 알려 줍니다. | `path`(필수, 절대 경로), `outputPath`, `strength`, `engine`, `model`, `effort` |
-| `humanize_status` | 포털 상태, 강도 설명, 모델 목록과 기본값, 입력 한도, 대기 작업 수를 알려 줍니다. | 없음 |
+| `humanize_status` | 포털 상태, 강도 설명, CLI에서 받아 온 모델 목록과 기본값, 입력 한도, 대기 작업 수를 알려 줍니다. | 없음 |
 
 - `strength`: `normal`(보통, 기본값), `medium`(중간), `strong`(강하게), `very-strong`(매우 강하게), `rewrite`(매우 강하게·다시쓰기). 직접 입력한 글과 TXT·MD 파일에 적용되며, DOCX·PPTX에 강도를 주면 오류로 돌려보냅니다.
 - `engine`: `codex`(기본값) 또는 `claude`. `model`·`effort`를 생략하면 포털 기본값을 씁니다. 쓸 수 있는 값은 `humanize_status`가 알려 줍니다.
@@ -286,7 +286,21 @@ MCP 서버 자체에는 시간 제한이 없고, 포털이 한 구간을 10분 �
 - **GPT** (기본): 기본값은 `gpt-6.1-sol`, reasoning effort `high`이며 연결 설정에서 모델과 추론 수준을 선택할 수 있습니다.
 - **Claude**: 기본값은 `claude-opus-5-5`, effort `xhigh`이며 연결 설정에서 변경할 수 있습니다. 서버 PC에 Claude CLI 설치와 로그인이 필요합니다.
 
-추가 지원 모델: GPT-6.1 Sol (`gpt-6.1-sol`, `low`~`ultra`), GPT-6 Sol (`gpt-6-sol`, `low`~`ultra`), GPT-6 Luna (`gpt-6-luna`, `low`~`max`), Claude Opus 5.5 (`claude-opus-5-5`, `low`~`max`), Claude Sonnet 5.5 (`claude-sonnet-5-5`, `low`~`max`), Claude Haiku 5.5 (`claude-haiku-5-5`, `low`~`max`). 웹·데스크톱 앱의 연결 설정에서 선택할 수 있습니다. Claude Opus 5.5는 Claude Code 2.1.280 이상, Claude Sonnet 5.5는 2.1.284 이상, Claude Haiku 5.5는 2.1.293 이상이 필요하며, 실제 모델 이용 가능 여부는 로그인한 계정의 권한에 따릅니다. GPT-5.2는 ChatGPT 계정으로 로그인한 Codex에서 더 이상 지원되지 않고, GPT-5.5는 2026년 10월 14일 지원 종료 예정이라 목록에서 제외했습니다. 모델 정보는 [OpenAI 공식 문서](https://learn.chatgpt.com/docs/models)와 [Claude Code 공식 문서](https://code.claude.com/docs/en/model-config)를 참고하세요.
+**모델 목록은 서버가 CLI에서 직접 받아 옵니다.** 서버를 켤 때 한 번 확인하고, 그 뒤에는 목록을 받은 지 10분이 지났거나 CLI 버전이 바뀌었을 때 다시 확인합니다.
+- Codex에는 `codex app-server`의 `model/list`로 묻습니다.
+- Claude Code에는 초기화 응답에 담긴 모델 목록을 읽습니다.
+
+어느 쪽도 프롬프트를 보내지 않으므로 사용량은 들지 않습니다. 목록이 바뀌면 웹·데스크톱 앱의 연결 설정이 새로 고침 없이 따라 바뀝니다. 목록에 없는 모델로 요청이 오면 그 자리에서 목록을 한 번 더 확인한 뒤 받거나 거절합니다. 엔진별로 목록을 어디서 받았는지(`live`: CLI, `fallback`: 기본 목록)와 확인 시각은 `/api/health`의 `modelCatalog`에 나옵니다.
+
+CLI에 물을 수 없으면 아래 기본 목록을 씁니다. 2026-11-13에 Codex CLI 0.167.0과 Claude Code 2.1.323에서 받은 목록입니다.
+- **GPT:** GPT-6.1 Sol, GPT-6 Astra, GPT-6.1 Terra, GPT-6 Sol, GPT-5.6 Sol, GPT-5.6 Terra는 `low`~`ultra`이고, GPT-6 Luna와 GPT-5.6 Luna는 `low`~`max`입니다.
+- **Claude:** Opus 5.5, Fable 5.2, Sonnet 5.5, Haiku 5.5, Fable 5.1, Sonnet 5, Opus 5, Fable 5, Opus 4.8, Opus 4.7은 `low`~`max`입니다. Opus 4.6과 Sonnet 4.6은 `low`·`medium`·`high`·`max`입니다.
+
+목록에 넣지 않는 모델도 있습니다.
+- CLI가 숨긴 모델(Codex의 `gpt-reserve`, `codex-auto-review`)
+- 추론 수준을 고를 수 없는 모델(Claude Haiku 4.5): 포털은 항상 추론 수준을 함께 보내기 때문입니다.
+
+실제로 쓸 수 있는지는 로그인한 계정의 권한에 따릅니다. 모델 정보는 [OpenAI 공식 문서](https://learn.chatgpt.com/docs/models)와 [Claude Code 공식 문서](https://code.claude.com/docs/en/model-config)를 참고하세요.
 
 Codex 로그인 확인:
 
@@ -371,6 +385,29 @@ DOCX·PPTX를 선택하면 파일을 서버에 올려 구조와 위치별 텍스
 - 원문은 선택한 모델 제공자에게 전달되며, 웹 포털에서는 서버 PC의 해당 계정 사용량과 쿼터를 사용합니다. 로컬 임시 파일 정리가 제공자의 원격 보관 정책까지 보장하지는 않습니다.
 
 포털은 사용자 로그인 대신 접속 소켓의 사설·로컬 주소, 요청 Host, 브라우저 Origin을 확인합니다. 접속 주소에는 `localhost` 또는 사설망 IP 주소를 직접 사용해야 하며 mDNS·기타 DNS 호스트 이름은 허용하지 않습니다. 이는 같은 와이파이 여부나 사용자를 식별하는 인증이 아니므로 신뢰할 수 있는 네트워크에서 사용합니다.
+
+### 외부 주소로 열기 (Cloudflare Tunnel)
+
+서버 PC에서 도는 Cloudflare Tunnel로 포털을 외부 주소(예: `https://sejong.example.com`)에 연결할 수 있습니다.
+
+1. **Cloudflare 쪽 설정:** 터널에 그 이름을 추가하고 연결 대상을 `http://127.0.0.1:7882`로 지정합니다.
+2. **포털 쪽 설정:** `runtime/public-hosts.txt`에 그 이름을 한 줄에 하나씩 적고 포털을 재시작합니다. `#` 뒤는 주석입니다.
+   - 환경변수가 아니라 파일로 두는 이유는, watchdog나 다른 사람이 재시작해도 설정이 빠지지 않게 하려는 것입니다.
+   - 파일이 없으면 지금처럼 같은 네트워크에서만 열립니다.
+
+이 이름으로 들어온 요청은 다음처럼 처리합니다.
+- **허용 조건:** 같은 PC의 터널 연결(`127.0.0.1`)로 들어온 요청만 받습니다. 같은 와이파이의 다른 PC가 이 이름을 대도 막힙니다.
+- **출처 검사:** 브라우저 Origin은 `https://<그 이름>`을 같은 출처로 인정합니다.
+- **연결 유지:** 변환 응답이 20초 동안 조용하면 `heartbeat` 이벤트를 보냅니다. Cloudflare가 100초 동안 응답이 없는 요청을 끊기 때문입니다. 웹 화면과 MCP는 이 이벤트를 무시합니다.
+
+**외부 주소로 들어오면 비밀번호를 묻습니다.** 같은 네트워크(LAN)나 localhost 접속은 예전처럼 비밀번호 없이 쓸 수 있습니다.
+- **비밀번호 설정:** 서버 PC에서 `node dist/ops/public-password.js`를 실행합니다.
+  - 터미널에서는 입력이 보이지 않게 두 번 묻습니다.
+  - 해시만 `runtime/public-auth.json`(권한 600)에 저장되고, 비밀번호 원문은 남지 않습니다.
+  - 다시 설정하면 로그인돼 있던 브라우저가 모두 로그아웃됩니다.
+  - 비밀번호를 정하지 않았으면 외부 주소는 로그인 화면만 보여 주고 아무 기능도 열지 않습니다.
+- **로그인 유지:** 30일입니다. 쿠키는 `HttpOnly`, `Secure`, `SameSite=Lax`이고, 로그아웃은 `POST /api/public-logout`으로 합니다.
+- **틀린 비밀번호:** 같은 방문자는 15분에 5번, 모든 방문자를 합쳐 1시간에 10번까지만 받고 그 뒤에는 잠시 잠급니다. 짧은 비밀번호일수록 이 제한에 기대게 되므로 길게 정하는 편이 안전합니다.
 
 ## 자주 발생하는 문제
 

@@ -46,7 +46,7 @@ export const TOOLS = [
   },
   {
     name: 'humanize_status', title: '윤문 포털 상태',
-    description: '윤문 포털의 준비 상태, 쓸 수 있는 CLI, 변환 강도 설명, 모델 목록과 기본값, 입력 한도, 대기 작업 수를 돌려준다.',
+    description: '윤문 포털의 준비 상태, 쓸 수 있는 CLI, 변환 강도 설명, CLI에서 받아 온 모델 목록과 기본값, 입력 한도, 대기 작업 수를 돌려준다.',
     inputSchema: { type: 'object', additionalProperties: false, properties: {} },
     annotations: { readOnlyHint: true, openWorldHint: false }
   }

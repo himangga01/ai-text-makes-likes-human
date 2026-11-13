@@ -17,7 +17,8 @@ async function probe(overrides:Record<string,any>={}) {
     '../src/engine/workspace.js':{JobWorkspace:{create:async()=>({path:()=> 'input',cleanup:async()=>{}})}},
     '../src/engine/errors.js':{EngineError:class extends Error{}},
     '../src/transport/public-error.js':{PUBLIC_MESSAGES:{}},
-    '../src/engine/model-policy.js':{parseEngineChoice:()=> 'codex',MODEL_OPTIONS:[]},
+    '../src/engine/model-policy.js':{parseEngineChoice:()=> 'codex',getModelOptions:()=>({}),getModelDefaults:()=>({})},
+    '../src/runtime/model-catalog.js':{parseRequestModelSettings:async(_catalog:unknown,_engine:string,model='gpt-6.1-sol',effort='high')=>({model,effort})},
     '../src/engine/input-limits.js':{INPUT_LIMITS:{},MAX_INPUT_CHARS:100000,inputChars:(text:string)=>Array.from(text).length},
     'node:path':path,'../src/documents/artifact-store.js':{ArtifactStore:class{}},
     ...overrides,
@@ -55,4 +56,35 @@ it('keeps a document the CLI preflight rejected before accepting the job',async(
   const error=p.messages.find(m=>m.event?.type==='error')?.event;
   expect(error).toMatchObject({retryable:true});expect(p.messages.some(m=>m.event?.type==='accepted')).toBe(false);
   expect(removed).toEqual([]);expect(record.busy).toBe(false);
+});
+const engineError={'../src/engine/errors.js':{EngineError:class extends Error{constructor(readonly publicCode:string,readonly retryable:boolean,message:string){super(message);}}}};
+it('validates a model selection against the worker list, which the main process never sees',async()=>{
+  const rejecting={'../src/runtime/model-catalog.js':{parseRequestModelSettings:async()=>{throw new Error('선택한 CLI에서 지원하는 모델과 추론 레벨을 선택해 주세요.');}}};
+  const p=await probe({...engineError,...rejecting});p.resume();p.send('transform');await tick();
+  expect(p.executions).toEqual([]);
+  expect(p.messages.find(m=>m.event?.type==='error')?.event).toMatchObject({code:'MODEL_UNAVAILABLE',retryable:true});
+  const removed:unknown[]=[];const record={state:{},controller:new AbortController(),busy:false};let ran=false;
+  const doc=await probe({...engineError,...rejecting,
+    '../src/documents/artifact-store.js':{ArtifactStore:class{get(){return record;}async remove(r:unknown){removed.push(r);}}},
+    '../src/runtime/create-runtime.js':{createProductionRuntime:async()=>({preflight:{ready:true,providers:{codex:{ready:true}}},documentEngine:{async transform(){ran=true;}}})}});
+  doc.resume();doc.send('document-transform','job',{input:{id:'doc',token:'t',engine:'codex',commands:{}}});await tick();
+  expect(doc.messages.find(m=>m.event?.type==='error')?.event).toMatchObject({code:'MODEL_UNAVAILABLE',retryable:true});
+  expect(doc.messages.some(m=>m.event?.type==='accepted')).toBe(false);expect(ran).toBe(false);expect(removed).toEqual([]);
+});
+it('passes the validated selection to the engine and serves the live list from health',async()=>{
+  const seen:unknown[]=[];let settled=false;
+  const live={codex:[{id:'gpt-7-nova',label:'GPT-7 Nova',efforts:['high']}],claude:[]};
+  const p=await probe({
+    '../src/engine/model-policy.js':{parseEngineChoice:()=> 'codex',getModelOptions:()=>live,getModelDefaults:()=>({codex:{model:'gpt-7-nova',effort:'high'}})},
+    '../src/runtime/model-catalog.js':{parseRequestModelSettings:async(catalog:any,_engine:string,model:string,effort:string)=>{seen.push(catalog);return {model,effort};}},
+    '../src/runtime/create-runtime.js':{createProductionRuntime:async()=>({preflight:{ready:true,providers:{codex:{ready:true}}},
+      modelCatalog:{async whenInitialized(){settled=true;},status:()=>({codex:{source:'live'}})},documentEngine:{health:async()=>true},
+      engine:{async transform(req:any){seen.push(req.settings);return {finalPath:'result',sourceChars:1,outputChars:1,chunks:1};}}})}
+  });
+  p.resume();p.send('transform','job',{input:{text:'source',engine:'codex',commands:{},settings:{model:'gpt-7-nova',effort:'high'}}});await tick();
+  expect(seen[1]).toEqual({model:'gpt-7-nova',effort:'high'});expect(seen[0]).toMatchObject({status:expect.any(Function)});
+  p.send('health','health');await tick();
+  const health=p.messages.find(m=>m.id==='health')?.value;
+  expect(settled).toBe(true);
+  expect(health).toMatchObject({modelOptions:live,modelDefaults:{codex:{model:'gpt-7-nova',effort:'high'}},modelCatalog:{codex:{source:'live'}}});
 });
