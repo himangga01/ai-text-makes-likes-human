@@ -24,7 +24,7 @@ export interface CommandRunner {
   run(request: CommandRequest): Promise<CommandResult>;
 }
 
-function terminateProcessTree(pid: number, synchronous = false): void {
+export function terminateProcessTree(pid: number, synchronous = false): void {
   if (process.platform === "win32") {
     const args = ["/PID", String(pid), "/T", "/F"];
     const options = { shell: false, windowsHide: true, stdio: "ignore" } as const;
@@ -51,6 +51,12 @@ function terminateProcessTree(pid: number, synchronous = false): void {
 // server that crashes or is force-exited unless they are killed on exit.
 const liveProcesses = new Set<number>();
 let exitCleanupInstalled = false;
+
+/** Registers a child spawned outside SpawnCommandRunner for the exit cleanup; the returned function unregisters it. */
+export function trackLiveProcess(pid: number): () => void {
+  liveProcesses.add(pid);
+  return () => { liveProcesses.delete(pid); };
+}
 
 export function killLiveProcesses(): void {
   for (const pid of liveProcesses) terminateProcessTree(pid, true);
