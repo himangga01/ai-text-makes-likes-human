@@ -1,5 +1,103 @@
 # Works Log
 
+## 2026-11-13 — Live model catalog (0.5.1); public address with a password gate
+
+Branch `feat/live-models` (tip `f69a5ac`, version 0.5.1). Not merged, not deployed.
+
+### Live model catalog
+
+**Request:** "cli 메돌들 새로 추가됨, 업데이트하고, 새로운 기능으로 모델실시간으로 확인해서 동적으로 업데이트 하는 기능 추가해" ("모델들 우르르 추가됨").
+
+**What the CLIs list (probed 2026-11-13, no prompt sent):**
+- **Codex 0.167.0.** Source: `codex app-server` JSON-RPC `initialize` + `model/list`.
+  - New model: `gpt-6.1-terra`.
+  - Hidden models, skipped: `gpt-reserve`, `codex-auto-review`.
+- **Claude Code 2.1.323.** Source: the stream-json `initialize` control response, which carries `models` with `resolvedModel` and `supportedEffortLevels`.
+  - New models: `claude-fable-5-2`, `claude-fable-5`, `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-6` and `claude-sonnet-4-6`. The last two have no `xhigh`.
+  - Haiku 4.5 is left out because it has no effort levels and the portal always sends one.
+
+**Work split:** two subagents in their own worktrees, then merged by the lead.
+- `35fecf2` discovery module: `src/runtime/model-discovery.ts`, fake CLIs, 16 unit tests, and an opt-in live test (`RUN_LIVE_MODELS=1`).
+- `24ac337` and `aabcdd1` catalog service and wiring: `src/runtime/model-catalog.ts`, the `model-policy.ts` state and getters, `/api/health` `modelCatalog`, and `ensureModel` on request-time parses.
+  - The desktop main process now only shape-checks saved selections; the worker validates them.
+- The lead wrote the docs and release note `docs/releases/0.5.1.md`.
+
+**Behaviour:**
+- **When the list is refreshed:**
+  - at start-up, in the background;
+  - when it is older than 10 min;
+  - right away when the CLI version changes;
+  - when a request names an unknown model, at most once per 30 s per engine.
+- **Failures:** the last good list stays in use, with a retry after 1 min.
+- **First health check:** it waits up to 3 s for the first discovery, so a saved live-only model is not replaced by the default on app launch.
+- **Fallback list:** updated to the same 8 Codex and 12 Claude models. Because live and fallback are identical today, no `model_catalog_updated` line is logged.
+
+**Verification (merged branch):**
+- `tsc` and the desktop typecheck pass.
+- Full vitest: 818 passed, 11 skipped. Playwright e2e on side port 7895: 54 passed, 9 skipped.
+- Live discovery: Codex in 38–131 ms, Claude in 670 ms. No child processes were left behind.
+- Side server (7896) on real CLIs: `modelCatalog` showed source `live` for both engines.
+  - Short transforms with `gpt-6.1-terra` and `claude-fable-5-2` (effort low) both finished, in 5.3 s and 6.6 s.
+  - The Claude run carried one warning: a conservative retry, not related to the model.
+- A test pinned version `0.5.0`; after the bump to 0.5.1 it failed. Fixed in `44c53ac` by reading `package.json`.
+
+**Flaky test, pre-existing, not fixed:** `tests/integration/documents.test.ts` "imports, verifies and downloads {docx,pptx} with selected codex" sometimes fails in the full suite at `expect(t.store.records.size).toBe(0)`.
+- Failure rate: 1 of 4 full runs on the merged branch, and 2 of 6 on a branch without the catalog changes. 0 of 8 when the file runs alone.
+- Unverified hypothesis: the result download's read lease is not yet released when DELETE arrives.
+
+### Public address `sejong.jihyeadminoffice.com`
+
+**Request:** register the portal on Cloudflare with a free subdomain, then "sejong 으로 하고", and "클라우드플레어는 엠시피로 너가 직접 세팅하거나 크롬으로 직접너가해".
+
+**Cloudflare, done in Chrome:**
+- Tunnel `wisdom-mac-mini-school-web` got route 4: `sejong.jihyeadminoffice.com` → `http://127.0.0.1:7882`, with an auto-created CNAME.
+- Routes 1–3 are unchanged: `jihyeadminschool.co.kr`, `jihyeadminoffice.com` and `jihyevisa.co.kr`.
+- Live check: the production portal answers through the tunnel with 403 `HOST_NOT_ALLOWED`, which is expected before deployment.
+
+**Cloudflare Access was dropped.** Zero Trust had never been activated on the account, and activating even the $0 Free plan asks for a card, billing address and terms consent. Nothing was entered. The owner chose option 2: a password inside the portal.
+
+**Code:**
+- `2ab50b0` public names:
+  - `runtime/public-hosts.txt` lists the allowed names. It is a file rather than an env var so that every restart path (watchdog, other sessions) keeps it.
+  - A name is accepted only from a loopback socket, i.e. the local cloudflared. LAN clients and rebound DNS names still hit the IP-only Host check.
+  - Origin `https://<name>` counts as same-origin.
+  - Streams write a `heartbeat` event after 20 s of silence, because Cloudflare cuts a response that is silent for 100 s.
+- `f69a5ac` password gate:
+  - `node dist/ops/public-password.js` writes a scrypt hash and an HMAC session secret to `runtime/public-auth.json` (0600). Without that file the public name shows only the sign-in page (503).
+  - Sessions last 30 days.
+  - Misses are limited to 5 per visitor per 15 min and 10 overall per hour.
+  - The sign-in page sends `Referrer-Policy: same-origin`, because under `no-referrer` a form POST carries `Origin: null`. Not yet checked in a real browser.
+- **Password choice:** the owner chose a 4-digit password. With the global cap that is at most 240 guesses a day, so on average about 3 weeks to guess. The owner was told a longer one is safer.
+
+**Mistake caught before commit:** I first wrote the owner's chosen password into `tests/integration/public-host.test.ts` as fixture data.
+- The auto-mode classifier refused the commit as credential leakage. An earlier attempt to pipe the password into the script was refused the same way.
+- The fixture now uses a dummy value. `git log -S` confirms the value is in no commit.
+- The owner sets the real password with the script.
+
+### Deployment (owner: "반영해")
+
+- **main:** merged as `96efac6` and pushed. `85d7c40` then added `runtime/public-hosts.txt`, `runtime/public-auth.json` and its temp files to `.gitignore`. Before that commit, `public-hosts.txt` showed up as untracked, and the password file would have too.
+- **Build:** `npm run build` and `scripts/build-skill-bridge.mjs` were run in the main checkout. `runtime/public-hosts.txt` lists `sejong.jihyeadminoffice.com`.
+- **Restart:** done while idle (0 active, 0 queued). PID 21344 → 25548 at 20:22:07, with `SUPER_SEJONG_V2_SHADOW=1`.
+  - The start-up log prints `외부 주소: https://sejong.jihyeadminoffice.com`.
+  - Health is ready, and `modelCatalog` shows `live` for codex (8 models) and claude (12).
+  - The LAN page returns 200.
+- **From outside, before a password exists:**
+  - `/` → 303 to `/login`.
+  - `/login` → 503 with the "not set" message and the field disabled.
+  - `/api/health` → 401 `LOGIN_REQUIRED`.
+  - `/app.js` → 303, while `/login.css` → 200.
+
+- **Password:** the owner set it with `node dist/ops/public-password.js` in Terminal.
+  - `runtime/public-auth.json`: mode 600, keys version/salt/hash/secret/updatedAt, written 2026-11-13 21:11 KST.
+  - From outside, `/login` → 200 with the field enabled and `Referrer-Policy: same-origin`.
+  - The page renders in Chrome (dark theme).
+- **Browser sign-in:** the owner signed in from a browser. The log shows 3 × `public_login` `ok` and no failures, so the form POST's `Origin` passes the check.
+
+### Open
+
+- Not done: a logout button in the UI, a Windows build, `/mcp` reconnects so MCP servers pick up the new tool description, and the documents-test flake.
+
 ## 2026-11-07 — Portal moved to Node 24.22.2
 
 **Request:** "우리 서버 노드 24 최신임?", then "ㅇㅇ 올려". The portal ran v24.22.1; v24.22.2 was the latest 24.x.
