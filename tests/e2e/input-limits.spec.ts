@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test';
-import { MODEL_OPTIONS } from '../../src/engine/model-policy.js';
+import { FALLBACK_MODEL_OPTIONS } from '../../src/engine/model-policy.js';
 
 const providers={codex:{ready:true,installed:true,authenticated:true,message:'Codex 사용 가능'},claude:{ready:true,installed:true,authenticated:true,message:'Claude 사용 가능'}};
 // Small server limits keep the test fast; the UI must follow the health payload, not its defaults.
-const healthy={status:'ready',modelOptions:MODEL_OPTIONS,providers,documentsAvailable:true,inputLimits:{maxInputChars:10,maxTextFileBytes:64}};
+const healthy={status:'ready',modelOptions:FALLBACK_MODEL_OPTIONS,providers,documentsAvailable:true,inputLimits:{maxInputChars:10,maxTextFileBytes:64}};
 async function ready(page:Page){
   await page.route('**/api/health',r=>r.fulfill({json:healthy}));
   await page.goto('/');await expect(page.locator('#codex-connection')).toHaveAttribute('data-state','ready');
