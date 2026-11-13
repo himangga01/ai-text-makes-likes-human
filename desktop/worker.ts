@@ -6,11 +6,12 @@ import { SpawnCommandRunner } from "../src/process/command-runner.js";
 import { JobWorkspace } from "../src/engine/workspace.js";
 import { EngineError } from "../src/engine/errors.js";
 import { PUBLIC_MESSAGES } from "../src/transport/public-error.js";
-import { parseEngineChoice } from "../src/engine/model-policy.js";
+import { parseEngineChoice, type EngineChoice } from "../src/engine/model-policy.js";
 import type { TransformEvent } from "../src/contracts.js";
 import path from "node:path";
 import { ArtifactStore } from '../src/documents/artifact-store.js';
-import { MODEL_DEFAULTS, MODEL_OPTIONS, type ModelSettings } from '../src/engine/model-policy.js';
+import { getModelDefaults, getModelOptions, type ModelSettings } from '../src/engine/model-policy.js';
+import { parseRequestModelSettings } from '../src/runtime/model-catalog.js';
 import { INPUT_LIMITS, MAX_INPUT_CHARS, inputChars } from '../src/engine/input-limits.js';
 
 const port = (process as typeof process & { parentPort: { on(name: string, listener: (message: { data: any }) => void): void; postMessage(data: unknown): void } }).parentPort;
@@ -34,8 +35,9 @@ async function transformDocument(id:string,input:any,signal:AbortSignal) {
     const services=await runtime(input.commands);
     const choice=parseEngineChoice(input.engine);
     if(!choice||!services.preflight.providers?.[choice].ready)throw new EngineError('ENGINE_UNAVAILABLE',true,'CLI is not ready');
+    const settings=await modelSettings(services,choice,input.settings);
     event(id,{type:'accepted',jobId:id,position:0});accepted=true;
-    const result=await services.documentEngine.transform(record.state,choice,record.dir,AbortSignal.any([signal,record.controller.signal]),value=>event(id,value),input.settings);
+    const result=await services.documentEngine.transform(record.state,choice,record.dir,AbortSignal.any([signal,record.controller.signal]),value=>event(id,value),settings);
     if(record.deleted||record.controller.signal.aborted)throw new EngineError('CLIENT_ABORTED',true,'Document was closed during the transform');
     record.output=result.output;record.state=result.state;
     record.expires=Date.now()+30*60000;
@@ -69,6 +71,11 @@ async function runtime(commands: Record<string, string> = {}) {
     codexCommand: commands.codex || base.codexCommand, claudeCommand: commands.claude || base.claudeCommand
   }, new SpawnCommandRunner((pid, alive) => port.postMessage({ kind: "child", pid, alive })));
 }
+// The main process checks only a selection's shape: this worker holds the live model list and validates it.
+async function modelSettings(services: Awaited<ReturnType<typeof runtime>>, engine: EngineChoice, settings?: Partial<ModelSettings>): Promise<ModelSettings> {
+  try { return await parseRequestModelSettings(services.modelCatalog, engine, settings?.model, settings?.effort); }
+  catch { throw new EngineError("MODEL_UNAVAILABLE", true, "Model settings are not in the CLI model list"); }
+}
 async function transform(id: string, input: { text: string; engine: string; commands: Record<string, string>; inputKind?:unknown; strength?:unknown; settings?:ModelSettings }, signal: AbortSignal) {
   let workspace: JobWorkspace | undefined;
   const startedAt = Date.now();
@@ -81,10 +88,11 @@ async function transform(id: string, input: { text: string; engine: string; comm
     const services = await runtime(input.commands);
     if (signal.aborted) throw new EngineError("CLIENT_ABORTED", true, "Cancelled");
     if (!services.preflight.ready || !services.preflight.providers?.[engineChoice].ready) throw new EngineError("ENGINE_UNAVAILABLE", true, "Not ready");
+    const settings = await modelSettings(services, engineChoice, input.settings);
     workspace = await JobWorkspace.create(jobs, id);
     await writeFile(workspace.path("01_input.txt"), input.text.replace(/\r\n?/g, "\n"), "utf8");
     const engine = engineChoice === "claude" ? services.claudeEngine! : services.engine;
-    const result = await engine.transform({ jobId: id, workspace, signal, settings:input.settings, rewriteOptions, onEvent: value => event(id, value) });
+    const result = await engine.transform({ jobId: id, workspace, signal, settings, rewriteOptions, onEvent: value => event(id, value) });
     if (signal.aborted) throw new EngineError("CLIENT_ABORTED", true, "Cancelled");
     const text = await readFile(result.finalPath, "utf8");
     event(id, { type: "result-start" });
@@ -123,9 +131,12 @@ port.on("message", ({ data }) => {
     if(data.kind==='document-release') {const release=documentReadLeases.get(data.leaseId);documentReadLeases.delete(data.leaseId);await release?.();respond(true);return;}
     if (data.kind === "health") {
       const services = await runtime(data.commands);
+      await services.modelCatalog?.whenInitialized();
       respond({ status: services.preflight.ready ? "ready" : "degraded", ...services.preflight,
         rewriteOptions: REWRITE_OPTIONS,
-        modelOptions: MODEL_OPTIONS, modelDefaults: MODEL_DEFAULTS, inputLimits: INPUT_LIMITS, checkedAt:new Date().toISOString(),
+        modelOptions: getModelOptions(), modelDefaults: getModelDefaults(),
+        ...(services.modelCatalog ? { modelCatalog: services.modelCatalog.status() } : {}),
+        inputLimits: INPUT_LIMITS, checkedAt:new Date().toISOString(),
         documentsAvailable: await services.documentEngine.health(),
         claudeAvailable: Boolean(services.claudeEngine), activeJobs: active ? 1 : 0, queuedJobs: 0 });
       return;

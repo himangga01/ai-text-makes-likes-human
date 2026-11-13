@@ -25,7 +25,8 @@ import { streamRequestBody } from "./transport/request-body.js";
 import { INPUT_LIMITS, MAX_INPUT_BYTES, MAX_INPUT_CHARS } from "./engine/input-limits.js";
 import { mountDocumentRoutes } from './documents/routes.js';
 import type { DocumentEngine } from './documents/document-engine.js';
-import { MODEL_DEFAULTS, MODEL_OPTIONS, parseModelSettings, type ModelSettings } from './engine/model-policy.js';
+import { getModelDefaults, getModelOptions, type ModelSettings } from './engine/model-policy.js';
+import { parseRequestModelSettings, type ModelCatalogService } from './runtime/model-catalog.js';
 
 export interface AppLogger {
   info(value: Record<string, unknown>): void;
@@ -45,6 +46,7 @@ export interface AppDependencies {
   claudeEngine?: HumanizeService;
   preflight: PreflightReport;
   logger?: AppLogger;
+  modelCatalog?: ModelCatalogService;
 }
 
 
@@ -71,7 +73,7 @@ async function streamResult(
 }
 
 export function createApp(dependencies: AppDependencies): Express {
-  const { config, queue, engine, claudeEngine, preflight } = dependencies;
+  const { config, queue, engine, claudeEngine, preflight, modelCatalog } = dependencies;
   const logger = dependencies.logger ?? defaultLogger;
   const app = express();
   app.disable("x-powered-by");
@@ -125,15 +127,17 @@ export function createApp(dependencies: AppDependencies): Express {
 
   app.get("/api/health", async (_request, response) => {
     if (dependencies.refreshHealth) await dependencies.refreshHealth();
+    await modelCatalog?.whenInitialized();
     const stats = queue.stats();
+    const models = { modelOptions: getModelOptions(), modelDefaults: getModelDefaults(),
+      ...(modelCatalog ? { modelCatalog: modelCatalog.status() } : {}) };
     response.setHeader("Cache-Control", "no-store");
     if (!preflight.ready) {
       response.status(503).json({
         status: "degraded",
         providers: preflight.providers,
         rewriteOptions: REWRITE_OPTIONS,
-        modelOptions: MODEL_OPTIONS,
-        modelDefaults: MODEL_DEFAULTS,
+        ...models,
         inputLimits: INPUT_LIMITS,
         checkedAt: new Date().toISOString(),
         pid: process.pid,
@@ -148,8 +152,7 @@ export function createApp(dependencies: AppDependencies): Express {
     response.json({
       documentsAvailable: dependencies.documentEngine ? await dependencies.documentEngine.health() : false,
       rewriteOptions: REWRITE_OPTIONS,
-      modelOptions: MODEL_OPTIONS,
-      modelDefaults: MODEL_DEFAULTS,
+      ...models,
       inputLimits: INPUT_LIMITS,
       checkedAt: new Date().toISOString(),
       status: "ready",
@@ -206,8 +209,10 @@ export function createApp(dependencies: AppDependencies): Express {
     }
     const selectedEngine = engineChoice === "claude" ? claudeEngine! : engine;
     let settings: ModelSettings;
-    try { settings = parseModelSettings(engineChoice, request.query.model, request.query.effort); }
+    try { settings = await parseRequestModelSettings(modelCatalog, engineChoice, request.query.model, request.query.effort); }
     catch (error) { response.status(400).json({code:'INVALID_MODEL_SETTINGS',message:(error as Error).message}); return; }
+    // A new model id waits for one discovery; a client that left meanwhile gets no queue slot.
+    if (request.socket.destroyed) return;
 
     let rewriteOptions: RewriteOptions | undefined;
     try { rewriteOptions = parseRewriteOptions(request.query.inputKind, request.query.strength); }

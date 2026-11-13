@@ -1,5 +1,5 @@
 import path from 'node:path';
-import {expect,it} from 'vitest';
+import {afterEach,expect,it} from 'vitest';
 import {createApp} from '../../src/app.js';
 import {loadConfig} from '../../src/config.js';
 import {TransformQueue} from '../../src/queue/transform-queue.js';
@@ -7,14 +7,19 @@ import {listen,close} from '../helpers/http-app.js';
 import {makeTestRoot,removeTestRoot} from '../helpers/test-root.js';
 import {EngineError} from '../../src/engine/errors.js';
 import {writeFile} from 'node:fs/promises';
+import {FALLBACK_MODEL_OPTIONS,resetModelCatalog} from '../../src/engine/model-policy.js';
+import {ModelCatalogService} from '../../src/runtime/model-catalog.js';
+import {deferred} from '../helpers/deferred.js';
 
-async function setup(prepare?:any,overrides:{transform?:any;preflight?:any}={}) {
+afterEach(()=>resetModelCatalog());
+
+async function setup(prepare?:any,overrides:{transform?:any;preflight?:any;modelCatalog?:ModelCatalogService}={}) {
   const root=await makeTestRoot(),queue=new TransformQueue({maxActive:1,maxAccepted:3});let calls=0;
   const state={job:'job-'+'a'.repeat(32),kind:'document',format:'docx',name:'source.docx',preview:'preview',sourceChars:7,editableBlocks:1,preservedBlocks:0,totalChunks:1,warnings:[]};
   const documentEngine={root:path.join(root,'documents'),prepare:prepare??(async()=>({...state})),
     async cleanup(){},async transform(...args:any[]){calls++;if(overrides.transform)return overrides.transform(...args);args[3].throwIfAborted();throw new Error('unexpected execution');}} as any;
   const app=createApp({config:{...loadConfig({},process.cwd()),runtimeRoot:root,minFreeBytes:1},queue,documentEngine,
-    preflight:overrides.preflight??{ready:true,nodeVersion:process.version},engine:{async transform(){throw new Error('unused');}}});
+    preflight:overrides.preflight??{ready:true,nodeVersion:process.version},engine:{async transform(){throw new Error('unused');}},modelCatalog:overrides.modelCatalog});
   const server=await listen(app);
   return {...server,store:app.locals.documentStore,queue,calls:()=>calls,async cleanup(){await app.locals.documentStore.close();await queue.shutdown();await close(server.server);await removeTestRoot(root);}};
 }
@@ -118,4 +123,25 @@ it('a DELETE during a busy transform is not undone when the transform completes'
     expect((await fetch(`${t.baseUrl}/api/documents/${doc.id}/result`,{headers})).status).toBe(404);
     await expect.poll(()=>t.store.records.size).toBe(0);
   } finally {finish();await t.cleanup();}
+});
+
+it('runs a document transform naming a model only the next discovery knows, once per document',async()=>{
+  const discovery=deferred<void>();const nova={id:'gpt-7-nova',label:'GPT-7 Nova',efforts:['low','high']};
+  const modelCatalog=new ModelCatalogService({logger:{info(){},error(){}},discover:async engine=>{await discovery.promise;
+    return {engine,models:[...FALLBACK_MODEL_OPTIONS.codex,nova],excluded:[]};}});
+  const seen:unknown[]=[];
+  const t=await setup(undefined,{modelCatalog,transform:async(...args:any[])=>{seen.push(args[5]);throw new EngineError('ENGINE_FAILED',false,'stop');}});
+  try {
+    const doc=await upload(t);const headers={authorization:`Bearer ${doc.token}`};
+    const run=(query:string)=>fetch(`${t.baseUrl}/api/documents/${doc.id}/transform?${query}`,{method:'POST',headers});
+    // Both requests wait on the same discovery; only one may take the document once it ends.
+    const first=run('engine=codex&model=gpt-7-nova&effort=high'),second=run('engine=codex&model=gpt-7-nova&effort=low');
+    await new Promise(resolve=>setTimeout(resolve,50));discovery.resolve();
+    const responses=await Promise.all([first,second]);
+    const statuses=responses.map(r=>r.status).sort();
+    expect(statuses).toEqual([200,409]);
+    await Promise.all(responses.map(r=>r.text()));
+    expect(seen).toHaveLength(1);expect(['high','low']).toContain((seen[0] as any).effort);
+    expect(seen[0]).toMatchObject({model:'gpt-7-nova'});
+  } finally {await t.cleanup();}
 });
