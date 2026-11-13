@@ -6,7 +6,7 @@ import { pipeline } from 'node:stream/promises';
 import { Transform } from 'node:stream';
 import { ArtifactStore, type DocumentRecord } from './artifact-store.js';
 import type { AppDependencies } from '../app.js';
-import { NdjsonWriter } from '../transport/ndjson.js';
+import { HEARTBEAT_MS, NdjsonWriter } from '../transport/ndjson.js';
 import { parseRequestModelSettings } from '../runtime/model-catalog.js';
 import { EngineError } from '../engine/errors.js';
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from '../transport/public-error.js';
@@ -104,7 +104,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       response.setHeader('Content-Type','application/x-ndjson; charset=utf-8');response.setHeader('Cache-Control','no-store');
       response.flushHeaders();writer=new NdjsonWriter(response);
       response.once('close',()=>{if(!finished){clientClosed=true;r.controller.abort();}});
-      writer.write({type:'accepted',jobId:r.id,position:0});
+      writer.write({type:'accepted',jobId:r.id,position:0});writer.keepAlive(deps.heartbeatMs??HEARTBEAT_MS);
       await reservation.submit(async signal=>{
         const result=await engine.transform(r.state!,choice,r.dir,AbortSignal.any([signal,r.controller.signal]),event=>writer!.write(event),settings);
         if(r.deleted||r.controller.signal.aborted)throw new EngineError('CLIENT_ABORTED',true,'Document was closed during the transform');

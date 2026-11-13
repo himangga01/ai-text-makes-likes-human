@@ -15,11 +15,12 @@ import {
 } from "./engine/humanize-engine.js";
 import { JobWorkspace } from "./engine/workspace.js";
 import { isAllowedClientAddress, isAllowedHostHeader } from "./network/private-address.js";
+import { publicHostOf } from "./network/public-hosts.js";
 import { listLanUrls } from "./network/lan-addresses.js";
 export { createProductionRuntime, type ProductionRuntime } from "./runtime/create-runtime.js";
 import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
-import { NdjsonWriter } from "./transport/ndjson.js";
+import { HEARTBEAT_MS, NdjsonWriter } from "./transport/ndjson.js";
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from "./transport/public-error.js";
 import { streamRequestBody } from "./transport/request-body.js";
 import { INPUT_LIMITS, MAX_INPUT_BYTES, MAX_INPUT_CHARS } from "./engine/input-limits.js";
@@ -47,6 +48,8 @@ export interface AppDependencies {
   preflight: PreflightReport;
   logger?: AppLogger;
   modelCatalog?: ModelCatalogService;
+  /** Milliseconds of stream silence before a heartbeat event (tests shorten it). */
+  heartbeatMs?: number;
 }
 
 
@@ -92,7 +95,9 @@ export function createApp(dependencies: AppDependencies): Express {
       });
       return;
     }
-    if (!isAllowedHostHeader(request.headers.host)) {
+    const publicHost = publicHostOf(request.headers.host, request.socket.remoteAddress, config.publicHosts ?? []);
+    response.locals.publicHost = publicHost;
+    if (!publicHost && !isAllowedHostHeader(request.headers.host)) {
       const message = "허용되지 않은 접속 주소입니다. 서버 PC에 표시된 IP 주소(예: http://192.168.0.10:7882)로 접속해 주세요.";
       if (request.path.startsWith("/api")) {
         response.status(403).json({ code: "HOST_NOT_ALLOWED", message });
@@ -107,10 +112,11 @@ export function createApp(dependencies: AppDependencies): Express {
   });
 
   // Browser-origin policy is shared by text and Office entry points. Native
-  // same-LAN clients that do not send Origin remain supported.
+  // same-LAN clients that do not send Origin remain supported. A public name is served over HTTPS by the tunnel
+  // while the connector speaks plain HTTP to this listener.
   app.use('/api', (request, response, next) => {
-    const origin=request.headers.origin;
-    if (origin && origin!==`${request.protocol}://${request.headers.host}`) {
+    const origin=request.headers.origin;const publicHost=response.locals.publicHost as string|undefined;
+    if (origin && origin!==`${request.protocol}://${request.headers.host}` && !(publicHost && origin===`https://${publicHost}`)) {
       response.status(403).json({code:'ORIGIN_NOT_ALLOWED',message:'허용되지 않은 Origin입니다.'});return;
     }
     next();
@@ -240,6 +246,7 @@ export function createApp(dependencies: AppDependencies): Express {
     response.flushHeaders();
     const writer = new NdjsonWriter(response);
     writer.write({ type: "accepted", jobId, position: 0 });
+    writer.keepAlive(dependencies.heartbeatMs ?? HEARTBEAT_MS);
 
     const clientController = new AbortController();
     let completed = false;
