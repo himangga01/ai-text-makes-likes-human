@@ -10,6 +10,7 @@ import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
 
 const fixtures = path.resolve('tests/fixtures/model-discovery');
 const lists = JSON.parse(readFileSync(path.join(fixtures, 'model-lists.json'), 'utf8')) as { codex: unknown[]; claude: unknown[] };
+const portalVersion = (JSON.parse(readFileSync(path.resolve('package.json'), 'utf8')) as { version: string }).version;
 const fakeCodex = [path.join(fixtures, 'fake-codex-app-server.mjs')], fakeClaude = [path.join(fixtures, 'fake-claude-control.mjs')];
 const full = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'], five = full.slice(0, 5);
 const claudeIds = ['claude-opus-5-5', 'claude-fable-5-2', 'claude-sonnet-5-5', 'claude-haiku-5-5', 'claude-fable-5-1', 'claude-sonnet-5',
@@ -116,7 +117,7 @@ describe('model discovery over the CLI protocols', () => {
     expect(catalog.models).toHaveLength(8);
     const messages = await sent();
     expect(messages.map(message => message.method)).toEqual(['initialize', 'initialized', 'model/list', 'model/list', 'model/list']);
-    expect(messages[0]).toMatchObject({ jsonrpc: '2.0', id: 1, params: { clientInfo: { name: 'humanize-portal', title: '윤문 포털', version: '0.5.0' } } });
+    expect(messages[0]).toMatchObject({ jsonrpc: '2.0', id: 1, params: { clientInfo: { name: 'humanize-portal', title: '윤문 포털', version: portalVersion } } });
     expect(messages[1]).not.toHaveProperty('id');
     expect(messages.slice(2).map(message => message.params)).toEqual([
       { includeHidden: false, limit: 100 }, { includeHidden: false, limit: 100, cursor: 'page-3' }, { includeHidden: false, limit: 100, cursor: 'page-6' }
