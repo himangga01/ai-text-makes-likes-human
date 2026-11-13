@@ -13,6 +13,8 @@
 - 텍스트 자동 라우팅: 기본 활성화. 15,000자 이하의 `light`·`standard` 문서는 본문 1개 구간, `heavy`·15,000자 초과·안전하게 판정할 수 없는 문서는 청킹. 단일 구간도 검증 결과에 따라 선택한 CLI를 한 번 더 호출할 수 있음
 - 청크 동시 Codex 실행: 기본 1개. `CODEX_CHUNK_CONCURRENCY=2`를 명시한 실험에서만 최대 2개
 - 변환 모델 기본값: GPT는 `gpt-6.1-sol`, reasoning effort `high`; Claude는 `claude-opus-5-5`, effort `xhigh`. 연결 설정에서 바꿀 수 있으며 `/api/health`의 `modelDefaults`로 제공
+- 모델 목록: 서버 시작 때, 그리고 목록이 10분 넘게 지났거나 CLI 버전이 바뀌었을 때 각 CLI에서 다시 받음(프롬프트 없음, 사용량 없음). 받지 못하면 직전 목록을 계속 쓰고 1분 뒤 다시 시도함. 목록에 없는 모델 요청은 목록을 즉시 한 번 더 확인함(엔진별 30초에 1번). 출처·확인 시각은 `/api/health`의 `modelCatalog`, 바뀐 모델은 로그의 `model_catalog_updated`(추가·제거 ID), 실패는 `model_catalog_failed`(오류 코드만)
+- 기본 모델이 CLI 목록에서 빠지면 CLI가 정한 기본 모델로 바꿔 제공함. 추론 수준도 그 모델이 지원하는 값으로 맞춤
 - 모델 거부: CLI가 선택한 모델을 알지 못하거나 계정에 권한이 없으면 `MODEL_UNAVAILABLE`로 안내하고 재시도하지 않음
 - CLI 실행 실패: 로그인 만료·사용 한도·네트워크 오류 등으로 CLI가 실패하면 `ENGINE_FAILED`로 작업을 중단하고 재시도할 수 있음을 알림. 원문을 결과로 돌려주지 않음. 로그에는 종료 코드와 CLI 상태 값만 남김
 - 시간 초과(`ENGINE_TIMEOUT`)는 작업을 중단함. 형식이 잘못된 모델 응답만 해당 구간을 재시도한 뒤 원문으로 되돌리며, 모든 구간의 응답이 쓸 수 없으면 `ENGINE_OUTPUT_INVALID`로 중단함
