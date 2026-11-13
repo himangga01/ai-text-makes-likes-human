@@ -13,6 +13,10 @@ runtime/server.lock
 runtime/hermes-service-state.json
 runtime/hermes-service-state.json.*.tmp
 runtime/hermes-service-control.lock/
+# Public address: allowed names, and the password hash with the session-signing secret.
+runtime/public-hosts.txt
+runtime/public-auth.json
+runtime/public-auth.json.*.tmp
 .env
 *.log
 __pycache__/
