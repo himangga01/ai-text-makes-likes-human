@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { parseEngineChoice, type EngineChoice } from "../src/engine/model-policy.js";
-import { parseModelSettings, type ModelSettings } from '../src/engine/model-policy.js';
+import { parseModelSelection, type ModelSettings } from '../src/engine/model-policy.js';
 import { sameFile, saveDocumentCopy } from './save-target.js';
 import { MAX_TEXT_FILE_BYTES } from '../src/engine/input-limits.js';
 
@@ -75,6 +75,11 @@ function request(kind: string, payload: Record<string, unknown> = {}, id = rando
 function trusted(event: IpcMainInvokeEvent) {
   if (!window || event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || !event.senderFrame.url.startsWith("humanize://app/")) throw new Error("허용되지 않은 요청입니다.");
 }
+// Only the worker learns the live model list: this process checks a selection's shape and the worker validates
+// it; an omitted selection reaches the worker as its defaults.
+function modelSelection(value: any): ModelSettings | undefined {
+  return value?.model === undefined && value?.effort === undefined ? undefined : parseModelSelection(value?.model, value?.effort);
+}
 function engine(value: unknown): EngineChoice {
   const choice = parseEngineChoice(value); if (!choice) throw new Error("지원하지 않는 엔진입니다."); return choice;
 }
@@ -94,7 +99,7 @@ function registerIpc() {
   handle('select-model', async value => {
     if(activeId) throw new Error('변환 중입니다.');
     const choice=engine(value?.engine);
-    preferences.models[choice]=parseModelSettings(choice,value?.model,value?.effort);
+    preferences.models[choice]=parseModelSelection(value?.model,value?.effort);
     await persist();return preferences.models[choice];
   });
   handle('select-rewrite-strength', value => {
@@ -114,7 +119,7 @@ function registerIpc() {
     const rewriteOptions = parseRewriteOptions(value?.inputKind,value?.strength);
     const input = { text: text(value?.text), engine: choice, commands: {...preferences.commands},
       ...(rewriteOptions ? {inputKind:rewriteOptions.inputKind,strength:rewriteOptions.strength} : {}),
-      settings:parseModelSettings(choice,value?.settings?.model,value?.settings?.effort) };
+      settings:modelSelection(value?.settings) };
     if (!input.text.trim()) throw new Error("원문을 입력해 주세요.");
     const id = randomUUID(); activeId = id;
     try { return await request("transform", { input }, id); } finally { if (activeId === id) activeId = undefined; }
@@ -122,7 +127,7 @@ function registerIpc() {
   handle('transform-document',async value=>{
     if(activeId) throw new Error('이미 변환 중입니다.');
     const id=randomUUID();activeId=id;
-    try {const choice=engine(value?.engine);return await request('document-transform',{input:{id:text(value?.id),token:text(value?.token),engine:choice,commands:preferences.commands,settings:parseModelSettings(choice,value?.settings?.model,value?.settings?.effort)}},id);}
+    try {const choice=engine(value?.engine);return await request('document-transform',{input:{id:text(value?.id),token:text(value?.token),engine:choice,commands:preferences.commands,settings:modelSelection(value?.settings)}},id);}
     finally {if(activeId===id)activeId=undefined;}
   });
   handle('close-document',value=>request('document-close',{documentId:text(value?.id),token:text(value?.token)}));

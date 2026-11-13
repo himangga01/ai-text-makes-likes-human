@@ -31,3 +31,15 @@ it('does not pin the current model defaults as a user choice when nothing was sa
   expect((await preferences.loadPreferences(file)).models).toEqual({claude:{model:'claude-opus-5-5',effort:'xhigh'}});
  } finally {await removeTestRoot(root);}
 });
+it('keeps a well-formed saved model that only the worker live list offers, and drops a malformed one',async()=>{
+ const root=await makeTestRoot();const file=path.join(root,'settings.json');
+ try {
+  // The main process list never goes live: validity is the worker's and the UI's call, not a reason to forget the choice.
+  await writeFile(file,JSON.stringify({models:{codex:{model:'gpt-7-nova',effort:'turbo'},claude:{model:'claude-fable-6',effort:'xhigh'}}}));
+  expect((await preferences.loadPreferences(file)).models).toEqual({codex:{model:'gpt-7-nova',effort:'turbo'},claude:{model:'claude-fable-6',effort:'xhigh'}});
+  for(const value of [{model:'',effort:'low'},{model:'gpt-6-sol',effort:''},{model:['gpt-6-sol'],effort:'low'},{model:'gpt-6-sol',effort:['low']},{model:'gpt-7-nova'}]) {
+   await writeFile(file,JSON.stringify({models:{codex:value}}));
+   expect((await preferences.loadPreferences(file)).models).toEqual({});
+  }
+ } finally {await removeTestRoot(root);}
+});
