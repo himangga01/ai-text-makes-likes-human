@@ -14,7 +14,8 @@ it('refuses everything until a password is set, then signs in and verifies the s
   expect(auth.configured).toBe(false);
   expect(await auth.login('0000', 'a')).toEqual({ ok: false, reason: 'unconfigured' });
   await writePublicPassword(file, '0000');
-  expect((await stat(file)).mode & 0o777).toBe(0o600);
+  // Windows keeps no POSIX mode bits.
+  if (process.platform !== 'win32') expect((await stat(file)).mode & 0o777).toBe(0o600);
   expect(auth.configured).toBe(true);
   expect(await auth.login('1111', 'a')).toEqual({ ok: false, reason: 'wrong' });
   const result = await auth.login('0000', 'a');

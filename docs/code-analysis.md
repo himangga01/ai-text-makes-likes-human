@@ -189,7 +189,7 @@ The old findings about startup-only health, shared Codex readiness, disappearing
 
 ## 10. Evidence Boundary
 
-The repository contains Vitest unit/integration, Python document/skill, browser and Electron suites. [CI](../.github/workflows/ci.yml) runs on Windows with Node 24/Python 3.12 and invokes typecheck, main tests, build and browser tests. Dedicated document/skill/desktop commands exist but are not separately invoked by that workflow.
+The repository contains Vitest unit/integration, Python document/skill, browser and Electron suites. There is no hosted CI: the Windows GitHub Actions workflow was removed on 2026-11-14 after 45 runs without a pass, and the suites run locally before a merge.
 
 September 30/October 2 results are historical records in [works-log.md](../works-log.md). Earlier [speed measurements](research/2026-09-09-speed-loop-results.md) and [strength baseline](research/2026-09-10-strength-live-evaluation.md) retain their dates/models/caveats and are not fresh verification.
 
