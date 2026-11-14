@@ -1,5 +1,28 @@
 # Works Log
 
+## 2026-11-14 — Removed the GitHub Actions workflow
+
+**Request:** "git 환경에서 깃액션이 계속 실패하는데, 이거 뭐야? 삭제해".
+
+**What it was:** `.github/workflows/ci.yml`, added on 2026-08-21 (`222d9b7`).
+- It ran on every push and pull request, on `windows-latest` with Node 24 and Python 3.12.
+- Steps: `npm ci`, typecheck, `npm test`, build, Playwright Chromium install, then e2e.
+
+**Record:** 45 runs from 2026-08-24 to 2026-11-13, 0 passes.
+- The last run (`43423488262`) failed in `npm test` with 2 failures among 76 files.
+- `tests/unit/skill-comparison.test.ts` needs a Playwright browser, but the workflow installs browsers only in a later step.
+- `tests/unit/public-auth.test.ts` failed because it asserted POSIX mode 0600, which Windows does not keep.
+
+**Done:**
+- `c167ff6` deletes the workflow, so `.github/` is gone from the repo.
+- `docs/code-analysis.md` now says there is no hosted CI.
+- The mode assertion in `public-auth.test.ts` is skipped on win32.
+- Pushed. GitHub shows no run for `c167ff6`, and `contents/.github` returns 404.
+
+**Run history:** deleted on request ("기록도 삭제해").
+- The 45 runs were all `ci` failures. Each was removed with `DELETE /repos/.../actions/runs/{id}`: 45 deleted, 0 errors.
+- The runs API now reports `total_count` 0, and `gh workflow list --all` is empty.
+
 ## 2026-11-13 — Live model catalog (0.5.1); public address with a password gate
 
 Branch `feat/live-models` (tip `f69a5ac`, version 0.5.1). Not merged, not deployed.
