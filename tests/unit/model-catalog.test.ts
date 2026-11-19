@@ -182,7 +182,7 @@ describe('ModelCatalogService', () => {
   it('moves the default to the CLI default when the configured one leaves the list', async () => {
     const test = harness({ codex: [catalog([model('gpt-7-luna'), { id: 'gpt-7-nova', label: 'GPT-7 Nova', efforts: ['low', 'medium'] }],
       { cliDefault: { model: 'gpt-7-nova', effort: 'medium' } })] });
-    expect(getModelDefaults().codex).toEqual({ model: 'gpt-6.1-sol', effort: 'high' });
+    expect(getModelDefaults().codex).toEqual({ model: 'gpt-6.2-sol', effort: 'high' });
     await test.service.refresh('codex');
     expect(getModelDefaults()).toEqual({ codex: { model: 'gpt-7-nova', effort: 'medium' }, claude: { model: 'claude-opus-5-5', effort: 'xhigh' } });
   });

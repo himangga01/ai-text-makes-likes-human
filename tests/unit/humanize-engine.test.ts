@@ -248,7 +248,7 @@ describe("HumanizeEngine", () => {
       expect(result.chunks).toBe(1);
       expect(codex.attempts).toEqual([{ source: "AAA", attempt: 1 }]);
       expect(result.diagnostics).toMatchObject({
-        model: "gpt-6.1-sol",
+        model: "gpt-6.2-sol",
         reasoningEffort: "high",
         processingMode: "single",
         routeHint: "standard",

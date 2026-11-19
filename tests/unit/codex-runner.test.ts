@@ -97,7 +97,7 @@ async function fixture(
 
 describe("CodexRunner", () => {
   it("uses the approved fixed model policy", () => {
-    expect(HUMANIZE_MODEL).toBe("gpt-6.1-sol");
+    expect(HUMANIZE_MODEL).toBe("gpt-6.2-sol");
     expect(HUMANIZE_REASONING_EFFORT).toBe("high");
   });
 
@@ -132,7 +132,7 @@ describe("CodexRunner", () => {
         "--disable", "apps",
         "--disable", "computer_use",
         "--model",
-        "gpt-6.1-sol",
+        "gpt-6.2-sol",
         "--config",
         'model_reasoning_effort="high"',
         "--sandbox",

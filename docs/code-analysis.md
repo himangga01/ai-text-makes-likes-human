@@ -142,9 +142,9 @@ Sources: [Office model/export](../engine_runtime/documents/model.py), [Office wo
 
 | Policy | Codex | Claude |
 | --- | --- | --- |
-| Source default | `gpt-6.1-sol` / `high` | `claude-opus-5-5` / `xhigh` |
+| Source default | `gpt-6.2-sol` / `high` | `claude-opus-5-5` / `xhigh` |
 | Model list | Live from `codex app-server` `model/list` (visible models with effort levels) | Live from the stream-json `initialize` control response (models with effort levels, aliases resolved) |
-| Fallback IDs | `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6.1-terra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` | `claude-opus-5-5`, `claude-fable-5-2`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1`, `claude-sonnet-5`, `claude-opus-5`, `claude-fable-5`, `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-6`, `claude-sonnet-4-6` |
+| Fallback IDs (Codex 0.170.0 / Claude Code 2.1.328, 2026-11-19) | `gpt-6.2-sol`, `gpt-6.2-astra`, `gpt-6.1-terra`, `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` | `claude-opus-5-5`, `claude-fable-5-2`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1`, `claude-sonnet-5`, `claude-opus-5`, `claude-fable-5`, `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-6`, `claude-sonnet-4-6` |
 | CLI mode | Ephemeral exec, ignore user config/rules, read-only sandbox, schema/final-message file | Restricted print mode, strict MCP config, no tools/session persistence, JSON schema/envelope |
 | Readiness | Version command, parsed Codex 0.x minimum 0.149, login status | Version command, auth status with `loggedIn: true` |
 

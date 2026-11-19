@@ -283,7 +283,7 @@ MCP 서버 자체에는 시간 제한이 없고, 포털이 한 구간을 10분 �
 
 서버 런타임은 Python과 Humanize 엔진이 준비되고 두 CLI 중 하나가 설치·로그인돼 있으면 동작합니다. 다만 위 Windows 설정 도우미 `setup-portal.cmd`는 현재 Codex 설치·로그인을 필수로 확인합니다. Claude만 사용할 때의 런타임 조건과 이 설정 도우미의 조건은 다릅니다.
 
-- **GPT** (기본): 기본값은 `gpt-6.1-sol`, reasoning effort `high`이며 연결 설정에서 모델과 추론 수준을 선택할 수 있습니다.
+- **GPT** (기본): 기본값은 `gpt-6.2-sol`, reasoning effort `high`이며 연결 설정에서 모델과 추론 수준을 선택할 수 있습니다.
 - **Claude**: 기본값은 `claude-opus-5-5`, effort `xhigh`이며 연결 설정에서 변경할 수 있습니다. 서버 PC에 Claude CLI 설치와 로그인이 필요합니다.
 
 **모델 목록은 서버가 CLI에서 직접 받아 옵니다.** 서버를 켤 때 한 번 확인하고, 그 뒤에는 목록을 받은 지 10분이 지났거나 CLI 버전이 바뀌었을 때 다시 확인합니다.
@@ -292,8 +292,8 @@ MCP 서버 자체에는 시간 제한이 없고, 포털이 한 구간을 10분 �
 
 어느 쪽도 프롬프트를 보내지 않으므로 사용량은 들지 않습니다. 목록이 바뀌면 웹·데스크톱 앱의 연결 설정이 새로 고침 없이 따라 바뀝니다. 목록에 없는 모델로 요청이 오면 그 자리에서 목록을 한 번 더 확인한 뒤 받거나 거절합니다. 엔진별로 목록을 어디서 받았는지(`live`: CLI, `fallback`: 기본 목록)와 확인 시각은 `/api/health`의 `modelCatalog`에 나옵니다.
 
-CLI에 물을 수 없으면 아래 기본 목록을 씁니다. 2026-11-13에 Codex CLI 0.167.0과 Claude Code 2.1.323에서 받은 목록입니다.
-- **GPT:** GPT-6.1 Sol, GPT-6 Astra, GPT-6.1 Terra, GPT-6 Sol, GPT-5.6 Sol, GPT-5.6 Terra는 `low`~`ultra`이고, GPT-6 Luna와 GPT-5.6 Luna는 `low`~`max`입니다.
+CLI에 물을 수 없으면 아래 기본 목록을 씁니다. 2026-11-19에 Codex CLI 0.170.0과 Claude Code 2.1.328에서 받은 목록입니다.
+- **GPT:** GPT-6.2 Sol, GPT-6.2 Astra, GPT-6.1 Terra, GPT-6.1 Sol, GPT-6 Astra, GPT-6 Sol, GPT-5.6 Sol, GPT-5.6 Terra는 `low`~`ultra`이고, GPT-6 Luna와 GPT-5.6 Luna는 `low`~`max`입니다.
 - **Claude:** Opus 5.5, Fable 5.2, Sonnet 5.5, Haiku 5.5, Fable 5.1, Sonnet 5, Opus 5, Fable 5, Opus 4.8, Opus 4.7은 `low`~`max`입니다. Opus 4.6과 Sonnet 4.6은 `low`·`medium`·`high`·`max`입니다.
 
 목록에 넣지 않는 모델도 있습니다.
@@ -478,7 +478,7 @@ npm.cmd run test:performance
 Remove-Item Env:CODEX_CHUNK_CONCURRENCY
 ```
 
-위 측정은 당시 `gpt-5.6-sol` + `high` 설정의 기록입니다. 현재 GPT 엔진 기본값은 `gpt-6.1-sol` + `high`이므로 동일 조건의 성능 기록으로 간주하지 않습니다. 추가 벤치마크는 현재 모델 설정으로 12회 변환하는 데 필요한 시간과 쿼터를 명시적으로 승인받은 경우에만 실행합니다.
+위 측정은 당시 `gpt-5.6-sol` + `high` 설정의 기록입니다. 현재 GPT 엔진 기본값은 `gpt-6.2-sol` + `high`이므로 동일 조건의 성능 기록으로 간주하지 않습니다. 추가 벤치마크는 현재 모델 설정으로 12회 변환하는 데 필요한 시간과 쿼터를 명시적으로 승인받은 경우에만 실행합니다.
 
 운영 기본값과 명시적 롤백은 모두 직렬 처리입니다.
 
