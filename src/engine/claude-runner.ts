@@ -16,6 +16,7 @@ import { CLAUDE_MODEL, CLAUDE_REASONING_EFFORT } from "./model-policy.js";
 import { buildHumanizePrompt } from "./prompt-builder.js";
 import type { ChunkPromptContext } from "./super-sejong.js";
 import { parseTextResult } from './text-edits.js';
+import { assertNoForeignEmail } from './output-guard.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface ClaudeRunnerOptions {
@@ -165,6 +166,7 @@ export class ClaudeRunner {
 
     await rm(resultPath, { force: true });
     const raw = await this.exec(prompt, schema, signal, selection);
+    assertNoForeignEmail(prompt, raw, "Claude");
     const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude', options);
     await writeFile(resultPath, JSON.stringify(result), "utf8");
     return result;
@@ -185,6 +187,7 @@ export class ClaudeRunner {
     const schema = await this.schema(path.resolve(schemaPath));
     await rm(resultPath, { force: true });
     const raw = await this.exec(prompt, schema, signal, selection);
+    assertNoForeignEmail(prompt, raw, "Claude");
     await writeFile(resultPath, raw, "utf8");
     return raw;
   }

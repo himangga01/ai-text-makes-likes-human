@@ -14,6 +14,7 @@ import {
 import { buildHumanizePrompt } from "./prompt-builder.js";
 import type { ChunkPromptContext } from "./super-sejong.js";
 import { parseTextResult } from './text-edits.js';
+import { assertNoForeignEmail } from './output-guard.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface CodexResult {
@@ -158,6 +159,7 @@ export class CodexRunner {
 
     try {
       const raw = await readFile(resultPath, "utf8");
+      assertNoForeignEmail(prompt, raw, "Codex");
       return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex', options);
     } catch (error) {
       if (error instanceof EngineError) throw error;
@@ -177,11 +179,14 @@ export class CodexRunner {
     const selection = parseModelSettings('codex', settings?.model, settings?.effort);
     const resultPath = path.resolve(outputPath);
     await this.exec(prompt, path.resolve(schemaPath), resultPath, signal, selection);
+    let raw: string;
     try {
-      return await readFile(resultPath, "utf8");
+      raw = await readFile(resultPath, "utf8");
     } catch (error) {
       throw invalid("Codex result file is missing", error);
     }
+    assertNoForeignEmail(prompt, raw, "Codex");
+    return raw;
   }
 
   private async exec(
