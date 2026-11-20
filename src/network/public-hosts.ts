@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { isIP } from "node:net";
+import { isLoopbackAddress } from "./local-access.js";
 
 /** Public names that a tunnel connector on this machine (Cloudflare Tunnel) forwards to the loopback listener.
  * One name per line in `public-hosts.txt` beside the runtime's jobs directory; `#` starts a comment. A missing file
@@ -13,14 +14,8 @@ export function readPublicHosts(file: string): string[] {
   return [...new Set(names.filter(name => HOSTNAME.test(name) && isIP(name) === 0))];
 }
 
-export function isLoopbackAddress(value: string | undefined): boolean {
-  if (!value) return false;
-  const address = value.toLowerCase().startsWith("::ffff:") ? value.slice(7) : value;
-  return address === "::1" || (isIP(address) === 4 && address.startsWith("127."));
-}
-
-/** The listed public name a request arrived under. Only the local connector can present one: a LAN client or a
- * rebound DNS name reaching the private listener still meets the IP-only host check. */
+/** The listed public name a request arrived under. Only the local connector can present one: any other name reaching
+ * the loopback listener (a rebound DNS name) still meets the local host check. */
 export function publicHostOf(host: string | undefined, remoteAddress: string | undefined, publicHosts: readonly string[]): string | undefined {
   if (!host || publicHosts.length === 0 || !isLoopbackAddress(remoteAddress)) return undefined;
   const name = host.toLowerCase();

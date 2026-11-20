@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -35,6 +35,18 @@ function powershell(script: string): string {
   );
 }
 
+// The portal answers on this PC only; other PCs use the public address, so no script opens the firewall any more.
+describe("Windows portal access", () => {
+  it("no longer offers to open the firewall for other PCs, and keeps the removal script", () => {
+    expect(existsSync(path.join(root, "scripts", "allow-lan-firewall.ps1"))).toBe(false);
+    expect(existsSync(path.join(root, "scripts", "remove-lan-firewall.ps1"))).toBe(true);
+    const setup = readFileSync(path.join(root, "setup-portal.cmd"), "utf8");
+    expect(setup).not.toContain("allow-lan-firewall");
+    expect(setup).not.toContain("Wi-Fi");
+    expect(setup).toContain("remove-lan-firewall.ps1");
+  });
+});
+
 describe.skipIf(process.platform !== "win32")("Windows operator scripts", () => {
   it("checks every host dependency and Codex login without installing", () => {
     const fixture = mkdtempSync(path.join(os.tmpdir(), "humanize-codex-fixture-"));
@@ -55,16 +67,7 @@ describe.skipIf(process.platform !== "win32")("Windows operator scripts", () => 
     expect(output).not.toContain("npm.ps1");
   });
 
-  it("limits the firewall creation plan to Private TCP 7882", () => {
-    const output = powershell("allow-lan-firewall.ps1");
-    expect(output).toContain("CREATE");
-    expect(output).toContain("AI Text Humanize Portal (Private TCP 7882)");
-    expect(output).toContain("Private");
-    expect(output).toContain("TCP");
-    expect(output).toContain("7882");
-  });
-
-  it("removes only the exact portal firewall rule", () => {
+  it("removes only the exact portal firewall rule an older version created", () => {
     const output = powershell("remove-lan-firewall.ps1");
     expect(output).toBe(
       "REMOVE|AI Text Humanize Portal (Private TCP 7882)\r\n"

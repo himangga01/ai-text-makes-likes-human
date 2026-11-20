@@ -59,7 +59,7 @@ it('explains a rejected host name in Korean on the page and keeps JSON for the A
       client.on('error',reject);client.end();
     });
     const page=await fetchWithHost('/');
-    expect(page.status).toBe(403);expect(page.type).toContain('text/html');expect(page.body).toContain('IP 주소');
+    expect(page.status).toBe(403);expect(page.type).toContain('text/html');expect(page.body).toContain('http://localhost:');expect(page.body).not.toContain('192.168');
     const api=await fetchWithHost('/api/health');
     expect(api.status).toBe(403);expect(JSON.parse(api.body)).toMatchObject({code:'HOST_NOT_ALLOWED'});
   } finally {await t.cleanup();}

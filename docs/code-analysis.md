@@ -10,16 +10,16 @@ The original static analysis below describes the October 2 checkout at `d9df30e`
 
 Two independent rounds of code and service review found and reproduced failure modes in semantic preservation, runtime isolation, import state, and Office packaging. The current text and Office paths both use [Super Sejong semantic checks](../engine_runtime/super_sejong.py): selected negation and its target, obligation and possibility by sentence, high-confidence participant role exchange, and a small set of decision/trend antonyms. [Quantity normalization](../engine_runtime/quantities.py) now distinguishes recognized time units and Korean numeral one. The guards reject known drift; they do not prove full meaning equivalence. [Style findings](../src/engine/super-sejong.ts) are bounded, source-anchored model hints, never automatic replacement or a naturalness score. Their regex scan is bounded for long Hangul inputs and excludes protected textual regions.
 
-The [Codex runner](../src/engine/codex-runner.ts) disables its tool surfaces for text transformation and executes in a disposable empty working directory. The [command runner](../src/process/command-runner.ts) caps combined CLI output. [Host validation](../src/network/private-address.ts) now rejects arbitrary DNS Host values in addition to the existing socket and Origin checks. The Express error handler and [Office routes](../src/documents/routes.ts) emit fixed public messages; known import failures have distinct stable codes. [Office package loading](../engine_runtime/documents/package.py) checks per-part and aggregate XML budgets during decompression. The desktop renderer/main import handshake commits a new source reference only after successful loading, preventing a failed import from leaving an incorrect save target. Text and Office completion counts reflect accepted output.
+The [Codex runner](../src/engine/codex-runner.ts) disables its tool surfaces for text transformation and executes in a disposable empty working directory. The [command runner](../src/process/command-runner.ts) caps combined CLI output. [Host validation](../src/network/local-access.ts) now rejects arbitrary DNS Host values in addition to the existing socket and Origin checks. The Express error handler and [Office routes](../src/documents/routes.ts) emit fixed public messages; known import failures have distinct stable codes. [Office package loading](../engine_runtime/documents/package.py) checks per-part and aggregate XML budgets during decompression. The desktop renderer/main import handshake commits a new source reference only after successful loading, preventing a failed import from leaving an incorrect save target. Text and Office completion counts reflect accepted output.
 
 At the two-round review checkpoint: TypeScript typecheck passed; Vitest 420 passed/9 skipped; Python document tests 53 passed; Python skill tests 74 passed/4 skipped; browser E2E 54 passed/9 skipped; isolated Codex live fixture passed. The Windows-only desktop regression was added but cannot execute on macOS. The live fixture verifies a protected sample and cleanup, not a population-level naturalness improvement. Later benchmark-driven negation fixes have their own verification record and 20-post results in the [Codex handoff](HANDOFF-2026-10-04.md) and [benchmark report](reports/2026-10-03-super-sejong-blog-benchmark.md). See also the [two-round report](reports/2026-10-03-two-round-review.md), [English change plan](plans/2026-10-03-super-sejong-code-plan.md), and [research synthesis](research/super-sejong/RESEARCH-SYNTHESIS.md).
 
 ## 1. Architecture
 
-The project provides a LAN web portal, a Windows Electron application and host-session Claude/Codex skills. The portal and desktop share TypeScript model runners and the text orchestration engine. Office documents use a separate block-editing pipeline. The skill Gateway receives edits from the current host session instead of invoking another model CLI.
+The project provides a web portal (served on the server PC, and to other devices only through a password-protected public address), a Windows Electron application and host-session Claude/Codex skills. The portal and desktop share TypeScript model runners and the text orchestration engine. Office documents use a separate block-editing pipeline. The skill Gateway receives edits from the current host session instead of invoking another model CLI.
 
 ```text
-LAN browser -> Express routes -> shared transformation queue
+Browser (localhost or public address) -> Express routes -> shared transformation queue
 Windows renderer -> trusted IPC -> Electron utility process
     -> text: Python preparation -> selected CLI -> restoration/fidelity checks
              -> retry/rollback -> reassembly -> full-document verification
@@ -67,7 +67,7 @@ The frontend is plain JavaScript, HTML and CSS. The server uses strict TypeScrip
 | `GET /api/documents/:id/result` | Download the verified same-format result with its token; hold a read lease during transfer. |
 | `DELETE /api/documents/:id` | Authorize removal, abort work and clean the owned artifact when work/read leases settle. |
 
-All `/api` routes share an Origin check: supplied Origin must equal request protocol/Host; native clients without Origin remain permitted. Socket addresses must be loopback or recognized private IPv4/IPv6, and Host must be localhost or a literal allowed local/private IP. There is no application login or TLS listener.
+All `/api` routes share an Origin check: supplied Origin must equal request protocol/Host; native clients without Origin remain permitted. Socket addresses must be loopback (`127.0.0.0/8`, `::1`) whatever `HOST` says, and Host must be `localhost`, `127.0.0.1` or `[::1]` (optional port) or a listed public name arriving from loopback. A request carrying Cloudflare edge headers counts as public and is refused unless its Host is a listed public name. Public names require the password and a session that is also listed server-side; logout removes it from the list. Password attempts are counted before hashing and checked one at a time behind a small bounded queue. Localhost has no application login, and the listener has no TLS (the tunnel provides HTTPS).
 
 Text rejection before streaming can use `400` for invalid settings, `413` for declared size, `415` for content type, `429` for capacity or `503` for readiness/shutdown. Office upload errors return `400`; transform rejection has its own structured codes and preserves the prepared record before acceptance.
 
@@ -79,7 +79,7 @@ Sources: [app.ts](../src/app.ts), [document routes](../src/documents/routes.ts),
 
 | Setting | Current source behavior |
 | --- | --- |
-| Listen address/port | Default `0.0.0.0:7882`, overridable with `HOST`/`PORT`. |
+| Listen address/port | Default `127.0.0.1:7882`, overridable with `HOST`/`PORT`; non-loopback sockets are refused whatever `HOST` is. |
 | Portal/desktop direct text and TXT/MD | At most 100,000 Unicode code points after CR/CRLF-to-LF normalization. |
 | Portal/desktop TXT/MD loading | At most 1 MiB, checked before reading; decoded length is also checked. |
 | Text HTTP early rejection | Declared `Content-Length` above 400,000 bytes returns `413`; normalized character count is enforced while receiving other requests. |
@@ -180,7 +180,7 @@ These observations were first recorded on October 2. The rows below show their d
 | Readiness does not prove model access | [probes](../src/runtime/provider-health.ts) do not infer with all models and have no Claude model-specific minimum-version gate. Recognized runtime rejection becomes `MODEL_UNAVAILABLE`. |
 | Office output count corrected | [Office workflow](../engine_runtime/documents/workflow.py) computes accepted edit length; [routes](../src/documents/routes.ts) and [desktop worker](../desktop/worker.ts) use it in completion events. |
 | Resource bounds remain partial | There is no total-job deadline; [command-runner.ts](../src/process/command-runner.ts) now caps combined CLI output. Skill TXT/MD has no shared-server input cap. |
-| Network scope remains address-based | Private socket, literal Host and Origin checks do not establish same-Wi-Fi membership or user identity. Proxy deployment still needs a deliberate trust policy. |
+| Local access trusts the server PC | Loopback socket, local Host and Origin checks admit any software on the server PC without a password; other devices need the public address and its password. A proxy other than the Cloudflare tunnel in front of the listener would look local and needs a deliberate trust policy. |
 | Preservation is heuristic | Number/name/quantity sets and sentence alignment do not prove all subject/value associations or arbitrary Korean-name/meaning preservation. Literal direct-text/Office protection reduces some risks. |
 | Skill guards depend on bridge | Python-only TXT/MD omits the optional JavaScript structure check, and skill direct-text finalization differs from app rollback. Package/bridge freshness is separate from source freshness. |
 | Version labels do not identify artifacts | Later fixes retain `0.4.0`/`2.3.2`. Source commits and build metadata/hashes are needed to identify deployed/installed code. |

@@ -64,17 +64,54 @@ it('asks for the password on the public name, then serves it with its HTTPS orig
     expect((await send(t.baseUrl+'/api/health',{host:'other.example.com',cookie})).status).toBe(403);
     const out=await send(t.baseUrl+'/api/public-logout',{host:HOST,origin:ORIGIN,cookie},'');
     expect(out).toMatchObject({status:303,location:'/login'});expect(out.cookie).toContain('Max-Age=0');
+    // Signing out ends the session on the server: a copy of the cookie no longer gets in.
+    expect(await send(t.baseUrl+'/',{host:HOST,cookie})).toMatchObject({status:303,location:'/login'});
+    expect((await send(t.baseUrl+'/api/health',{host:HOST,cookie})).status).toBe(401);
     expect(t.calls()).toBe(1);
   } finally {await t.cleanup();}
 });
 
-it('keeps LAN and localhost access open and gives them no login routes',async()=>{
+it('keeps this PC open without a password and gives it no login routes',async()=>{
   const t=await setup({publicHosts:[HOST],password:'fixture-pass-7'});
   try {
     expect((await send(t.baseUrl+'/',{})).status).toBe(200);
+    for(const host of ['localhost:7882','[::1]:7882']) expect((await send(t.baseUrl+'/',{host})).status).toBe(200);
     const accepted=await send(t.baseUrl+'/api/transform',{'content-type':'text/plain'},'source');
     expect(accepted.body).toContain('"type":"done"');
     expect((await send(t.baseUrl+'/api/public-login',{'content-type':'application/x-www-form-urlencoded'},'password=fixture-pass-7')).status).toBe(404);
+    for(const host of ['192.168.0.10:7882','10.0.0.8']) {
+      const denied=await send(t.baseUrl+'/api/health',{host});
+      expect(denied.status).toBe(403);expect(JSON.parse(denied.body)).toMatchObject({code:'HOST_NOT_ALLOWED'});
+    }
+  } finally {await t.cleanup();}
+});
+
+// If the tunnel ever handed over a local Host, its visitors would otherwise share this PC's no-password access.
+it('treats a request carrying Cloudflare edge headers as public even when its Host is local',async()=>{
+  for(const publicHosts of [[HOST],[]]) {
+    const t=await setup({publicHosts,password:'fixture-pass-7'});
+    try {
+      const edges:Record<string,string>[]=[{'cf-connecting-ip':'203.0.113.7'},{'cf-ray':'0123456789abcdef-ICN'},{'cdn-loop':'cloudflare; loops=1'}];
+      for(const edge of edges) for(const host of [undefined,'localhost:7882','127.0.0.1','[::1]']) {
+        const headers={...edge,...(host?{host}:{})};
+        const api=await send(t.baseUrl+'/api/transform',{...headers,'content-type':'text/plain'},'source');
+        expect(api.status).toBe(403);expect(JSON.parse(api.body)).toMatchObject({code:'HOST_NOT_ALLOWED'});
+        const page=await send(t.baseUrl+'/',headers);
+        expect(page.status).toBe(403);expect(page.body).toContain('외부 주소');expect(page.body).not.toContain('localhost');
+        expect((await send(t.baseUrl+'/api/public-login',{...headers,'content-type':'application/x-www-form-urlencoded'},'password=fixture-pass-7')).status).toBe(403);
+      }
+      expect(t.calls()).toBe(0);
+    } finally {await t.cleanup();}
+  }
+  // Under the listed name the same headers are the normal tunnel path: the password is asked as usual.
+  const t=await setup({publicHosts:[HOST],password:'fixture-pass-7'});
+  try {
+    expect(await send(t.baseUrl+'/',{host:HOST,'cf-ray':'0123456789abcdef-ICN','cdn-loop':'cloudflare'})).toMatchObject({status:303,location:'/login'});
+    const ok=await login(t.baseUrl,'fixture-pass-7');
+    const cookie=ok.cookie!.split(';')[0]!;
+    expect((await send(t.baseUrl+'/',{host:HOST,cookie,'cf-connecting-ip':'203.0.113.7'})).status).toBe(200);
+    // A signed-in visitor still cannot take the local path by changing Host.
+    expect((await send(t.baseUrl+'/api/health',{host:'localhost:7882',cookie,'cf-connecting-ip':'203.0.113.7'})).status).toBe(403);
   } finally {await t.cleanup();}
 });
 
