@@ -1,6 +1,6 @@
 appId: kr.humanize.desktop
 productName: HumanizeKR
-electronVersion: 44.2.0
+electronVersion: 44.11.5
 directories:
   output: release
 files:
