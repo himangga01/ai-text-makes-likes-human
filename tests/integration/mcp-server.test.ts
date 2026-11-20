@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdir, readFile, readdir, truncate, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, symlink, truncate, writeFile } from 'node:fs/promises';
 import type { Server } from 'node:http';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
@@ -162,6 +162,36 @@ describe('MCP tools on the portal', () => {
     expect(result.content[0].text).toContain('각주 보존');
     expect(await readFile(path.join(t.root, 'report-humanized.docx'), 'utf8')).toBe('PK-result');
     await expect.poll(() => t.store.records.size).toBe(0);
+  });
+
+  it('humanize_file writes an explicit outputPath only inside the source folder, checked before the job', async () => {
+    const t = await portal();
+    const dir = path.join(t.root, 'files'), outside = path.join(t.root, 'elsewhere');
+    await mkdir(path.join(dir, 'out'), { recursive: true });
+    await mkdir(outside);
+    const source = path.join(dir, 'note.txt');
+    await writeFile(source, '담당자는 정리 작업을 수행한다.');
+    const { call } = connect(t.baseUrl);
+    const refused: Array<[string, string]> = [
+      [path.join(outside, 'note.txt'), '같은 폴더나 그 하위 폴더'],
+      [path.join(dir, '..', 'elsewhere', 'note.txt'), '같은 폴더나 그 하위 폴더'],
+      [path.join(dir, 'missing', 'note.txt'), '폴더를 찾을 수 없습니다']
+    ];
+    if (process.platform !== 'win32') {        // a link inside the source folder that leads out of it
+      await symlink(outside, path.join(dir, 'link'));
+      refused.push([path.join(dir, 'link', 'note.txt'), '같은 폴더나 그 하위 폴더']);
+    }
+    for (const [index, [outputPath, message]] of refused.entries()) {
+      const result = await call(index + 1, 'humanize_file', { path: source, outputPath });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(message);
+    }
+    expect(t.requests).toHaveLength(0);
+    expect(await readdir(outside)).toEqual([]);
+    const nested = path.join(dir, 'out', 'note-new.txt');
+    const saved = await call(9, 'humanize_file', { path: source, outputPath: nested });
+    expect(saved.isError).toBeUndefined();
+    expect(await readFile(nested, 'utf8')).toBe('담당자는 정리 작업을 한다.');
   });
 
   it('humanize_file names Office limits with the portal code and message', async () => {

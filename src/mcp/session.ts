@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { open, readFile, rm, stat } from 'node:fs/promises';
+import { open, readFile, realpath, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { MAX_INPUT_CHARS, MAX_TEXT_FILE_BYTES } from '../engine/input-limits.js';
 import { MAX_OFFICE_FILE_BYTES, OFFICE_FILE_TOO_LARGE, OFFICE_LIMIT_CODE } from '../documents/limits.js';
@@ -39,7 +39,7 @@ export const TOOLS = [
     description: 'TXT·MD·DOCX·PPTX 파일을 윤문 포털로 다듬어 원본 옆의 새 파일(<이름>-humanized.<확장자>)로 저장한다. 원본과 기존 파일은 덮어쓰지 않는다. 강도는 TXT·MD에만 적용되고, DOCX·PPTX는 서식을 지키기 위해 보통으로 처리한다.',
     inputSchema: { type: 'object', additionalProperties: false, required: ['path'], properties: {
       path: { type: 'string', description: '원본 파일의 절대 경로(.txt, .md, .docx, .pptx).' },
-      outputPath: { type: 'string', description: '결과를 저장할 새 파일의 절대 경로. 원본과 확장자가 같아야 하고 아직 없는 파일이어야 한다. 생략하면 원본 옆에 자동으로 만든다.' },
+      outputPath: { type: 'string', description: '결과를 저장할 새 파일의 절대 경로. 원본 파일과 같은 폴더나 그 하위 폴더(이미 있는 폴더)여야 하고, 원본과 확장자가 같으며 아직 없는 파일이어야 한다. 생략하면 원본 옆에 자동으로 만든다.' },
       strength: { ...strengthSchema, description: `${strengthSchema.description} TXT·MD만 해당.` },
       engine: engineSchema, model: modelSchema, effort: effortSchema } },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
@@ -183,11 +183,8 @@ async function humanizeFile(client: PortalClient, args: Message, progress: (mess
   if (office && info.size > MAX_OFFICE_FILE_BYTES) throw new PortalError(OFFICE_LIMIT_CODE, OFFICE_FILE_TOO_LARGE);
   if (!office && info.size > MAX_TEXT_FILE_BYTES) throw new InvalidArguments('TXT·MD 파일은 1 MiB 이하만 다듬을 수 있습니다.');
   const requested = optionalString(args, 'outputPath');
-  if (requested !== undefined) {
-    if (!path.isAbsolute(requested)) throw new InvalidArguments('outputPath는 절대 경로여야 합니다.');
-    if (path.extname(requested).toLowerCase() !== extension) throw new InvalidArguments('outputPath의 확장자는 원본과 같아야 합니다.');
-    if (path.resolve(requested) === path.resolve(source)) throw new InvalidArguments('원본 파일에는 저장할 수 없습니다. 새 파일 경로를 지정해 주세요.');
-  }
+  // Checked before the job, so a refused path costs no model time, and again just before writing.
+  if (requested !== undefined) await outputTarget(requested, source, extension);
   const bytes = new Uint8Array(await readFile(source));
   let output: Uint8Array, warnings: string[], chunks: number, elapsedMs: number, strength: string | undefined;
   if (office) {
@@ -204,9 +201,30 @@ async function humanizeFile(client: PortalClient, args: Message, progress: (mess
     output = new TextEncoder().encode(result.text);
   }
   if (signal.aborted) throw new PortalError('CLIENT_ABORTED', '요청이 취소되었습니다.');
-  const saved = await writeNew(requested ?? source, output, requested === undefined);
+  const saved = await writeNew(requested === undefined ? source : await outputTarget(requested, source, extension), output,
+    requested === undefined);
   return { content: [{ type: 'text', text: lines(`저장한 파일: ${saved}`, summary(strength, { warnings, chunks, elapsedMs }),
     '원본 파일은 바꾸지 않았습니다.') }] };
+}
+
+/** Where an explicit outputPath is written: a new file in the source file's own directory or below it, with
+ * the source's extension. The tool's arguments may come from an agent that read untrusted text, so outputPath
+ * cannot place a file anywhere else the user can write (a startup folder, a shell profile directory). Both
+ * directories are compared after resolving symbolic links, and the file is written into the resolved
+ * directory, so a link inside the source directory cannot lead out of it. */
+async function outputTarget(requested: string, source: string, extension: string): Promise<string> {
+  if (!path.isAbsolute(requested)) throw new InvalidArguments('outputPath는 절대 경로여야 합니다.');
+  if (path.extname(requested).toLowerCase() !== extension) throw new InvalidArguments('outputPath의 확장자는 원본과 같아야 합니다.');
+  const base = await realpath(path.dirname(source));
+  const parent = await realpath(path.dirname(requested))
+    .catch(() => { throw new InvalidArguments('outputPath의 폴더를 찾을 수 없습니다. 이미 있는 폴더를 지정해 주세요.'); });
+  const relative = path.relative(base, parent);
+  if (relative === '..' || relative.startsWith('..' + path.sep) || path.isAbsolute(relative))
+    throw new InvalidArguments('outputPath는 원본 파일과 같은 폴더나 그 하위 폴더에만 지정할 수 있습니다.');
+  const target = path.join(parent, path.basename(requested));
+  if (target === path.join(base, path.basename(source)) || target === await realpath(source).catch(() => undefined))
+    throw new InvalidArguments('원본 파일에는 저장할 수 없습니다. 새 파일 경로를 지정해 주세요.');
+  return target;
 }
 
 /** Writes `bytes` to a file that does not exist yet: `target` itself, or with `numbered` the first free

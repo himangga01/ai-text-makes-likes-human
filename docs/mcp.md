@@ -23,7 +23,14 @@ stdio MCP support — can call the portal as tools instead of going through the 
 - `engine`: `codex` (default) or `claude`. `model` and `effort` default to the portal's defaults; `humanize_status`
   lists the valid values.
 - TXT/MD files are read like the web page reads them (UTF-8, UTF-16 with BOM, or CP949; at most 1 MiB) and written
-  back as UTF-8. Office files may be up to 50 MiB.
+  back as UTF-8. Office files may be up to 50 MiB, and the portal's other Office limits (expanded size, XML structure,
+  text, paragraphs, model batches; see [Documents](documents.md#크기와-파일-제한)) apply: an over-limit file comes back
+  as `DOCUMENT_TOO_LARGE` with the portal's Korean message naming the limit, before any model call.
+- `outputPath` must be an absolute path to a new file with the source's extension, in the **source file's own folder or
+  a folder below it** that already exists. Both folders are compared after resolving symbolic links, and the file is
+  created exclusively (never over an existing file). The tool's arguments may come from an agent that read untrusted
+  text, so `outputPath` cannot place a file anywhere else the user can write, such as a startup folder. The path is
+  checked before the job starts and again just before writing.
 - Long jobs send `notifications/progress` when the client passes a progress token. A `notifications/cancelled` from
   the client aborts the portal job.
 - Tool failures come back as tool errors (`isError: true`) with the portal's message and code, for example
@@ -130,3 +137,6 @@ apply:
 | `INVALID_MODEL_SETTINGS` | The model or effort is not offered. Call `humanize_status` for the list. |
 | "DOCX·PPTX는 … 보통으로만" | A strength was given for an Office file. Drop `strength`. |
 | "같은 이름의 파일이 이미 있습니다" | `outputPath` exists. Choose a new path, or omit it for an automatic name. |
+| "같은 폴더나 그 하위 폴더에만" | `outputPath` is outside the source file's folder (after resolving links). Choose a path inside it, or omit `outputPath`. |
+| "폴더를 찾을 수 없습니다" | The folder of `outputPath` does not exist. The tool does not create folders. |
+| `DOCUMENT_TOO_LARGE` | The Office file crossed one of the portal's document limits; the message names it. Split the document and retry. |
