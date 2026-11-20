@@ -2,10 +2,10 @@ import { childEnvironment } from "../process/child-env.js";
 import type { CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { CommandRunner } from "../process/command-runner.js";
+import { CODEX_EXEC_ISOLATION_ARGS, inScratchDirectory } from "./cli-isolation.js";
 import { EngineError, engineFailed, modelUnavailable } from "./errors.js";
 import {
   HUMANIZE_MODEL,
@@ -192,50 +192,31 @@ export class CodexRunner {
     selection: ModelSettings
   ): Promise<void> {
     await rm(resultPath, { force: true });
-    const isolatedCwd = await mkdtemp(path.join(os.tmpdir(), "humanize-codex-"));
-    let command;
-    try {
-      command = await this.options.permitPool.run(signal, () =>
-        this.options.runner.run({
+    // The model reads untrusted document text, so it gets no tools and none of the operator's Codex setup
+    // (cli-isolation.ts), and it runs from an empty private directory outside the project.
+    const command = await this.options.permitPool.run(signal, () =>
+      inScratchDirectory("humanize-codex-", cwd => this.options.runner.run({
         command: this.options.codexCommand,
         args: [
           "exec",
-          "--ephemeral",
-          "--skip-git-repo-check",
-          "--ignore-user-config",
-          "--ignore-rules",
-          // The model receives untrusted document text and needs no host tools. Codex 0.160
-          // accepts but ignores --disable unified_exec, so the read-only sandbox and the empty
-          // working directory remain the actual containment.
-          "--disable", "shell_tool",
-          "--disable", "unified_exec",
-          "--disable", "code_mode_host",
-          "--disable", "view_image",
-          "--disable", "browser_use",
-          "--disable", "apps",
-          "--disable", "computer_use",
+          ...CODEX_EXEC_ISOLATION_ARGS,
           "--model",
           selection.model,
           "--config",
           `model_reasoning_effort="${selection.effort}"`,
-          "--sandbox",
-          "read-only",
           "--output-schema",
           schemaPath,
           "--output-last-message",
           resultPath,
           "-"
         ],
-        cwd: isolatedCwd,
+        cwd,
         stdin: prompt,
         timeoutMs: this.options.timeoutMs,
         signal,
         env: childEnvironment(process.env, { NO_COLOR: "1" })
-        })
-      );
-    } finally {
-      await rm(isolatedCwd, { recursive: true, force: true });
-    }
+      }))
+    );
 
     if (command.termination === "timeout") {
       throw new EngineError("ENGINE_TIMEOUT", true, "Codex timed out");
