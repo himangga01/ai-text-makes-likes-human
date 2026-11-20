@@ -1,8 +1,8 @@
 {
-  "version": "24.19.0",
+  "version": "24.22.3",
   "platform": "win-x64",
-  "url": "https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip",
-  "archive": "node-v24.19.0-win-x64.zip",
-  "prefix": "node-v24.19.0-win-x64",
-  "sha256": "57f71ab3652e797d84acddc79c81cc9ff1c6ddb2a1974cdb83f00fee9bff4c73"
+  "url": "https://nodejs.org/dist/v24.22.3/node-v24.22.3-win-x64.zip",
+  "archive": "node-v24.22.3-win-x64.zip",
+  "prefix": "node-v24.22.3-win-x64",
+  "sha256": "e612af99f626ab415ea225af6bce5c971feb448cb5cae250bb1c3fa50c5f7d9f"
 }
