@@ -10,6 +10,7 @@ import { HEARTBEAT_MS, NdjsonWriter } from '../transport/ndjson.js';
 import { parseRequestModelSettings } from '../runtime/model-catalog.js';
 import { EngineError } from '../engine/errors.js';
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from '../transport/public-error.js';
+import { DocumentLimitError, MAX_OFFICE_FILE_BYTES, OFFICE_FILE_TOO_LARGE, OFFICE_LIMIT_CODE } from './limits.js';
 
 function documentFailure(error:unknown) {
   if(error instanceof EngineError) return {...publicEvent(error),retryable:false};
@@ -21,6 +22,8 @@ function documentFailure(error:unknown) {
 }
 
 function documentImportFailure(error:unknown) {
+  // Every Office limit (file size, package, structure, text, model batches) answers 413 with its own message.
+  if(error instanceof DocumentLimitError)return {status:413,code:OFFICE_LIMIT_CODE,message:error.message};
   const message=error instanceof Error?error.message:'';
   if(message.includes('디스크 공간이 부족'))return {status:507,code:'INSUFFICIENT_DISK',message:'문서를 처리할 디스크 공간이 부족합니다.'};
   if(message.includes('50 MiB')||message.includes('크기 제한')||message.includes('너무 큰 문서'))
@@ -58,7 +61,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       const space=await statfs(record.dir);
       if(space.bavail*space.bsize<deps.config.minFreeBytes) throw new Error('문서를 처리할 디스크 공간이 부족합니다.');
       let received=0;
-      const limiter=new Transform({transform(chunk,_enc,done){received+=chunk.length;done(received>50*1024**2?new Error('파일은 50 MiB 이하만 지원합니다.'):null,chunk);}});
+      const limiter=new Transform({transform(chunk,_enc,done){received+=chunk.length;done(received>MAX_OFFICE_FILE_BYTES?new DocumentLimitError(OFFICE_FILE_TOO_LARGE):null,chunk);}});
       await pipeline(request,limiter,createWriteStream(record.input,{flags:'wx'}),{signal:record.controller.signal});
       const info=await store.inspect(record,name);
       if(record.controller.signal.aborted||response.destroyed)throw new Error('문서 읽기가 취소되었습니다.');

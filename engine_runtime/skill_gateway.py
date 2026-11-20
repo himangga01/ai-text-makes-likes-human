@@ -794,7 +794,12 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False))
         return 0
     except Exception as error:
-        print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False))
+        failure = {"status": "error", "message": str(error)}
+        # Office resource limits carry a code, so every surface (portal, app, MCP, skill) names them alike.
+        package = sys.modules.get("documents.package")
+        if package is not None and isinstance(error, package.DocumentLimitError):
+            failure["code"] = error.code
+        print(json.dumps(failure, ensure_ascii=False))
         return 1
 
 

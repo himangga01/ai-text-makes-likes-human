@@ -3,6 +3,7 @@ import { mkdir, rm, copyFile, stat, readdir, writeFile, readFile } from 'node:fs
 import path from 'node:path';
 import { constants } from 'node:fs';
 import type { DocumentEngine, DocumentState } from './document-engine.js';
+import { DocumentLimitError, MAX_OFFICE_FILE_BYTES, OFFICE_FILE_TOO_LARGE } from './limits.js';
 
 export interface DocumentRecord {
   id: string; token: string; dir: string; input: string; original?: string; state?: DocumentState;
@@ -82,7 +83,7 @@ export class ArtifactStore {
     return task.finally(()=>this.imports.delete(task));
   }
   private async importDocument(file:string) {
-    if((await stat(file)).size>50*1024**2) throw new Error('파일은 50 MiB 이하만 지원합니다.');
+    if((await stat(file)).size>MAX_OFFICE_FILE_BYTES) throw new DocumentLimitError(OFFICE_FILE_TOO_LARGE);
     const record=await this.create(path.basename(file)); record.original=path.resolve(file);
     try {await copyFile(file,record.input,constants.COPYFILE_EXCL); return await this.inspect(record,path.basename(file));}
     catch(e) {record.busy=false;await this.remove(record);throw e;}

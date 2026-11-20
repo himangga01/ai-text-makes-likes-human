@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { open, readFile, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { MAX_INPUT_CHARS, MAX_TEXT_FILE_BYTES } from '../engine/input-limits.js';
+import { MAX_OFFICE_FILE_BYTES, OFFICE_FILE_TOO_LARGE, OFFICE_LIMIT_CODE } from '../documents/limits.js';
 import { LEGACY_REWRITE_OPTIONS } from '../engine/rewrite-policy.js';
 import { decodeTextFile, PortalClient, PortalError, type Engine, type JobOptions } from './portal-client.js';
 
@@ -12,7 +13,6 @@ import { decodeTextFile, PortalClient, PortalError, type Engine, type JobOptions
  * a tools-only server needs is implemented here (initialize, ping, tools/list, tools/call, progress, cancellation). */
 export const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'] as const;
 const STRENGTHS = LEGACY_REWRITE_OPTIONS.map(option => option.id);
-const OFFICE_BYTES = 50 * 1024 ** 2;
 const VERSION = (JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')) as { version: string }).version;
 
 type Id = string | number;
@@ -179,8 +179,9 @@ async function humanizeFile(client: PortalClient, args: Message, progress: (mess
     throw new InvalidArguments('DOCX·PPTX는 서식을 지키기 위해 강도를 고를 수 없고 보통으로만 다듬습니다. strength를 빼고 다시 요청해 주세요.');
   const info = await stat(source).catch(() => undefined);
   if (!info?.isFile()) throw new InvalidArguments('원본 파일을 찾을 수 없습니다.');
-  if (info.size > (office ? OFFICE_BYTES : MAX_TEXT_FILE_BYTES))
-    throw new InvalidArguments(office ? '문서는 50 MiB 이하만 지원합니다.' : 'TXT·MD 파일은 1 MiB 이하만 다듬을 수 있습니다.');
+  // The same code and message the portal gives an over-limit Office file.
+  if (office && info.size > MAX_OFFICE_FILE_BYTES) throw new PortalError(OFFICE_LIMIT_CODE, OFFICE_FILE_TOO_LARGE);
+  if (!office && info.size > MAX_TEXT_FILE_BYTES) throw new InvalidArguments('TXT·MD 파일은 1 MiB 이하만 다듬을 수 있습니다.');
   const requested = optionalString(args, 'outputPath');
   if (requested !== undefined) {
     if (!path.isAbsolute(requested)) throw new InvalidArguments('outputPath는 절대 경로여야 합니다.');

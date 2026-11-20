@@ -146,7 +146,7 @@ Very large differences may be shown as a single replacement block. The compariso
 
 ### 1.6.1 Limits and recovery differences
 
-The portal/desktop 100,000-character text cap and 1 MiB TXT/MD loading cap are not enforced by the host-session TXT/MD Gateway. Office package limits still apply: 50 MiB compressed, 250 MiB expanded, 10 MiB per XML part, 10,000 entries, 100,000 extracted characters and 200 PPTX slides. Paragraphs above 9,000 characters are preserved.
+The portal/desktop 100,000-character text cap and 1 MiB TXT/MD loading cap are not enforced by the host-session TXT/MD Gateway. The Office limits of the portal apply unchanged, each checked before the work it bounds: a 50 MiB file, 250 MiB expanded (and at most 100 times the file size once more than 8 MiB is expanded), 10 MiB per XML part and 24 MiB of XML in all, 10,000 entries, 1,500,000 XML nodes and 64 levels of nesting, 100,000 extracted characters, 50,000 text segments, 20,000 paragraphs and cells with text, 200 PPTX slides and 60 model batches. An over-limit file fails at `prepare` with `{"status": "error", "code": "DOCUMENT_TOO_LARGE", "message": ...}`; the Korean message names the limit and is the one the portal, the app and the MCP server show. Paragraphs above 9,000 characters are preserved.
 
 Direct-text skill finalization refuses export when full-document fidelity fails. The portal/desktop can instead restore the entire prepared source before final Python validation. The workflows share major checks but should not be assumed to have identical recovery in every case. Gateway jobs remain until cleanup; this is distinct from the web/app Office artifact store's idle 30-minute expiry.
 
@@ -222,6 +222,8 @@ Input decoding for TXT/MD uses UTF-16 when a UTF-16 BOM is present. Otherwise it
 | Source hash or manifest mismatch, `operation.lock` conflict | The source changed or another call is still running. Wait for it to finish, or start a new job with `prepare`. Do not delete unknown locks or edit state files. |
 | Some sentences unchanged or restored | Expected. Protection or verification kept the source. Check the returned warnings. |
 | Python errors on macOS | The 3.9 system Python is being used. Use Python 3.11 or newer. DOCX/PPTX also require `lxml`. |
+| `code: DOCUMENT_TOO_LARGE` | The DOCX/PPTX crossed an Office limit (see §1.6.1); the message names which. Report it and suggest splitting the document. Do not retry the same file. |
+| `Refusing the workspace ...: it must be a directory owned by this user with mode 0700` | The default workspace exists but is not private (another user created it, or its mode was changed). Remove it, or pass `--workspace-root` with a private directory. |
 
 ---
 

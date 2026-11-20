@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, truncate, writeFile } from 'node:fs/promises';
 import type { Server } from 'node:http';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createApp } from '../../src/app.js';
+import { DocumentLimitError } from '../../src/documents/limits.js';
 import { loadConfig } from '../../src/config.js';
 import type { HumanizeRequest } from '../../src/engine/humanize-engine.js';
 import { PortalClient } from '../../src/mcp/portal-client.js';
@@ -20,7 +21,8 @@ const preflight = { ready: true as const, nodeVersion: '24.19.0', pythonVersion:
 
 /** A real portal app with a fake text engine (records each request, answers `rewrite(source)`) and a fake Office
  * engine (answers the bytes `PK-result`). */
-async function portal(rewrite: (source: string) => string = source => source.replace('수행한다', '한다'), options: { gate?: Promise<void> } = {}) {
+async function portal(rewrite: (source: string) => string = source => source.replace('수행한다', '한다'),
+  options: { gate?: Promise<void>; prepareError?: Error } = {}) {
   const root = await makeTestRoot();
   const requests: HumanizeRequest[] = [];
   const queue = new TransformQueue({ maxActive: 1, maxAccepted: 3 });
@@ -36,7 +38,8 @@ async function portal(rewrite: (source: string) => string = source => source.rep
   } };
   const state = { job: 'job-' + 'a'.repeat(32), kind: 'document', format: 'docx', name: 'report-humanized.docx', preview: '[문단 1]\n원문',
     sourceChars: 2, editableBlocks: 1, preservedBlocks: 0, totalChunks: 1, warnings: ['각주 보존'] };
-  const documentEngine = { root: path.join(root, 'documents'), async prepare() { return { ...state }; }, async cleanup() {}, async health() { return true; },
+  const documentEngine = { root: path.join(root, 'documents'),
+    async prepare() { if (options.prepareError) throw options.prepareError; return { ...state }; }, async cleanup() {}, async health() { return true; },
     async transform(current: typeof state, _engine: string, dir: string) {
       const output = path.join(dir, 'out.docx');
       await writeFile(output, 'PK-result');
@@ -159,6 +162,22 @@ describe('MCP tools on the portal', () => {
     expect(result.content[0].text).toContain('각주 보존');
     expect(await readFile(path.join(t.root, 'report-humanized.docx'), 'utf8')).toBe('PK-result');
     await expect.poll(() => t.store.records.size).toBe(0);
+  });
+
+  it('humanize_file names Office limits with the portal code and message', async () => {
+    const message = '문서 구조가 너무 복잡합니다(XML 노드 1,500,000개 초과). 문서를 나눠서 다시 시도해 주세요.';
+    const t = await portal(undefined, { prepareError: new DocumentLimitError(message) });
+    const source = path.join(t.root, 'report.docx');
+    await writeFile(source, 'PK-source');
+    const { call } = connect(t.baseUrl);
+    const refused = await call(1, 'humanize_file', { path: source });
+    expect(refused).toMatchObject({ isError: true });
+    expect(refused.content[0].text).toBe(`${message} (DOCUMENT_TOO_LARGE)`);
+    await expect.poll(() => t.store.records.size).toBe(0);
+    const large = path.join(t.root, 'large.pptx');
+    await writeFile(large, '');
+    await truncate(large, 50 * 1024 ** 2 + 1);
+    expect((await call(2, 'humanize_file', { path: large })).content[0].text).toBe('파일은 50 MiB 이하만 지원합니다. (DOCUMENT_TOO_LARGE)');
   });
 
   it('a cancelled call sends no response and stops the portal job', async () => {

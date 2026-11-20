@@ -27,7 +27,7 @@ stdio MCP support — can call the portal as tools instead of going through the 
 - Long jobs send `notifications/progress` when the client passes a progress token. A `notifications/cancelled` from
   the client aborts the portal job.
 - Tool failures come back as tool errors (`isError: true`) with the portal's message and code, for example
-  `INVALID_MODEL_SETTINGS`, `QUEUE_FULL` or `PORTAL_UNREACHABLE`.
+  `INVALID_MODEL_SETTINGS`, `QUEUE_FULL`, `DOCUMENT_TOO_LARGE` or `PORTAL_UNREACHABLE`.
 
 ## Register the server
 
