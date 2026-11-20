@@ -162,8 +162,11 @@ export function createApp(dependencies: AppDependencies): Express {
     response.redirect(303, result.ok ? "/" : `/login?e=${result.reason}`);
   });
 
-  app.post("/api/public-logout", (_request, response) => {
+  app.post("/api/public-logout", async (request, response) => {
     if (!response.locals.publicHost) { response.status(404).end(); return; }
+    // The session leaves the server's list too, so a copy of the cookie stops working as well.
+    try { await publicAuth.logout(request.headers.cookie); }
+    catch (error) { logger.error({ event: "public_logout_save_failed", code: (error as NodeJS.ErrnoException).code ?? "UNKNOWN" }); }
     response.setHeader("Set-Cookie", publicAuth.clearedCookie());
     response.redirect(303, "/login");
   });

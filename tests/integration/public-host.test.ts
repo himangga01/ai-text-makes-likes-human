@@ -64,6 +64,9 @@ it('asks for the password on the public name, then serves it with its HTTPS orig
     expect((await send(t.baseUrl+'/api/health',{host:'other.example.com',cookie})).status).toBe(403);
     const out=await send(t.baseUrl+'/api/public-logout',{host:HOST,origin:ORIGIN,cookie},'');
     expect(out).toMatchObject({status:303,location:'/login'});expect(out.cookie).toContain('Max-Age=0');
+    // Signing out ends the session on the server: a copy of the cookie no longer gets in.
+    expect(await send(t.baseUrl+'/',{host:HOST,cookie})).toMatchObject({status:303,location:'/login'});
+    expect((await send(t.baseUrl+'/api/health',{host:HOST,cookie})).status).toBe(401);
     expect(t.calls()).toBe(1);
   } finally {await t.cleanup();}
 });
