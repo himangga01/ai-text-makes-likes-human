@@ -26,8 +26,8 @@ Sources: [README](../README.md), [Code Analysis](code-analysis.md), [Office supp
 
 | Surface | Execution/prerequisites | User experience |
 | --- | --- | --- |
-| LAN portal | Node/Python server and an installed/authenticated supported CLI; visitors share the server owner's selected provider account. | Browser input, shared queue/progress, cancellation, text copy/Markdown download and Office download. |
-| Windows app | Electron/Python bundled; native Claude or Codex CLI already installed/authenticated. | Local IPC worker, native dialogs/settings, TXT/MD/Office saves; no LAN server required. |
+| Web portal | Node/Python server and an installed/authenticated supported CLI; served on the server PC, and to other devices only through the password-protected public address; visitors share the server owner's selected provider account. | Browser input, shared queue/progress, cancellation, text copy/Markdown download and Office download. |
+| Windows app | Electron/Python bundled; native Claude or Codex CLI already installed/authenticated. | Local IPC worker, native dialogs/settings, TXT/MD/Office saves; no portal server required. |
 | Claude/Codex skill | Current host session supplies edits; Windows packaged Python/Node or suitable source runtime. | Gateway-driven workflow, new verified output file and optional direct-text comparison HTML; no nested model CLI. |
 
 Runtime preflight permits either provider independently. The Windows `setup-portal.cmd` helper still requires Codex installation/login, so its normal setup path is stricter than the Claude-only runtime.
@@ -97,7 +97,7 @@ Sources: [config](../src/config.ts), [queue](../src/queue/transform-queue.ts), [
 
 ## 6. Access, Data Flow and Retention
 
-The portal permits loopback/private socket addresses, restricts Host to localhost or allowed local/private IP literals, and compares supplied browser Origin with protocol/Host. This is address-based scope, not user authentication or proof of same-Wi-Fi membership. There is no application TLS, per-user quota or account separation. A proxy changes the visible socket address and needs a deliberate trust policy.
+The portal accepts loopback sockets only (whatever `HOST` says), restricts Host to `localhost`, `127.0.0.1`, `[::1]` or a listed public name arriving from the local tunnel connector, and compares supplied browser Origin with protocol/Host. Same-network devices can no longer connect directly. Localhost needs no password, so anything running on the server PC can use the portal. Other devices use the public address: requests forwarded by the Cloudflare edge always count as public, need the password, and get a 30-day session that is also listed on the server, so logout revokes it. There is no TLS on the listener itself (the tunnel provides HTTPS), no per-user quota and no account separation. A proxy other than the tunnel would look local and needs a deliberate trust policy.
 
 | Data | Lifetime/scope |
 | --- | --- |

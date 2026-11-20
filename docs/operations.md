@@ -4,9 +4,9 @@
 
 ## 운영 원칙
 
-- 서비스 주소: `http://localhost:7882`, LAN은 서버 콘솔에 표시된 주소
-- 서버 바인딩: `0.0.0.0:7882`
-- 방화벽 범위: Windows Private 프로필, TCP 7882
+- 서비스 주소: 서버 PC에서는 `http://localhost:7882`, 다른 기기에서는 `runtime/public-hosts.txt`에 적은 외부 주소(비밀번호 필요)
+- 서버 바인딩: `127.0.0.1:7882`(macOS supervisor도 `HOST=127.0.0.1`로 띄움). `HOST`로 바꿔도 루프백이 아닌 소켓은 `403 LOCAL_ONLY`로 거절함
+- 방화벽: 포털용 허용 규칙이 필요 없음. 예전 버전이 만든 Windows 규칙은 [예전 방화벽 규칙 제거](#예전-방화벽-규칙-제거)로 지움
 - 동시 접수: 3건
 - 실행 중인 변환 작업: 1건
 - 위 접수 수에는 일반 텍스트 업로드 예약·대기·실행 중 변환이 포함됨. Office 업로드·파싱은 별도의 최대 3개 문서 보관소를 사용하고, 변환할 때 같은 실행 큐를 사용함. 완료한 Office 결과도 만료·삭제 전까지 보관 자리를 점유함
@@ -29,9 +29,11 @@
 - 프로세스 상태: `/api/status`는 외부 CLI를 점검하지 않고 `status`·`pid`·`activeJobs`·`queuedJobs`만 즉시 반환함. supervisor가 사용하며, 이 경로가 없는 이전 빌드에는 `/api/health`로 대신 확인함
 - 상태 갱신: `/api/health`는 3초 캐시·진행 중 조회 공유를 사용해 재점검함. 보이는 유휴 화면은 60초마다 조회하고 수동 점검·화면 복귀·관련 오류 때도 다시 조회함. 모델별 계정 권한은 실제 실행으로만 확인됨
 - 상태 수치의 범위: `activeJobs`·`queuedJobs`에는 일반 텍스트 업로드 예약과 Office 보관·파싱·다운로드가 표시되지 않음. 두 값이 0이어도 모든 작업이 끝났다는 뜻은 아님
-- 접근 범위: 소켓의 로컬·사설 IP, 로컬·사설 IP 또는 localhost Host, 제공된 Origin을 확인함. 사용자 로그인·TLS는 없으며 같은 와이파이 여부를 직접 확인하지 않음
+- 접근 범위: 루프백 소켓(`127.0.0.0/8`·`::1`)만 받음. Host는 `localhost`·`127.0.0.1`·`[::1]`(포트 허용) 또는 외부 주소만 허용하고(DNS 리바인딩 방지), 제공된 Origin을 확인함. 서버 PC의 localhost 접속에는 로그인이 없음. 같은 와이파이의 다른 PC에서 직접 접속하는 경로는 없음
 - 외부 주소: `runtime/public-hosts.txt`에 적힌 이름은 루프백(같은 PC의 Cloudflare Tunnel 커넥터)에서 온 요청에만 Host로 허용하고, Origin `https://<이름>`을 같은 출처로 인정함. 파일은 시작할 때 읽음(바꾸면 재시작). 시작 로그에 `외부 주소: https://<이름>`이 나옴
-- 외부 주소 비밀번호: `node dist/ops/public-password.js`로 설정함. scrypt 해시와 세션 서명 키는 `runtime/public-auth.json`(600)에 저장되며, 파일을 바꾸면 재시작 없이 바로 적용됨. 파일이 없으면 외부 주소는 로그인 화면(503)만 보여 줌. 세션은 30일. 로그인 실패는 방문자(`Cf-Connecting-Ip`)당 15분 5회, 전체 1시간 10회로 제한. 로그는 `public_login`과 결과(`ok`·`wrong`·`locked`·`unconfigured`)만 남김(주소·비밀번호 없음)
+- 터널 요청: Cloudflare 엣지 헤더(`Cf-Connecting-Ip`·`Cf-Ray`·`Cf-Visitor`·`Cf-Warp-Tag-Id`, `cloudflare`가 든 `CDN-Loop`)가 있는 요청은 언제나 외부 방문자로 봄. Host가 적힌 외부 주소가 아니면 `403 HOST_NOT_ALLOWED`로 거절하며, 비밀번호 없는 localhost 경로를 타지 않음
+- 외부 주소 비밀번호: `node dist/ops/public-password.js`로 설정함. scrypt 해시와 세션 서명 키는 `runtime/public-auth.json`(600)에 저장되며, 파일을 바꾸면 재시작 없이 바로 적용됨. 파일이 없으면 외부 주소는 로그인 화면(503)만 보여 줌. 세션은 30일. 로그인 실패는 방문자(`Cf-Connecting-Ip`)당 15분 5회, 전체 1시간 10회로 제한. 시도는 비밀번호 확인 전에 먼저 세고 성공하면 되돌림. 비밀번호 확인은 한 번에 하나씩 하며, 대기열이 차면 새 시도는 확인 없이 `locked`로 거절함. 로그는 `public_login`과 결과(`ok`·`wrong`·`locked`·`unconfigured`)만 남김(주소·비밀번호 없음)
+- 외부 주소 세션 목록: 로그인한 세션은 `runtime/public-sessions.json`(600, 세션 nonce의 해시와 만료 시각만)에 남고, 이 목록에 있어야 인정함. 로그아웃(`POST /api/public-logout`)은 목록에서도 지워 복사된 쿠키까지 끊음. 만료된 항목은 새 로그인 때 정리하고 개수에 상한을 둬 넘치면 오래된 세션부터 뺌. 비밀번호를 새로 정하면 목록 파일도 지움. 파일을 바꾸면 재시작 없이 다시 읽음. 목록 저장에 실패한 로그아웃은 `public_logout_save_failed`(오류 코드만)로 남김
 - 스트림 연결 유지: 변환·문서 변환 응답이 20초 동안 이벤트가 없으면 `{"type":"heartbeat"}`를 보냄(Cloudflare는 100초 무응답 요청을 끊음)
 
 ## macOS 서버 운영
@@ -117,7 +119,7 @@ cmd.exe /c setup-portal.cmd --check
 ## 정상 시작 확인
 
 1. `start-portal.cmd` 실행
-2. 콘솔에 localhost와 LAN URL이 출력되는지 확인
+2. 콘솔에 `로컬: http://localhost:7882`(외부 주소를 설정했다면 `외부 주소: https://<이름>`도)가 출력되는지 확인
 3. `http://localhost:7882/api/health`가 `status: ready`를 반환하는지 확인
 4. `runtime/jobs`의 일반 텍스트 작업 폴더와 Office 보관소·Python 작업 폴더를 구분해 확인. Office는 완료 후에도 만료 전까지 남을 수 있으며 빈 관리 폴더가 있는 것만으로 정리 실패라고 판단하지 않음
 
@@ -140,17 +142,15 @@ Get-ChildItem .\runtime\jobs -Force
 
 원문 문장이나 결과 문장이 콘솔에 나오면 운영을 중단하고 로그 경계를 점검합니다.
 
-## 방화벽 확인과 제거
+## 예전 방화벽 규칙 제거
+
+포털은 이제 루프백에서만 연결을 받으므로 방화벽 허용 규칙이 필요 없습니다. 규칙을 만들던 `allow-lan-firewall.ps1`은 삭제했습니다. 예전 버전으로 만든 규칙이 남아 있는지 확인합니다.
 
 ```powershell
 Get-NetFirewallRule -DisplayName 'AI Text Humanize Portal (Private TCP 7882)'
-Get-NetFirewallRule -DisplayName 'AI Text Humanize Portal (Private TCP 7882)' |
-  Get-NetFirewallPortFilter
 ```
 
-규칙은 `Profile=Private`, `Protocol=TCP`, `LocalPort=7882`이어야 합니다.
-
-제거:
+남아 있으면 제거합니다.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\remove-lan-firewall.ps1
@@ -189,15 +189,17 @@ npm.cmd run test:live
 
 portal patch가 재적용됐는지 확인합니다. 패치는 `prepare_monolith_input.py`·`reassemble_chunks.py`의 LF 쓰기, `--portal-auto-route` 경로, 청킹 모드 route_hint에 원문을 넘기는 v2.6 티 계수 연결, `restore_modality.py`·`strip_injected_commas.py`의 줄바꿈 보존을 담고 있습니다. upstream 파일이 바뀌어 패치가 맞지 않으면 pristine 사본을 스테이징한 뒤 패치를 재적용·수정하고 `git diff`로 `scripts/patches/humanize-engine-portal.patch`를 다시 생성합니다.
 
-## LAN 인수 테스트
+## 인수 테스트
 
-검증 기록에는 날짜, 서버 LAN URL, 브라우저 이름, 통과 여부만 남기고 원문·결과는 기록하지 않습니다.
+검증 기록에는 날짜, 접속 경로(localhost·외부 주소), 브라우저 이름, 통과 여부만 남기고 원문·결과·외부 주소 이름은 기록하지 않습니다.
 
 | 점검 | 기대 결과 |
 |---|---|
 | 서버 PC localhost | 포털이 열리고 health가 ready |
-| 같은 와이파이 PC 두 대 | 로그인 없이 동일 포털 열림 |
-| 세 PC 동시 변환 | 1건 실행, 2건 대기 순서 표시 |
+| 같은 와이파이의 다른 PC에서 서버 IP:7882 | 연결되지 않음(루프백에만 바인딩) |
+| 다른 기기에서 외부 주소 | 로그인 화면이 나오고, 비밀번호 입력 후 동일 포털 열림 |
+| 외부 주소에서 로그아웃 | 로그인 화면으로 돌아가고, 같은 쿠키를 다시 보내도 로그인 화면 |
+| 세 브라우저 동시 변환 | 1건 실행, 2건 대기 순서 표시 |
 | 네 번째 변환 | 친절한 queue-full 메시지 |
 | 15,000자 이하 `light`·`standard` | 본문 청크 1개와 단일 처리 경로 사용 |
 | `heavy`·15,000자 초과·판정 불가 | 여러 청크 사용, 기본값에서 한 번에 1개씩 처리 |
