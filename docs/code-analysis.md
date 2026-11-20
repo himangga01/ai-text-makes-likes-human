@@ -160,7 +160,7 @@ Sources: [models](../src/engine/model-policy.ts), [runtime](../src/runtime/creat
 
 ## 8. Storage, Diagnostics and UI
 
-Text source/intermediate/result files live in private workspaces until normal completion/failure/cancellation cleanup. Office artifacts/Python jobs remain for an idle 30-minute lifetime to support repeated saving; active work/read leases defer removal. Startup clears stale server jobs, and desktop/store initialization clears owned old jobs. Portal queues/indexes are in memory and do not resume after restart.
+Text source/intermediate/result files live in private workspaces until normal completion/failure/cancellation cleanup. Office artifacts/Python jobs remain for 30 minutes after upload and again for 30 minutes after the result is ready, to support repeated saving; reading does not extend that time. Active work and the desktop save lease defer removal, while expiry or removal aborts HTTP downloads in progress. Startup clears stale server jobs, and desktop/store initialization clears owned old jobs. Portal queues/indexes are in memory and do not resume after restart.
 
 Transformation logs contain metadata and fixed failure reasons, not intentionally source/result bodies. CLI streams have a combined output budget; captured text and Python details remain transient. Desktop settings persist CLI paths and explicit engine/model/effort/strength choices without document history. Skill jobs remain until cleanup; host conversation retention is governed by the host.
 

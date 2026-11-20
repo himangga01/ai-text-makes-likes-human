@@ -44,7 +44,7 @@ prepare ─► (rewrite chunk ─► accept)* ─► finalize ─► cleanup
 - `humanize-kr-claude-<version>-win-x64.zip`
 - `humanize-kr-codex-<version>-win-x64.zip`
 
-Each ZIP bundles Python 3.14 (with `lxml`), Node 24.19.0, the Gateway, the Node bridge, and the vendored engine. No separate Python or Node install is needed.
+Each ZIP bundles Python 3.14 (with `lxml`), Node 24.22.3, the Gateway, the Node bridge, and the vendored engine. No separate Python or Node install is needed.
 
 ```powershell
 # Claude Code (installs to %USERPROFILE%\.claude\skills\humanize-kr)

@@ -102,7 +102,7 @@ The portal accepts loopback sockets only (whatever `HOST` says), restricts Host 
 | Data | Lifetime/scope |
 | --- | --- |
 | Portal/desktop text jobs | Local source/intermediate/final files until normal completion/failure/cancellation cleanup. |
-| Office input/result | Package copies and Python jobs retained for an idle 30-minute lifetime; active work/read leases protect ongoing processing/saving. Repeated downloads are possible before expiry. |
+| Office input/result | Package copies and Python jobs retained for 30 minutes after upload, then 30 minutes after the result is ready; reading does not extend it. Active work and the desktop save lease defer removal; expiry or removal aborts HTTP downloads in progress. Repeated downloads are possible before expiry. |
 | Portal logs | Transform metadata, counts/timings/codes and fixed CLI failure reasons; no intentional source/result-body logging. |
 | Desktop settings | Persistent CLI paths and engine/model/effort/strength, without document history. |
 | Skill jobs/results | Gateway jobs until cleanup; exported results preserved; host conversation retention follows host settings. |
