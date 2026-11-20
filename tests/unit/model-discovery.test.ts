@@ -1,9 +1,10 @@
-import { readFile } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import { readFile, realpath } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-  CLAUDE_DISCOVERY_ARGS, discoverClaudeModels, discoverCodexModels, discoverModels, mapClaudeModels, mapCodexModels,
+  CLAUDE_DISCOVERY_ARGS, CODEX_DISCOVERY_ARGS, discoverClaudeModels, discoverCodexModels, discoverModels, mapClaudeModels, mapCodexModels,
   ModelDiscoveryError, type DiscoveryOptions
 } from '../../src/runtime/model-discovery.js';
 import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
@@ -99,15 +100,27 @@ describe('mapClaudeModels', () => {
 });
 
 describe('model discovery over the CLI protocols', () => {
-  let root: string, pidFile: string, logFile: string;
-  beforeEach(async () => { root = await makeTestRoot('models-'); pidFile = path.join(root, 'pid'); logFile = path.join(root, 'log.jsonl'); });
+  let root: string, pidFile: string, logFile: string, cwdFile: string;
+  beforeEach(async () => {
+    root = await makeTestRoot('models-');
+    pidFile = path.join(root, 'pid'); logFile = path.join(root, 'log.jsonl'); cwdFile = path.join(root, 'cwd.json');
+  });
   afterEach(async () => {
     const pid = Number(await readFile(pidFile, 'utf8').catch(() => '0'));
     if (pid > 0 && alive(pid)) process.kill(pid, 'SIGKILL');
     await removeTestRoot(root);
   });
   const options = (mode: string, extra: Partial<DiscoveryOptions> = {}): DiscoveryOptions =>
-    ({ cwd: root, timeoutMs: 10_000, env: { FAKE_MODE: mode, FAKE_PID_FILE: pidFile, FAKE_LOG_FILE: logFile, FAKE_PAGE_SIZE: '3' }, ...extra });
+    ({ cwd: root, timeoutMs: 10_000, env: { FAKE_MODE: mode, FAKE_PID_FILE: pidFile, FAKE_LOG_FILE: logFile, FAKE_PAGE_SIZE: '3', FAKE_CWD_FILE: cwdFile }, ...extra });
+  const started = async (): Promise<{ cwd: string; entries: string[]; env?: Record<string, string | undefined> }> => JSON.parse(await readFile(cwdFile, 'utf8'));
+  // The child reports its working directory with symlinks resolved (/var -> /private/var on macOS).
+  const expectScratchDirectory = async (cwd: string, entries: string[]): Promise<void> => {
+    expect(cwd).not.toBe(root);
+    expect(await realpath(path.dirname(cwd))).toBe(await realpath(tmpdir()));
+    expect(path.basename(cwd)).toMatch(/^humanize-models-/);
+    expect(entries).toEqual([]);
+    expect(existsSync(cwd)).toBe(false);
+  };
   const childPid = async (): Promise<number> => Number(await readFile(pidFile, 'utf8'));
   const sent = async (): Promise<Record<string, any>[]> => (await readFile(logFile, 'utf8')).trim().split('\n').map(line => JSON.parse(line));
 
@@ -123,6 +136,12 @@ describe('model discovery over the CLI protocols', () => {
       { includeHidden: false, limit: 100 }, { includeHidden: false, limit: 100, cursor: 'page-3' }, { includeHidden: false, limit: 100, cursor: 'page-6' }
     ]);
     expect(alive(await childPid())).toBe(false);
+  });
+  it('starts codex app-server with the isolation flags from an empty temporary directory, removed afterwards', async () => {
+    await discoverCodexModels(process.execPath, options('ok'), fakeCodex);
+    expect(CODEX_DISCOVERY_ARGS).toEqual(['app-server', '--disable', 'hooks', '--disable', 'plugins', '--disable', 'remote_plugin', '--disable', 'apps']);
+    const { cwd, entries } = await started();
+    await expectScratchDirectory(cwd, entries);
   });
   it('filters hidden Codex models even when the server returns them', async () => {
     const catalog = await discoverCodexModels(process.execPath, options('leak-hidden'), fakeCodex);
@@ -175,6 +194,13 @@ describe('model discovery over the CLI protocols', () => {
     expect(messages[0]!.request_id).toMatch(/^models-/);
     expect(CLAUDE_DISCOVERY_ARGS).toContain('');
     expect(alive(await childPid())).toBe(false);
+  });
+  it('starts Claude Code in safe, restricted mode from an empty temporary directory, removed afterwards', async () => {
+    await discoverClaudeModels(process.execPath, options('ok'), fakeClaude);
+    expect(CLAUDE_DISCOVERY_ARGS.slice(0, 4)).toEqual(['-p', '--restricted', '--safe-mode', '--disable-slash-commands']);
+    const { cwd, entries, env } = await started();
+    expect(env).toEqual({ CLAUDE_CODE_DISABLE_CLAUDE_MDS: '1', CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' });
+    await expectScratchDirectory(cwd, entries);
   });
   it('reports a Claude control error, an early exit and an empty list', async () => {
     const failed = await rejection(discoverClaudeModels(process.execPath, options('error'), fakeClaude));

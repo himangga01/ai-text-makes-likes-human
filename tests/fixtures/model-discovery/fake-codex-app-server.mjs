@@ -1,5 +1,5 @@
 // Stand-in for `codex app-server`: newline-delimited JSON-RPC 2.0 on stdio. FAKE_MODE picks the behaviour.
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 
 const mode = process.env.FAKE_MODE ?? 'ok';
@@ -7,7 +7,9 @@ const lists = JSON.parse(readFileSync(new URL('./model-lists.json', import.meta.
 const models = mode === 'empty' ? lists.codex.filter(model => model.hidden).concat([{ id: 'gpt-bare', displayName: 'GPT-Bare', supportedReasoningEfforts: [] }]) : lists.codex;
 const pageSize = Number(process.env.FAKE_PAGE_SIZE ?? 4);
 if (process.env.FAKE_PID_FILE) writeFileSync(process.env.FAKE_PID_FILE, String(process.pid));
-if (process.argv[2] !== 'app-server') { process.stderr.write('error: unexpected arguments\n'); process.exit(2); }
+const expected = ['app-server', '--disable', 'hooks', '--disable', 'plugins', '--disable', 'remote_plugin', '--disable', 'apps'];
+if (JSON.stringify(process.argv.slice(2)) !== JSON.stringify(expected)) { process.stderr.write(`error: unexpected arguments ${JSON.stringify(process.argv.slice(2))}\n`); process.exit(2); }
+if (process.env.FAKE_CWD_FILE) writeFileSync(process.env.FAKE_CWD_FILE, JSON.stringify({ cwd: process.cwd(), entries: readdirSync(process.cwd()) }));
 process.stderr.write('codex app-server (fake) listening on stdio\n');
 
 const send = message => process.stdout.write(`${JSON.stringify(message)}\n`);
