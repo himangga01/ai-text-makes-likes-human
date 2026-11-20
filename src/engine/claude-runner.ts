@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CommandRunner } from "../process/command-runner.js";
+import { CLAUDE_ISOLATION_ARGS, CLAUDE_ISOLATION_ENV, inScratchDirectory } from "./cli-isolation.js";
 import {
   parseEngineResult,
   type CodexPermitPool,
@@ -163,7 +164,7 @@ export class ClaudeRunner {
     const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
 
     await rm(resultPath, { force: true });
-    const raw = await this.exec(prompt, schema, path.dirname(sourcePath), signal, selection);
+    const raw = await this.exec(prompt, schema, signal, selection);
     const result = this.options.resultParser ? this.options.resultParser(raw, 'Claude') : parseTextResult(raw, source, 'Claude', options);
     await writeFile(resultPath, JSON.stringify(result), "utf8");
     return result;
@@ -183,7 +184,7 @@ export class ClaudeRunner {
     const resultPath = path.resolve(outputPath);
     const schema = await this.schema(path.resolve(schemaPath));
     await rm(resultPath, { force: true });
-    const raw = await this.exec(prompt, schema, path.dirname(resultPath), signal, selection);
+    const raw = await this.exec(prompt, schema, signal, selection);
     await writeFile(resultPath, raw, "utf8");
     return raw;
   }
@@ -191,20 +192,18 @@ export class ClaudeRunner {
   private async exec(
     prompt: string,
     schema: string,
-    cwd: string,
     signal: AbortSignal,
     selection: ModelSettings
   ): Promise<string> {
+    // The model reads untrusted document text, so it gets no tools and none of the operator's Claude Code
+    // setup (cli-isolation.ts). It starts from an empty private directory outside the project, where no
+    // project instructions or git status exist to be loaded; the reply comes back on stdout.
     const command = await this.options.permitPool.run(signal, () =>
-      this.options.runner.run({
+      inScratchDirectory("humanize-claude-", cwd => this.options.runner.run({
         command: this.options.claudeCommand,
         args: [
           "-p",
-          "--restricted",
-          "--strict-mcp-config",
-          "--tools",
-          "",
-          "--no-session-persistence",
+          ...CLAUDE_ISOLATION_ARGS,
           "--model",
           selection.model,
           "--effort",
@@ -218,8 +217,8 @@ export class ClaudeRunner {
         stdin: prompt,
         timeoutMs: this.options.timeoutMs,
         signal,
-        env: childEnvironment(process.env, { NO_COLOR: "1" })
-      })
+        env: childEnvironment(process.env, { ...CLAUDE_ISOLATION_ENV, NO_COLOR: "1" })
+      }))
     );
 
     if (command.termination === "timeout") {

@@ -1,12 +1,14 @@
 // Stand-in for `claude -p --input-format stream-json --output-format stream-json`: answers the initialize control request.
-import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 
 const mode = process.env.FAKE_MODE ?? 'ok';
 const lists = JSON.parse(readFileSync(new URL('./model-lists.json', import.meta.url), 'utf8'));
-const expected = ['-p', '--restricted', '--strict-mcp-config', '--tools', '', '--no-session-persistence',
-  '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose'];
+const expected = ['-p', '--restricted', '--safe-mode', '--disable-slash-commands', '--strict-mcp-config', '--tools', '',
+  '--no-session-persistence', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose'];
 if (process.env.FAKE_PID_FILE) writeFileSync(process.env.FAKE_PID_FILE, String(process.pid));
+if (process.env.FAKE_CWD_FILE) writeFileSync(process.env.FAKE_CWD_FILE, JSON.stringify({ cwd: process.cwd(), entries: readdirSync(process.cwd()),
+  env: { CLAUDE_CODE_DISABLE_CLAUDE_MDS: process.env.CLAUDE_CODE_DISABLE_CLAUDE_MDS, CLAUDE_CODE_DISABLE_AUTO_MEMORY: process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY } }));
 if (JSON.stringify(process.argv.slice(2)) !== JSON.stringify(expected)) { process.stderr.write(`error: unexpected arguments ${JSON.stringify(process.argv.slice(2))}\n`); process.exit(2); }
 
 const send = message => process.stdout.write(`${JSON.stringify(message)}\n`);
