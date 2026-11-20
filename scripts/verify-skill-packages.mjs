@@ -5,6 +5,9 @@ import { assertSejongBundle, loadBundledSejong, readSejongEngineVersion } from "
 const parent = path.resolve("runtime/test-tmp"); await mkdir(parent, { recursive: true });
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
 const sejong = await readSejongEngineVersion();
+// The embedded runtimes must be the ones pinned in the source tree (version and archive hash).
+const nodePin = JSON.parse(await readFile("node-runtime.json", "utf8"));
+const pythonPin = JSON.parse(await readFile("python-runtime.json", "utf8"));
 for (const host of ["Claude", "Codex"]) {
   const root = await mkdtemp(path.join(parent, "skill-package-"));
   const installArgs = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", path.resolve("scripts/install-humanize-skill.ps1"), "-HostName", host, "-Scope", "Project", "-ProjectRoot", root,
@@ -41,7 +44,9 @@ for (const host of ["Claude", "Codex"]) {
   if ((await readFile(output, "utf8")) !== input) throw new Error("Packaged skill changed the source");
   call("cleanup", "--job", state.job);
   const nodeLock = JSON.parse(await readFile(path.join(skill, 'node/runtime-lock.json'), 'utf8'));
-  if (nodeLock.version !== '24.19.0' || !(await readFile(path.join(skill, 'node/LICENSE'), 'utf8')).includes('Node.js')) throw new Error('Pinned licensed Node missing');
+  if (nodeLock.version !== nodePin.version || nodeLock.sha256 !== nodePin.sha256 || !(await readFile(path.join(skill, 'node/LICENSE'), 'utf8')).includes('Node.js')) throw new Error('Pinned licensed Node missing');
+  const pythonLock = JSON.parse(await readFile(path.join(skill, 'python/runtime-lock.json'), 'utf8'));
+  if (pythonLock.version !== pythonPin.version || pythonLock.sha256 !== pythonPin.sha256) throw new Error('Packaged Python differs from python-runtime.json');
   if ((await readdir(path.join(skill,'node'))).sort().join(',') !== 'LICENSE,node.exe,runtime-lock.json') throw new Error('Unexpected Node runtime contents');
   const fixture = JSON.parse(await readFile('tests/fixtures/direct-live-quality.json','utf8'));
   for (const strength of ['normal','medium','strong','very-strong','rewrite']) {
