@@ -1,4 +1,4 @@
-import { mkdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { AppConfig } from "../config.js";
 import type { CommandRunner } from "../process/command-runner.js";
@@ -15,7 +15,7 @@ import { TransformQueue } from "../queue/transform-queue.js";
 import { resolveCli } from "./cli-path.js";
 import { DocumentEngine } from '../documents/document-engine.js';
 import { ModelCatalogService } from './model-catalog.js';
-import { discoverModels, ModelDiscoveryError } from './model-discovery.js';
+import { discoverModels } from './model-discovery.js';
 
 /** The engine that produces the delivered text: legacy (default) or Super Sejong v2 (SUPER_SEJONG_ENGINE=v2). */
 export type TextEngine = HumanizeEngine | SejongEngine;
@@ -32,16 +32,12 @@ export interface ProductionRuntime {
 
 // One catalog per process: the model lists are process-wide and the desktop worker builds a runtime per request.
 // A later runtime only points discovery at its own CLI paths.
-let probeTarget: { commands: Record<EngineChoice, string>; cwd: string } | undefined;
+let probeTarget: { commands: Record<EngineChoice, string> } | undefined;
 let sharedCatalog: ModelCatalogService | undefined;
 function modelCatalogFor(config: AppConfig): ModelCatalogService {
-  // An empty private directory: a CLI started there reads no project instructions or settings.
-  probeTarget = { commands: { codex: config.codexCommand, claude: config.claudeCommand }, cwd: path.join(config.runtimeRoot, "model-probe") };
-  return sharedCatalog ??= new ModelCatalogService({ discover: async engine => {
-    const { commands, cwd } = probeTarget!;
-    try { await mkdir(cwd, { recursive: true }); } catch { throw new ModelDiscoveryError("spawn", "Model probe directory is unavailable"); }
-    return discoverModels(engine, commands[engine], { cwd });
-  } });
+  // Each probe starts in its own empty temporary folder outside the project (runtime/model-discovery.ts).
+  probeTarget = { commands: { codex: config.codexCommand, claude: config.claudeCommand } };
+  return sharedCatalog ??= new ModelCatalogService({ discover: async engine => discoverModels(engine, probeTarget!.commands[engine], {}) });
 }
 
 export async function createProductionRuntime(
