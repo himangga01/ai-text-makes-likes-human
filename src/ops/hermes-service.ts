@@ -543,7 +543,7 @@ export class NodeServicePlatform implements ServicePlatform {
         stdio: ["ignore", stdoutFd, stderrFd],
         env: {
           ...serviceEnvironment(process.env),
-          HOST: "0.0.0.0",
+          HOST: "127.0.0.1",
           PORT: String(this.options.port),
           PYTHON_COMMAND: this.options.pythonCommand,
           CODEX_COMMAND: this.options.codexCommand,

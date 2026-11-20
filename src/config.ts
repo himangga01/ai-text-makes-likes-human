@@ -21,7 +21,7 @@ export interface AppConfig {
   readonly pythonCommand: string;
   readonly autoRoute: boolean;
   readonly chunkConcurrency: 1 | 2;
-  /** Names a local tunnel connector may present (see network/public-hosts.ts); empty keeps the portal LAN-only. */
+  /** Names a local tunnel connector may present (see network/public-hosts.ts); empty keeps the portal on this PC only. */
   readonly publicHosts?: readonly string[];
 }
 
@@ -47,7 +47,8 @@ export function loadConfig(
 
   return Object.freeze({
     projectRoot,
-    host: env.HOST ?? "0.0.0.0",
+    // Loopback only. HOST may move the listener (tests do), but the access guard still serves loopback sockets only.
+    host: env.HOST ?? "127.0.0.1",
     port,
     maxAcceptedJobs: 3,
     maxActiveJobs: 1,

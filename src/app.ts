@@ -14,11 +14,10 @@ import {
   type HumanizeResult
 } from "./engine/humanize-engine.js";
 import { JobWorkspace } from "./engine/workspace.js";
-import { isAllowedClientAddress, isAllowedHostHeader } from "./network/private-address.js";
+import { cameThroughTunnel, isLocalHostHeader, isLoopbackAddress } from "./network/local-access.js";
 import { publicHostOf } from "./network/public-hosts.js";
 import { PublicAuth, publicAuthPath } from "./network/public-auth.js";
 import { loginPage } from "./network/login-page.js";
-import { listLanUrls } from "./network/lan-addresses.js";
 export { createProductionRuntime, type ProductionRuntime } from "./runtime/create-runtime.js";
 import { type PreflightReport } from "./process/preflight.js";
 import { TransformQueue } from "./queue/transform-queue.js";
@@ -93,30 +92,35 @@ export function createApp(dependencies: AppDependencies): Express {
       "Content-Security-Policy",
       "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'"
     );
-    if (!isAllowedClientAddress(request.socket.remoteAddress)) {
+    // Only this PC: other devices reach the portal through the public address, never the listener directly.
+    if (!isLoopbackAddress(request.socket.remoteAddress)) {
       response.status(403).json({
-        code: "LAN_ONLY",
-        message: "같은 와이파이에서만 접속할 수 있습니다."
+        code: "LOCAL_ONLY",
+        message: "이 PC에서만 접속할 수 있습니다. 다른 기기에서는 외부 주소로 접속해 주세요."
       });
       return;
     }
     const publicHost = publicHostOf(request.headers.host, request.socket.remoteAddress, config.publicHosts ?? []);
     response.locals.publicHost = publicHost;
-    if (!publicHost && !isAllowedHostHeader(request.headers.host)) {
-      const message = "허용되지 않은 접속 주소입니다. 서버 PC에 표시된 IP 주소(예: http://192.168.0.10:7882)로 접속해 주세요.";
+    // A request the Cloudflare edge forwarded is a visitor from outside whatever its Host says, so only a listed
+    // public name (and its password) may serve it.
+    const tunneled = cameThroughTunnel(request.headers);
+    if (!publicHost && (tunneled || !isLocalHostHeader(request.headers.host))) {
+      const message = tunneled
+        ? "허용되지 않은 접속 주소입니다. 외부 주소로 접속해 주세요."
+        : `허용되지 않은 접속 주소입니다. 이 PC에서는 http://localhost:${config.port} 로, 다른 기기에서는 외부 주소로 접속해 주세요.`;
       if (request.path.startsWith("/api")) {
         response.status(403).json({ code: "HOST_NOT_ALLOWED", message });
         return;
       }
       // A bookmarked host name (mac.local, a PC name) reaches the page itself: explain instead of raw JSON.
-      const addresses = listLanUrls(config.port).map(url => `<li>${url}</li>`).join("");
-      response.status(403).type("html").send(`<!doctype html><html lang="ko"><meta charset="utf-8"><title>접속 주소 확인</title><p>${message}</p>${addresses ? `<ul>${addresses}</ul>` : ""}</html>`);
+      response.status(403).type("html").send(`<!doctype html><html lang="ko"><meta charset="utf-8"><title>접속 주소 확인</title><p>${message}</p></html>`);
       return;
     }
     next();
   });
 
-  // A public name needs the password; LAN and localhost stay as they were.
+  // A public name needs the password; this PC's own localhost needs none.
   app.use((request, response, next) => {
     if (!response.locals.publicHost || request.path === "/login.css" || request.path === "/api/public-login") { next(); return; }
     const signedIn = publicAuth.verify(request.headers.cookie);
@@ -137,8 +141,8 @@ export function createApp(dependencies: AppDependencies): Express {
   });
 
   // Browser-origin policy is shared by text and Office entry points. Native
-  // same-LAN clients that do not send Origin remain supported. A public name is served over HTTPS by the tunnel
-  // while the connector speaks plain HTTP to this listener.
+  // local clients that do not send Origin (the MCP server, scripts) remain supported. A public name is served over
+  // HTTPS by the tunnel while the connector speaks plain HTTP to this listener.
   app.use('/api', (request, response, next) => {
     const origin=request.headers.origin;const publicHost=response.locals.publicHost as string|undefined;
     if (origin && origin!==`${request.protocol}://${request.headers.host}` && !(publicHost && origin===`https://${publicHost}`)) {

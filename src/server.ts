@@ -4,7 +4,6 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { createApp, createProductionRuntime } from "./app.js";
 import { loadConfig } from "./config.js";
-import { listLanUrls } from "./network/lan-addresses.js";
 import { SpawnCommandRunner, killChildProcessesOnExit, killLiveProcesses } from "./process/command-runner.js";
 import { acquireServerLock } from "./runtime/server-lock.js";
 import { createShutdownSignalHandler } from "./runtime/shutdown-signal.js";
@@ -51,7 +50,6 @@ async function main(): Promise<void> {
   }
 
   console.log(`로컬: http://localhost:${config.port}`);
-  for (const url of listLanUrls(config.port)) console.log(`와이파이: ${url}`);
   for (const name of config.publicHosts ?? []) console.log(`외부 주소: https://${name}`);
   if (!runtime.preflight.ready) console.log(runtime.preflight.message);
 
