@@ -8,7 +8,7 @@ const portalUrl = process.env.HUMANIZE_PORTAL_URL?.trim() || 'http://127.0.0.1:7
 let parsed: URL | undefined;
 try { parsed = new URL(portalUrl); } catch { /* reported below */ }
 if (!parsed || (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')) {
-  process.stderr.write('HUMANIZE_PORTAL_URL must be an http(s) URL, e.g. http://192.168.0.10:7882\n');
+  process.stderr.write('HUMANIZE_PORTAL_URL must be an http(s) URL, e.g. http://127.0.0.1:7882\n');
   process.exit(2);
 }
 

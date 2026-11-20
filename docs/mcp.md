@@ -99,21 +99,12 @@ echo "Call humanize_status once and report the status." | claude -p --strict-mcp
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `HUMANIZE_PORTAL_URL` | `http://127.0.0.1:7882` | Portal address. From another computer on the same LAN, use the server's address, e.g. `http://192.168.0.10:7882`. |
+| `HUMANIZE_PORTAL_URL` | `http://127.0.0.1:7882` | Portal address on this computer. Set it only when the portal listens on another port, e.g. `http://127.0.0.1:7890`. |
 
-On another computer, check out and build this repository there, then pass the address with the registration:
-
-```bash
-claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node <repo>/dist/mcp/server.js
-```
-
-On Windows the same command takes the Windows path, e.g. `node C:\work\ai-text-makes-likes-human\dist\mcp\server.js`.
-
-For Codex, add `env = { HUMANIZE_PORTAL_URL = "http://192.168.0.10:7882" }` to the `[mcp_servers.humanize-kr]` table.
-`humanize_file` reads and writes files on the computer where the MCP server runs and uploads them to the portal.
-
-The portal accepts only private-network clients and has no login, so the MCP server inherits the same rule: run it on
-the portal's machine or on the same LAN.
+The portal accepts connections from its own computer only, so run the MCP server on the portal's computer. Connecting
+the MCP server to a portal on another computer is not supported: the portal's public address requires a browser login,
+which the MCP server does not perform. `humanize_file` reads and writes files on the computer where the MCP server
+runs and uploads them to the portal.
 
 ## Time limits
 

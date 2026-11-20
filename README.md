@@ -80,7 +80,7 @@ PC에 설치·로그인된 **Claude Code 또는 Codex CLI**와 Humanize KR 규�
 
 ## Claude·Codex 스킬 사용하기
 
-`humanize-kr`는 현재 로그인한 **Claude Code 또는 Codex 세션**에서 한국어 문장을 다듬는 스킬입니다. 사용할 호스트 하나만 준비하면 됩니다. 같은 와이파이에 연결하거나 웹 포털·Windows 앱을 실행할 필요가 없습니다. Windows용 스킬 ZIP에는 검증에 필요한 Python·Node가 포함되어 있습니다.
+`humanize-kr`는 현재 로그인한 **Claude Code 또는 Codex 세션**에서 한국어 문장을 다듬는 스킬입니다. 사용할 호스트 하나만 준비하면 됩니다. 웹 포털이나 Windows 앱을 실행할 필요가 없습니다. Windows용 스킬 ZIP에는 검증에 필요한 Python·Node가 포함되어 있습니다.
 
 ### 설치 또는 업데이트
 
@@ -146,7 +146,7 @@ Claude Code·Codex처럼 MCP를 지원하는 에이전트는 포털을 도구로
 
 ### 준비
 
-1. **포털을 띄웁니다.** 이 Mac에서는 Hermes 서비스가 `http://127.0.0.1:7882`로 띄워 둡니다. Windows에서는 아래 [LAN 웹 포털](#lan-웹-포털-처음-한-번만-설정하기) 설정을 마친 뒤 `start-portal.cmd`로 띄웁니다. 주소는 같습니다.
+1. **포털을 띄웁니다.** 이 Mac에서는 Hermes 서비스가 `http://127.0.0.1:7882`로 띄워 둡니다. Windows에서는 아래 [포털 처음 설정](#lan-웹-포털-처음-한-번만-설정하기)을 마친 뒤 `start-portal.cmd`로 띄웁니다. 주소는 같습니다.
 2. **MCP 서버를 빌드합니다.** 저장소에서 빌드를 한 번 실행해 `dist/mcp/server.js`를 만듭니다. 기존 Windows 포털은 `dist\server.js`가 있으면 다시 빌드하지 않으므로, 최신 코드를 받은 뒤에는 직접 빌드해야 합니다.
    - Mac: `npm run build`
    - Windows(PowerShell): `npm.cmd run build`
@@ -242,21 +242,9 @@ C:\문서\발표.pptx를 다듬어 줘.
 - `outputPath`로 저장 위치를 정할 수 있습니다. 절대 경로여야 하고, **원본 파일과 같은 폴더나 그 하위 폴더**(이미 있는 폴더)여야 하며, 원본과 확장자가 같고 아직 없는 파일이어야 합니다. 바로가기(심볼릭 링크)를 따라간 실제 위치로 판단하므로 링크로 다른 폴더를 가리켜도 거절합니다. 에이전트가 읽은 글에 숨은 지시가 있더라도 시작 프로그램 폴더 같은 엉뚱한 곳에 파일을 만들지 못하게 하려는 제한입니다. 경로는 작업을 시작하기 전에 확인합니다.
 - TXT·MD는 웹 화면과 같은 방식(UTF-8, BOM 있는 UTF-16, CP949)으로 읽어 UTF-8로 저장하며 최대 1 MiB입니다. DOCX·PPTX는 최대 50 MiB이며 서식을 지킨 같은 형식의 파일로 저장합니다. 포털의 문서 한도를 넘으면 포털과 같은 메시지와 `DOCUMENT_TOO_LARGE`를 돌려줍니다.
 
-### 다른 PC에서 쓰기
+### 포털 주소
 
-같은 LAN의 다른 PC에서도 쓸 수 있습니다. 그 PC에 이 저장소를 받아 빌드한 뒤 포털 주소를 `HUMANIZE_PORTAL_URL`로 넘깁니다. 파일은 MCP 서버가 도는 PC에서 읽고 저장합니다.
-
-```bash
-# Mac
-claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node <저장소 경로>/dist/mcp/server.js
-```
-
-```powershell
-# Windows(PowerShell)
-claude mcp add -s user humanize-kr -e HUMANIZE_PORTAL_URL=http://192.168.0.10:7882 -- node C:\work\ai-text-makes-likes-human\dist\mcp\server.js
-```
-
-Codex는 `[mcp_servers.humanize-kr]` 표에 `env = { HUMANIZE_PORTAL_URL = "http://192.168.0.10:7882" }`를 더합니다. 포털은 사설망 접속만 받고 로그인이 없으므로 MCP 서버도 포털 PC나 같은 LAN에서만 씁니다.
+MCP 서버는 같은 PC에서 도는 포털(`http://127.0.0.1:7882`)에 연결합니다. 포털은 그 PC 안에서 오는 접속만 받으므로 MCP 서버도 포털과 같은 PC에서 실행합니다. 다른 PC의 포털에 MCP 서버를 연결하는 방식은 지원하지 않습니다. 외부 주소는 브라우저 로그인이 필요해 MCP 서버가 쓸 수 없습니다. 포털을 다른 포트로 띄웠을 때만 `HUMANIZE_PORTAL_URL`로 주소를 넘깁니다(예: `http://127.0.0.1:7890`).
 
 ### 시간 제한과 문제 해결
 
