@@ -180,8 +180,8 @@ Commands (prefix each with `<python> engine_runtime/skill_gateway.py`):
 
 Global options:
 
-- `--workspace-root`: default `<system TEMP>/humanize-kr-skills`.
-- `--vendor-root`: default is the bundled `vendor/humanize-engine`.
+- `--workspace-root`: default is a folder private to the user running the Gateway: `%LOCALAPPDATA%\humanize-kr-skills` on Windows, `<system TEMP>/humanize-kr-skills-<uid>` elsewhere. On POSIX the Gateway creates it with mode 0700 and refuses to use it unless it is a real directory (not a link) owned by that user with no group or other access, so another local user cannot prepare it in advance. Pass `--workspace-root` only with a directory other users cannot write to.
+- `--vendor-root`: default is the bundled `vendor/humanize-engine` next to the Gateway. The engine code always comes from here; a job's state file is data and never names the code the Gateway runs.
 
 Prepare returns these paths when `status` is `rewrite`:
 

@@ -131,5 +131,54 @@ class GatewayTest(unittest.TestCase):
         self.call("cleanup", "--job", state["job"])
         self.assertEqual(list((self.root / "jobs").iterdir()), [])
 
+    def test_engine_code_comes_from_the_gateway_never_from_job_json(self):
+        # job.json is data: a vendor path planted in it must not choose the code the Gateway runs.
+        planted = self.root / "planted"
+        (planted / "scripts").mkdir(parents=True)
+        marker = self.root / "planted-code-ran"
+        for name in ("verify_gates.py", "checks.py", "restore_modality.py", "strip_injected_commas.py",
+                     "reassemble_chunks.py", "prepare_monolith_input.py"):
+            (planted / "scripts" / name).write_text(f"open({str(marker)!r}, 'w').close()\n", encoding="utf-8")
+        (planted / "ENGINE_VERSION").write_bytes((ROOT / "vendor/humanize-engine/ENGINE_VERSION").read_bytes())
+        state = self.call("prepare", "--input", self.input)
+        job_file = self.root / "jobs" / state["job"] / "job.json"
+        data = json.loads(job_file.read_text(encoding="utf-8"))
+        self.assertNotIn("vendor", data)
+        job_file.write_text(json.dumps({**data, "vendor": str(planted)}), encoding="utf-8")
+        while state["status"] == "rewrite":
+            state = self.accept(state, Path(state["inputPath"]).read_text(encoding="utf-8"))
+        self.call("finalize", "--job", state["job"], "--output", self.root / "result.md")
+        self.assertFalse(marker.exists())
+        self.assertEqual((self.root / "result.md").read_text(encoding="utf-8"), self.source)
+
+    @unittest.skipIf(os.name == "nt", "POSIX owner and mode checks; Windows uses %LOCALAPPDATA%")
+    def test_default_workspace_is_private_to_the_user(self):
+        temp = self.root / "shared-temp"
+        temp.mkdir()
+        environment = {**legacy_environment(), "TMPDIR": str(temp)}
+
+        def gateway(*args):
+            result = subprocess.run([sys.executable, str(GATEWAY), *map(str, args)], capture_output=True, encoding="utf-8", env=environment)
+            return result.returncode, json.loads(result.stdout)
+
+        workspace = temp / f"humanize-kr-skills-{os.getuid()}"
+        code, state = gateway("prepare", "--input", self.input)
+        self.assertEqual(code, 0, state)
+        self.assertEqual(oct(workspace.stat().st_mode & 0o777), oct(0o700))
+        self.assertTrue((workspace / state["job"]).is_dir())
+        self.assertEqual(gateway("cleanup", "--job", state["job"])[0], 0)
+        # A workspace others can enter, or a link planted in its place, is refused instead of used.
+        workspace.chmod(0o755)
+        code, failure = gateway("prepare", "--input", self.input)
+        self.assertEqual(code, 1)
+        self.assertIn("mode 0700", failure["message"])
+        self.assertEqual(list(workspace.iterdir()), [])
+        workspace.rmdir()
+        elsewhere = self.root / "elsewhere"
+        elsewhere.mkdir(mode=0o700)
+        workspace.symlink_to(elsewhere, target_is_directory=True)
+        self.assertEqual(gateway("prepare", "--input", self.input)[0], 1)
+        self.assertEqual(list(elsewhere.iterdir()), [])
+
 
 if __name__ == "__main__": unittest.main()

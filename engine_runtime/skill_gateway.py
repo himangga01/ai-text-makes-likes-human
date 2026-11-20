@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -27,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from workflow import DEFAULT_VENDOR, restore, verify, validate_response
 from skill_bridge import available as bridge_available, invoke as bridge, options as rewrite_options
 
-DEFAULT_ROOT = Path(tempfile.gettempdir()) / "humanize-kr-skills"
+WORKSPACE_NAME = "humanize-kr-skills"
 EMPTY_REPLY = {"replacements": [], "rewrittenText": "", "warnings": []}   # what a chunk with nothing to ask is checked with
 SKILL_GENRE = "blog"          # DESIGN 9.2a item 4: the agent-skill route sends blog unless SUPER_SEJONG_GENRE_DEFAULT is set
 
@@ -73,13 +74,40 @@ def strength_route(options) -> bool:
         (options.get("inputKind") == "text-file" and options.get("strength", "normal") != "normal")
 
 
-def engine_changed(state: dict) -> bool:
-    """A job runs on the engine it was prepared with: the selected engine, and its version file, must be unchanged."""
+def private_root() -> Path:
+    """The default workspace, private to the user running the Gateway. A job holds the user's text and the
+    files the Gateway reads back, so a directory other local users can write to (the shared TEMP of a
+    multi-user host) is never used: on Windows it lives under %LOCALAPPDATA%; elsewhere it is
+    <TEMP>/humanize-kr-skills-<uid>, created 0700 and refused unless it is a directory (not a link) owned by
+    this user with no access for group or others."""
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA")
+        if not base:
+            raise ValueError("LOCALAPPDATA is not set; pass --workspace-root with a private directory")
+        root = Path(base) / WORKSPACE_NAME
+        root.mkdir(parents=True, exist_ok=True)
+        return root.resolve()
+    root = Path(tempfile.gettempdir()) / f"{WORKSPACE_NAME}-{os.getuid()}"
+    try:
+        os.mkdir(root, 0o700)
+    except FileExistsError:
+        pass
+    info = os.lstat(root)
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ValueError(f"Refusing the workspace {root}: it must be a directory owned by this user with mode 0700 "
+                         "(remove it, or pass --workspace-root with a private directory)")
+    return root.resolve()
+
+
+def engine_changed(state: dict, vendor: Path = DEFAULT_VENDOR) -> bool:
+    """A job runs on the engine it was prepared with: the selected engine, and its version file, must be unchanged.
+    The legacy engine is the Gateway's own (`vendor`, from its location or --vendor-root), never a path a job file
+    names: job.json is data, and the engine runs code."""
     recorded = state.get("engine", "legacy")
     if recorded != engine_switch():
         return True
     if recorded != "v2":
-        return (Path(state["vendor"]) / "ENGINE_VERSION").read_text(encoding="utf-8").strip() != state["engineVersion"]
+        return (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip() != state["engineVersion"]
     try:
         current = sejong().package.read_engine_version()
     except (OSError, ValueError):
@@ -163,14 +191,14 @@ def prepare(input_path: Path, root: Path, vendor: Path, input_kind=None, strengt
         manifest = json.loads((job / "chunk_manifest.json").read_text(encoding="utf-8"))
         source = stage_chunks(job, manifest)
         state = {"schemaVersion": 1, "job": job.name, "inputPath": str(input_path.resolve()),
-                 "vendor": str(vendor), "engineVersion": (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip(),
+                 "engineVersion": (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip(),
                  "sourceHash": digest(source), "manifestHash": digest(job / "chunk_manifest.json"),
                  "current": 0, "attempt": 1, "warnings": [], "status": "active"}
         if options:
             state["rewriteOptions"] = options
         state["chunkHashes"] = {str(chunk["index"]): digest(job / f"source-{chunk['index']}.txt") for chunk in bodies(manifest)}
         write_json(job / "job.json", state)
-        return next_chunk(job, state, manifest)
+        return next_chunk(job, state, manifest, vendor)
     except Exception:
         if job.resolve().parent == root.resolve() and job.name.startswith("job-"):
             shutil.rmtree(job)
@@ -178,7 +206,7 @@ def prepare(input_path: Path, root: Path, vendor: Path, input_kind=None, strengt
 
 
 @contextmanager
-def transaction(root: Path, job_id: str, verify_content: bool = True):
+def transaction(root: Path, job_id: str, verify_content: bool = True, vendor: Path = DEFAULT_VENDOR):
     if len(job_id) != 36 or not job_id.startswith("job-") or any(c not in "0123456789abcdef" for c in job_id[4:]):
         raise ValueError("Invalid job ID")
     job = (root / job_id).resolve()
@@ -198,7 +226,7 @@ def transaction(root: Path, job_id: str, verify_content: bool = True):
             for chunk in bodies(manifest):
                 if digest(job / f"source-{chunk['index']}.txt") != state["chunkHashes"][str(chunk["index"])]:
                     raise ValueError("A source chunk was modified")
-            if engine_changed(state):
+            if engine_changed(state, vendor):
                 raise ValueError("The engine changed during this job (keep SUPER_SEJONG_ENGINE and the ENGINE_VERSION "
                                  "the same until the job ends, or start a new job)")
             if state.get("engine") == "v2":
@@ -214,7 +242,7 @@ def bodies(manifest: dict) -> list:
     return [chunk for chunk in manifest["chunks"] if not chunk["passthrough"]]
 
 
-def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
+def next_chunk(job: Path, state: dict, manifest: dict, vendor: Path = DEFAULT_VENDOR) -> dict:
     chunks = bodies(manifest)
     v2 = state.get("engine") == "v2"
     if v2:
@@ -242,7 +270,7 @@ def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
     if strength_route(state.get("rewriteOptions")):
         context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"],
                          source=(job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"),
-                         quickRules=(Path(state["vendor"]) / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
+                         quickRules=(vendor / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
                          candidateReview=state.get("candidateReview"))
         instructions = job / f"instructions-{chunk['index']}-{state['attempt']}.md"
         instructions.write_text(context["instructions"], encoding="utf-8")
@@ -252,10 +280,11 @@ def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
     return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
             "inputPath": str(job / f"source-{chunk['index']}.txt"),
             "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json"),
-            "rulesPath": str(Path(state["vendor"]) / "skills/humanize-korean/references/quick-rules.md")}
+            "rulesPath": str(vendor / "skills/humanize-korean/references/quick-rules.md")}
 
 
-def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, source_hash: str, response_path: Path) -> dict:
+def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, source_hash: str, response_path: Path,
+           vendor: Path = DEFAULT_VENDOR) -> dict:
     if state.get("engine") == "v2":
         return accept_v2(job, state, manifest, chunk_id, attempt, source_hash, response_path)
     chunks = bodies(manifest)
@@ -271,7 +300,6 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     raw = json.loads(response_path.read_text(encoding="utf-8-sig"))
     response = bridge("parse", **options, source=source, response=raw) if direct else validate_response(raw)
     output = safe_leaf(job, chunk["rewritten_file"])
-    vendor = Path(state["vendor"])
     report = {"restoredSentences": 0, "skippedSentences": 0, "removedCommas": 0}
     failed = False
     gate = None
@@ -334,10 +362,11 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
         state["current"] += 1
         state["attempt"] = 1
     write_json(job / "job.json", state)
-    return {**next_chunk(job, state, manifest), "decision": action, "restoration": report}
+    return {**next_chunk(job, state, manifest, vendor), "decision": action, "restoration": report}
 
 
-def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparison: Path | None = None) -> dict:
+def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparison: Path | None = None,
+             vendor: Path = DEFAULT_VENDOR) -> dict:
     if state["status"] != "active" or state["current"] != len(bodies(manifest)):
         raise ValueError("All chunks must be accepted before finalizing")
     destination = destination.resolve()
@@ -354,7 +383,6 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparis
     if state.get("engine") == "v2":
         result = reassemble_v2(job, state, manifest)
     else:
-        vendor = Path(state["vendor"])
         script(vendor, "reassemble_chunks.py", "--run-dir", job, "--output", "final.md", "--report", "assembly.json", "--strict")
         result = job / "final.md"
         if strength_route(state.get("rewriteOptions")) and bridge("check", **state["rewriteOptions"],
@@ -390,7 +418,7 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparis
         state.clear()
         state.update(previous)
         raise
-    return next_chunk(job, state, manifest)
+    return next_chunk(job, state, manifest, vendor)
 
 
 # --------------------------------------------------------------------------
@@ -704,7 +732,7 @@ def reassemble_v2(job: Path, state: dict, manifest: dict) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace-root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--workspace-root", type=Path, default=None)
     parser.add_argument("--vendor-root", type=Path, default=DEFAULT_VENDOR)
     sub = parser.add_subparsers(dest="command", required=True)
     preparation = sub.add_parser("prepare")
@@ -724,8 +752,9 @@ def main() -> int:
             command.add_argument("--output", type=Path, required=True)
             command.add_argument("--comparison-output", type=Path)
     args = parser.parse_args()
-    root, vendor = args.workspace_root.resolve(), args.vendor_root.resolve()
     try:
+        root = args.workspace_root.resolve() if args.workspace_root is not None else private_root()
+        vendor = args.vendor_root.resolve()
         document = args.command == "prepare" and Path(args.input).suffix.lower() in (".docx", ".pptx")
         if args.command != "prepare" and len(args.job) == 36 and args.job.startswith("job-") and all(c in "0123456789abcdef" for c in args.job[4:]):
             state_file = root / args.job / "job.json"
@@ -748,13 +777,13 @@ def main() -> int:
                 raise ValueError("Explicit job IDs are supported for Office service jobs only")
             result = prepare(args.input, root, vendor, args.input_kind, args.strength)
         else:
-            with transaction(root, args.job, verify_content=args.command != "cleanup") as (job, state, manifest):
+            with transaction(root, args.job, verify_content=args.command != "cleanup", vendor=vendor) as (job, state, manifest):
                 if args.command == "next":
-                    result = next_chunk(job, state, manifest)
+                    result = next_chunk(job, state, manifest, vendor)
                 elif args.command == "accept":
-                    result = accept(job, state, manifest, args.chunk, args.attempt, args.source_hash, args.response)
+                    result = accept(job, state, manifest, args.chunk, args.attempt, args.source_hash, args.response, vendor)
                 elif args.command == "finalize":
-                    result = finalize(job, state, manifest, args.output, args.comparison_output)
+                    result = finalize(job, state, manifest, args.output, args.comparison_output, vendor)
                 else:
                     result = {"status": "cleaned", "job": job.name}
             if args.command == "cleanup":
