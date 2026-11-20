@@ -1,5 +1,112 @@
 # Works Log
 
+## 2026-11-20 — Portal restarted by another session for a Node security release
+
+**Source:** a status message from another Claude session (the office portal session). The work was done there, not here.
+
+- The shared Node at `~/.hermes/node/bin/node` was replaced: v24.22.2 → v24.22.3, the 2026-11-10 security release.
+  - Five Node services on this Mac use it, this portal included.
+  - Backup: `~/.hermes/node-v24.22.2-backup-20261119`. Its `lib/node_modules` was left as it was.
+- That session restarted the portal at 10:06 with `dist/ops/hermes-service.js restart`.
+  - It waited until `/api/status` showed 0 active and 0 queued jobs.
+  - It kept the existing settings: `SUPER_SEJONG_V2_SHADOW=1`, `CODEX_CHUNK_CONCURRENCY=1` and the Hermes venv Python.
+  - PID 74097 → 3339; the outcome was `restarted` and the status `ready`.
+- `dist/` did not change, so the live code is still 0.5.1 (main `4002eed`). The GPT-6.2 branch is not deployed.
+- Checked here: PID 3339 started 10:06:05 from `~/.hermes/node/bin/node`.
+
+## 2026-11-19 — GPT-6.2 Sol as the Codex default; GPT-6.2 models in the fallback list (0.5.2)
+
+**Request:** "새로운 모델 다 업데이트 하고 6.2로 넣어 기본".
+
+**Branch:** `feat/gpt-6.2-default`, worktree `.worktrees/gpt-6-2`, commit `fa73f44`. Not merged, not pushed, not deployed.
+
+**Lineup audit:**
+- **Codex:** `codex debug models` on CLI 0.170.0 lists 10 visible models.
+  - New: `gpt-6.2-sol` and `gpt-6.2-astra`, both `low`–`ultra`.
+  - Hidden: `gpt-reserve` and `codex-auto-review`.
+- **OpenAI models page** (learn.chatgpt.com/docs/models, read through a fetch agent from a partly summarised page):
+  - GPT-6.2 Sol is "Recommended for everyday work" and GPT-6.2 Astra "Recommended for hard work".
+  - No minimum CLI version is given for 6.2.
+  - GPT-5.6 models are not on the page, but the CLI still lists them, so they stay.
+- **Claude:** the live list from Claude Code 2.1.328 equals the existing fallback (12 models, same order).
+  - The model-config page lists `claude-sonnet-4-5` and `claude-opus-4-1`. They are not added, because the CLI's initialize response does not offer them.
+  - Haiku 4.5 is still left out (no effort levels).
+- **Removals:** none.
+
+**Changes:**
+- `src/engine/model-policy.ts`:
+  - `HUMANIZE_MODEL` is `gpt-6.2-sol`; the effort stays `high`.
+  - The Codex fallback now mirrors the CLI order: 6.2 Sol, 6.2 Astra, 6.1 Terra, 6.1 Sol, 6 Astra, 6 Sol, 6 Luna, 5.6 Sol, 5.6 Terra, 5.6 Luna.
+- `public/app.js` and `index.html`: the pre-health placeholders now name GPT-6.2 Sol.
+  - Only explicit model choices are saved, so users who never chose follow the new default.
+- Tests: 9 assertions of the old default were updated, plus the e2e health mocks.
+- Docs:
+  - README, `docs/operations.md`, `docs/code-analysis.md` and `docs/service-analysis.md` were updated.
+  - `operations.md`'s benchmark note said the current efforts were GPT medium / Claude high; it now gives the real defaults.
+  - New release note `docs/releases/0.5.2.md`. The version was bumped 0.5.1 → 0.5.2.
+- **Surfaces:**
+  - Desktop (`desktop/worker.ts`) and MCP read the defaults from `model-policy.ts` or `/api/health`, so no code change was needed.
+  - The skill uses the host model.
+  - Hermes `portal-service/SKILL.md` names no GPT model.
+
+**Verification (worktree):**
+- typecheck passed.
+- vitest: 807 passed, 22 skipped (before the test edits, the same run had 9 failures, all old-default assertions).
+- e2e on port 7894: 54 passed, 9 skipped.
+  - The first e2e run timed out at Playwright's webServer step. Without `PYTHON_COMMAND` the server picks `/usr/bin/python3` 3.9, `/api/health` stays 503, and Playwright waits for a 2xx.
+  - With `PYTHON_COMMAND` set, as `docs/operations.md` says, it passed.
+- Live, on a side server on port 7896 with its own runtime root, against the real Codex 0.170.0:
+  - The default request ran `gpt-6.2-sol`/high: done, no warnings, 21.1 s.
+  - `gpt-6.2-astra`/low: done, no warnings, 8.1 s.
+  - The server was stopped and no `codex exec` was left behind.
+
+**Open:** merge into main, build, and restart with `SUPER_SEJONG_V2_SHADOW=1`, on request only.
+
+## 2026-11-19 — Server log check and restart; two new Codex models seen
+
+**Request:** "서버 로그 특이사항 확인, 서버 재시작".
+
+### Log check
+
+The source was `runtime/hermes-service.log`: 360 lines, 46 server starts. Its lines carry no timestamps.
+
+- **Previous process:**
+  - PID 76545, started 2026-11-13 21:14:30, with `SUPER_SEJONG_V2_SHADOW=1`. It had been up 5 d 20 h.
+  - After its start-up lines the log gained nothing: no transform, no public sign-in, and no `wrong` or `locked` sign-in result.
+  - `runtime/jobs` held only empty management folders.
+- **Whole log:**
+  - 237 `transform_complete` and 23 `transform_failed`.
+  - The failures were 16 `ENGINE_OUTPUT_INVALID`, 6 `CLIENT_ABORTED` and 1 `INPUT_TOO_LARGE`. All came from earlier runs; the last four runs had none.
+- **Retries:** 26 of the last 40 completed transforms needed a retry.
+  - Hard-failure counts: `lexical_polarity_changed` 13, `modality_changed` 9, `polarity_changed` 3, `participant_role_changed` 1.
+  - Not investigated. Some of these may be false positives.
+- **Stale model catalog:**
+  - `/api/health` showed `checkedAt` 2026-11-13 and CLI versions codex 0.167.0 / claude 2.1.323. The installed CLIs were 0.170.0 / 2.1.328.
+  - Cause: the refresh is triggered only by `/api/health` (`refreshIfStale` in `src/runtime/model-catalog.ts`). The watchdog polls `/api/status`, so with no visitors nothing refreshed.
+  - The first health call returned the stale catalog and started a refresh. The next call showed live lists for both CLIs.
+- **New Codex models:** `gpt-6.2-sol` and `gpt-6.2-astra`, both `low`–`ultra`.
+  - Codex now lists 10 models. Claude lists 12, unchanged.
+  - The fallback list in `src/engine/model-policy.ts` still has 8 Codex models, so each start logs `model_catalog_updated` with these two additions.
+
+### Restart
+
+- **Pre-checks:**
+  - `/api/status` showed 0 active and 0 queued, and no Office records were held.
+  - `dist/` was built 2026-11-13 20:21, after the last source commit (`f69a5ac`, 20:04).
+  - `src/`, `engine_runtime/` and `vendor/` have not changed since that deployment.
+- **Command:** `SUPER_SEJONG_V2_SHADOW=1 ~/.hermes/node/bin/node dist/ops/hermes-service.js restart`.
+  - New PID 74097, started 2026-11-19 17:15:49. Its environment has `SUPER_SEJONG_V2_SHADOW=1`.
+- **After the restart:**
+  - Health is `ready`, `documentsAvailable` is true, both providers are ready, and both catalogs are `live`.
+  - Defaults are unchanged: `gpt-6.1-sol`/high and `claude-opus-5-5`/xhigh.
+  - The LAN page `/` returns 200.
+  - On the external address, `/` returns 303, `/login` 200 and `/api/health` 401, as expected.
+
+### Open
+
+- Not done (not requested): adding `gpt-6.2-*` to the fallback list, or choosing a new default model.
+- The retry rate above has not been analysed.
+
 ## 2026-11-14 — Removed the GitHub Actions workflow
 
 **Request:** "git 환경에서 깃액션이 계속 실패하는데, 이거 뭐야? 삭제해".
