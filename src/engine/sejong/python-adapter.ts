@@ -34,7 +34,8 @@ export interface SejongPythonOptions {
   maxOutputBytes?: number;
   /** Cap on one plan, check report or manifest file. Default 16 MiB. */
   maxReportBytes?: number;
-  /** Base environment of the child (default process.env); PYTHONDONTWRITEBYTECODE and PYTHONUTF8 are always set. */
+  /** Base environment of the child, used as given; by default the allowlisted process.env (process/child-env.ts).
+   * PYTHONDONTWRITEBYTECODE and PYTHONUTF8 are always set. */
   env?: NodeJS.ProcessEnv;
 }
 
@@ -606,7 +607,9 @@ export class SejongPython {
       timeoutMs: this.timeoutMs,
       maxOutputBytes: this.maxOutputBytes,
       signal,
-      env: childEnvironment(this.options.env ?? process.env, { PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' })
+      env: this.options.env
+        ? { ...this.options.env, PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' }
+        : childEnvironment(process.env, { PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' })
     });
     if (result.termination === 'timeout') throw new EngineError('ENGINE_TIMEOUT', true, `Sejong ${step} timed out`);
     if (result.termination === 'aborted') throw new EngineError('CLIENT_ABORTED', true, `Sejong ${step} was cancelled`);
