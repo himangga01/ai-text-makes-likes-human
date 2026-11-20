@@ -1,3 +1,4 @@
+import { childEnvironment } from '../process/child-env.js';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -105,7 +106,7 @@ async function converse<T>(label: string, command: string, args: string[], optio
   talk: (channel: Channel) => Promise<T>): Promise<T> {
   const child = spawn(command, args, {
     cwd: options.cwd, shell: false, windowsHide: true, detached: process.platform !== 'win32',
-    env: { ...process.env, ...options.env, NO_COLOR: '1' }, stdio: ['pipe', 'pipe', 'pipe']
+    env: childEnvironment(process.env, { ...options.env, NO_COLOR: '1' }), stdio: ['pipe', 'pipe', 'pipe']
   });
   const untrack = child.pid === undefined ? () => {} : trackLiveProcess(child.pid);
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()));

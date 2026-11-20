@@ -1,3 +1,4 @@
+import { childEnvironment } from '../process/child-env.js';
 import { mkdir, readFile, writeFile, rm, stat, access } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -50,7 +51,7 @@ export class DocumentEngine {
   private async runPython(args: string[], signal?: AbortSignal): Promise<DocumentState> {
     const result=await this.runner.run({command:await this.python(), args:[path.join(this.config.projectRoot,'engine_runtime','skill_gateway.py'),
       '--workspace-root',this.root,'--vendor-root',this.config.vendorRoot,...args], cwd:this.config.projectRoot,
-      timeoutMs:120000,signal,env:{...process.env,PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath}});
+      timeoutMs:120000,signal,env:childEnvironment(process.env,{PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath})});
     if (result.termination==='aborted') throw new EngineError('CLIENT_ABORTED',true,'Cancelled');
     if (result.termination==='timeout') throw new EngineError('ENGINE_TIMEOUT',true,'Document Python step timed out');
     if (result.exitCode!==0) {

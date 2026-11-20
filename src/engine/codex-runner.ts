@@ -1,3 +1,4 @@
+import { childEnvironment } from "../process/child-env.js";
 import type { CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
@@ -229,7 +230,7 @@ export class CodexRunner {
         stdin: prompt,
         timeoutMs: this.options.timeoutMs,
         signal,
-        env: { ...process.env, NO_COLOR: "1" }
+        env: childEnvironment(process.env, { NO_COLOR: "1" })
         })
       );
     } finally {

@@ -1,3 +1,4 @@
+import { childEnvironment } from "../process/child-env.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { EngineError } from "./errors.js";
@@ -265,11 +266,10 @@ export class PythonEngine {
       cwd,
       timeoutMs: this.timeoutMs,
       signal,
-      env: {
-        ...process.env,
+      env: childEnvironment(process.env, {
         PYTHONDONTWRITEBYTECODE: "1",
         PYTHONUTF8: "1"
-      }
+      })
     });
     if (result.termination === "timeout") {
       throw new EngineError("ENGINE_TIMEOUT", true, "Python engine timed out");

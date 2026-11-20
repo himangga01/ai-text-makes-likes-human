@@ -1,3 +1,4 @@
+import { childEnvironment } from '../../process/child-env.js';
 /** TypeScript side of the Super Sejong v2 Python CLI (engine_runtime/sejong_cli.py, DESIGN.md 5.1/5.2).
  * Spawns prepare/analyse/check/verify/finalize through the same CommandRunner the legacy
  * python-engine.ts uses, reads the plan, check report and manifest files with a size bound, and
@@ -605,7 +606,7 @@ export class SejongPython {
       timeoutMs: this.timeoutMs,
       maxOutputBytes: this.maxOutputBytes,
       signal,
-      env: { ...(this.options.env ?? process.env), PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' }
+      env: childEnvironment(this.options.env ?? process.env, { PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1' })
     });
     if (result.termination === 'timeout') throw new EngineError('ENGINE_TIMEOUT', true, `Sejong ${step} timed out`);
     if (result.termination === 'aborted') throw new EngineError('CLIENT_ABORTED', true, `Sejong ${step} was cancelled`);
