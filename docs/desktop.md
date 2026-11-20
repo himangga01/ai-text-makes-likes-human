@@ -41,7 +41,7 @@ Claude에서 `/humanize-kr 이 문서를 다듬어 줘`, Codex에서 `$humanize-
 
 대화로 제공한 글에는 `/humanize-kr 아래 글을 매우 강하게 다듬고 변경 비교 HTML도 만들어 줘`처럼 요청할 수 있습니다. Codex에서는 앞부분을 `$humanize-kr`로 바꿉니다. 강도를 지정하지 않으면 보통으로 처리하며, 비교 파일은 브라우저에서 열어 노란색 변경·빨간색 삭제와 최종 문구를 확인합니다. TXT·MD·DOCX·PPTX 파일 입력에는 이 두 옵션을 적용하지 않습니다. 현재 호스트가 직접 윤문하므로 다른 Claude/Codex CLI를 중첩 실행하지 않습니다.
 
-스킬의 임시 작업은 사용자 TEMP의 `humanize-kr-skills` 아래에 생성됩니다. 검증된 결과 파일을 먼저 제공한 후 해당 job을 cleanup합니다. 사용자 원본은 덮어쓰지 않습니다. 호스트의 대화 기록은 Claude/Codex 설정에 따릅니다.
+스킬의 임시 작업은 그 사용자만 쓰는 폴더(`%LOCALAPPDATA%\humanize-kr-skills`, 다른 OS는 임시 폴더의 `humanize-kr-skills-<uid>`, 권한 0700) 아래에 생성됩니다. 검증된 결과 파일을 먼저 제공한 후 해당 job을 cleanup합니다. 사용자 원본은 덮어쓰지 않습니다. 호스트의 대화 기록은 Claude/Codex 설정에 따릅니다.
 
 다른 OS에서 TXT·MD 파일 처리는 Node 없이도 가능하지만, 추가 문단·Markdown·중복 문장 구조 검사는 Node와 bridge가 있을 때 적용됩니다. 직접 입력의 강도·내용 검증·HTML 비교에는 bridge가 필수입니다. 공통 Python 보존 검사는 파일 경로에서도 유지됩니다.
 
