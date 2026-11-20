@@ -10,6 +10,7 @@ import { HEARTBEAT_MS, NdjsonWriter } from '../transport/ndjson.js';
 import { parseRequestModelSettings } from '../runtime/model-catalog.js';
 import { EngineError } from '../engine/errors.js';
 import { PUBLIC_MESSAGES, publicEvent, shutdownAware } from '../transport/public-error.js';
+import { DocumentLimitError, MAX_OFFICE_FILE_BYTES, OFFICE_FILE_TOO_LARGE, OFFICE_LIMIT_CODE } from './limits.js';
 
 function documentFailure(error:unknown) {
   if(error instanceof EngineError) return {...publicEvent(error),retryable:false};
@@ -21,6 +22,8 @@ function documentFailure(error:unknown) {
 }
 
 function documentImportFailure(error:unknown) {
+  // Every Office limit (file size, package, structure, text, model batches) answers 413 with its own message.
+  if(error instanceof DocumentLimitError)return {status:413,code:OFFICE_LIMIT_CODE,message:error.message};
   const message=error instanceof Error?error.message:'';
   if(message.includes('디스크 공간이 부족'))return {status:507,code:'INSUFFICIENT_DISK',message:'문서를 처리할 디스크 공간이 부족합니다.'};
   if(message.includes('50 MiB')||message.includes('크기 제한')||message.includes('너무 큰 문서'))
@@ -58,7 +61,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
       const space=await statfs(record.dir);
       if(space.bavail*space.bsize<deps.config.minFreeBytes) throw new Error('문서를 처리할 디스크 공간이 부족합니다.');
       let received=0;
-      const limiter=new Transform({transform(chunk,_enc,done){received+=chunk.length;done(received>50*1024**2?new Error('파일은 50 MiB 이하만 지원합니다.'):null,chunk);}});
+      const limiter=new Transform({transform(chunk,_enc,done){received+=chunk.length;done(received>MAX_OFFICE_FILE_BYTES?new DocumentLimitError(OFFICE_FILE_TOO_LARGE):null,chunk);}});
       await pipeline(request,limiter,createWriteStream(record.input,{flags:'wx'}),{signal:record.controller.signal});
       const info=await store.inspect(record,name);
       if(record.controller.signal.aborted||response.destroyed)throw new Error('문서 읽기가 취소되었습니다.');
@@ -109,7 +112,7 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
         const result=await engine.transform(r.state!,choice,r.dir,AbortSignal.any([signal,r.controller.signal]),event=>writer!.write(event),settings);
         if(r.deleted||r.controller.signal.aborted)throw new EngineError('CLIENT_ABORTED',true,'Document was closed during the transform');
         r.state=result.state;r.output=result.output;
-        r.expires=Date.now()+30*60000;
+        store.resultReady(r);
         writer!.write({type:'document-result',artifactId:r.id,name:store.public(r).name,format:r.state.format,
           bytes:result.bytes,sha256:result.sha256,preview:r.state.preview});
         writer!.write({type:'done',sourceChars:r.state.sourceChars,outputChars:r.state.outputChars,chunks:r.state.totalChunks,elapsedMs:result.elapsedMs});
@@ -127,17 +130,16 @@ export function mountDocumentRoutes(app:Express,deps:AppDependencies) {
     }
   });
   app.get('/api/documents/:id/result',async(request,response)=>{
-    let record;
+    let download;
     try {
-      record=store.get(String(request.params.id),token(request));
-      if(!record.output||record.busy) throw new Error('검증된 문서 결과가 없습니다.');
-      record.readers++;
+      download=store.openDownload(String(request.params.id),token(request));
+      const record=download.record;
       const mime=record.state!.format==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/vnd.openxmlformats-officedocument.presentationml.presentation';
       response.setHeader('Content-Type',mime);response.setHeader('Cache-Control','no-store');
       response.setHeader('Content-Disposition',`attachment; filename*=UTF-8''${encodeURIComponent(record.name??record.state!.name)}`);
-      await pipeline(createReadStream(record.output),response);
-    } catch(e) {if(!response.headersSent)response.status(404).json({message:'문서 결과가 없거나 접근할 수 없습니다.'});}
-    finally {if(record){record.readers=Math.max(0,record.readers-1);await store.sweep();}}
+      await pipeline(createReadStream(record.output!),response,{signal:download.signal});
+    } catch(e) {if(!response.headersSent)response.status(404).json({message:'문서 결과가 없거나 접근할 수 없습니다.'});else response.destroy();}
+    finally {await download?.release();}
   });
   app.delete('/api/documents/:id',async(request,response)=>{
     try {await store.remove(store.get(String(request.params.id),token(request)));response.json({ok:true});}

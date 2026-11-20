@@ -3,7 +3,7 @@ import os
 import re
 import json
 from bisect import bisect_right
-from .package import W, A, P, R, E, XMLSPACE, Package, DocumentError, local, ns, digest
+from .package import W, A, P, R, E, XMLSPACE, Package, DocumentError, local, ns, digest, limit
 try:
     from ..quantities import signed_quantities
     from ..super_sejong import document_sentence_drift, mode as super_sejong_mode
@@ -30,6 +30,44 @@ INLINE_OBJECTS = {'drawing', 'pict', 'object', 'commentReference', 'footnoteRefe
 XML_ILLEGAL = re.compile('[\x00-\x08\x0b\x0c\x0e-\x1f\ud800-\udfff\ufffe\uffff]')
 MODAL = re.compile(r'않|없|못|아니|금지|불가|해야|필요|수\s*있|판단|추정|보인다|가능|듯')
 SHORT_NEGATION = re.compile(r'(?<!\S)안(?=\s+[가-힣]+(?:다|요)(?=$|[\s.!?,]))')
+
+# Text limits of one document, checked while the blocks are extracted. MAX_CHARS is the text input limit of
+# the portal (src/engine/input-limits.ts). Every batch is one model call (two with a retry), so the batch
+# count is capped as well: a document of very many tiny paragraphs can fit MAX_CHARS and still need many batches.
+MAX_CHARS = 100_000
+MAX_SEGMENTS = 50_000       # text nodes, breaks and tabs
+MAX_BLOCKS = 20_000         # paragraphs and cells with text
+MAX_BATCHES = 60
+MAX_SLIDES = 200
+
+
+TEXT_TAGS = tuple(f'{{{uri}}}t' for uri in W + A)
+
+
+def _own(para):
+    """para and the nodes whose nearest paragraph ancestor is para, in document order: its subtree without the
+    inside of a nested paragraph (a text box in a paragraph is a paragraph of its own). A walk instead of
+    asking every node for its paragraph keeps a part linear in its nodes however deep they nest, and a
+    generator keeps a paragraph of countless nodes from being held in memory."""
+    yield para
+    stack = [iter(para)]
+    while stack:
+        for child in stack[-1]:
+            yield child
+            if len(child) and local(child) != 'p':
+                stack.append(iter(child))
+                break
+        else:
+            stack.pop()
+
+
+def _locate(nodes, tree, key):
+    """The text node of a run: its position among the part's text nodes (TEXT_TAGS, document order), or the
+    ElementPath a job prepared before positions recorded."""
+    if isinstance(key, str):
+        return tree.find(key)
+    return nodes[key] if 0 <= key < len(nodes) else None
+
 
 def _nearest(node, names):
     return next((a for a in node.iterancestors() if local(a) in names), None)
@@ -293,7 +331,9 @@ def sejong_profile(texts):
     return {'line': found['line'], 'mixed': bool(found['mixed'])}
 
 
-def extract(pkg: Package):
+def extract(pkg: Package, limits: bool = True):
+    """Blocks and batches of the document. `limits=False` is for export's check of a package written from an
+    accepted one: its text may have grown a little past the limits the source met."""
     parts = [(pkg.main, 0)]
     if pkg.format == 'pptx':
         rels = {r['id']: r for r in pkg.relationships(pkg.main)}
@@ -305,31 +345,45 @@ def extract(pkg: Package):
                 if not rel or rel['external'] or not rel['type'].endswith('/slide'):
                     raise DocumentError('슬라이드 관계가 잘못되었습니다.')
                 parts.append((rel['target'], len(parts)+1))
-        if len(parts) > 200 or len({p[0] for p in parts}) != len(parts):
-            raise DocumentError('슬라이드는 200개 이하이며 중복 관계가 없어야 합니다.')
+        if len(parts) > MAX_SLIDES:
+            raise limit(f'슬라이드는 {MAX_SLIDES}개 이하만 지원합니다.')
+        if len({p[0] for p in parts}) != len(parts):
+            raise DocumentError('슬라이드 관계가 중복되었습니다.')
     blocks, warnings = [], []
-    total = 0
+    total = segments = 0
     for part, slide in parts:
         tree = pkg.tree(part)
+        # A run names its text node by position among the part's text nodes; counted first, so a part of
+        # countless empty text nodes is refused before any of them is looked at.
+        count = sum(1 for _ in tree.iter(*TEXT_TAGS))
+        if limits and segments + count > MAX_SEGMENTS:
+            raise limit(f'텍스트 조각이 너무 많은 문서입니다({MAX_SEGMENTS:,}개 초과).')
+        position = {n: i for i, n in enumerate(tree.iter(*TEXT_TAGS))}
+        shapes, styles = {}, {}   # per shape: (id, title placeholder); per run: (rPr digest, hyperlink)
         paragraphs = [n for n in tree.iter() if local(n) == 'p' and ns(n) in W+A]
         field_depth = 0
         for index, para in enumerate(paragraphs, 1):
             inside_field = field_depth > 0
-            for n in para.iter():
-                if local(n) == 'fldChar' and _nearest(n, {'p'}) is para:
+            for n in _own(para):
+                if local(n) == 'fldChar':
                     inside_field = True
                     kind=next((v for k,v in n.attrib.items() if k.endswith('}fldCharType')), '')
                     if kind=='begin':field_depth+=1
                     if kind=='end':field_depth=max(0,field_depth-1)
             # Tab-stop definitions (w:tabs/w:tab, a:tabLst/a:tab) are layout, not text.
-            nodes = [n for n in para.iter() if local(n) in ('t','br','cr','tab') and ns(n) in W+A and _nearest(n, {'p'}) is para
-                     and not (local(n) == 'tab' and local(n.getparent()) in ('tabs', 'tabLst'))]
+            nodes = []
+            for n in _own(para):
+                if local(n) in ('t','br','cr','tab') and ns(n) in W+A and not (local(n) == 'tab' and local(n.getparent()) in ('tabs', 'tabLst')):
+                    nodes.append(n)
+                    if limits and segments + len(nodes) > MAX_SEGMENTS:
+                        raise limit(f'텍스트 조각이 너무 많은 문서입니다({MAX_SEGMENTS:,}개 초과).')
             if not any(local(n)=='t' for n in nodes):
                 continue
+            segments += len(nodes)
+            if limits and len(blocks) >= MAX_BLOCKS:
+                raise limit(f'문단·셀이 너무 많은 문서입니다({MAX_BLOCKS:,}개 초과).')
             wanted, barriers, pending = set(map(id, nodes)), set(), False
-            for n in para.iter():
-                if _nearest(n, {'p'}) is not para and n is not para:
-                    continue
+            for n in _own(para):
                 if local(n) in INLINE_OBJECTS:
                     pending = True
                 elif id(n) in wanted and local(n) == 't':
@@ -337,13 +391,17 @@ def extract(pkg: Package):
                         barriers.add(id(n))
                     pending = False
             shape = _nearest(para, {'sp', 'graphicFrame'})
-            shape_id = next((n.get('id') for n in shape.iter() if local(n) == 'cNvPr'), '') if shape is not None else ''
+            if shape is not None and shape not in shapes:
+                shapes[shape] = (next((n.get('id') for n in shape.iter() if local(n) == 'cNvPr'), ''),
+                                 any(local(n) == 'ph' and n.get('type') in ('title', 'ctrTitle') for n in shape.iter()))
+            shape_id = shapes[shape][0] if shape is not None else ''
             location = f'슬라이드 {slide} · 도형 {shape_id or "표"} · 문단 {index}' if slide else f'문단 {index}'
-            protected = any(local(n) in PROTECTED for n in para.iter() if _nearest(n, {'p'}) is para)
+            protected = any(local(n) in PROTECTED for n in _own(para))
             protected = protected or any(local(n) in PROTECTED for n in para.iterancestors())
             # Complex fields may span multiple paragraphs; preserve only that range.
             protected = protected or inside_field
             runs, text, spans, controls, ruby = [], '', [], [], []
+            parents = {}   # formatting parents of this paragraph's runs, numbered for the span signature
             for node in nodes:
                 if local(node)!='t':
                     start=len(text);text+='\t' if local(node)=='tab' else '\n'
@@ -351,25 +409,29 @@ def extract(pkg: Package):
                     spans.append({'start':start,'end':len(text),'style':'protected-control'})
                     continue
                 run = _nearest(node, {'r'})
-                props = next((n for n in run if local(n) == 'rPr'), None) if run is not None else None
-                key = E.tostring(props, method='c14n') if props is not None else b''
-                if props is not None and any(local(n) in ('hlinkClick', 'hlinkMouseOver') for n in props.iter()):
-                    protected = True
+                if run is not None and run not in styles:
+                    props = next((n for n in run if local(n) == 'rPr'), None)
+                    styles[run] = (digest(E.tostring(props, method='c14n')) if props is not None else digest(b''),
+                                   props is not None and any(local(n) in ('hlinkClick', 'hlinkMouseOver') for n in props.iter()))
+                key, link = styles[run] if run is not None else (digest(b''), False)
+                protected = protected or link
                 start = len(text)
                 text += node.text or ''
-                runs.append({'path': tree.getelementpath(node), 'start': start, 'end': len(text)})
+                if limits and total + len(text) > MAX_CHARS:
+                    raise limit(f'추출 텍스트는 {MAX_CHARS:,}자 이하만 지원합니다.')
+                runs.append({'path': position[node], 'start': start, 'end': len(text)})
                 if _nearest(node, {'ruby', 'p'}) is not None and local(_nearest(node, {'ruby', 'p'})) == 'ruby':
                     ruby.append({'start': start, 'end': len(text)})  # reading and base stay paired
                 parent = run.getparent() if run is not None else node.getparent()
-                signature = digest(key) + tree.getpath(parent)
+                signature = key + ':' + str(parents.setdefault(parent, len(parents)))
                 if spans and spans[-1]['style'] == signature and id(node) not in barriers:
                     spans[-1]['end'] = len(text)
                 else:
                     spans.append({'start': start, 'end': len(text), 'style': signature})
             total += len(text)
-            title = any(local(n) == 'pStyle' and any('heading' in v.lower() or 'title' in v.lower() for v in n.attrib.values()) for n in para.iter())
+            title = any(local(n) == 'pStyle' and any('heading' in v.lower() or 'title' in v.lower() for v in n.attrib.values()) for n in _own(para))
             if shape is not None:
-                title = title or any(local(n) == 'ph' and n.get('type') in ('title', 'ctrTitle') for n in shape.iter())
+                title = title or shapes[shape][1]
             # Numeric/entity-bearing sentences are immutable so value-to-subject association survives.
             protected_spans = controls[:] + ruby
             offset = 0
@@ -388,8 +450,8 @@ def extract(pkg: Package):
         for node in tree.iter():
             if local(node) in ('object', 'oleObj', 'AlternateContent', 'oMath') or local(node)=='graphicData' and not node.get('uri','').endswith('/table'):
                 warnings.append(f'{"슬라이드 "+str(slide) if slide else "문서"}: 차트·수식·삽입 객체·호환 구조는 원본을 보존합니다.')
-    if total > 100000:
-        raise DocumentError('추출 텍스트는 100,000자 이하만 지원합니다.')
+    if limits and total > MAX_CHARS:   # breaks and tabs count too
+        raise limit(f'추출 텍스트는 {MAX_CHARS:,}자 이하만 지원합니다.')
     if pkg.format == 'pptx':
         warnings.append('발표자 노트·마스터·테마·미디어는 원본을 유지합니다. 결과 슬라이드의 배치를 확인해 주세요.')
     else:
@@ -406,6 +468,8 @@ def extract(pkg: Package):
         current.append(block['id']); size += len(block['text']); packet_size += cost
     if current:
         batches.append(current)
+    if limits and len(batches) > MAX_BATCHES:
+        raise limit(f'모델에 보낼 구간이 너무 많은 문서입니다({MAX_BATCHES}구간 초과).')
     return {'schemaVersion': 1, 'format': pkg.format, 'sourceHash': pkg.hash,
             'partHashes': {name: digest(data) for name,data in pkg.parts.items()},
             'blocks': blocks, 'batches': batches, 'warnings': list(dict.fromkeys(warnings)),
@@ -483,7 +547,7 @@ def apply_edits(block, edits):
 def export(pkg, manifest, accepted, output):
     if pkg.hash != manifest['sourceHash']:
         raise DocumentError('원본 문서가 변경되었습니다.')
-    changes, allowed = {}, {}
+    changes, allowed, texts = {}, {}, {}
     for block in manifest['blocks']:
         edits = accepted.get(block['id'], [])
         if not edits:
@@ -492,10 +556,11 @@ def export(pkg, manifest, accepted, output):
             raise DocumentError('보호 블록에 편집이 있습니다.')
         apply_edits(block, edits)
         tree=pkg.tree(block['part'])
+        nodes=texts.setdefault(block['part'],list(tree.iter(*TEXT_TAGS)))
         for edit in reversed(edits):
             affected=[r for r in block['runs'] if r['start']<edit['end'] and r['end']>edit['start']]
             for index, run in enumerate(affected):
-                node=tree.find(run['path'])
+                node=_locate(nodes,tree,run['path'])
                 if node is None: raise DocumentError('문서 텍스트 노드를 찾을 수 없습니다.')
                 value=node.text or ''
                 lo=max(0,edit['start']-run['start']); hi=min(run['end'],edit['end'])-run['start']
@@ -506,7 +571,10 @@ def export(pkg, manifest, accepted, output):
         changes[block['part']]=E.tostring(tree,encoding='UTF-8',xml_declaration=True,standalone=tree.docinfo.standalone)
     pkg.write(output,changes)
     try:
-        check=Package(output,manifest['format'])
+        check=Package(output,manifest['format'],limits=False)
+        # Extracted before the comparison below puts the original text back into check's trees; one parse
+        # of the result serves both checks.
+        fresh=extract(check,limits=False)
         if set(check.parts)!=set(pkg.parts):
             raise DocumentError('결과의 문서 part 목록이 변경되었습니다.')
         from .package import xml
@@ -516,8 +584,9 @@ def export(pkg, manifest, accepted, output):
                     raise DocumentError('원본 보존 part가 변경되었습니다.')
             else:
                 before,after=xml(data),check.tree(name)
-                for xpath in allowed[name]:
-                    old=before.find(xpath); new=after.find(xpath)
+                old_nodes,new_nodes=list(before.iter(*TEXT_TAGS)),list(after.iter(*TEXT_TAGS))
+                for key in allowed[name]:
+                    old=_locate(old_nodes,before,key); new=_locate(new_nodes,after,key)
                     if old is None or new is None:
                         raise DocumentError('결과 텍스트 노드 대응이 깨졌습니다.')
                     new.text=old.text
@@ -525,7 +594,6 @@ def export(pkg, manifest, accepted, output):
                     else: new.attrib.pop(XMLSPACE,None)
                 if E.tostring(before,method='c14n')!=E.tostring(after,method='c14n'):
                     raise DocumentError('허용된 텍스트 외 XML 변경이 감지되었습니다.')
-        fresh=extract(Package(output,manifest['format']))
         if len(fresh['blocks'])!=len(manifest['blocks']):
             raise DocumentError('문서 블록이 누락되었습니다.')
         for old,new in zip(manifest['blocks'],fresh['blocks']):

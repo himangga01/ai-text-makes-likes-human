@@ -14,6 +14,7 @@ import { buildSejongDocumentPrompt } from '../engine/sejong/document-prompt.js';
 import { resolveCli } from '../runtime/cli-path.js';
 import { EngineError } from '../engine/errors.js';
 import { parseModelSettings, type ModelSettings } from '../engine/model-policy.js';
+import { DocumentLimitError, OFFICE_LIMIT_CODE } from './limits.js';
 
 export interface DocumentState {
   job: string; kind: 'document'; format: 'docx'|'pptx'; name: string; sourceHash: string;
@@ -55,8 +56,10 @@ export class DocumentEngine {
     if (result.termination==='aborted') throw new EngineError('CLIENT_ABORTED',true,'Cancelled');
     if (result.termination==='timeout') throw new EngineError('ENGINE_TIMEOUT',true,'Document Python step timed out');
     if (result.exitCode!==0) {
-      let message='문서를 처리하지 못했습니다. 파일 형식과 보호 설정을 확인해 주세요.';
-      try { const error=JSON.parse(result.stdout); if(typeof error.message==='string') message=error.message; } catch {}
+      let message='문서를 처리하지 못했습니다. 파일 형식과 보호 설정을 확인해 주세요.';let code:unknown;
+      try { const error=JSON.parse(result.stdout); if(typeof error.message==='string') message=error.message; code=error.code; } catch {}
+      // An Office resource limit: Python's fixed Korean message, shown as it is under one code everywhere.
+      if(code===OFFICE_LIMIT_CODE) throw new DocumentLimitError(message);
       throw new Error(message);
     }
     return JSON.parse(result.stdout) as DocumentState;

@@ -145,3 +145,61 @@ it('runs a document transform naming a model only the next discovery knows, once
     expect(seen[0]).toMatchObject({model:'gpt-7-nova'});
   } finally {await t.cleanup();}
 });
+
+/** A finished document in the store with a result large enough that a client which stops reading leaves the
+ * server's download stream waiting (socket buffers hold far less than this). */
+async function finished(t:any) {
+  const doc=await upload(t);const record=t.store.records.get(doc.id);
+  record.output=path.join(record.dir,'result.docx');await writeFile(record.output,Buffer.alloc(32*1024**2));
+  record.state={...record.state,format:'docx'};t.store.resultReady(record);
+  return {doc,record,headers:{authorization:`Bearer ${doc.token}`}};
+}
+/** Starts a download, waits for its headers and then stops reading. `finish` reads the rest and tells whether
+ * the whole file arrived. */
+async function stalledDownload(t:any,doc:any) {
+  const {request}=await import('node:http');
+  const response=await new Promise<import('node:http').IncomingMessage>((resolve,reject)=>{
+    request(`${t.baseUrl}/api/documents/${doc.id}/result`,{headers:{authorization:`Bearer ${doc.token}`}},response=>{
+      response.pause();resolve(response);}).on('error',reject).end();
+  });
+  const closed=new Promise<void>(resolve=>response.once('close',()=>resolve()));response.on('error',()=>{});
+  return {finish:async()=>{response.resume();await closed;return response.complete;}};
+}
+
+it('keeps a document for a fixed window that reading it does not extend',async()=>{
+  const t=await setup();
+  try {
+    const doc=await upload(t);const record=t.store.records.get(doc.id);const expires=record.expires;
+    expect(expires-Date.now()).toBeGreaterThan(29*60_000);
+    for(let i=0;i<3;i++)expect((await fetch(`${t.baseUrl}/api/documents/${doc.id}/result`,{headers:{authorization:`Bearer ${doc.token}`}})).status).toBe(404);
+    t.store.get(doc.id,doc.token);
+    expect(record.expires).toBe(expires);
+    record.expires=Date.now()-1;
+    expect(()=>t.store.get(doc.id,doc.token)).toThrow('만료');
+    await t.store.sweep();expect(t.store.records.size).toBe(0);
+  } finally {await t.cleanup();}
+});
+
+it('a DELETE ends a download in progress and answers once the document is gone',async()=>{
+  const t=await setup();
+  try {
+    const {doc,headers}=await finished(t);
+    const download=await stalledDownload(t,doc);
+    expect((await fetch(`${t.baseUrl}/api/documents/${doc.id}`,{method:'DELETE',headers})).status).toBe(200);
+    expect(t.store.records.size).toBe(0);
+    // The client gets what was sent before the DELETE, then the connection ends short of the whole file.
+    expect(await download.finish()).toBe(false);
+  } finally {await t.cleanup();}
+});
+
+it('an expired document is removed even while a client holds its download open',async()=>{
+  const t=await setup();
+  try {
+    const {doc,record}=await finished(t);
+    const download=await stalledDownload(t,doc);
+    expect(record.readers).toBe(1);
+    record.expires=Date.now()-1;await t.store.sweep();
+    expect(t.store.records.size).toBe(0);
+    expect(await download.finish()).toBe(false);
+  } finally {await t.cleanup();}
+});
