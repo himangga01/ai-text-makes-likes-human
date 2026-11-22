@@ -30,6 +30,17 @@ export interface TransformDiagnostics {
   styleFindingsAfter?: number;
   /** Particle allomorph mismatches introduced by the rewrite and repaired deterministically. */
   repairedParticles?: number;
+  /* Vendor lexical layer (legacy engine), counts only. */
+  /** Body chunks whose first attempt carried an [어휘 점검] block, and chunks whose hints run failed. */
+  lexicalHintChunks?: number;
+  lexicalHintFailures?: number;
+  /** Time spent producing the hints, summed over chunks. */
+  lexicalHintMs?: number;
+  /** Sentences put back because the rewrite introduced an awkward headword the source lacked, sentences left
+   * alone as unsafe to restore, and restore runs that gave no usable report (text left as it was). */
+  restoredLexicalSentences?: number;
+  skippedLexicalSentences?: number;
+  lexicalRestoreFailures?: number;
   protectedSentences?: number;
   restoredProtectedSentences?: number;
   fullSourceRollbacks?: number;

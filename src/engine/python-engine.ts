@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { EngineError } from "./errors.js";
 import { parseGateReasonMetadata, type GateReasonMetadata } from './candidate-review.js';
+import { lexicalHintBlock } from './prompt-builder.js';
 import type {
   GateCode,
   ProcessingMode,
@@ -57,6 +58,21 @@ export interface RestoreReport {
   removedCommas: number;
   /** Particle allomorphs (회의을 → 회의를) the Super Sejong josa step repaired after the rewrite. */
   repairedParticles?: number;
+  /** Sentences the vendor lexical layer put back to the source because the rewrite introduced an awkward
+   * headword (lexicon.json restore=true) that the source document did not contain. */
+  restoredLexicalSentences?: number;
+  /** Such sentences it left alone because restoring them was unsafe (merge, split, reorder, duplicate…).
+   * Reported only: the text keeps the word, which is not a preservation failure. */
+  skippedLexicalSentences?: number;
+  /** 1 when the lexical restore gave no usable report and the text was left as it was, else 0. */
+  lexicalRestoreFailures?: number;
+}
+
+/** The `[어휘 점검]` block for one source (empty when the source has no lexicon headword), and whether the
+ * hints run failed. A failure only means the prompt goes without the block. */
+export interface LexicalHints {
+  hints: string;
+  failed: boolean;
 }
 
 export interface PythonEngineOptions {
@@ -145,6 +161,22 @@ function parseJsonReport(
     }
   }
   throw invalid(`Unable to parse ${label} JSON report`);
+}
+
+function lexicalRestoreCounts(result: CommandResult): { restored: number; skipped: number; failed: boolean } {
+  if (result.exitCode === 0) {
+    try {
+      const report = parseJsonReport(result.stderr, "lexical restore");
+      return {
+        restored: integer(report.restored, "lexical restore report.restored"),
+        skipped: integer(report.skipped, "lexical restore report.skipped"),
+        failed: false
+      };
+    } catch {
+      // Counted as a failure below; the script did not change the file.
+    }
+  }
+  return { restored: 0, skipped: 0, failed: true };
 }
 
 function parseGateReport(stdout: string): Record<string, unknown> {
@@ -373,6 +405,28 @@ export class PythonEngine {
     };
   }
 
+  /** The vendor lexical layer's hints for one source (lexical_layer.py hints, genre essay like prepare). The
+   * script exits 0 even when it fails (it says so on stderr), so a failure is read from its output; it never
+   * fails the job. Only cancellation propagates. */
+  async lexicalHints(sourcePath: string, signal: AbortSignal): Promise<LexicalHints> {
+    const source = path.resolve(sourcePath);
+    let result: CommandResult;
+    try {
+      result = await this.run(
+        [this.script("lexical_layer.py"), "hints", "--input", source, "--genre", "essay"],
+        path.dirname(source),
+        signal
+      );
+    } catch (error) {
+      if (signal.aborted || (error instanceof EngineError && error.publicCode === "CLIENT_ABORTED")) throw error;
+      return { hints: "", failed: true };
+    }
+    const hints = lexicalHintBlock(result.stdout);
+    const failed = result.exitCode !== 0 || result.stderr.includes("[lexical-layer]") ||
+      (hints === "" && result.stdout.trim() !== "");
+    return { hints: failed ? "" : hints, failed };
+  }
+
   async restore(
     beforePath: string,
     afterPath: string,
@@ -412,6 +466,16 @@ export class PythonEngine {
     }
     const commaReport = parseJsonReport(commas.stderr, "comma strip");
 
+    // Vendor lexical layer (2.4.x): a sentence where the rewrite introduced an awkward headword absent from the
+    // source document goes back to the source sentence. It never blocks a rewrite: the script exits 0 and leaves
+    // the file as it was on an internal error, so a missing report is counted, not thrown. Its JSON names the
+    // sentences; only the two counts are kept.
+    const lexical = lexicalRestoreCounts(await this.run(
+      [this.script("lexical_layer.py"), "restore", ...inPlace],
+      cwd,
+      signal
+    ));
+
     const particles = await this.run(
       [path.resolve(this.vendorRoot, "../../engine_runtime/super_sejong_josa.py"), ...inPlace],
       cwd,
@@ -435,7 +499,10 @@ export class PythonEngine {
         commaReport.commas_removed,
         "comma strip report.commas_removed"
       ),
-      repairedParticles: integer(particleReport.repaired, "particle repair report.repaired")
+      repairedParticles: integer(particleReport.repaired, "particle repair report.repaired"),
+      restoredLexicalSentences: lexical.restored,
+      skippedLexicalSentences: lexical.skipped,
+      lexicalRestoreFailures: lexical.failed ? 1 : 0
     };
   }
 
