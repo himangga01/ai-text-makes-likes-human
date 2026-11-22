@@ -25,7 +25,7 @@ import types
 import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from workflow import DEFAULT_VENDOR, restore, verify, validate_response
+from workflow import DEFAULT_VENDOR, lexical_hints, restore, verify, validate_response
 from skill_bridge import available as bridge_available, invoke as bridge, options as rewrite_options
 
 WORKSPACE_NAME = "humanize-kr-skills"
@@ -267,16 +267,25 @@ def next_chunk(job: Path, state: dict, manifest: dict, vendor: Path = DEFAULT_VE
         return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
                 "inputPath": str(job / f"source-{chunk['index']}.txt"), "instructionsPath": str(instructions),
                 "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json")}
+    source = (job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8")
+    # Vendor lexical layer: the chunk's [어휘 점검] block, on the first attempt only (as on the server, the conservative
+    # retry and the candidate review never get it). It is derived from the hashed chunk source and written again on every
+    # call, and the Gateway never reads it back, so it needs no hash of its own.
+    hints = lexical_hints(source, vendor) if state["attempt"] == 1 and not state.get("candidateReview") else ""
     if strength_route(state.get("rewriteOptions")):
-        context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"],
-                         source=(job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"),
+        context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"], source=source,
                          quickRules=(vendor / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
-                         candidateReview=state.get("candidateReview"))
+                         candidateReview=state.get("candidateReview"), lexicalHints=hints)
         instructions = job / f"instructions-{chunk['index']}-{state['attempt']}.md"
         instructions.write_text(context["instructions"], encoding="utf-8")
         sentences = job / f"sentences-{chunk['index']}.json"
         write_json(sentences, context["sentences"])
         common.update(instructionsPath=str(instructions), sentencesPath=str(sentences))
+    elif hints:
+        # The file route has no prompt of its own: the host reads the block next to the rules.
+        lexical = job / f"lexical-{chunk['index']}.md"
+        lexical.write_text(hints + "\n", encoding="utf-8", newline="")
+        common["lexicalHintsPath"] = str(lexical)
     return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
             "inputPath": str(job / f"source-{chunk['index']}.txt"),
             "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json"),
@@ -300,7 +309,8 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     raw = json.loads(response_path.read_text(encoding="utf-8-sig"))
     response = bridge("parse", **options, source=source, response=raw) if direct else validate_response(raw)
     output = safe_leaf(job, chunk["rewritten_file"])
-    report = {"restoredSentences": 0, "skippedSentences": 0, "removedCommas": 0}
+    report = {"restoredSentences": 0, "skippedSentences": 0, "removedCommas": 0, "restoredLexicalSentences": 0,
+              "skippedLexicalSentences": 0, "lexicalRestoreFailures": 0}
     failed = False
     gate = None
     if response.get("invalid"):
@@ -331,6 +341,9 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
                 state["warnings"].append(f"STRUCTURE_FIDELITY_RESTRICTED: {chunk_id}번 구간에서 문장·문단 구조 보존을 확인하지 못해 수정을 제한했습니다.")
         if report["restoredSentences"]:
             state["warnings"].append(f"{chunk_id}번 구간의 {report['restoredSentences']}개 문장을 원문으로 복원했습니다.")
+        if report["restoredLexicalSentences"]:
+            state["warnings"].append(f"LEXICAL_RESTORED: {chunk_id}번 구간에서 원문에 없던 어색한 어휘가 들어간 "
+                                     f"{report['restoredLexicalSentences']}개 문장을 원문으로 되돌렸습니다.")
         # Host warnings can contain raw source text. Direct jobs persist only a count.
         if direct and response["warnings"]:
             state["warnings"].append(f"HOST_REVIEW_WARNING: {len(response['warnings'])}개 보존 충돌 사유가 보고되었습니다.")

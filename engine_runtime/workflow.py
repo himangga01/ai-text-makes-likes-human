@@ -48,6 +48,26 @@ def modules(vendor: Path):
     return verify_gates, checks, restore_modality, strip_injected_commas
 
 
+def lexical(vendor: Path):
+    """The vendor lexical layer (im-not-ai 2.4+, scripts/lexical_layer.py), loaded like the other vendor modules."""
+    scripts = vendor.resolve() / "scripts"
+    if not (scripts / "lexical_layer.py").is_file():
+        raise ValueError("Humanize lexical layer is missing")
+    sys.path.insert(0, str(scripts))
+    import lexical_layer
+    return lexical_layer
+
+
+def lexical_hints(source: str, vendor: Path = DEFAULT_VENDOR) -> str:
+    """The [어휘 점검] block for one source chunk (what `lexical_layer.py hints --genre essay` prints on the server),
+    or '' when nothing matched. The layer never blocks a rewrite, so a failure is no block."""
+    try:
+        layer = lexical(vendor)
+        return layer.render_hint_block(layer.find_hits(source, "essay"))
+    except Exception:
+        return ""
+
+
 def decision(exit_code: int, attempt: int) -> str:
     if exit_code == 3:
         return "error"
@@ -320,6 +340,16 @@ def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
     output, restored, skipped = modality.restore(source, output)
     # Only commas the rewrite added are removed; the writer's own commas survive edits to their sentence.
     output, report = strip_commas(source, output, commas)
+    # Vendor lexical layer: a sentence where the rewrite introduced a 'change first' headword the source never used goes
+    # back to its source sentence (same safety rules as the modality restore). It never blocks the rewrite: a failure
+    # leaves the text as it was and is only counted. Only counts leave this function, never sentence text.
+    lexical_restored = lexical_skipped = lexical_failures = 0
+    try:
+        candidate, restored_lexical, skipped_lexical = lexical(vendor).restore(source, output)
+    except Exception:
+        lexical_failures = 1
+    else:
+        output, lexical_restored, lexical_skipped = candidate, len(restored_lexical), len(skipped_lexical)
     # Super Sejong: an edit that changes a noun can leave the wrong particle allomorph behind
     # (회의을, URL를, 10%으로). Repair only mismatches the rewrite introduced.
     repaired = josa.gate(source, output, None, "likely") if super_sejong_mode() != "off" else []
@@ -328,7 +358,8 @@ def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
     with after.open("w", encoding="utf-8", newline="") as file:
         file.write(output)
     return {"restoredSentences": len(restored), "skippedSentences": len(skipped), "removedCommas": report["commas_removed"],
-            "repairedParticles": len(repaired)}
+            "restoredLexicalSentences": lexical_restored, "skippedLexicalSentences": lexical_skipped,
+            "lexicalRestoreFailures": lexical_failures, "repairedParticles": len(repaired)}
 
 
 def validate_response(value: object) -> dict:

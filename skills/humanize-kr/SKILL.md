@@ -11,6 +11,8 @@ description: "한국어 원문·TXT·MD·DOCX·PPTX의 번역투와 기계적인
 
 대화로 받은 원문은 UTF-8 임시 파일에 쓰되 `--input-kind direct-text`로 명시한다. 강도는 보통(normal, 기본값)·중간(medium)·강하게(strong)·매우 강하게(very-strong)·매우 강하게(다시쓰기)(rewrite)다. TXT/MD 파일도 사용자가 강도를 요청하면 `--input-kind text-file --strength <강도>`로 준비한다. Gateway가 instructionsPath와 sentencesPath를 주면(직접 입력, 보통보다 높은 강도의 TXT/MD) 매 시도 읽고 앱과 같은 편집 범위·보호 규칙을 적용한다. 보호 문장은 숫자·날짜·인용과 가능성·부정·의무·조건 표현을 원문 그대로 두고 그 밖의 어색한 표현만 고친다. 주어가 여럿인 문장에서는 주체·대상·값의 순서를 바꾸지 않는다. 사용자가 변경 비교를 요청하면 최종 검증문과 독립 HTML 비교 파일을 함께 제공한다. 비교 내보내기는 직접 입력에만, DOCX/PPTX는 강도 없이 기본값으로 처리한다.
 
+첫 시도에 Gateway가 어휘 점검 목록(파일 작업은 lexicalHintsPath, 그 밖에는 instructionsPath 안)을 주면 문맥을 보고 항목별로 판단하며 일괄 치환하지 않는다. 윤문이 원문에 없던 어색한 어휘를 새로 넣은 문장은 Gateway가 원문으로 되돌린다.
+
 DOCX/PPTX를 처리할 때는 [references/documents.md](references/documents.md)의 블록별 편집 계약을 사용한다. 평문으로 변환해 다시 문서를 만들지 않는다.
 
 Windows 배포물에는 Python과 Node가 포함된다. `python/python.exe`와 이 스킬 안의 `engine_runtime/skill_gateway.py`를 절대 경로로 호출한다. Gateway가 로컬 Node 브리지를 실행하므로 Node 설치나 서버가 필요 없다. 다른 OS에서는 Python 3.11+를 사용하며 직접 입력은 Node 24.19.0+도 필요하다. 기존 파일 처리는 Node 없이 동작한다. 상대 경로는 사용자 프로젝트가 아니라 **이 SKILL.md의 폴더**에서 해석한다.
