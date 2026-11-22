@@ -1,5 +1,183 @@
 # Works Log
 
+## 2026-11-22 — Engine im-not-ai 2.4.7 with the lexical check (0.5.4); 0.5.2–0.5.4 merged and deployed
+
+**Request:** "https://github.com/epoko77-ai/im-not-ai.git 최신내용 페치해서 우리 엔진에 적용". Mid-task: "간단한 작업은 sonnet 5.5 + Xhigh 모델로 사용해서 진행해 / 그리고 작업은 병렬로 작업해" (saved to memory `parallel-subagents`).
+
+**Upstream state.**
+- The upstream HEAD was `c07df14` (label 2.4.7). The pin was `9747f03` (2.3.2), an ancestor 113 commits behind. The fork had 0 commits of its own.
+- The main additions:
+  - **Lexical layer** (v2.4.0+): `scripts/lexical_layer.py` plus `references/lexicon.json`, 115 entries (61 'change', 54 'conditional'). It builds hints from words found in the source and restores sentences in which the rewrite introduced a restore-tier word.
+  - **Gate fixes:**
+    - pure 하였체 sentence splits;
+    - 요-ending nouns no longer read as 해요체;
+    - deontic stems;
+    - P1 judged on unguarded z;
+    - `comma_segment_length` not judged below 3 commas (#130).
+  - **Router counts** (#104) and rule-book corrections.
+
+**Fork sync.**
+- The first `git push` of the fast-forwarded fork was blocked by the auto-mode classifier.
+- I asked; the owner chose "푸시".
+- The push went `9747f03..c07df14 HEAD -> main`, and `git ls-remote` confirmed `c07df14`.
+
+**Vendor update** (branch `feat/engine-2.4.7`, stacked on `feat/security-hardening`; commit `b6af525`).
+- **No PowerShell on macOS.** `sync-engine.ps1` was reproduced by hand: the same file list was copied from the pinned commit into a clean staging repo.
+- **Baseline check:** the old patch on the old pristine tree gave the current vendor byte for byte (`diff -r` clean).
+- **New patch:** only `restore_modality.py` conflicted. Upstream now edits only the body before the HUMANIZE-SUMMARY block; the portal keeps its duplicate/reorder guards there. The merged patch, applied to a fresh pristine tree, reproduces the vendor tree (`diff -r` clean).
+- **New portal hunks in `lexical_layer.py`:** LF/CRLF-preserving file I/O, and the same duplicate/reorder guards.
+- **Upstream bug found.** Pristine 2.4.7's lexical restore pairs swapped sentences and restores one over the other. All 3 constructed cases lost a proposition and repeated another, e.g. "상반기에는 … 줄였다. 상반기에는 … 줄였다." The portal patch prevents it. `tests/skills/test_lexical_layer.py` fails against pristine for both the guard and the CRLF cases (verified).
+- **Preflight** now requires label 2.4.7. The vendor files and `npm run build` must be deployed together.
+- **`test_gate_reasons`:** the recorded direct-text reply has zero commas, so it no longer raises the P1-only advisory (#130). A synthetic comma-chained case now covers that path.
+- **Upstream helper:** `check_upstream.py` failed on macOS Python 3.9 (`Path | None`); fixed with postponed annotations, 12 helper tests pass.
+
+**Integration** (contract `5e513d7`, then two fork tracks in parallel worktrees, merged `9e8e3f8` and `8a76774`).
+- **Prompt:** `PromptInput.lexicalHints` carries the block inside `<lexical_check>`, on attempt 1 only, never on the conservative retry or the candidate review. `lexicalHintBlock()` accepts only a whole bounded block.
+- **Server (`f6a2840`):**
+  - Hints are computed once per chunk.
+  - The restore order is modality → comma guard → lexical restore → josa.
+  - A new `LEXICAL_RESTORED` warning; diagnostics carry counts only (`lexicalHintChunks`, `lexicalHintFailures`, `lexicalHintMs`, `restoredLexicalSentences`, `skippedLexicalSentences`, `lexicalRestoreFailures`).
+  - A lexical failure never blocks a job.
+- **Skills (`38a381a`):**
+  - `workflow.restore` uses the same order.
+  - The Gateway file route returns `lexicalHintsPath` (`lexical-<n>.md`); the strength route passes the block to the bridge.
+  - The SKILL.md, workflow.md and skills-guide instructions are updated.
+  - Packaging copies `vendor/humanize-engine` whole, so the new files ship. A test pins this.
+
+**Conflict found live and the owner's decision** (`adf588a`).
+- **The conflict.** Codex gpt-6.2-sol/high, direct text, normal, on a 134-character sample containing 렌즈 / 성공을 달성 / 결을 더하다. Attempt 1 followed the block (렌즈 → 관점), but the direct-text concept guard requires every source noun to survive. The run took 2 calls and 26.7 s, with 1 fidelity failure, and the result kept 렌즈.
+- **Scale.** About 40 of the 115 entries are such nouns. The Python gate accepted the same edit.
+- **The decision.** I asked; the owner chose "해당 명사만 허용".
+- **The exemption.** `engine_runtime/lexical_check.py` returns the vendor block unchanged plus `replaceableNouns`. A noun qualifies when it is a whole-word match outside quotes, of an entry shown in the block. That means every 'change' entry, but a 'conditional' entry only when the source uses it at least twice, the repetition its own guidance names. Examples: 역학 used once stays protected; nouns inside phrase entries ("미묘한 접근") stay protected; a longer word (콘택트렌즈) stays protected.
+- **Where it applies.** `checkDirectTextFidelity(source, candidate, replaceableNouns)`, used by the server per chunk, by the candidate review, and by the full-document check (union over chunks). The bridge `check`/`review`/finalize use it too.
+- **After the change.** The same live sample took 1 call and 15.2 s, with 0 retries. It changed 렌즈 → 관점, 성공을 달성했다 → 성공했다, and 결을 더한다 → 변화가 생긴다; the last one is a free paraphrase of a vague metaphor.
+- **Live calls:** 2 in total.
+
+**Tests and verification** (Sonnet 5.5 xhigh agents added the exemption tests in parallel and mutation-checked them on scratch copies).
+- **Final run on `ce91a2a`** (production interpreter, Hermes venv Python 3.11.15):
+  - typecheck clean for both configs;
+  - vitest 939 passed, 10 skipped;
+  - test:skills 768 OK, 5 skipped;
+  - test:documents 106 OK;
+  - e2e 54 passed, 9 skipped (port 7930);
+  - both rule indexes `--check` current;
+  - `git diff --check` clean.
+- **System Python.** The system `python3` (3.9, no lxml) skips 12 more vitest tests. Use `PYTHON_COMMAND=~/.hermes/hermes-agent/venv/bin/python`.
+- **Bug from an agent.** A test agent found that `parseReplaceableNouns` let a sparse array through, which would crash an in-process caller. Fixed with `Array.from`, plus a regression test.
+- **Side server** ran on 7931 only, with no job folders left. Production PID 3339 was untouched.
+
+**Versions.**
+- 0.5.4 is in `ce91a2a`; the release notes are `docs/releases/0.5.4.md`.
+- Super Sejong v2's ported pieces were checked against 2.4.7 and not re-synced: upstream changed none of the ported code (`engine_runtime/sejong/THIRD_PARTY.md`).
+
+**Not done / open.**
+- **Not covered:** Office documents (own prompt and Python flow, never ran the modality restore) and Super Sejong v2.
+- **Windows only, not run:** `skills:build`, `verify-skill-packages.mjs` (its new lexical block was only syntax-checked) and `desktop:portable`.
+- **Kill switch:** `HUMANIZE_LEXICAL=0` (the upstream switch) does not apply on the server or Gateway paths.
+- **Hermes skill:** `~/.hermes/skills/portal-service/SKILL.md:60` still says "Same Wi-Fi: use the LAN URL printed in the service log", which is now wrong. It was not edited (no request to write under `~/.hermes`).
+- **npm install scripts:** `npm ci` on npm 11 left `fsevents` install scripts unapproved (`npm install-scripts ls`). That does not matter to the server; desktop builds in the main tree were not tried.
+
+### Deployment (owner: "진행하자")
+
+- **Order of steps:**
+  1. `/api/status` idle (0 active, 0 queued, PID 3339).
+  2. The three personal-line files were stashed by tag.
+  3. `git merge --no-ff feat/engine-2.4.7` into main gave `140ff75`. It brings in 0.5.2 (GPT-6.2), 0.5.3 (security hardening) and 0.5.4; there were no conflicts.
+  4. The stash was applied by SHA, merged cleanly (the personal lines are the only working-tree diff, +6 lines) and was dropped.
+  5. `npm ci`, then `npm run build`.
+  6. `SUPER_SEJONG_V2_SHADOW=1 ~/.hermes/node/bin/node dist/ops/hermes-service.js restart` returned `restarted`, new PID 92304.
+- **Checks after the restart:**
+  - listener `127.0.0.1:7882` only;
+  - `/api/health` humanizeVersion 2.4.7, documentsAvailable, Codex and Claude ready;
+  - the process has `SUPER_SEJONG_V2_SHADOW=1` and `HOST=127.0.0.1`, and none of the `CLAUDE_CODE_*`, `ORCA_*` or `SSH_AUTH_SOCK` variables the previous process carried (names checked only);
+  - the LAN address was refused (curl exit 7);
+  - `npm audit --omit=dev` found 0.
+- **Tunnel:** cloudflared is running. Through the public address, `GET /` gives 303 to the login page and `GET /api/status` gives 401 `LOGIN_REQUIRED`. No login was attempted.
+- **Owner action:** a browser that was signed in on the public address must sign in once more, because sessions issued before 0.5.3 are not in the new session list.
+- **Not pushed.** main is ahead of origin. This entry, the 11-20 entries (including the held-back security review) and the push wait for an explicit request.
+- **Skill jobs** started before the engine change are refused by the Gateway's engine check; start a new job.
+
+## 2026-11-20 — Security fixes and this-PC-only access (0.5.3; deployed 2026-11-22 with 0.5.4)
+
+**Request:** "보안이슈되는 부분 다 해결하고, 비번은 유지한다 지금은, 그리고 우리 이제 도메인으로 접근 되니까, 같은 와이파이 사내망? 연결 기능은 막자".
+- Mid-turn the owner pasted an external dependency scan and asked to check it too.
+  - All dependencies: 1 critical, 6 high, 10 moderate. Production only: 1 critical, 1 high, 1 moderate.
+  - It named proxy-addr and body-parser. My `npm audit` gave the same counts.
+- **Owner's decisions:** the password stays as it is for now. LAN ("same Wi-Fi") access is dropped, because other devices now use the public address.
+
+**Branch:** `feat/security-hardening` (worktree `.worktrees/security`), head `d5a5a7d`, version 0.5.3.
+- It is built on `feat/gpt-6.2-default` (`fa73f44`, 0.5.2), so merging it deploys both.
+- 25 commits. Not merged, not pushed, not deployed.
+- Process:
+  - I first committed a shared contract, `1a69a62`: the child-environment allowlist.
+  - Four agents then worked in parallel in their own worktrees: `sec/network`, `sec/engine`, `sec/documents` and `sec/deps`.
+  - I merged and reviewed each branch, then added the e-mail output guard, the docs, the release note and the version bump.
+
+**Changes:**
+- **Child environment** (`1a69a62`, `1d42b7f`):
+  - `src/process/child-env.ts` gives the managed server, the AI CLIs and the Python steps an allowlist instead of the starter's whole environment.
+  - Why: the live server, restarted from agent sessions, carried those sessions' tokens, sockets and askpass helpers. I checked the names only.
+- **Network and login** (`a3314ab`, `695d7d8`, `244f642`):
+  - **Local only:** the portal binds `127.0.0.1` and accepts only loopback sockets, whatever `HOST` is. Host must be `localhost`, `127.0.0.1`, `[::1]` or a listed public name.
+  - **LAN removed:** LAN URL listing and `scripts/allow-lan-firewall.ps1` are gone. `remove-lan-firewall.ps1` stays for old Windows installs. `LAN_ONLY` became `LOCAL_ONLY`.
+  - **Tunnel headers:** a request with Cloudflare edge headers is always treated as public.
+  - **Login race:** attempts are counted before the scrypt await, one check runs at a time, and at most 4 wait. Its regression tests fail against the old order.
+  - **Sessions:** signed-in sessions are listed in `runtime/public-sessions.json` (nonce digests, mode 0600, at most 50), and logout revokes. The file is git-ignored.
+- **CLI isolation** (`7272159`, `1aa4ff5`, `b72e082` (no more `runtime/model-probe`), and `aa88c0f`):
+  - **Codex, before** (agent canary on gpt-6-luna/low):
+    - There was no shell tool, but code-mode `exec`, `wait`, sub-agent tools and a clock were offered.
+    - Tool calls failed only because `code_mode_host` was off.
+    - The prompt carried the operator's skills list, the multi-agent instructions and `~/.codex/AGENTS.md`, for 72,290 input tokens.
+  - **Codex, after:** every tool and extension the CLI can turn off is off, and the prompt has no environment or permission text. 12,681 input tokens, and no tool events.
+  - **Claude, before:** `--restricted` already kept CLAUDE.md, memory, skills and hooks out. A control run without it loaded them, which shows the canary works. The git branch and the account e-mail were in context.
+  - **Claude, after:** it runs from an empty temp folder with `--safe-mode`, `--disable-slash-commands`, `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` and `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`.
+  - **Model discovery** also runs from temp folders.
+  - **E-mail guard** (`aa88c0f`): the account e-mail cannot be removed, so a reply that introduces an e-mail address absent from the prompt is now invalid output.
+  - **Live calls:** the agent made 10 model calls, mostly the cheapest models. I made 2 on a side server.
+- **Documents, MCP and skill** (`c02de5c`, `ebf203e`, `d243fff`, `6ea1a0e`, `bace1b5`, `a193630`):
+  - **Office caps:** ZIP entries, central directory, declared and actual sizes, compression ratio, XML nodes and depth, extracted characters, pieces, paragraphs, slides, and 60 model batches. Over a cap: `DOCUMENT_TOO_LARGE` with a Korean reason, the same on portal, app, skill and MCP.
+  - **Before the caps:** crafted DOCX files of 25 KB or less were accepted with up to 738 MiB peak memory, or with 1,032 model batches (115 s).
+  - **After:** they are refused in 0.09–0.34 s at 34–91 MiB. The sample documents are unchanged.
+  - **Retention:** absolute, 30 minutes after upload and again 30 minutes after the result is ready. Expiry or DELETE aborts downloads in progress. This also fixes the ordering bug behind the flaky `documents.test.ts`.
+  - **MCP:** `outputPath` must be a new file in the source file's folder or below it.
+  - **Skill Gateway:** a private workspace (0700, owner checked) by default. Engine code paths no longer come from `job.json`.
+- **Dependencies** (`7cf3f33`, `3b1fed2`):
+  - **Production:** body-parser 2.4.0, proxy-addr 2.0.8 and qs 6.17.1.
+  - **Development and build:** Electron 44.11.5, published 2026-11-19, together with `electronVersion` in `electron-builder.yml`. Also vitest 4.1.12, vite 8.3.8, and a scoped minimatch override under app-builder-lib.
+  - **Audit result:** `npm audit` shows 0 for all dependencies and 0 for production.
+  - **Windows runtimes:** embedded Python 3.14.10 and Node 24.22.3. The sha256 values come from python.org's release API and nodejs.org `SHASUMS256.txt`, and the downloaded files match them. Signatures were not checked.
+- **Docs:** README, `docs/operations.md`, `code-analysis.md`, `service-analysis.md`, `desktop.md`, `mcp.md` and `skills-guide.md` were updated, and `docs/releases/0.5.3.md` is new.
+
+**Mistake:** my contract commit `1a69a62` broke `tests/unit/sejong-python-adapter.test.ts`. It also filtered an explicitly passed environment. I had run only the two directly related test files. `1d42b7f` fixes it: an explicit environment is kept as given, and only the default one is filtered.
+
+**Verification** (integration worktree, with `node_modules` installed from the new lockfile):
+- typecheck passed for both configs.
+- vitest: 880 passed, 10 skipped.
+- Python tests: skills 719 OK (5 skipped), documents 106 OK.
+- e2e on port 7930: 54 passed, 9 skipped.
+- `documents.test.ts` passed 5 runs in a row.
+- **Side server on port 7931:**
+  - It listened on `127.0.0.1` only. The LAN IP was refused. localhost returned 200. localhost with `cf-ray` returned 403, and a foreign Host returned 403.
+  - A live Codex default (gpt-6.2-sol/high) finished in 11.8 s.
+  - The Codex child ran in a fresh temp folder with only allowlisted variables. The planted `FAKE_SECRET_TOKEN` and `CLAUDE_CODE_MESSAGING_TOKEN` were absent.
+  - The server was stopped and no temp folders were left.
+- **Not verified:**
+  - Anything on Windows: the scripts, the `%LOCALAPPDATA%` workspace, packaging, desktop e2e and the NSIS portable build.
+  - A real tunnel request against the new code.
+
+**Remaining risks:**
+- Codex still includes `~/.codex/AGENTS.md`, four generic lines; 0.170 has no switch for it.
+- The read-only sandbox still allows reads in principle, but no tool that reads is reachable.
+- The Claude context still carries the account e-mail; the output guard covers it.
+
+**Deploy (only on request):**
+1. Check `/api/status` for idle.
+2. Stash the personal lines and merge into main.
+3. Run `npm ci` (the lockfile changed), then `npm run build`.
+4. Restart with `SUPER_SEJONG_V2_SHADOW=1`.
+5. Afterwards, confirm the listener is `127.0.0.1:7882` and the tunnel still serves. Public-address users must sign in once more.
+- Hermes `portal-service/SKILL.md` still has a "Same Wi-Fi" line, which will be stale. It is not edited without the owner's request.
+
 ## 2026-11-20 — Portal restarted by another session for a Node security release
 
 **Source:** a status message from another Claude session (the office portal session). The work was done there, not here.
@@ -13,6 +191,46 @@
   - PID 74097 → 3339; the outcome was `restarted` and the status `ready`.
 - `dist/` did not change, so the live code is still 0.5.1 (main `4002eed`). The GPT-6.2 branch is not deployed.
 - Checked here: PID 3339 started 10:06:05 from `~/.hermes/node/bin/node`.
+
+## 2026-11-19 — Security review of the portal (read-only)
+
+**Request:** "그리고 보안 이슈 없는지 추가 검토해".
+
+**How:**
+- One review agent ran with two helpers. Nothing in the repo was changed.
+- Only GET and HEAD requests reached the live server. The live log shows no `public_login` event after the 17:15 restart.
+- Dynamic tests ran on scratch servers built from `git archive HEAD`, each with its own runtime root. All were stopped; only PID 74097 listens on 7882.
+- A helper read `runtime/public-auth.json` to check whether the two test-fixture passwords match the live hash. It printed only yes/no, and neither matches.
+
+**Why this entry is short:** this repo is public. Attack steps and measured numbers are kept out of this entry. The entry stayed uncommitted until the fixes (0.5.3, the 2026-11-20 entry) were deployed on 2026-11-22.
+
+**Findings I checked myself:**
+- **High — login rate limiting can be bypassed** (`src/network/public-auth.ts`, `login()`).
+  - Confirmed in code: the lock check runs before the scrypt await, and failures are counted after it.
+  - The agent reproduced it on a scratch server.
+- **Medium — body-parser 2.3.0** has advisory GHSA-27r3-jxmh-p828, and it parses the pre-login form.
+  - The version and the advisory were confirmed with `npm audit --omit=dev`. A crash was not reproduced.
+  - proxy-addr and qs advisories are also listed, but are not reachable.
+- **Medium — `--disable unified_exec` has no effect on Codex 0.170.0.** `codex features list` still shows it true; the runner's own comment already says this.
+  - The read-only sandbox does not limit reads.
+  - Not verified: whether the model really gets an exec tool. That needs a live canary job.
+- **Low — the server inherits its starter's environment.**
+  - The live server, started from this Claude Code session, carries `CLAUDE_CODE_MESSAGING_*`, `ORCA_*`, `SSH_AUTH_SOCK` and `*_ASKPASS` (names checked, values not read).
+  - CLI children get the same environment.
+- **Low — MCP `humanize_file` `outputPath`** may be any absolute path with the same extension. It cannot overwrite (`wx`).
+
+**Agent findings I did not re-run:**
+- Office resource exhaustion from small crafted files (memory and model-call count).
+- The skill Gateway trusts a shared TEMP root and `vendor` from `job.json`; this matters on multi-user hosts.
+- Claude jobs may load the owner's CLAUDE.md and memory.
+- Smaller items: the wrong-host page lists LAN addresses, document slots can be held, logout does not revoke a session, and Electron 44.2.0 has advisories (not reachable).
+
+**Fine:**
+- The gate held for every path, method and encoding variant tried.
+- HMAC session cookies, Origin checks on all `/api` routes, DNS rebinding, CSP and headers, Office XXE and ZIP traversal, `shell:false` CLI calls and desktop isolation all held.
+- No keys or tokens are in any commit; the auth files were never committed.
+
+**Follow-up:** every finding above was fixed in 0.5.3 (2026-11-20 entry) and deployed on 2026-11-22 (the 2026-11-22 entry).
 
 ## 2026-11-19 — GPT-6.2 Sol as the Codex default; GPT-6.2 models in the fallback list (0.5.2)
 
