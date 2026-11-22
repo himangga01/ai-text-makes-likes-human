@@ -42,3 +42,14 @@ it('delimits hostile source and candidate as data and keeps anchors on original'
  }
  for(const changes of [{attempt:1},{rewriteOptions:{inputKind:'direct-text',strength:'strong'}},{rewriteOptions:undefined}])expect(()=>buildHumanizePrompt({...input,...changes})).toThrow();
 });
+
+it('reviews a candidate that replaced a flagged noun only when the lexical check named that noun',()=>{
+ const source='이번 분기 실적을 세 가지 렌즈로 살펴보면 흐름이 달라 보인다.';
+ const candidate='이번 분기 실적을 세 가지 관점에서 살펴보면 흐름이 달라 보인다.';
+ expect(probe({source,candidate})).toBeUndefined();
+ expect(probe({source,candidate,lexicalNouns:[]})).toBeUndefined();
+ expect(probe({source,candidate,lexicalNouns:['관점']})).toBeUndefined();
+ expect(probe({source,candidate,lexicalNouns:['렌즈']})).toEqual({candidate,reason:'P1_STYLE_TARGET'});
+ // The exemption covers that noun only: dropping another concept of the sentence is still not reviewed.
+ expect(probe({source,candidate:'이번 분기를 세 가지 관점에서 살펴보면 흐름이 달라 보인다.',lexicalNouns:['렌즈']})).toBeUndefined();
+});

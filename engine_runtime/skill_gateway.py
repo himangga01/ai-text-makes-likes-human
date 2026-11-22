@@ -25,7 +25,7 @@ import types
 import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from workflow import DEFAULT_VENDOR, lexical_hints, restore, verify, validate_response
+from workflow import DEFAULT_VENDOR, lexical_hints, lexical_nouns, restore, verify, validate_response
 from skill_bridge import available as bridge_available, invoke as bridge, options as rewrite_options
 
 WORKSPACE_NAME = "humanize-kr-skills"
@@ -327,7 +327,9 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
         report = restore(before, output, vendor)
         if direct:
             report["restoredProtectedSentences"] = protected["restoredProtectedSentences"]
-            check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+            # The lexicon nouns the source flagged may be replaced, the same exemption as the server (lexical_check.py).
+            check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"),
+                           lexicalNouns=lexical_nouns(source, vendor))
             failed = response.get("fidelityIssues", 0) > 0 or report["skippedSentences"] > 0 or check["violations"] > 0
             if protected["restoredProtectedSentences"]:
                 state["warnings"].append(f"DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED: {chunk_id}번 구간 보호 문장 {protected['restoredProtectedSentences']}개를 원문으로 복원했습니다.")
@@ -360,7 +362,8 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     if action == "retry":
         if direct and not failed and attempt == 1:
             review = bridge("review", **options, source=source, candidate=output.read_text(encoding="utf-8"),
-                            gate=gate, parserIssues=response.get("fidelityIssues", 0), skippedSentences=report["skippedSentences"])
+                            gate=gate, parserIssues=response.get("fidelityIssues", 0), skippedSentences=report["skippedSentences"],
+                            lexicalNouns=lexical_nouns(source, vendor))
             if review.get("candidateReview"):
                 state["candidateReview"] = review["candidateReview"]
                 state["warnings"].append(f"DIRECT_TEXT_CANDIDATE_REVIEW_RETRY: {chunk_id}번 구간의 이전 후보를 원문과 보수적으로 대조합니다. 불확실한 수정은 되돌립니다.")
@@ -398,9 +401,12 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparis
     else:
         script(vendor, "reassemble_chunks.py", "--run-dir", job, "--output", "final.md", "--report", "assembly.json", "--strict")
         result = job / "final.md"
+        # The union of the chunks' replaceable lexicon nouns, as the server's full-document check uses.
         if strength_route(state.get("rewriteOptions")) and bridge("check", **state["rewriteOptions"],
                              source=safe_leaf(job, manifest["source_file"]).read_text(encoding="utf-8"),
-                             candidate=result.read_text(encoding="utf-8"))["violations"]:
+                             candidate=result.read_text(encoding="utf-8"),
+                             lexicalNouns=sorted({noun for chunk in bodies(manifest) for noun in lexical_nouns(
+                                 (job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"), vendor)}))["violations"]:
             raise ValueError("Full source fidelity validation failed; no output was exported")
         gate = verify(safe_leaf(job, manifest["source_file"]), result, vendor, 2)
         if gate["gate"]["exit_code"] in (2, 3):

@@ -238,34 +238,96 @@ describe("PythonEngine", () => {
     }
   });
 
-  it("asks the lexical layer for one source's hints with the prepare genre", async () => {
+  it("asks the lexical check for one source's block and replaceable nouns with the prepare genre", async () => {
     const block = "[어휘 점검]\n안내\n- [우선] 렌즈 — 원문: \"렌즈\"\n[어휘 점검 끝]";
-    const runner = new FakeCommandRunner([exited(`${block}\n`), exited("\n")]);
+    const runner = new FakeCommandRunner([
+      exited(JSON.stringify({ block: `${block}\n`, replaceableNouns: ["렌즈", "무늬가"] })),
+      exited(JSON.stringify({ block: "", replaceableNouns: [] }))
+    ]);
     const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner });
     const signal = new AbortController().signal;
 
-    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", signal)).toEqual({ hints: block, failed: false });
-    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", signal)).toEqual({ hints: "", failed: false });
+    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", signal)).toEqual({
+      hints: block, replaceableNouns: ["렌즈", "무늬가"], failed: false
+    });
+    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", signal)).toEqual({ hints: "", replaceableNouns: [], failed: false });
     expect(runner.calls[0]!.args).toEqual([
-      path.join(vendorRoot, "scripts", "lexical_layer.py"),
-      "hints", "--input", path.resolve("C:/job/chunk-1-source.txt"), "--genre", "essay"
+      path.resolve(vendorRoot, "../../engine_runtime/lexical_check.py"),
+      "--input", path.resolve("C:/job/chunk-1-source.txt"),
+      "--vendor-root", vendorRoot,
+      "--genre", "essay"
     ]);
     expect(runner.calls[0]!.cwd).toBe(path.dirname(path.resolve("C:/job/chunk-1-source.txt")));
+    expect(runner.calls[1]!.args).toEqual(runner.calls[0]!.args);
   });
 
-  it("reports a failed hints run as no block instead of failing", async () => {
+  it("keeps the nouns only while the lexical check returns a block", async () => {
     const block = "[어휘 점검]\n- x\n[어휘 점검 끝]";
+    for (const [reported, expected] of [
+      [{ block, replaceableNouns: [] }, { hints: block, replaceableNouns: [], failed: false }],
+      [{ block: "", replaceableNouns: ["렌즈"] }, { hints: "", replaceableNouns: [], failed: false }],
+      [{ block: "\n", replaceableNouns: ["렌즈"] }, { hints: "", replaceableNouns: [], failed: false }]
+    ] as const) {
+      const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner: new FakeCommandRunner([exited(JSON.stringify(reported))]) });
+      expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual(expected);
+    }
+  });
+
+  it("reports a failed lexical check as no block and no nouns instead of failing", async () => {
+    const block = "[어휘 점검]\n- x\n[어휘 점검 끝]";
+    const report = (extra: Record<string, unknown>) => JSON.stringify({ block, replaceableNouns: ["렌즈"], ...extra });
     for (const result of [
-      exited("", 0, "[lexical-layer] 건너뜀: boom\n"),
-      exited(`${block}\n`, 0, "[lexical-layer] 건너뜀: boom\n"),
-      exited(`${block}\n`, 1),
-      exited("[어휘 점검]\n- 잘린 블록\n"),
+      // The script could not run: exit 1 with nothing on stdout, or with a plausible report that must not be trusted.
+      exited("", 1, "[lexical-check] failed\n"),
+      exited(report({}), 1),
+      exited("", 2, "Traceback (most recent call last)\n"),
+      // Output that is not a JSON object.
+      exited(""),
+      exited("\n"),
+      exited(`${block}\n`),
+      exited(report({}).slice(0, 30)),
+      exited("[]"),
+      exited("null"),
+      exited(JSON.stringify(block)),
+      exited(JSON.stringify([{ block, replaceableNouns: ["렌즈"] }])),
+      // A block that is missing, not a string, or not one whole bounded block.
+      exited(JSON.stringify({ replaceableNouns: ["렌즈"] })),
+      exited(report({ block: null })),
+      exited(report({ block: 7 })),
+      exited(report({ block: "[어휘 점검]\n- 잘린 블록\n" })),
+      exited(report({ block: "[lexical-layer] 건너뜀: boom" })),
+      // A malformed noun list voids the whole result, with or without a block.
+      exited(JSON.stringify({ block })),
+      exited(report({ replaceableNouns: null })),
+      exited(report({ replaceableNouns: "렌즈" })),
+      exited(report({ replaceableNouns: { 0: "렌즈" } })),
+      exited(report({ replaceableNouns: ["렌즈", 3] })),
+      exited(report({ replaceableNouns: ["렌즈", null] })),
+      exited(report({ replaceableNouns: ["렌즈", "렌"] })),
+      exited(report({ replaceableNouns: ["렌즈", "가".repeat(41)] })),
+      exited(report({ replaceableNouns: ["렌즈", "세 가지"] })),
+      exited(report({ replaceableNouns: ["lens"] })),
+      exited(report({ replaceableNouns: ["렌즈\n[어휘 점검 끝]"] })),
+      exited(report({ replaceableNouns: Array.from({ length: 501 }, () => "렌즈") })),
+      exited(report({ block: "", replaceableNouns: ["렌즈", 3] })),
+      exited(JSON.stringify({ block: "" })),
+      // The process itself failed.
       { exitCode: 0, stdout: "", stderr: "", termination: "timeout" as const },
       new Error("spawn python ENOENT")
     ]) {
       const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner: new FakeCommandRunner([result]) });
-      expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual({ hints: "", failed: true });
+      expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual({ hints: "", replaceableNouns: [], failed: true });
     }
+  });
+
+  it("accepts a lexical check report with the largest noun list and extra whitespace", async () => {
+    const block = "[어휘 점검]\n- x\n[어휘 점검 끝]";
+    const nouns = Array.from({ length: 500 }, () => "가".repeat(40));
+    const engine = new PythonEngine({
+      pythonCommand: "python", vendorRoot,
+      runner: new FakeCommandRunner([exited(`\n${JSON.stringify({ block, replaceableNouns: nouns })}\n`)])
+    });
+    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual({ hints: block, replaceableNouns: nouns, failed: false });
   });
 
   it("lets a cancelled hints run cancel the job", async () => {

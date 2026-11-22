@@ -29,6 +29,7 @@ Windows 앱과 두 윤문 스킬도 같은 vendor를 배포한다. `engine_runti
 - 각 윤문 시도 뒤에 `restore_modality.py`와 `strip_injected_commas.py`를 실행하고 그 결과를 검증한다. upstream이 이 기능을 이동하거나 대체하면 동등한 동작으로 어댑터를 갱신한다.
 - `strip_injected_commas.py --all`은 진단 단계가 없는 포털에서 무심코 켜지 않는다. 원문에 있던 쉼표까지 제거하는 범위 확대인지 확인한다.
 - 어휘 레이어(2.4.0+): 포털은 upstream 결합 입력 파일(`*_input_with_metrics.txt`)을 모델에 보내지 않고 자체 프롬프트를 만든다. 그래서 `[어휘 점검]` 블록이 저절로 실리지 않는다. 청크마다 `lexical_layer.py hints`의 출력을 `PromptInput.lexicalHints`로 첫 시도에만 넣고(재시도·후보 재검토 제외), 스킬 Gateway는 파일 경로에 `lexicalHintsPath`, 강도 경로에 브리지 `lexicalHints`로 같은 블록을 넘긴다. 후처리 순서는 서법 복원 → 쉼표 정리 → `lexical_layer.py restore` → 조사 교정이다. upstream이 블록 형식·CLI·복원 판정을 바꾸면 `lexicalHintBlock()`과 양쪽 어댑터를 함께 갱신한다.
+- 직접 입력의 개념 보존 검사(`direct-text-fidelity.ts`)는 어휘 점검이 원문에서 한 단어로 찾은 명사만 예외로 둔다(`engine_runtime/lexical_check.py`의 `replaceableNouns`, 소유자 결정 2026-11-22). 이 함수는 `lexical_layer`의 `find_hits`·`_matches`·`quote_spans`·`MAX_HINTS`와 lexicon의 `tier`·`count`에 기대므로, upstream이 이 이름이나 등급 체계를 바꾸면 함께 고친다.
 - `lexical_layer.py restore`는 `restore_modality.py`의 정렬을 재사용하므로 같은 위험을 가진다. pristine 2.4.7은 순서가 바뀐 두 문장을 서로 덮어써 한 문장을 지웠다(2026-11-22 확인). 포털 패치의 순서 변경·중복 방지 판정과 줄바꿈 보존이 새 upstream에서도 유지되는지 `tests/skills/test_lexical_layer.py`로 확인한다.
 - gate exit code와 JSON report가 일치해야 한다. 검증 실패를 성공으로 바꾸거나 경고·원문 복원 이벤트를 누락시키는 통합을 피한다. 정적 검증 통과를 의미 보존의 절대적 보증으로 표현하지 않는다.
 - GPT와 Claude 모두 같은 Python 후처리·검증을 사용하며 model/effort 진단값은 선택된 엔진을 따라야 한다. `src/engine/model-policy.ts`의 현재 정책을 읽는다.

@@ -4,6 +4,7 @@ import path from "node:path";
 import { EngineError } from "./errors.js";
 import { parseGateReasonMetadata, type GateReasonMetadata } from './candidate-review.js';
 import { lexicalHintBlock } from './prompt-builder.js';
+import { parseReplaceableNouns } from './direct-text-fidelity.js';
 import type {
   GateCode,
   ProcessingMode,
@@ -72,6 +73,8 @@ export interface RestoreReport {
  * hints run failed. A failure only means the prompt goes without the block. */
 export interface LexicalHints {
   hints: string;
+  /** Lexicon nouns of this source the direct-text concept guard lets the rewrite replace (lexical_check.py). */
+  replaceableNouns: string[];
   failed: boolean;
 }
 
@@ -405,26 +408,39 @@ export class PythonEngine {
     };
   }
 
-  /** The vendor lexical layer's hints for one source (lexical_layer.py hints, genre essay like prepare). The
-   * script exits 0 even when it fails (it says so on stderr), so a failure is read from its output; it never
-   * fails the job. Only cancellation propagates. */
+  /** The vendor lexical layer's check for one source (engine_runtime/lexical_check.py, genre essay like prepare):
+   * the [어휘 점검] block and the nouns the direct-text concept guard may let the rewrite replace. It never fails
+   * the job: any failure means no block and no exemption. Only cancellation propagates. */
   async lexicalHints(sourcePath: string, signal: AbortSignal): Promise<LexicalHints> {
     const source = path.resolve(sourcePath);
+    const none = { hints: "", replaceableNouns: [], failed: true };
     let result: CommandResult;
     try {
       result = await this.run(
-        [this.script("lexical_layer.py"), "hints", "--input", source, "--genre", "essay"],
+        [path.resolve(this.vendorRoot, "../../engine_runtime/lexical_check.py"), "--input", source,
+          "--vendor-root", this.vendorRoot, "--genre", "essay"],
         path.dirname(source),
         signal
       );
     } catch (error) {
       if (signal.aborted || (error instanceof EngineError && error.publicCode === "CLIENT_ABORTED")) throw error;
-      return { hints: "", failed: true };
+      return none;
     }
-    const hints = lexicalHintBlock(result.stdout);
-    const failed = result.exitCode !== 0 || result.stderr.includes("[lexical-layer]") ||
-      (hints === "" && result.stdout.trim() !== "");
-    return { hints: failed ? "" : hints, failed };
+    if (result.exitCode !== 0) return none;
+    let report: Record<string, unknown>;
+    try {
+      const value: unknown = JSON.parse(result.stdout);
+      if (typeof value !== "object" || value === null || Array.isArray(value)) return none;
+      report = value as Record<string, unknown>;
+    } catch {
+      return none;
+    }
+    const raw = typeof report.block === "string" ? report.block : undefined;
+    const hints = lexicalHintBlock(raw);
+    // A block that is present but not a whole bounded block, or a malformed noun list, is a failed run.
+    if (raw === undefined || (hints === "" && raw.trim() !== "")) return none;
+    if (!Array.isArray(report.replaceableNouns) || parseReplaceableNouns(report.replaceableNouns).length !== report.replaceableNouns.length) return none;
+    return { hints, replaceableNouns: hints ? parseReplaceableNouns(report.replaceableNouns) : [], failed: false };
   }
 
   async restore(

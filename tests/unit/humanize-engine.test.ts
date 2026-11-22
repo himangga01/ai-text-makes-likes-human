@@ -15,6 +15,8 @@ import type {
   RestoreReport
 } from "../../src/engine/python-engine.js";
 import type { ChunkPromptContext } from "../../src/engine/super-sejong.js";
+import type { CandidateReview } from "../../src/engine/candidate-review.js";
+import type { RewriteOptions } from "../../src/engine/rewrite-policy.js";
 import { EngineError } from "../../src/engine/errors.js";
 import { deferred, type Deferred } from "../helpers/deferred.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
@@ -142,7 +144,8 @@ class FakePython implements PythonAdapter {
   }
 }
 
-/** FakePython with the vendor lexical layer: per-source hints and a record of every hints call. */
+/** FakePython with the vendor lexical layer: per-source hints and replaceable nouns (the result shape of
+ * PythonEngine.lexicalHints) and a record of every hints call. */
 class LexicalPython extends FakePython {
   readonly hintCalls: string[] = [];
   constructor(
@@ -161,13 +164,16 @@ class LexicalPython extends FakePython {
 
 /** Records the prompt context each attempt received. */
 class ContextCodex implements CodexAdapter {
-  readonly contexts: Array<{ attempt: 1 | 2; source: string; chunkContext?: ChunkPromptContext }> = [];
+  readonly contexts: Array<{ attempt: 1 | 2; source: string; chunkContext?: ChunkPromptContext; candidateReview?: CandidateReview }> = [];
   constructor(private readonly outputs: string[]) {}
   async transform(
     inputPath: string, _outputPath: string, attempt: 1 | 2, _signal: AbortSignal,
-    _settings?: unknown, _options?: unknown, _review?: unknown, chunkContext?: ChunkPromptContext
+    _settings?: unknown, _options?: unknown, candidateReview?: CandidateReview, chunkContext?: ChunkPromptContext
   ) {
-    this.contexts.push({ attempt, source: await readFile(inputPath, "utf8"), ...(chunkContext ? { chunkContext } : {}) });
+    this.contexts.push({
+      attempt, source: await readFile(inputPath, "utf8"),
+      ...(chunkContext ? { chunkContext } : {}), ...(candidateReview ? { candidateReview } : {})
+    });
     const rewrittenText = this.outputs.shift();
     if (rewrittenText === undefined) throw new Error("No Codex output configured");
     return { rewrittenText, warnings: [] };
@@ -256,6 +262,19 @@ async function setup(source: string): Promise<{
   await writeFile(workspace.path("01_input.txt"), source, "utf8");
   return { outer, workspace };
 }
+
+// Direct-text jobs whose source uses the metaphor noun 렌즈 and whose model reply replaces it with 관점: the direct-text
+// concept guard rejects that unless the lexical check named 렌즈 as replaceable (direct-text-fidelity.ts).
+const LENS_SOURCE = "이번 분기 실적을 세 가지 렌즈로 살펴보면 흐름이 달라 보인다.\n";
+const LENS_REWRITE = "이번 분기 실적을 세 가지 관점에서 살펴보면 흐름이 달라 보인다.\n";
+const LENS_BLOCK = "[어휘 점검]\n- [우선] 렌즈 — 원문: \"렌즈\"\n[어휘 점검 끝]";
+const LENS_FLAGGED: LexicalHints = { hints: LENS_BLOCK, replaceableNouns: ["렌즈"], failed: false };
+const directText = (strength: RewriteOptions["strength"]): RewriteOptions => ({ inputKind: "direct-text", strength });
+const codePoints = (text: string): number => Array.from(text).length;
+const P1_ONLY_RETRY: GateResult = {
+  status: "warn", exitCode: 1, gateCodes: ["GATE_WARN"], policy: "retry", hardFailures: [],
+  warningReasons: { version: 1, codes: ["P1_STYLE_TARGET"] }
+};
 
 describe("HumanizeEngine", () => {
   it("transforms one body chunk and returns the verified result", async () => {
@@ -433,7 +452,9 @@ describe("HumanizeEngine", () => {
           { restoredSentences: 0, skippedSentences: 0, removedCommas: 0, restoredLexicalSentences: 0, skippedLexicalSentences: 0, lexicalRestoreFailures: 1 },
           { restoredSentences: 0, skippedSentences: 0, removedCommas: 0, restoredLexicalSentences: 0, skippedLexicalSentences: 0, lexicalRestoreFailures: 0 }
         ],
-        source => source === "AAA" ? { hints: block, failed: false } : { hints: "", failed: true }
+        source => source === "AAA"
+          ? { hints: block, replaceableNouns: ["렌즈"], failed: false }
+          : { hints: "", replaceableNouns: [], failed: true }
       );
       const codex = new ContextCodex(["A1", "A2", "B1"]);
       const engine = new HumanizeEngine({ python, codex, chunkConcurrency: 1 });
@@ -482,7 +503,7 @@ describe("HumanizeEngine", () => {
       try {
         const codex = new ContextCodex(["BBB"]);
         const engine = new HumanizeEngine({
-          python: new LexicalPython(manifest([body(1, 0, 3)], 3), [ok(), ok()], [], () => ({ hints, failed: false })),
+          python: new LexicalPython(manifest([body(1, 0, 3)], 3), [ok(), ok()], [], () => ({ hints, replaceableNouns: [], failed: false })),
           codex,
           chunkConcurrency: 1
         });
@@ -494,6 +515,150 @@ describe("HumanizeEngine", () => {
         await removeTestRoot(test.outer);
       }
     }
+  });
+
+  describe("direct-text concept guard with the lexical check's replaceable nouns", () => {
+    async function runLens(options: {
+      strength: RewriteOptions["strength"]; hints: LexicalHints; outputs: string[]; verify: GateResult[];
+    }) {
+      const test = await setup(LENS_SOURCE);
+      const events: TransformEvent[] = [];
+      try {
+        const n = codePoints(LENS_SOURCE);
+        const codex = new ContextCodex([...options.outputs]);
+        const engine = new HumanizeEngine({
+          python: new LexicalPython(manifest([body(1, 0, n)], n), options.verify, [], () => options.hints),
+          codex,
+          chunkConcurrency: 1
+        });
+        const result = await engine.transform({
+          jobId: "job-1", workspace: test.workspace, signal: new AbortController().signal,
+          onEvent: event => events.push(event), rewriteOptions: directText(options.strength)
+        });
+        const codes = events.flatMap(event => event.type === "warning" ? [event.code] : []);
+        return { result, codes, codex, output: await readFile(result.finalPath, "utf8") };
+      } finally {
+        await test.workspace.cleanup();
+        await removeTestRoot(test.outer);
+      }
+    }
+
+    it.each(["strong", "very-strong"] as const)("does not restrict a %s chunk whose replaced noun the lexical check flagged", async strength => {
+      // One model reply only: a conservative retry would ask the fake for a second one and fail the job.
+      const { result, codes, codex, output } = await runLens({ strength, hints: LENS_FLAGGED, outputs: [LENS_REWRITE], verify: [ok(), ok()] });
+
+      expect(output).toBe(LENS_REWRITE);
+      expect(codex.contexts).toEqual([{ attempt: 1, source: LENS_SOURCE, chunkContext: { index: 1, total: 1, lexicalHints: LENS_BLOCK } }]);
+      for (const code of ["DIRECT_TEXT_FIDELITY_RESTRICTED", "CHUNK_RETRY", "CHUNK_ROLLED_BACK", "DIRECT_TEXT_DOCUMENT_ROLLED_BACK"]) {
+        expect(codes).not.toContain(code);
+      }
+      expect(result.diagnostics).toMatchObject({
+        conservativeRetries: 0, fidelityGuardFailures: 0, fullSourceRollbacks: 0, rolledBackChunks: 0,
+        protectedSentences: 1, restoredProtectedSentences: 0, lexicalHintChunks: 1, lexicalHintFailures: 0
+      });
+      // The noun list steers the guard only; it is not a diagnostic.
+      expect(JSON.stringify(result.diagnostics)).not.toContain("렌즈");
+    });
+
+    it.each([
+      ["no replaceable noun beside a block", { hints: LENS_BLOCK, replaceableNouns: [], failed: false }],
+      ["a failed lexical check", { hints: "", replaceableNouns: [], failed: true }],
+      ["a noun that is not the replaced one", { hints: LENS_BLOCK, replaceableNouns: ["관점이"], failed: false }]
+    ] as Array<[string, LexicalHints]>)("restricts and rolls back the chunk with %s", async (_label, hints) => {
+      const { result, codes, codex, output } = await runLens({
+        strength: "strong", hints, outputs: [LENS_REWRITE, LENS_REWRITE], verify: [ok(), ok(), ok()]
+      });
+
+      expect(output).toBe(LENS_SOURCE);
+      expect(codex.contexts.map(context => context.attempt)).toEqual([1, 2]);
+      expect(codes.filter(code => code === "DIRECT_TEXT_FIDELITY_RESTRICTED")).toHaveLength(2);
+      expect(codes).toEqual(expect.arrayContaining(["CHUNK_RETRY", "CHUNK_ROLLED_BACK"]));
+      expect(result.diagnostics).toMatchObject({ conservativeRetries: 1, fidelityGuardFailures: 2, rolledBackChunks: 1 });
+    });
+
+    it("keeps the guard on every other concept of a chunk whose 렌즈 is replaceable", async () => {
+      const { codes, output } = await runLens({
+        strength: "strong", hints: LENS_FLAGGED,
+        outputs: ["이번 분기를 세 가지 관점에서 살펴보면 흐름이 달라 보인다.\n", LENS_REWRITE.replace("실적을", "성과를")],
+        verify: [ok(), ok(), ok()]
+      });
+
+      expect(output).toBe(LENS_SOURCE);
+      expect(codes.filter(code => code === "DIRECT_TEXT_FIDELITY_RESTRICTED")).toHaveLength(2);
+      expect(codes).toContain("CHUNK_ROLLED_BACK");
+    });
+
+    it("hands the candidate review retry a candidate that replaced a flagged noun", async () => {
+      // The first attempt's only gate warning is the style target, so the retry reviews it instead of rewriting anew.
+      const flagged = await runLens({
+        strength: "very-strong", hints: LENS_FLAGGED, outputs: [LENS_REWRITE, LENS_REWRITE], verify: [P1_ONLY_RETRY, ok(), ok()]
+      });
+      expect(flagged.codex.contexts[1]).toMatchObject({ attempt: 2, candidateReview: { candidate: LENS_REWRITE, reason: "P1_STYLE_TARGET" } });
+      expect(flagged.codes).toContain("DIRECT_TEXT_CANDIDATE_REVIEW_RETRY");
+      expect(flagged.codes).not.toContain("DIRECT_TEXT_FIDELITY_RESTRICTED");
+      expect(flagged.result.diagnostics).toMatchObject({ candidateReviewRetries: 1, rolledBackChunks: 0, fullSourceRollbacks: 0 });
+      expect(flagged.output).toBe(LENS_REWRITE);
+
+      // Without the noun the same candidate fails the concept guard first: no review, and the chunk keeps its source.
+      const unflagged = await runLens({
+        strength: "very-strong", hints: { hints: LENS_BLOCK, replaceableNouns: [], failed: false },
+        outputs: [LENS_REWRITE, LENS_REWRITE], verify: [P1_ONLY_RETRY, ok(), ok()]
+      });
+      expect(unflagged.codex.contexts[1]!.candidateReview).toBeUndefined();
+      expect(unflagged.codes).not.toContain("DIRECT_TEXT_CANDIDATE_REVIEW_RETRY");
+      expect(unflagged.output).toBe(LENS_SOURCE);
+    });
+
+    it("checks the reassembled document with the nouns of every chunk, not only the last", async () => {
+      const second = "이 문단은 그대로 둔다.\n";
+      const source = LENS_SOURCE + second;
+      const test = await setup(source);
+      const events: TransformEvent[] = [];
+      try {
+        const first = codePoints(LENS_SOURCE), total = codePoints(source);
+        const python = new LexicalPython(
+          manifest([body(1, 0, first), body(2, first, total)], total, "chunked"),
+          [ok(), ok(), ok()], [],
+          // Only the first chunk's source has a flagged noun; the second chunk reports none.
+          chunkSource => chunkSource === LENS_SOURCE ? LENS_FLAGGED : { hints: "", replaceableNouns: [], failed: false }
+        );
+        const engine = new HumanizeEngine({ python, codex: new ContextCodex([LENS_REWRITE, second]), chunkConcurrency: 1 });
+        const result = await engine.transform({
+          jobId: "job-1", workspace: test.workspace, signal: new AbortController().signal,
+          onEvent: event => events.push(event), rewriteOptions: directText("strong")
+        });
+
+        const codes = events.flatMap(event => event.type === "warning" ? [event.code] : []);
+        expect(await readFile(result.finalPath, "utf8")).toBe(LENS_REWRITE + second);
+        expect(codes).not.toContain("DIRECT_TEXT_DOCUMENT_ROLLED_BACK");
+        expect(result.diagnostics).toMatchObject({ fidelityGuardFailures: 0, fullSourceRollbacks: 0, rolledBackChunks: 0 });
+      } finally {
+        await test.workspace.cleanup();
+        await removeTestRoot(test.outer);
+      }
+    });
+
+    it("ignores the nouns for a job that is not direct text", async () => {
+      // A file at normal strength keeps the structure guard only; the nouns change nothing there.
+      const test = await setup(LENS_SOURCE);
+      try {
+        const n = codePoints(LENS_SOURCE);
+        const engine = new HumanizeEngine({
+          python: new LexicalPython(manifest([body(1, 0, n)], n), [ok(), ok()], [], () => LENS_FLAGGED),
+          codex: new ContextCodex([LENS_REWRITE]),
+          chunkConcurrency: 1
+        });
+        const result = await engine.transform({
+          jobId: "job-1", workspace: test.workspace, signal: new AbortController().signal,
+          onEvent: () => undefined, rewriteOptions: { inputKind: "text-file", strength: "normal" }
+        });
+        expect(await readFile(result.finalPath, "utf8")).toBe(LENS_REWRITE);
+        expect(result.diagnostics.conservativeRetries).toBeUndefined();
+      } finally {
+        await test.workspace.cleanup();
+        await removeTestRoot(test.outer);
+      }
+    });
   });
 
   it("preserves passthrough content and body order", async () => {

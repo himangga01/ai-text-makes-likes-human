@@ -144,6 +144,9 @@ export interface ChunkTaskResult {
   restoredLexicalSentences: number;
   skippedLexicalSentences: number;
   lexicalRestoreFailures: number;
+  /** Lexicon nouns of this chunk's source the direct-text concept guard lets the rewrite replace; the full-document
+   * check uses the union over chunks. Not a diagnostic. */
+  lexicalNouns: string[];
   skippedSentences: number;
   fidelityGuardFailures: number;
   rolledBackChunks: number;
@@ -645,7 +648,7 @@ export class HumanizeEngine {
     // Vendor lexical layer: the awkward headwords this chunk's source contains go to the first attempt's
     // prompt as an [어휘 점검] block (prompt-builder.ts renders it). No block is sent when there are none or the
     // hints run failed.
-    let lexical: LexicalHints = { hints: "", failed: false };
+    let lexical: LexicalHints = { hints: "", replaceableNouns: [], failed: false };
     let lexicalHintMs = 0;
     if (this.python.lexicalHints) {
       const hintsStartedAt = this.now();
@@ -687,7 +690,7 @@ export class HumanizeEngine {
       lexicalRestoreFailures += report.lexicalRestoreFailures ?? 0;
       if (direct) {
         skippedSentences += report.skippedSentences;
-        fidelityFailed = candidateFidelityIssues > 0 || report.skippedSentences > 0 || checkDirectTextFidelity(sourceText, await readFile(rewrittenPath, 'utf8')).violations > 0;
+        fidelityFailed = candidateFidelityIssues > 0 || report.skippedSentences > 0 || checkDirectTextFidelity(sourceText, await readFile(rewrittenPath, 'utf8'), lexical.replaceableNouns).violations > 0;
         if (fidelityFailed) {
           fidelityGuardFailures++;
           this.recordChunkWarning(context, warnings, {
@@ -787,7 +790,8 @@ export class HumanizeEngine {
 
       const candidateReview = gate && !fidelityFailed ? candidateReviewForRetry({
         source: sourceText, candidate: await readFile(rewrittenPath, 'utf8'),
-        options: context.rewriteOptions, gate, parserIssues: candidateFidelityIssues, skippedSentences
+        options: context.rewriteOptions, gate, parserIssues: candidateFidelityIssues, skippedSentences,
+        lexicalNouns: lexical.replaceableNouns
       }) : undefined;
       if (candidateReview) {
         candidateReviewRetries++;
@@ -847,6 +851,7 @@ export class HumanizeEngine {
       repairedParticles,
       lexicalHintChunks: lexical.hints ? 1 : 0,
       lexicalHintFailures: lexical.failed ? 1 : 0,
+      lexicalNouns: lexical.replaceableNouns,
       lexicalHintMs,
       restoredLexicalSentences,
       skippedLexicalSentences,
@@ -999,7 +1004,8 @@ export class HumanizeEngine {
     const assembleMs = assembleFinishedAt - assembleStartedAt;
     const fullGateStartedAt = assembleFinishedAt;
     let fullFidelityFailures = 0;
-    if (rewriteOptions?.inputKind === 'direct-text' && checkDirectTextFidelity(source, await readFile(finalPath, 'utf8')).violations > 0) {
+    if (rewriteOptions?.inputKind === 'direct-text' && checkDirectTextFidelity(source, await readFile(finalPath, 'utf8'),
+      [...new Set(chunkResults.flatMap(result => result.lexicalNouns))]).violations > 0) {
       fullFidelityFailures = 1;
       await writeFile(finalPath, source, 'utf8');
       this.emitWarning(request, warnings, {code:'DIRECT_TEXT_DOCUMENT_ROLLED_BACK',message:'전체 글의 문장 경계·내용 보존을 확인하지 못해 원문을 유지했습니다.'});

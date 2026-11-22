@@ -19,6 +19,7 @@ try:
     from .super_sejong import mode as super_sejong_mode
     from . import super_sejong_josa as josa
     from .comma_guard import strip_injected as strip_commas
+    from .lexical_check import lexical_check
 except ImportError:  # Executed as a standalone gateway script.
     # Windows embedded Python's ._pth isolation omits the script directory.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -27,6 +28,7 @@ except ImportError:  # Executed as a standalone gateway script.
     from super_sejong import mode as super_sejong_mode
     import super_sejong_josa as josa
     from comma_guard import strip_injected as strip_commas
+    from lexical_check import lexical_check
 
 # 라틴 문자 단어(Apple, AI)와 한자열(李文學)은 고유명사·용어로 보고 개수까지 보존한다.
 _NAME_TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[.'’\-][A-Za-z0-9]+)*"
@@ -58,14 +60,26 @@ def lexical(vendor: Path):
     return lexical_layer
 
 
-def lexical_hints(source: str, vendor: Path = DEFAULT_VENDOR) -> str:
-    """The [어휘 점검] block for one source chunk (what `lexical_layer.py hints --genre essay` prints on the server),
-    or '' when nothing matched. The layer never blocks a rewrite, so a failure is no block."""
+def lexical_report(source: str, vendor: Path = DEFAULT_VENDOR) -> dict:
+    """The lexical check of one source chunk, as the server reads it from engine_runtime/lexical_check.py: the
+    [어휘 점검] block and the nouns the direct-text concept guard may let the rewrite replace. The layer never blocks
+    a rewrite, so a failure is no block and no exemption."""
     try:
-        layer = lexical(vendor)
-        return layer.render_hint_block(layer.find_hits(source, "essay"))
+        report = lexical_check(source, vendor, "essay")
     except Exception:
-        return ""
+        return {"block": "", "replaceableNouns": []}
+    # As on the server, the exemption exists only alongside a block the rewrite was given.
+    return report if report["block"] else {"block": "", "replaceableNouns": []}
+
+
+def lexical_hints(source: str, vendor: Path = DEFAULT_VENDOR) -> str:
+    """The [어휘 점검] block for one source chunk, or '' when nothing matched or the layer failed."""
+    return lexical_report(source, vendor)["block"]
+
+
+def lexical_nouns(source: str, vendor: Path = DEFAULT_VENDOR) -> list:
+    """The lexicon nouns of one source chunk the direct-text concept guard lets the rewrite replace."""
+    return lexical_report(source, vendor)["replaceableNouns"]
 
 
 def decision(exit_code: int, attempt: int) -> str:

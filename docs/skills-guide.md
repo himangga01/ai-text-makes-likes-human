@@ -189,7 +189,7 @@ Prepare returns these paths when `status` is `rewrite`:
 - `inputPath`: the chunk text to rewrite.
 - `rulesPath`: Korean rewriting rules.
 - `instructionsPath` and `sentencesPath`: direct text, and TXT/MD files above `normal`. Whenever they are present, re-read them on **every** attempt. They carry the strength, retry policy, and sentence spans.
-- `lexicalHintsPath`: TXT/MD file jobs on the first attempt only, when the chunk uses words from the vendor lexicon (`[어휘 점검]` block: the word, when to change it, when to keep it, how). Judge each item in context; never replace in bulk. Direct text and the strength route get the same block inside `instructionsPath`.
+- `lexicalHintsPath`: TXT/MD file jobs on the first attempt only, when the chunk uses words from the vendor lexicon (`[어휘 점검]` block: the word, when to change it, when to keep it, how). Judge each item in context; never replace in bulk. Direct text and the strength route get the same block inside `instructionsPath`. On those routes the concept guard lets the rewrite replace a lexicon noun the check found in the source as one whole word (for example 렌즈 in "세 가지 렌즈로"); every other source concept must still survive.
 - `responsePath`: where the host writes its answer.
 
 Response format for text chunks (UTF-8 JSON, no code fences inside the text):
