@@ -30,7 +30,8 @@ try {
     case 'context': {
       let nonce; do { nonce = randomUUID(); } while (input.source.includes(nonce) || input.candidateReview?.candidate.includes(nonce));
       result = { sentences: sourceSentences(input.source), instructions: buildHumanizePrompt({ source: input.source,
-        quickRules: input.quickRules, attempt: input.attempt, nonce, rewriteOptions: options, candidateReview: input.candidateReview }) }; break;
+        quickRules: input.quickRules, attempt: input.attempt, nonce, rewriteOptions: options, candidateReview: input.candidateReview,
+        lexicalHints: input.lexicalHints }) }; break;
     }
     case 'context-v2': {
       // Super Sejong v2 (SUPER_SEJONG_ENGINE=v2): the same prompt the server path renders (src/engine/sejong/prompt.ts),

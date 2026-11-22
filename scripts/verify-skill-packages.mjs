@@ -43,6 +43,25 @@ for (const host of ["Claude", "Codex"]) {
   call("finalize", "--job", state.job, "--output", output);
   if ((await readFile(output, "utf8")) !== input) throw new Error("Packaged skill changed the source");
   call("cleanup", "--job", state.job);
+  // Vendor lexical layer (im-not-ai 2.4+): shipped, hinted on the first attempt and restoring an injected word.
+  for (const relative of ["vendor/humanize-engine/scripts/lexical_layer.py", "vendor/humanize-engine/skills/humanize-korean/references/lexicon.json"]) {
+    await readFile(path.join(skill, relative));
+  }
+  const lexicalSource = path.join(root, "lexical.md"), lexicalOutput = path.join(root, "lexical-result.md");
+  const lexicalInput = "올해 매출은 크게 늘었다. 이 결과를 여러 관점에서 살펴본다. 비용은 조금 줄었다.\n";
+  await writeFile(lexicalSource, lexicalInput.replace("관점에서", "렌즈로"), "utf8");
+  state = call("prepare", "--input", lexicalSource);
+  if (!(await readFile(state.lexicalHintsPath, "utf8")).includes("[우선] 렌즈")) throw new Error("Packaged lexical hints missing");
+  call("cleanup", "--job", state.job);
+  await writeFile(lexicalSource, lexicalInput, "utf8");
+  state = call("prepare", "--input", lexicalSource);
+  if (state.lexicalHintsPath) throw new Error("Lexical hints for a source without lexicon words");
+  await writeFile(state.responsePath, JSON.stringify({ rewrittenText: lexicalInput.replace("관점에서", "렌즈로"), warnings: [] }));
+  state = call("accept", "--job", state.job, "--chunk", String(state.chunk), "--attempt", String(state.attempt), "--source-hash", state.sourceHash, "--response", state.responsePath);
+  if (state.restoration?.restoredLexicalSentences !== 1) throw new Error("Packaged lexical restore did not run");
+  call("finalize", "--job", state.job, "--output", lexicalOutput);
+  if ((await readFile(lexicalOutput, "utf8")) !== lexicalInput) throw new Error("Packaged lexical restore changed the result");
+  call("cleanup", "--job", state.job);
   const nodeLock = JSON.parse(await readFile(path.join(skill, 'node/runtime-lock.json'), 'utf8'));
   if (nodeLock.version !== nodePin.version || nodeLock.sha256 !== nodePin.sha256 || !(await readFile(path.join(skill, 'node/LICENSE'), 'utf8')).includes('Node.js')) throw new Error('Pinned licensed Node missing');
   const pythonLock = JSON.parse(await readFile(path.join(skill, 'python/runtime-lock.json'), 'utf8'));
