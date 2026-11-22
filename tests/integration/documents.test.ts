@@ -33,7 +33,7 @@ async function setup(){
  const doc=new DocumentEngine(config,runner);
  const app=createApp({config,documentEngine:doc,queue:new TransformQueue({maxActive:1,maxAccepted:3}),
    engine:{async transform(){throw new Error('Plain text engine must not process Office files');}},
-   preflight:{ready:true,nodeVersion:'24',pythonVersion:'3.14.7',codexVersion:'0.153.4',humanizeVersion:'2.3.2'}});
+   preflight:{ready:true,nodeVersion:'24',pythonVersion:'3.14.7',codexVersion:'0.153.4',humanizeVersion: '2.4.7'}});
  cleanup.push(()=>app.locals.documentStore.close());
  const server=await listen(app);cleanup.push(()=>close(server.server));
  return {...server,calls,store:app.locals.documentStore};

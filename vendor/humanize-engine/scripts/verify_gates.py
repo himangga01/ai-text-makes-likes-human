@@ -48,7 +48,8 @@ import sys
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_REFS = os.path.join(_ROOT, "skills", "humanize-korean", "references")
+_PLUGIN_REFS = os.path.join(_ROOT, "skills", "humanize-korean", "references")
+_REFS = _PLUGIN_REFS if os.path.isdir(_PLUGIN_REFS) else os.path.join(_ROOT, "references")
 # checks 는 프로덕션 검사 구현이라 scripts/ 에 둔다(이 파일과 같은 디렉터리).
 # 예전에는 tests/golden/ 에 있어 프로덕션 게이트가 테스트 트리를 런타임 import 했고,
 # tests/ 를 뺀 선별 배포에서는 P3 golden 축이 통째로 죽었다. (#59)
@@ -130,9 +131,35 @@ def sentence_touch_rate(before: str, after: str) -> tuple[float, int, int]:
 #
 # `(?!이)`: "불이야 하고 외쳤다"·"내 스타일이야 하지만" 같은 계사(-이야)를 배제한다.
 # 앞 음절을 한글 전체로 열어 두면 이 오검출이 실제로 났다.
+#
+# ⚠️ 해체·해요체 활용 추가 (v2.5) — 구 사전은 합쇼체·해라체 계열만 있어 구어체 종결을
+# 놓쳤다. 실측: `"그 둘을 묶어줄 무언가가 더 있어야 한다는 것."` → `"...있어야 해요."`
+# 윤문에서 P5가 "서법 소실 1문장 — FAIL"을 내고 복원기가 격식체 원문으로 되돌렸다.
+# 당위(`있어야`)는 그대로 살아 있으므로 오탐이며, CLAUDE.md 철칙 #5(register 보존 —
+# "'~인데요/~거든요/~한 겁니다' 구어 종결 보존")에 위배된다. 긴 활용형을 먼저 둔다
+# (예: `했어요|했어`, `하지요|하죠`, `해요|해`).
+# 당위는 `-아/어/여야 하다` 의 축약이므로 `야` 앞 음절은 **종성 없는 개음절**이고
+# 중성이 ㅏㅐㅓㅔㅕㅘㅙㅚㅝㅞ 중 하나다(있**어**야·손**봐**야·짜야·가야·와야·줘야·나**서**야).
+# 앞 음절을 한글 전체로 열어 두면 명사 + `해-` 어절이 당위로 잡힌다 — `(?!이)` 는
+# 계사 `-이야` 만 막으므로 아래가 전부 과탐이었다(2026-09-24 실측).
+#
+#   이 분야 해설서를 읽었다 / 시야 해석이 중요하다 / 전 분야 해외 진출
+#   광야 해가 진다 / 분야 해체를 논의했다
+#
+# 어간 조건은 계사 `-이야`(`이` 의 중성 ㅣ)까지 함께 걸러내므로 기존 lookahead 는
+# 불필요해졌다. `#132` 가 해체·해요체 활용을 추가한 방향은 유지한다.
+_JUNG = "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ"
+_DEONTIC_STEM = "".join(
+    chr(0xAC00 + c)
+    for c in range(11172)
+    if c % 28 == 0  # 종성 없음
+    and _JUNG[(c // 28) % 21] in {"ㅏ", "ㅐ", "ㅓ", "ㅔ", "ㅕ", "ㅘ", "ㅙ", "ㅚ", "ㅝ", "ㅞ"}
+)
+
 DEONTIC_RE = _re.compile(
-    r"(?:(?!이)[가-힣])야\s*(?:한다|합니다|했다|하며|하고|하는|할|함)"
-    r"|(?:(?!이)[가-힣])야만"
+    rf"[{_DEONTIC_STEM}]야\s*(?:한다|합니다|했다|하며|하고|하는|할|함"
+    r"|했어요|했어|해요|해서|해도|하지요|하죠|해)"
+    rf"|[{_DEONTIC_STEM}]야만"
     r"|필요가\s*있"
     r"|필요하다|필요합니다"
     r"|요구된다|요구됩니다"
@@ -281,7 +308,10 @@ def main(argv: list[str] | None = None) -> int:
     # --- P1 목표 달성 (before z > +2.0인 어휘 S1 지표) --------------------
     try:
         z_before = _m.compute_all_v2(before, genre=args.genre)["z_scores"]
-        z_after = _m.compute_all_v2(after, genre=args.genre)["z_scores"]
+        after_m = _m.compute_all_v2(after, genre=args.genre)
+        # 표본 가드(#130)는 원문 쪽 S1 선정에만 건다. 원문에서 뽑힌 지표는 윤문본이
+        # 쉼표를 걷어내 가드 아래로 내려가도 원시 z 로 판정한다.
+        z_after = {**after_m["z_scores"], **(after_m.get("z_scores_unguarded") or {})}
     except Exception as e:  # graceful degrade — 이 축만 판정 불가
         z_before, z_after = {}, {}
         print(f"[P1 목표달성] 판정 불가 (metrics 오류: {e})", file=sys.stderr)

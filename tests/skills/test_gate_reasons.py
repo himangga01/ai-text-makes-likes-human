@@ -73,7 +73,10 @@ class GateReasonTest(unittest.TestCase):
                     if changed >= 30:
                         self.assertEqual(first['policy'], 'retry')
 
-    def test_real_recorded_p1_only_warning_is_advisory_and_does_not_retry(self):
+    def test_real_recorded_candidate_is_accepted_without_retry(self):
+        # Under vendor 2.3.2 this recorded reply raised a P1-only advisory: comma_segment_length z +6.21 on a text
+        # without a single comma. Vendor 2.4.x leaves that metric out below three commas (upstream #130, efc9dd1),
+        # so P1 is now N/A here and the reply is a plain accept.
         fixture = json.loads((ROOT / 'tests/fixtures/direct-live-quality.json').read_text(encoding='utf-8'))
         with tempfile.TemporaryDirectory() as directory:
             before, after = Path(directory)/'before.txt', Path(directory)/'after.txt'
@@ -87,10 +90,30 @@ class GateReasonTest(unittest.TestCase):
             self.assertEqual(result['gate']['exit_code'], 0)
             self.assertEqual(result['policy'], 'accept')
             self.assertEqual(result['warningReasons'], {'version': 1, 'codes': []})
-            self.assertEqual(result['advisoryReasons'], ['P1_STYLE_TARGET'])
+            self.assertNotIn('advisoryReasons', result)
             self.assertEqual(result['hardFailures'], [])
         # An unchanged source must never be sent back for a retry.
         self.assertEqual(unchanged['policy'], 'accept')
+
+    def test_p1_only_warning_is_advisory_and_does_not_retry(self):
+        # Comma-chained clauses keep the comma metrics far above the human band; a one-word edit cannot reach the
+        # P1 target, and nothing else warns.
+        source = ("오늘은 회의가 있었고, 팀장은 일정이 늦어졌다고 말했고, 우리는 원인을 찾았다. "
+                  "개발팀은 서버를 점검했고, 기획팀은 문서를 고쳤고, 디자인팀은 화면을 다듬었다. "
+                  "고객은 답장을 기다렸고, 영업팀은 전화를 돌렸고, 지원팀은 메일을 보냈다. "
+                  "저녁에는 결과를 모았고, 내일은 다시 확인하기로 했고, 모두 일찍 퇴근했다.\n")
+        with tempfile.TemporaryDirectory() as directory:
+            before, after = Path(directory)/'before.txt', Path(directory)/'after.txt'
+            before.write_text(source, encoding='utf-8')
+            after.write_text(source.replace('저녁에는', '저녁엔'), encoding='utf-8')
+            first = workflow.verify(before, after)
+            second = workflow.verify(before, after, attempt=2)
+        for result in (first, second):
+            self.assertEqual(result['gate']['exit_code'], 0)
+            self.assertEqual(result['policy'], 'accept')
+            self.assertEqual(result['warningReasons'], {'version': 1, 'codes': []})
+            self.assertEqual(result['advisoryReasons'], ['P1_STYLE_TARGET'])
+            self.assertEqual(result['hardFailures'], [])
 
     def test_p1_with_another_warning_still_retries(self):
         with tempfile.TemporaryDirectory() as directory:

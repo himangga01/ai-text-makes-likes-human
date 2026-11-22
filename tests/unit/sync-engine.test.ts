@@ -10,7 +10,7 @@ async function fixture(dirty: boolean) {
   const service = path.join(root, "portal");
   await mkdir(path.join(source, "skills/humanize-korean"), { recursive: true });
   await mkdir(path.join(source, "scripts"));
-  await writeFile(path.join(source, "skills/humanize-korean/SKILL.md"), '---\nversion: "2.3.2"\n---\n');
+  await writeFile(path.join(source, "skills/humanize-korean/SKILL.md"), '---\nversion: "2.4.7"\n---\n');
   await writeFile(path.join(source, "scripts/prepare_monolith_input.py"), "upstream content\n");
   const git = (...args: string[]) => execFileSync("git", ["-C", source, ...args], { windowsHide: true, encoding: "utf8" }).trim();
   git("init", "-q"); git("add", ".");

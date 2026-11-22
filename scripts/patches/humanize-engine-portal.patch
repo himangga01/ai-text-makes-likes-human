@@ -1,8 +1,8 @@
 diff --git a/vendor/humanize-engine/scripts/checks.py b/vendor/humanize-engine/scripts/checks.py
-index f159dab..4cae5be 100644
+index 67cfdd8..a03a7ee 100644
 --- a/vendor/humanize-engine/scripts/checks.py
 +++ b/vendor/humanize-engine/scripts/checks.py
-@@ -132,12 +132,46 @@ _HEADING_PREFIX = re.compile(
+@@ -162,12 +162,46 @@ _HEADING_PREFIX = re.compile(
  )
  _PROSE_ENDING = re.compile(r"(?:다|요|음|함|까)\s*[.?!]$")
  _DEF_LINE = re.compile(r"^\s*\d{1,3}\)\s")
@@ -50,7 +50,7 @@ index f159dab..4cae5be 100644
          s = line.strip()
          if not s or len(s) > 50:
              continue
-@@ -145,6 +179,8 @@ def extract_headings(text: str) -> list[tuple[str, str]]:
+@@ -175,6 +209,8 @@ def extract_headings(text: str) -> list[tuple[str, str]]:
              continue
          if not _HEADING_PREFIX.match(s):
              continue
@@ -59,7 +59,7 @@ index f159dab..4cae5be 100644
          if _PROSE_ENDING.search(s):  # short prose sentence, not a heading
              continue
          core = _HEADING_PREFIX.sub("", s).strip()
-@@ -178,7 +214,12 @@ def check_headings(original: str, output: str) -> list[Failure]:
+@@ -208,7 +244,12 @@ def check_headings(original: str, output: str) -> list[Failure]:
  # ("...증가했다.1)"). A space-preceded or line-leading "N) " is a footnote
  # DEFINITION label, not an inline marker. '(3)' style headings are excluded
  # by the '(' lookbehind; '(2024)' style years by the digit lookbehind.
@@ -73,7 +73,7 @@ index f159dab..4cae5be 100644
  _DEF_LABEL = re.compile(r"(?:^|(?<=\s))(\d{1,3})\)\s")
  _NUM_TOKEN = re.compile(r"\d+(?:[.,]\d+)*")
  
-@@ -197,15 +238,39 @@ def extract_inline_markers(text: str) -> list[tuple[str, int]]:
+@@ -227,15 +268,39 @@ def extract_inline_markers(text: str) -> list[tuple[str, int]]:
      return markers
  
  
@@ -116,7 +116,7 @@ index f159dab..4cae5be 100644
              continue
          labels = [(m.start(), m.group(1)) for m in _DEF_LABEL.finditer(line)]
          for i, (pos, num) in enumerate(labels):
-@@ -221,11 +286,14 @@ def _nearest_num_before(text: str, pos: int) -> str | None:
+@@ -251,11 +316,14 @@ def _nearest_num_before(text: str, pos: int) -> str | None:
      return nums[-1] if nums else None
  
  
@@ -133,7 +133,7 @@ index f159dab..4cae5be 100644
          return fails  # original has no footnotes; nothing to protect
  
      if len(out_markers) < len(in_markers):
-@@ -269,8 +337,7 @@ def check_footnotes(original: str, output: str) -> list[Failure]:
+@@ -299,8 +367,7 @@ def check_footnotes(original: str, output: str) -> list[Failure]:
                  f"(인접 수치 앵커 '{anchor}' → '{out_anchor}'): 인용 출처 변조 위험",
              ))
  
@@ -143,7 +143,7 @@ index f159dab..4cae5be 100644
      for num, content in in_defs.items():
          if num not in out_defs:
              fails.append(Failure(
-@@ -358,14 +425,26 @@ def check_numbers(original: str, output: str) -> list[Failure]:
+@@ -388,14 +455,26 @@ def check_numbers(original: str, output: str) -> list[Failure]:
  MIN_QUOTE_LEN = 8
  
  
@@ -176,11 +176,64 @@ index f159dab..4cae5be 100644
      return [q for q in quotes if len(q.strip()) >= min_len]
  
  
+diff --git a/vendor/humanize-engine/scripts/lexical_layer.py b/vendor/humanize-engine/scripts/lexical_layer.py
+index 1d2ccbf..e4ea677 100644
+--- a/vendor/humanize-engine/scripts/lexical_layer.py
++++ b/vendor/humanize-engine/scripts/lexical_layer.py
+@@ -194,6 +194,7 @@ def restore(before: str, after: str, lexicon: dict | None = None) -> tuple[str,
+         return after, [], []
+     body, summary = rm._checks.split_summary_block(after)
+     pairs = rm.align(rm._m._split_sentences(before_body), rm._m._split_sentences(body))
++    source_sentences = [s.strip() for s in rm._m._split_sentences(before_body) if s.strip()]
+     restored: list[dict] = []
+     skipped: list[dict] = []
+     for idx, (b, a) in enumerate(pairs):
+@@ -238,6 +239,17 @@ def restore(before: str, after: str, lexicon: dict | None = None) -> tuple[str,
+         if neighbor_gap or (longer and len(foreign) >= rm.MERGE_FOREIGN_TOKENS):
+             skipped.append({**rec, "reason": "문장 병합 의심 — 되돌리면 다른 명제가 사라진다"})
+             continue
++        # 순서 변경·중복 — restore_modality 와 같은 판정. 순서가 바뀐 윤문에서는 정렬이 서로 다른
++        # 원문 문장을 짝짓고, 되돌리는 순간 한 명제가 사라지고 다른 명제가 두 번 나온다.
++        present = {s.strip() for s in rm._m._split_sentences(body)}
++        own = rm._sim(b, a)
++        if any(other != b and other not in present and rm._sim(other, a) > own
++               for other in source_sentences):
++            skipped.append({**rec, "reason": "순서 변경 의심 — 다른 원문 문장과 더 가깝다"})
++            continue
++        if b in present:
++            skipped.append({**rec, "reason": "복원하면 같은 문장이 중복된다"})
++            continue
+         body = body.replace(a, b, 1)
+         restored.append(rec)
+     return body + summary, restored, skipped
+@@ -258,15 +270,18 @@ def main(argv: list[str] | None = None) -> int:
+     a = ap.parse_args(argv)
+     try:
+         if a.cmd == "hints":
+-            text = open(a.input, encoding="utf-8").read()
++            with open(a.input, encoding="utf-8", newline="") as f:
++                text = f.read()
+             hits = find_hits(text, a.genre)
+             print(json.dumps(hits, ensure_ascii=False, indent=1) if a.json else render_hint_block(hits))
+             return 0
+-        before = open(a.before, encoding="utf-8").read()
+-        after = open(a.after, encoding="utf-8").read()
++        with open(a.before, encoding="utf-8", newline="") as f:
++            before = f.read()
++        with open(a.after, encoding="utf-8", newline="") as f:
++            after = f.read()
+         fixed, restored, skipped = restore(before, after)
+         if a.out:
+-            with open(a.out, "w", encoding="utf-8") as f:
++            with open(a.out, "w", encoding="utf-8", newline="") as f:
+                 f.write(fixed)
+         else:
+             sys.stdout.write(fixed)
 diff --git a/vendor/humanize-engine/scripts/prepare_monolith_input.py b/vendor/humanize-engine/scripts/prepare_monolith_input.py
-index b7ff6de..b067027 100644
+index a368147..f762289 100644
 --- a/vendor/humanize-engine/scripts/prepare_monolith_input.py
 +++ b/vendor/humanize-engine/scripts/prepare_monolith_input.py
-@@ -144,7 +144,7 @@ def _load_input(input_path: Path, run_dir: Path, enabled: bool) -> str:
+@@ -161,7 +161,7 @@ def _load_input(input_path: Path, run_dir: Path, enabled: bool) -> str:
      except Exception:  # noqa: BLE001 — graceful degrade.
          return text
      if report.changed:
@@ -189,7 +242,7 @@ index b7ff6de..b067027 100644
          (run_dir / "00_sanitize.json").write_text(
              json.dumps(report.to_dict(), ensure_ascii=False, indent=2),
              encoding="utf-8",
-@@ -692,6 +692,34 @@ def compute_chunk_spans(
+@@ -774,6 +774,34 @@ def compute_chunk_spans(
      return spans, warnings
  
  
@@ -224,7 +277,7 @@ index b7ff6de..b067027 100644
  def _render_chunk_header(index: int, total: int, starts_with_heading: bool) -> str:
      lines = [
          f"[청크 컨텍스트] 이 텍스트는 한 문서를 나눈 청크 {index}/{total}이다.",
-@@ -718,8 +746,6 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+@@ -800,8 +828,6 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
      if not text.strip():
          raise SystemExit("01_input.txt is empty; nothing to chunk")
  
@@ -233,7 +286,7 @@ index b7ff6de..b067027 100644
      # 전문(全文) 기준 route_hint — 청킹 경로가 애초에 적절했는지 manifest 에
      # 남긴다. 판정 실패는 청킹을 막지 않는다 (graceful degrade).
      route: dict | None = None
-@@ -728,10 +754,18 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+@@ -810,10 +836,18 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
              full_metrics = _metrics_mod.compute_all(
                  text, genre=args.genre, baseline_path=args.baseline
              )
@@ -253,7 +306,7 @@ index b7ff6de..b067027 100644
          warnings.append(
              f"입력 {len(text):,}자 ≤ 청킹 권장 최소 {CHUNK_RECOMMEND_MIN_CHARS:,}자 "
              f"— 단일 콜 실증 범위라 --chunk 비권장 (권고, route_hint 참조)"
-@@ -818,6 +852,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
+@@ -902,6 +936,7 @@ def run_chunk_mode(args: argparse.Namespace, diagnosis: str | None) -> int:
          "max_chunk_chars": MAX_CHUNK_CHARS,
          "route_hint": route["route_hint"] if route else None,
          "route_reason": route["route_reason"] if route else None,
@@ -261,7 +314,7 @@ index b7ff6de..b067027 100644
          "chunk_count": total,
          "body_chunk_count": sum(1 for e in entries if not e["passthrough"]),
          "passthrough_chunk_count": sum(1 for e in entries if e["passthrough"]),
-@@ -874,6 +909,11 @@ def main(argv: list[str] | None = None) -> int:
+@@ -965,6 +1000,11 @@ def main(argv: list[str] | None = None) -> int:
          help="장문 청킹 모드: 01_input.txt 를 손실 없이 분할해 청크별 "
          "input_with_metrics 파일과 chunk_manifest.json 을 만든다.",
      )
@@ -287,10 +340,10 @@ index 6e32cc7..1d87af1 100644
      report = {
          "source_chars": len(text),
 diff --git a/vendor/humanize-engine/scripts/restore_modality.py b/vendor/humanize-engine/scripts/restore_modality.py
-index dc5e4a3..6872021 100644
+index 7f6dd09..96712b8 100644
 --- a/vendor/humanize-engine/scripts/restore_modality.py
 +++ b/vendor/humanize-engine/scripts/restore_modality.py
-@@ -93,31 +93,68 @@ def _sim(a: str, b: str) -> float:
+@@ -95,31 +95,68 @@ def _sim(a: str, b: str) -> float:
      return 2 * inter / (sum(A.values()) + sum(B.values()))
  
  
@@ -375,8 +428,8 @@ index dc5e4a3..6872021 100644
              pairs.append((before[i - 1], ""))
              i -= 1
          else:
-@@ -213,6 +250,9 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
-     result = after
+@@ -215,6 +252,9 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
+     editable_body, preserved_summary = _checks.split_summary_block(after)
      restored: list[dict] = []
      skipped: list[dict] = []
 +    source_sentences = [
@@ -385,7 +438,7 @@ index dc5e4a3..6872021 100644
      for loss in losses:
          # 유사도가 낮은 짝은 정렬 아티팩트일 수 있어 손대지 않는다. 다만 **보고는 남긴다** —
          # 예전에는 조용히 탈락시켜, 진짜 손실이 어디로 갔는지 흔적조차 남지 않았다.
-@@ -241,7 +281,22 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
+@@ -243,7 +283,22 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
                  }
              )
              continue
@@ -395,20 +448,20 @@ index dc5e4a3..6872021 100644
 +        # 결과에 그대로 남아 있는 원문 문장은 이미 제 짝이 있으므로 비교에서 뺀다
 +        # (병렬 문장 "서울의 매출은 … / 부산의 매출은 …"의 서법 복원이 막히지 않게).
 +        own = _sim(loss["before"], loss["after"])
-+        kept = {s.strip() for s in _m._split_sentences(result)}
++        kept = {s.strip() for s in _m._split_sentences(editable_body)}
 +        if any(other != loss["before"] and other not in kept and _sim(other, loss["after"]) > own
 +               for other in source_sentences):
 +            skipped.append({**loss, "reason": "순서 변경 의심 — 다른 원문 문장과 더 가깝다"})
 +            continue
          replacement = _strip_restored_cliche(loss["before"], loss["after"])
-+        present = {s.strip() for s in _m._split_sentences(result)}
++        present = {s.strip() for s in _m._split_sentences(editable_body)}
 +        if loss["before"] in present or replacement.strip() in present:
 +            skipped.append({**loss, "reason": "복원하면 같은 문장이 중복된다"})
 +            continue
-         result = result.replace(loss["after"], replacement, 1)
+         editable_body = editable_body.replace(loss["after"], replacement, 1)
          restored.append({**loss, "restored_as": replacement})
-     return result, restored, skipped
-@@ -255,9 +310,9 @@ def main(argv: list[str] | None = None) -> int:
+     return editable_body + preserved_summary, restored, skipped
+@@ -257,9 +312,9 @@ def main(argv: list[str] | None = None) -> int:
      ap.add_argument("--json", action="store_true", help="보고를 JSON으로 stderr에 출력")
      args = ap.parse_args(argv)
  
@@ -420,7 +473,7 @@ index dc5e4a3..6872021 100644
          after = f.read()
  
      result, restored, skipped = restore(before, after)
-@@ -277,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
+@@ -279,7 +334,7 @@ def main(argv: list[str] | None = None) -> int:
              print(f"  (보류) {s['after'][:40]} — {s['reason']}", file=sys.stderr)
  
      if args.out:
@@ -561,10 +614,10 @@ index 1cbbd34..aa7fb03 100644
      else:
          sys.stdout.write(fixed)
 diff --git a/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py b/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py
-index dd6ca76..96bd1e9 100644
+index 1a96795..c88f961 100644
 --- a/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py
 +++ b/vendor/humanize-engine/skills/humanize-korean/references/metrics_v2.py
-@@ -683,8 +683,57 @@ def change_rate(before: str, after: str, ignore_markup: bool = False) -> float:
+@@ -726,8 +726,57 @@ def change_rate(before: str, after: str, ignore_markup: bool = False) -> float:
          after = _strip_markup(after)
      if not before and not after:
          return 0.0

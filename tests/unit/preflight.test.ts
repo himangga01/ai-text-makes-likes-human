@@ -7,7 +7,7 @@ import { exited, FakeCommandRunner } from "../helpers/fake-command-runner.js";
 
 const config = loadConfig({}, process.cwd());
 const engineVersion =
-  "version=2.3.2\ncommit=31a66d165a9cc6c26c4c1246553f95d0468d27fb\n";
+  "version=2.4.7\ncommit=c07df14d9f68da482ff5183591808a7d132d4a71\n";
 const sejongVersion = "id=super-sejong\nversion=2.0.0\nschema=1\n";
 // The engine switch is read from the environment, so every call names it instead of inheriting the shell's.
 const legacyEnv: NodeJS.ProcessEnv = {};
@@ -39,7 +39,7 @@ describe("runPreflight", () => {
       ready: true,
       pythonVersion: "3.14.7",
       codexVersion: "0.149.0",
-      humanizeVersion: "2.3.2"
+      humanizeVersion: "2.4.7"
     });
   });
 
@@ -88,13 +88,13 @@ describe("runPreflight", () => {
 });
 
 describe("runPreflight with the legacy engine (SUPER_SEJONG_ENGINE unset)", () => {
-  it("still requires the vendor engine 2.3.2 and rejects any other version before running anything", async () => {
-    for (const text of ["version=2.3.1\n", "version=2.4.0\n", "version=3.0.0\n"]) {
+  it("still requires the vendor engine 2.4.7 and rejects any other version before running anything", async () => {
+    for (const text of ["version=2.3.2\n", "version=2.4.6\n", "version=3.0.0\n"]) {
       const runner = new FakeCommandRunner([]);
       expect(await runPreflight(config, runner, text, legacyEnv)).toMatchObject({
         ready: false,
         errorCode: "ENGINE_UNAVAILABLE",
-        message: "Humanize 엔진 2.3.2가 필요합니다."
+        message: "Humanize 엔진 2.4.7이 필요합니다."
       });
       expect(runner.calls).toEqual([]);
     }
@@ -109,7 +109,7 @@ describe("runPreflight with the legacy engine (SUPER_SEJONG_ENGINE unset)", () =
     const runner = new FakeCommandRunner([]);
     const report = await runPreflight(config, runner, sejongVersion, legacyEnv);
 
-    expect(report).toMatchObject({ ready: false, message: "Humanize 엔진 2.3.2가 필요합니다." });
+    expect(report).toMatchObject({ ready: false, message: "Humanize 엔진 2.4.7이 필요합니다." });
     expect(runner.calls).toEqual([]);
   });
 
@@ -122,7 +122,7 @@ describe("runPreflight with the legacy engine (SUPER_SEJONG_ENGINE unset)", () =
   it("treats an unknown switch value as legacy", async () => {
     for (const value of ["", "v3", "v2.0", "super-sejong", "1"]) {
       const report = await runPreflight(config, readyRunner(), engineVersion, { SUPER_SEJONG_ENGINE: value });
-      expect(report).toMatchObject({ ready: true, humanizeVersion: "2.3.2" });
+      expect(report).toMatchObject({ ready: true, humanizeVersion: "2.4.7" });
     }
   });
 });
@@ -225,7 +225,7 @@ describe("runPreflight with SUPER_SEJONG_ENGINE=v2", () => {
     expect(await runPreflight(config, new FakeCommandRunner([]), engineVersion)).toMatchObject({ ready: false });
 
     vi.stubEnv("SUPER_SEJONG_ENGINE", "legacy");
-    expect(await runPreflight(config, readyRunner(), engineVersion)).toMatchObject({ ready: true, humanizeVersion: "2.3.2" });
+    expect(await runPreflight(config, readyRunner(), engineVersion)).toMatchObject({ ready: true, humanizeVersion: "2.4.7" });
   });
 });
 
@@ -242,7 +242,7 @@ describe("engineVersionPath and the repository's own version files", () => {
 
     expect(await runPreflight(config, readyRunner(), legacyText, legacyEnv)).toMatchObject({
       ready: true,
-      humanizeVersion: "2.3.2"
+      humanizeVersion: "2.4.7"
     });
     expect(await runPreflight(config, readyRunner(), v2Text, v2Env)).toMatchObject({
       ready: true,

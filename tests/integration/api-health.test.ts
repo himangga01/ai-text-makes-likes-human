@@ -67,7 +67,7 @@ describe("GET /api/health", () => {
         nodeVersion: "24.19.0",
         pythonVersion: "3.14.7",
         codexVersion: "0.149.0",
-        humanizeVersion: "2.3.2"
+        humanizeVersion: "2.4.7"
       }
     });
     const running = await listen(app);
@@ -85,7 +85,7 @@ describe("GET /api/health", () => {
         pid: process.pid,
         engine: "codex-cli",
         engineVersion: "0.149.0",
-        humanizeVersion: "2.3.2",
+        humanizeVersion: "2.4.7",
         claudeAvailable: false,
         activeJobs: 0,
         queuedJobs: 0
@@ -106,7 +106,7 @@ describe("GET /api/health", () => {
         nodeVersion: "24.19.0",
         pythonVersion: "3.14.7",
         codexVersion: "0.149.0",
-        humanizeVersion: "2.3.2"
+        humanizeVersion: "2.4.7"
       }
     });
     const running = await listen(app);
@@ -159,7 +159,7 @@ describe("GET /api/health", () => {
 
 describe("live model catalog", () => {
   const nova = { id: "gpt-7-nova", label: "GPT-7 Nova", efforts: ["low", "medium", "high"] };
-  const ready = { ready: true, nodeVersion: "24.19.0", pythonVersion: "3.14.7", codexVersion: "0.167.0", humanizeVersion: "2.3.2" };
+  const ready = { ready: true, nodeVersion: "24.19.0", pythonVersion: "3.14.7", codexVersion: "0.167.0", humanizeVersion: "2.4.7" };
   // A fake discovery answering with whatever the CLI offers at the time; no list means the CLI is missing.
   function catalogOf(offered: Partial<Record<EngineChoice, DiscoveredCatalog["models"]>>) {
     const calls: EngineChoice[] = [];

@@ -18,7 +18,9 @@ or from the CLI:
 
 Failure codes (stable API — tests and fixtures reference these):
     empty_output       output is blank
-    hayeot_injection   '하였' count increased vs original
+    hayeot_injection   '하였' count increased vs original. Exception: when
+                       the original is pure 하였체 (no '했' at all), clause
+                       splitting may add up to one '하였' per new sentence
     cliche_injection   a boilerplate phrase appeared/increased vs original
     colloquial_erased  colloquial sentence endings (해요체) wiped out
     heading_lost       a heading line disappeared entirely
@@ -62,6 +64,20 @@ def _norm_ws(s: str) -> str:
 # ===========================================================================
 
 HAYEOT_RE = re.compile(r"하였")
+HAESS_RE = re.compile(r"했")
+
+# '하였' 증가가 곧 격식 상향은 아니다. 등위절 분절("확인하고, 명시하였다" →
+# "확인하였다. 명시하였다.")은 공유되던 과거 표지를 문장마다 하나씩 요구하므로
+# 같은 register 안에서도 '하였' 을 늘린다. 새 표지는 원문의 과거 문체를
+# 물려받는다 — 원문에 '했' 이 없고 '하였' 만 있으면(순수 '하였'체) 물려받을 수
+# 있는 형태가 '하였' 뿐이라 증가가 상향이 아니다. '했' 이 하나라도 있거나 과거
+# 표지가 아예 없는 원문은 기존대로 증가 자체를 FAIL 로 본다.
+#
+# 허용량은 새로 생긴 문장 수까지다. 분절은 문장을 늘리고, 현재형을 과거형으로
+# 바꾸는 시제 변경("공개한다" → "공개하였다")은 늘리지 않는다. 상한 없이 열면
+# 시제 변경이 P0~P5 전부를 통과한다. 문장 경계는 종결 부호 + 공백·끝으로 센다
+# — "3.5%" 같은 소수점은 뒤에 공백이 없어 세지 않는다.
+SENT_END_RE = re.compile(r"[.?!…]+(?=\s|$)")
 
 # Boilerplate phrases the rewriter must never ADD. Increase-only gate:
 # if the original already contains one, keeping it is not a failure.
@@ -77,7 +93,18 @@ CLICHE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 # Sentence-final 요 (해요체/구어 종결). Counts "~인데요." "~거든요?" etc.
-YO_ENDING_RE = re.compile(r"요\s*(?:[.?!…]|$)", re.MULTILINE)
+# 해요체 종결은 용언 활용이다. 그런데 `요` 로 끝나는 한자 명사가 개조식 종결로
+# 쓰이면("보완 필요.", "추진 개요.") 같은 표면형이 된다. 그것을 구어 종결로 세면
+# `colloquial_erased` 가 발동해 **올바른 윤문 결과를 롤백시킨다**(PR #94 지적).
+#
+# `요` 직전 한 음절로 배제한다. 목록에 `고` 는 넣지 않는다 — "그렇게 하고요" 처럼
+# 진짜 해요체 연결형이 같은 음절을 쓰기 때문이다. 같은 이유로 `세`(주세요)·
+# `네`(그렇네요)·`죠` 계열도 건드리지 않는다. 아래 음절들은 해요체 활용으로
+# 나타나지 않는 한자 명사의 끝음절 앞자리다.
+_YO_NOUN_HEADS = "필중개수주소강동풍"
+YO_ENDING_RE = re.compile(
+    rf"(?<![{_YO_NOUN_HEADS}])요\s*(?:[.?!…]|$)", re.MULTILINE
+)
 
 # colloquial_erased fires only when the original is clearly colloquial
 # (>= MIN_YO endings) AND the output keeps less than KEEP_RATIO of them.
@@ -91,7 +118,10 @@ def check_register(original: str, output: str) -> list[Failure]:
 
     a = len(HAYEOT_RE.findall(original))
     b = len(HAYEOT_RE.findall(output))
-    if b > a:
+    pure_hayeot = a > 0 and not HAESS_RE.search(original)
+    new_sents = len(SENT_END_RE.findall(output)) - len(SENT_END_RE.findall(original))
+    allowed = max(0, new_sents) if pure_hayeot else 0
+    if b - a > allowed:
         fails.append(Failure(
             "hayeot_injection",
             f"'하였' 계열이 원문 {a}회 → 윤문본 {b}회로 늘었습니다 (격식 상향 주입)",
@@ -502,6 +532,14 @@ def check_quotes(original: str, output: str) -> list[Failure]:
 _SUMMARY_BLOCK_RE = re.compile(r"<!--\s*HUMANIZE-SUMMARY\b.*", re.DOTALL)
 
 
+def split_summary_block(text: str) -> tuple[str, str]:
+    """본문과 보존해야 할 ``HUMANIZE-SUMMARY`` 메타 블록을 나눈다."""
+    match = _SUMMARY_BLOCK_RE.search(text)
+    if match is None:
+        return text, ""
+    return text[:match.start()], text[match.start():]
+
+
 def strip_summary_block(text: str) -> str:
     """final.md 끝의 <!-- HUMANIZE-SUMMARY --> 메타 블록을 제거한다.
 
@@ -509,7 +547,8 @@ def strip_summary_block(text: str) -> str:
     같은 표현이 들어가 채점기가 본문 주입으로 오판하는 것을 막는다
     (verify_change_rate.py와 동일한 처리).
     """
-    return _SUMMARY_BLOCK_RE.sub("", text).strip()
+    body, _ = split_summary_block(text)
+    return body.strip()
 
 
 def run_checks(original: str, output: str) -> list[Failure]:

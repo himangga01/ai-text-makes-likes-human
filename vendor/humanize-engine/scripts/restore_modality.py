@@ -44,7 +44,9 @@ from collections import Counter
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.abspath(os.path.join(_HERE, ".."))
-_REFS = os.path.join(_ROOT, "skills", "humanize-korean", "references")
+_PLUGIN_REFS = os.path.join(_ROOT, "skills", "humanize-korean", "references")
+# 복사 설치(install.sh --copy)·Codex 번들은 scripts/ 옆에 references/ 가 있다.
+_REFS = _PLUGIN_REFS if os.path.isdir(_PLUGIN_REFS) else os.path.join(_ROOT, "references")
 for _p in (_REFS, _HERE):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -247,7 +249,7 @@ def find_losses(before: str, after: str) -> list[dict]:
 
 def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
     losses = find_losses(before, after)
-    result = after
+    editable_body, preserved_summary = _checks.split_summary_block(after)
     restored: list[dict] = []
     skipped: list[dict] = []
     source_sentences = [
@@ -259,7 +261,7 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
         if loss.get("low_sim"):
             skipped.append({**loss, "reason": "짝 유사도 낮음 — 정렬 아티팩트 가능성"})
             continue
-        if result.count(loss["after"]) != 1:
+        if editable_body.count(loss["after"]) != 1:
             skipped.append({**loss, "reason": "결과에서 유일하게 특정되지 않음"})
             continue
         foreign = [
@@ -287,19 +289,19 @@ def restore(before: str, after: str) -> tuple[str, list[dict], list[dict]]:
         # 결과에 그대로 남아 있는 원문 문장은 이미 제 짝이 있으므로 비교에서 뺀다
         # (병렬 문장 "서울의 매출은 … / 부산의 매출은 …"의 서법 복원이 막히지 않게).
         own = _sim(loss["before"], loss["after"])
-        kept = {s.strip() for s in _m._split_sentences(result)}
+        kept = {s.strip() for s in _m._split_sentences(editable_body)}
         if any(other != loss["before"] and other not in kept and _sim(other, loss["after"]) > own
                for other in source_sentences):
             skipped.append({**loss, "reason": "순서 변경 의심 — 다른 원문 문장과 더 가깝다"})
             continue
         replacement = _strip_restored_cliche(loss["before"], loss["after"])
-        present = {s.strip() for s in _m._split_sentences(result)}
+        present = {s.strip() for s in _m._split_sentences(editable_body)}
         if loss["before"] in present or replacement.strip() in present:
             skipped.append({**loss, "reason": "복원하면 같은 문장이 중복된다"})
             continue
-        result = result.replace(loss["after"], replacement, 1)
+        editable_body = editable_body.replace(loss["after"], replacement, 1)
         restored.append({**loss, "restored_as": replacement})
-    return result, restored, skipped
+    return editable_body + preserved_summary, restored, skipped
 
 
 def main(argv: list[str] | None = None) -> int:
