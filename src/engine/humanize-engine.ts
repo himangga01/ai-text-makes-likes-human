@@ -22,6 +22,7 @@ import type {
   ChunkEntry,
   ChunkManifest,
   GateResult,
+  LexicalHints,
   RestoreReport
 } from "./python-engine.js";
 import type { JobWorkspace } from "./workspace.js";
@@ -32,6 +33,8 @@ import type { CheckReport } from './sejong/types.js';
 
 export interface PythonAdapter {
   prepare(runDir: string, signal: AbortSignal): Promise<ChunkManifest>;
+  /** The vendor lexical layer's [어휘 점검] block for one chunk source. An adapter without it sends no block. */
+  lexicalHints?(sourcePath: string, signal: AbortSignal): Promise<LexicalHints>;
   restore(
     beforePath: string,
     afterPath: string,
@@ -133,6 +136,14 @@ export interface ChunkTaskResult {
   restoredSentences: number;
   removedCommas: number;
   repairedParticles: number;
+  /** Vendor lexical layer, counts only: whether the first attempt carried a block, whether the hints run
+   * failed, its time, and the restore step's outcome over every attempt. */
+  lexicalHintChunks: number;
+  lexicalHintFailures: number;
+  lexicalHintMs: number;
+  restoredLexicalSentences: number;
+  skippedLexicalSentences: number;
+  lexicalRestoreFailures: number;
   skippedSentences: number;
   fidelityGuardFailures: number;
   rolledBackChunks: number;
@@ -610,6 +621,9 @@ export class HumanizeEngine {
     let restoredSentences = 0;
     let removedCommas = 0;
     let repairedParticles = 0;
+    let restoredLexicalSentences = 0;
+    let skippedLexicalSentences = 0;
+    let lexicalRestoreFailures = 0;
     let skippedSentences = 0;
     let fidelityGuardFailures = 0;
     let rolledBackChunks = 0;
@@ -627,6 +641,20 @@ export class HumanizeEngine {
     }
 
     await writeFile(chunkSourcePath, sourceText, "utf8");
+
+    // Vendor lexical layer: the awkward headwords this chunk's source contains go to the first attempt's
+    // prompt as an [어휘 점검] block (prompt-builder.ts renders it). No block is sent when there are none or the
+    // hints run failed.
+    let lexical: LexicalHints = { hints: "", failed: false };
+    let lexicalHintMs = 0;
+    if (this.python.lexicalHints) {
+      const hintsStartedAt = this.now();
+      lexical = await this.python.lexicalHints(chunkSourcePath, context.signal);
+      lexicalHintMs = this.now() - hintsStartedAt;
+    }
+    const chunkContext: ChunkPromptContext | undefined = lexical.hints
+      ? { ...(context.chunkContext ?? { index: 1, total: 1 }), lexicalHints: lexical.hints }
+      : context.chunkContext;
 
     // Deterministic post-processing right before the gate: sentences whose
     // deontic/hedge modality vanished go back to the source wording, and
@@ -654,6 +682,9 @@ export class HumanizeEngine {
       restoredSentences += report.restoredSentences;
       removedCommas += report.removedCommas;
       repairedParticles += report.repairedParticles ?? 0;
+      restoredLexicalSentences += report.restoredLexicalSentences ?? 0;
+      skippedLexicalSentences += report.skippedLexicalSentences ?? 0;
+      lexicalRestoreFailures += report.lexicalRestoreFailures ?? 0;
       if (direct) {
         skippedSentences += report.skippedSentences;
         fidelityFailed = candidateFidelityIssues > 0 || report.skippedSentences > 0 || checkDirectTextFidelity(sourceText, await readFile(rewrittenPath, 'utf8')).violations > 0;
@@ -681,6 +712,12 @@ export class HumanizeEngine {
           message: `${chunk.index}번 구간에서 서법 보존을 위해 ${report.restoredSentences}개 문장을 원문으로 되돌렸습니다.`
         });
       }
+      if ((report.restoredLexicalSentences ?? 0) > 0) {
+        this.recordChunkWarning(context, warnings, {
+          code: "LEXICAL_RESTORED",
+          message: `${chunk.index}번 구간에서 원문에 없던 어색한 어휘가 들어간 ${report.restoredLexicalSentences}개 문장을 원문으로 되돌렸습니다.`
+        });
+      }
     };
 
     // A malformed or ambiguous reply costs this chunk an attempt, not the job:
@@ -698,7 +735,7 @@ export class HumanizeEngine {
           context.settings,
           context.rewriteOptions,
           candidateReview,
-          context.chunkContext
+          chunkContext
         ));
       } catch (error) {
         if (context.signal.aborted || !unusableModelOutput(error)) throw error;
@@ -808,6 +845,12 @@ export class HumanizeEngine {
       restoredSentences,
       removedCommas,
       repairedParticles,
+      lexicalHintChunks: lexical.hints ? 1 : 0,
+      lexicalHintFailures: lexical.failed ? 1 : 0,
+      lexicalHintMs,
+      restoredLexicalSentences,
+      skippedLexicalSentences,
+      lexicalRestoreFailures,
       skippedSentences, fidelityGuardFailures, rolledBackChunks, protectedSentences, restoredProtectedSentences, candidateReviewRetries,
       unusableModelOutputs,
       hardFailures,
@@ -1001,6 +1044,12 @@ export class HumanizeEngine {
       styleFindingsBefore: chunkResults.reduce((sum, result) => sum + result.styleBefore, 0),
       styleFindingsAfter: chunkResults.reduce((sum, result) => sum + result.styleAfter, 0),
       repairedParticles: chunkResults.reduce((sum, result) => sum + result.repairedParticles, 0),
+      lexicalHintChunks: chunkResults.reduce((sum, result) => sum + result.lexicalHintChunks, 0),
+      lexicalHintFailures: chunkResults.reduce((sum, result) => sum + result.lexicalHintFailures, 0),
+      lexicalHintMs: chunkResults.reduce((sum, result) => sum + result.lexicalHintMs, 0),
+      restoredLexicalSentences: chunkResults.reduce((sum, result) => sum + result.restoredLexicalSentences, 0),
+      skippedLexicalSentences: chunkResults.reduce((sum, result) => sum + result.skippedLexicalSentences, 0),
+      lexicalRestoreFailures: chunkResults.reduce((sum, result) => sum + result.lexicalRestoreFailures, 0),
       model: request.settings?.model ?? this.model,
       reasoningEffort: request.settings?.effort ?? this.reasoningEffort,
       processingMode: manifest.processingMode,

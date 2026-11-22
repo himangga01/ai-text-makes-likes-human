@@ -11,8 +11,10 @@ import {
 import type {
   ChunkManifest,
   GateResult,
+  LexicalHints,
   RestoreReport
 } from "../../src/engine/python-engine.js";
+import type { ChunkPromptContext } from "../../src/engine/super-sejong.js";
 import { EngineError } from "../../src/engine/errors.js";
 import { deferred, type Deferred } from "../helpers/deferred.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
@@ -137,6 +139,38 @@ class FakePython implements PythonAdapter {
     const output = path.join(runDir, "03_reassembled.md");
     await writeFile(output, pieces.join(""), "utf8");
     return output;
+  }
+}
+
+/** FakePython with the vendor lexical layer: per-source hints and a record of every hints call. */
+class LexicalPython extends FakePython {
+  readonly hintCalls: string[] = [];
+  constructor(
+    chunkManifest: ChunkManifest,
+    verifyResults: GateResult[],
+    restoreReports: RestoreReport[],
+    private readonly hintsFor: (source: string) => LexicalHints
+  ) {
+    super(chunkManifest, verifyResults, restoreReports);
+  }
+  async lexicalHints(sourcePath: string): Promise<LexicalHints> {
+    this.hintCalls.push(sourcePath);
+    return this.hintsFor(await readFile(sourcePath, "utf8"));
+  }
+}
+
+/** Records the prompt context each attempt received. */
+class ContextCodex implements CodexAdapter {
+  readonly contexts: Array<{ attempt: 1 | 2; source: string; chunkContext?: ChunkPromptContext }> = [];
+  constructor(private readonly outputs: string[]) {}
+  async transform(
+    inputPath: string, _outputPath: string, attempt: 1 | 2, _signal: AbortSignal,
+    _settings?: unknown, _options?: unknown, _review?: unknown, chunkContext?: ChunkPromptContext
+  ) {
+    this.contexts.push({ attempt, source: await readFile(inputPath, "utf8"), ...(chunkContext ? { chunkContext } : {}) });
+    const rewrittenText = this.outputs.shift();
+    if (rewrittenText === undefined) throw new Error("No Codex output configured");
+    return { rewrittenText, warnings: [] };
   }
 }
 
@@ -383,6 +417,82 @@ describe("HumanizeEngine", () => {
     } finally {
       await test.workspace.cleanup();
       await removeTestRoot(test.outer);
+    }
+  });
+
+  it("sends each chunk's lexical block with every attempt's context and counts the lexical layer", async () => {
+    const test = await setup("AAA---BBB");
+    const events: TransformEvent[] = [];
+    const block = "[어휘 점검]\n- [우선] 렌즈\n[어휘 점검 끝]";
+    try {
+      const python = new LexicalPython(
+        manifest([body(1, 0, 3), passthrough(2, 3, 6), body(3, 6, 9)], 9),
+        [warn(), ok(), ok(), ok()],
+        [
+          { restoredSentences: 0, skippedSentences: 0, removedCommas: 0, restoredLexicalSentences: 2, skippedLexicalSentences: 1, lexicalRestoreFailures: 0 },
+          { restoredSentences: 0, skippedSentences: 0, removedCommas: 0, restoredLexicalSentences: 0, skippedLexicalSentences: 0, lexicalRestoreFailures: 1 },
+          { restoredSentences: 0, skippedSentences: 0, removedCommas: 0, restoredLexicalSentences: 0, skippedLexicalSentences: 0, lexicalRestoreFailures: 0 }
+        ],
+        source => source === "AAA" ? { hints: block, failed: false } : { hints: "", failed: true }
+      );
+      const codex = new ContextCodex(["A1", "A2", "B1"]);
+      const engine = new HumanizeEngine({ python, codex, chunkConcurrency: 1 });
+
+      const result = await engine.transform({
+        jobId: "job-1",
+        workspace: test.workspace,
+        signal: new AbortController().signal,
+        onEvent: event => events.push(event)
+      });
+
+      // One hints run per body chunk, before its first attempt; the retry keeps the context (the prompt builder
+      // drops the block outside attempt 1).
+      expect(python.hintCalls).toEqual([test.workspace.path("chunk-1-source.txt"), test.workspace.path("chunk-3-source.txt")]);
+      expect(codex.contexts).toEqual([
+        { attempt: 1, source: "AAA", chunkContext: { index: 1, total: 2, register: undefined, lexicalHints: block } },
+        { attempt: 2, source: "AAA", chunkContext: { index: 1, total: 2, register: undefined, lexicalHints: block } },
+        { attempt: 1, source: "BBB", chunkContext: { index: 2, total: 2, register: undefined } }
+      ]);
+      expect(events.filter(event => event.type === "warning" && event.code === "LEXICAL_RESTORED")).toEqual([
+        expect.objectContaining({ message: "1번 구간에서 원문에 없던 어색한 어휘가 들어간 2개 문장을 원문으로 되돌렸습니다." })
+      ]);
+      expect(result.diagnostics).toMatchObject({
+        lexicalHintChunks: 1,
+        lexicalHintFailures: 1,
+        restoredLexicalSentences: 2,
+        skippedLexicalSentences: 1,
+        lexicalRestoreFailures: 1,
+        // A lexical skip keeps the awkward word; it is not a preservation failure and costs no retry.
+        restoredSentences: 0,
+        retries: 1
+      });
+      expect(JSON.stringify(result.diagnostics)).not.toContain("렌즈");
+    } finally {
+      await test.workspace.cleanup();
+      await removeTestRoot(test.outer);
+    }
+  });
+
+  it("gives a single chunk its lexical block without a chunk note, and no context when there is none", async () => {
+    for (const [hints, expected] of [
+      ["[어휘 점검]\n- x\n[어휘 점검 끝]", { index: 1, total: 1, lexicalHints: "[어휘 점검]\n- x\n[어휘 점검 끝]" }],
+      ["", undefined]
+    ] as const) {
+      const test = await setup("AAA");
+      try {
+        const codex = new ContextCodex(["BBB"]);
+        const engine = new HumanizeEngine({
+          python: new LexicalPython(manifest([body(1, 0, 3)], 3), [ok(), ok()], [], () => ({ hints, failed: false })),
+          codex,
+          chunkConcurrency: 1
+        });
+        const result = await engine.transform({ jobId: "job-1", workspace: test.workspace, signal: new AbortController().signal, onEvent: () => undefined });
+        expect(codex.contexts[0]!.chunkContext).toEqual(expected);
+        expect(result.diagnostics).toMatchObject({ lexicalHintChunks: hints ? 1 : 0, lexicalHintFailures: 0, restoredLexicalSentences: 0 });
+      } finally {
+        await test.workspace.cleanup();
+        await removeTestRoot(test.outer);
+      }
     }
   });
 

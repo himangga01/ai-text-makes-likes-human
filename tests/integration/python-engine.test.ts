@@ -90,9 +90,48 @@ describe("PythonEngine integration", () => {
         restoredSentences: 0,
         skippedSentences: 0,
         removedCommas: 0,
-        repairedParticles: 0
+        repairedParticles: 0,
+        restoredLexicalSentences: 0,
+        skippedLexicalSentences: 0,
+        lexicalRestoreFailures: 0
       });
       expect(await readFile(afterPath, "utf8")).toBe(text);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("puts a sentence with an injected lexicon headword back to the source, keeping CRLF", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const before = "올해 매출은 크게 늘었다.\r\n이 결과를 여러 관점에서 살펴본다.\r\n";
+      const beforePath = path.join(runDir, "before.txt");
+      const afterPath = path.join(runDir, "after.txt");
+      await writeFile(beforePath, before, "utf8");
+      await writeFile(afterPath, before.replace("관점에서", "렌즈로"), "utf8");
+
+      const report = await engine.restore(beforePath, afterPath, new AbortController().signal);
+
+      expect(report).toMatchObject({ restoredSentences: 0, restoredLexicalSentences: 1, skippedLexicalSentences: 0, lexicalRestoreFailures: 0 });
+      expect(await readFile(afterPath, "utf8")).toBe(before);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("returns the lexical check block only for a source that uses a lexicon headword", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const sourcePath = path.join(runDir, "chunk-1-source.txt");
+      await writeFile(sourcePath, "이 문제를 세 가지 렌즈로 본다.\r\n", "utf8");
+      const found = await engine.lexicalHints(sourcePath, new AbortController().signal);
+      expect(found.failed).toBe(false);
+      expect(found.hints.startsWith("[어휘 점검]\n")).toBe(true);
+      expect(found.hints.endsWith("\n[어휘 점검 끝]")).toBe(true);
+      expect(found.hints).toContain("[우선] 렌즈");
+
+      await writeFile(sourcePath, "오늘은 비가 왔다.\n", "utf8");
+      expect(await engine.lexicalHints(sourcePath, new AbortController().signal)).toEqual({ hints: "", failed: false });
     } finally {
       await removeTestRoot(runDir);
     }
