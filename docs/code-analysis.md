@@ -107,7 +107,7 @@ Sources: [limits](../src/engine/input-limits.ts), [body reception](../src/transp
 1. Prepare/sanitize input and validate manifest coverage against the prepared source.
 2. Request exact unique source-phrase replacements or full rewritten text. Local parsing sorts anchors and rejects overlap, ambiguity and mixed response forms. Direct-text very-strong first attempts request full text.
 3. Align outer whitespace. For very-strong direct text, restore a protected sentence whose protected elements changed, only when mechanical correspondence can be established.
-4. Restore identifiable lost modality and remove injected connective commas. Ambiguous restoration is reported instead of guessed.
+4. Restore identifiable lost modality, remove injected connective commas, revert sentences in which the rewrite introduced a restore-tier lexicon headword absent from the whole source (vendor `lexical_layer.py`, engine 2.4.7), then repair particles. Ambiguous restoration, including a reordered pair or a revert that would duplicate a sentence, is reported instead of guessed. The first attempt of each chunk also carries the lexicon's `[어휘 점검]` block for headwords found in the source; the retry and the candidate review do not.
 5. Run JavaScript fidelity checks and the common Python verification wrapper.
 6. Retry at most once for unusable successful model output, fidelity violations or a retry gate decision. A second unusable/aborting response or unresolved fidelity violation restores the chunk; a second warning can be accepted with review advice.
 7. Reassemble strictly. A direct-text full-document fidelity violation restores the prepared full source before final Python verification. Final abort/error fails; a warning allows delivery with review advice.
@@ -118,7 +118,7 @@ TXT/MD and legacy requests use structural checks for line layout, Markdown marke
 
 The production wrapper in `engine_runtime/workflow.py` upgrades recognized quote, heading, footnote, number injection/loss, signed quantity, Latin/Hanja name-set and sentence-drop failures to abort. Upstream advisory fact checks therefore do not describe the application's final policy. Character change rate still warns at 30% and aborts at 50%.
 
-A `P1_STYLE_TARGET` warning on its own is advisory: `workflow.verify` returns exit 0 with `advisoryReasons: ["P1_STYLE_TARGET"]`, because P1 compares comma metrics with placeholder baselines and warned on most unchanged human text. P1 together with any other warning or hard failure still retries. The very-strong candidate review, which only ran on P1-only warnings, is therefore no longer reached through the real gate.
+A `P1_STYLE_TARGET` warning on its own is advisory: `workflow.verify` returns exit 0 with `advisoryReasons: ["P1_STYLE_TARGET"]`, because P1 compares comma metrics with placeholder baselines and warned on most unchanged human text. Since engine 2.4.x, `comma_segment_length` is not judged on text with fewer than three commas (upstream #130). P1 together with any other warning or hard failure still retries. The very-strong candidate review, which only ran on P1-only warnings, is therefore no longer reached through the real gate.
 
 CLI execution failure, model rejection and timeout fail the job. If every text body chunk returns unusable output on both attempts, the job fails with `ENGINE_OUTPUT_INVALID` rather than reporting source-only success.
 
@@ -150,7 +150,7 @@ Sources: [Office model/export](../engine_runtime/documents/model.py), [Office wo
 
 This is the application's allowlist, not independently verified provider access. Codex effort options reach ultra except Luna entries, which stop at max; Claude stops at max. Validated settings reach initial calls and retries. Skill model choice belongs to the host session.
 
-Shared preflight requires Python 3.11+ and engine label `2.3.2`; either ready provider makes the runtime ready. Claude no longer depends on Codex login. Health refresh has a three-second cache and in-flight deduplication. Visible idle UI polls every 60 seconds, refreshes on visibility/manual action and rechecks relevant execution errors. Transform routes use cached readiness instead of probing each request.
+Shared preflight requires Python 3.11+ and engine label `2.4.7`; either ready provider makes the runtime ready. Claude no longer depends on Codex login. Health refresh has a three-second cache and in-flight deduplication. Visible idle UI polls every 60 seconds, refreshes on visibility/manual action and rechecks relevant execution errors. Transform routes use cached readiness instead of probing each request.
 
 Prompts travel over stdin with randomized source boundaries and `shell: false`. Child processes get an environment allowlist (`src/process/child-env.ts`) instead of the operator's whole environment, and a model reply that introduces an e-mail address absent from the prompt is rejected as invalid output (`src/engine/output-guard.ts`). The process runner tracks children and kills process trees on timeout/cancel and normal exit cleanup. Shutdown starts listener closure, aborts queue/document work before waiting for connections, cleans jobs and releases the lock; forced exit is bounded by 15 seconds. Supervisor forced SIGKILL first kills known server child groups; arbitrary external SIGKILL cannot run exit hooks.
 

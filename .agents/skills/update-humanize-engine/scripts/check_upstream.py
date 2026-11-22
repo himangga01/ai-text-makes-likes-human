@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Read the portal pin and the fork's remote ref without changing either repo."""
 
+# macOS ships Python 3.9, where `Path | None` in a signature fails at import without postponed annotations.
+from __future__ import annotations
+
 import argparse
 import json
 import os

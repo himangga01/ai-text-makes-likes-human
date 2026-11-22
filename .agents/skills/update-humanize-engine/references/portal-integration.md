@@ -16,6 +16,7 @@ Windows 앱과 두 윤문 스킬도 같은 vendor를 배포한다. `engine_runti
 | `src/engine/prompt-builder.ts`, `codex-runner.ts`, `claude-runner.ts` | quick-rules 제공 방식, 원문 경계, JSON 출력 계약 |
 | `src/process/preflight.ts`, `tests/unit/preflight.test.ts` | 엔진 version이 바뀔 때만 호환 버전 판단 수정 |
 | `tests/unit/vendor-engine.test.ts` | 핀과 필요한 런타임 파일 목록 |
+| `src/engine/prompt-builder.ts`의 `lexicalHintBlock`, `engine_runtime/workflow.py` restore | 어휘 점검 블록 형식, 후처리 순서와 보고 필드 |
 | `README.md`, `docs/operations.md` | 현재 동작·업데이트 출처·검증 상태 반영 |
 
 동기화 목록은 고정된 완전 목록이 아니다. 새 스크립트의 import와 파일 읽기 경로를 따라 추가 의존성이 필요한지 확인한다. `checks.py` 같은 검증 코드를 upstream 테스트 디렉터리에서 런타임으로 import하지 않도록 배포 경계를 점검한다. 더 이상 쓰지 않는 파일은 이전/신규 목록과 참조를 확인한 뒤 해당 파일만 제거한다.
@@ -27,6 +28,8 @@ Windows 앱과 두 윤문 스킬도 같은 vendor를 배포한다. `engine_runti
 - `--portal-auto-route`와 `processing_mode`는 포털 어댑터의 계약이다. 짧은 light/standard의 단일 처리와 heavy/장문/판정 불가의 분할 처리를 유지한다. route 계산에 `_text`가 필요한 구현이면 원문 전달을 유지한다.
 - 각 윤문 시도 뒤에 `restore_modality.py`와 `strip_injected_commas.py`를 실행하고 그 결과를 검증한다. upstream이 이 기능을 이동하거나 대체하면 동등한 동작으로 어댑터를 갱신한다.
 - `strip_injected_commas.py --all`은 진단 단계가 없는 포털에서 무심코 켜지 않는다. 원문에 있던 쉼표까지 제거하는 범위 확대인지 확인한다.
+- 어휘 레이어(2.4.0+): 포털은 upstream 결합 입력 파일(`*_input_with_metrics.txt`)을 모델에 보내지 않고 자체 프롬프트를 만든다. 그래서 `[어휘 점검]` 블록이 저절로 실리지 않는다. 청크마다 `lexical_layer.py hints`의 출력을 `PromptInput.lexicalHints`로 첫 시도에만 넣고(재시도·후보 재검토 제외), 스킬 Gateway는 파일 경로에 `lexicalHintsPath`, 강도 경로에 브리지 `lexicalHints`로 같은 블록을 넘긴다. 후처리 순서는 서법 복원 → 쉼표 정리 → `lexical_layer.py restore` → 조사 교정이다. upstream이 블록 형식·CLI·복원 판정을 바꾸면 `lexicalHintBlock()`과 양쪽 어댑터를 함께 갱신한다.
+- `lexical_layer.py restore`는 `restore_modality.py`의 정렬을 재사용하므로 같은 위험을 가진다. pristine 2.4.7은 순서가 바뀐 두 문장을 서로 덮어써 한 문장을 지웠다(2026-11-22 확인). 포털 패치의 순서 변경·중복 방지 판정과 줄바꿈 보존이 새 upstream에서도 유지되는지 `tests/skills/test_lexical_layer.py`로 확인한다.
 - gate exit code와 JSON report가 일치해야 한다. 검증 실패를 성공으로 바꾸거나 경고·원문 복원 이벤트를 누락시키는 통합을 피한다. 정적 검증 통과를 의미 보존의 절대적 보증으로 표현하지 않는다.
 - GPT와 Claude 모두 같은 Python 후처리·검증을 사용하며 model/effort 진단값은 선택된 엔진을 따라야 한다. `src/engine/model-policy.ts`의 현재 정책을 읽는다.
 - 로그인 없는 LAN 사용, 제한된 접수·실행 큐, 취소와 프로세스 정리, 임시 작업 폴더 삭제, 본문 로그 금지 계약을 유지한다. 모델 별칭·포트·동시성 확대는 upstream 윤문 규칙 업데이트의 부수 작업으로 바꾸지 않는다.

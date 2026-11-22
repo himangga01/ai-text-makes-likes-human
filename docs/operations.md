@@ -21,11 +21,12 @@
 - 입력 크기: 웹·앱의 직접 입력·TXT·MD는 LF 정규화 후 Unicode code point 기준 100,000자 이하(`src/engine/input-limits.ts`). `Content-Length`가 400,000바이트를 넘으면 받기 전에 `413 INPUT_TOO_LARGE`, 그 밖의 요청은 받는 도중 정규화한 글자 수가 100,000자를 넘으면 스트림 오류로 중단함. TXT·MD 파일은 1 MiB를 넘으면 브라우저와 앱이 읽기 전에 거절함. `/api/health`의 `inputLimits`로 제공하며 호스트 세션의 스킬 TXT·MD에는 이 제한을 적용하지 않음
 - 서버 종료로 끊긴 변환은 사용자 취소(`CLIENT_ABORTED`)가 아닌 `SERVER_SHUTDOWN`으로 알림. 종료 중에 들어온 새 요청도 `503 SERVER_SHUTDOWN`으로 거절함
 - 본문 이력·본문 로그: 없음. 처리 중 원문·중간 결과는 임시 파일로 사용함. 일반 텍스트는 완료·실패·취소 후 정리하고 Office는 올린 뒤 30분, 결과가 나온 뒤 다시 30분까지 보관함(열어 보거나 내려받아도 늘어나지 않음). 실행 중인 작업과 데스크톱 저장 중에는 정리를 미루고, 만료·삭제 때 받는 중인 다운로드는 끊음
-- 허용 로그: job ID, 글자 수, 청크 수, 처리 시간, 결과 코드, 서법 복원·쉼표 제거·조사 교정 건수, 게이트 실패 코드별 횟수, 문체 진단 건수(코드와 숫자만, 본문 없음)
-- 게이트 직전 후처리: `restore_modality.py`, `strip_injected_commas.py`, `engine_runtime/super_sejong_josa.py`(수정으로 새로 틀어진 조사 형태 교정)를 청크마다 실행. `--all` 격상은 진단 단계가 없으므로 사용하지 않음
+- 허용 로그: job ID, 글자 수, 청크 수, 처리 시간, 결과 코드, 서법 복원·쉼표 제거·어휘 복원·조사 교정 건수, 게이트 실패 코드별 횟수, 문체 진단 건수(코드와 숫자만, 본문 없음)
+- 게이트 직전 후처리: `restore_modality.py`, 쉼표 정리(`engine_runtime/comma_guard.py`, 윤문이 넣은 쉼표만), `lexical_layer.py restore`(어휘 복원), `engine_runtime/super_sejong_josa.py`(수정으로 새로 틀어진 조사 형태 교정)를 이 순서로 청크마다 실행. 쉼표 `--all` 격상은 진단 단계가 없으므로 사용하지 않음
+- 어휘 점검(기존 엔진, 엔진 2.4.7부터): 청크마다 `lexical_layer.py hints`로 원문에 있는 어색한 표현(사전 115개)을 찾아 `[어휘 점검]` 블록으로 첫 윤문 요청에만 넣음. 보수적 재시도와 후보 재검토에는 넣지 않음. 어휘 복원은 윤문이 원문 문서에 없던 '바꿈 우선' 표현을 새로 만든 문장만 원문 문장으로 되돌리고, 순서가 바뀌었거나 되돌리면 같은 문장이 두 번 나오는 경우는 보류함. 두 단계 모두 실패해도 윤문을 막지 않고 건수만 남김. Office 문서와 슈퍼세종엔진 v2 경로에는 적용하지 않음
 - 슈퍼세종엔진: `SUPER_SEJONG_MODE`가 `enforce`(기본)면 의미 보존 검사(부정·서법·어휘 극성·참여자 역할·조사 형태)가 실패 시 보수적 재시도·되돌림을 일으킴. `shadow`는 같은 검사를 실행해 `shadowFailureCounts`로만 기록하고 막지 않음. `off`는 검사·조사 교정·문체 힌트를 모두 끄고 기존 게이트만 사용함. 아래 [슈퍼세종엔진 모드](#슈퍼세종엔진-모드) 참고
 - 줄바꿈: 수신 단계에서 CR·CRLF를 LF로 통일
-- 준비 상태: Python 3.11+와 엔진 라벨 2.3.2가 준비되고 Codex 또는 Claude 중 하나가 설치·로그인돼 있으면 ready. Office 지원은 별도로 `lxml` import를 확인하며 `documentsAvailable`로 표시함
+- 준비 상태: Python 3.11+와 엔진 라벨 2.4.7이 준비되고 Codex 또는 Claude 중 하나가 설치·로그인돼 있으면 ready. Office 지원은 별도로 `lxml` import를 확인하며 `documentsAvailable`로 표시함
 - 프로세스 상태: `/api/status`는 외부 CLI를 점검하지 않고 `status`·`pid`·`activeJobs`·`queuedJobs`만 즉시 반환함. supervisor가 사용하며, 이 경로가 없는 이전 빌드에는 `/api/health`로 대신 확인함
 - 상태 갱신: `/api/health`는 3초 캐시·진행 중 조회 공유를 사용해 재점검함. 보이는 유휴 화면은 60초마다 조회하고 수동 점검·화면 복귀·관련 오류 때도 다시 조회함. 모델별 계정 권한은 실제 실행으로만 확인됨
 - 상태 수치의 범위: `activeJobs`·`queuedJobs`에는 일반 텍스트 업로드 예약과 Office 보관·파싱·다운로드가 표시되지 않음. 두 값이 0이어도 모든 작업이 끝났다는 뜻은 아님
@@ -169,9 +170,9 @@ Get-ChildItem .\runtime\jobs -Force
 
 ## 엔진 업데이트
 
-`$update-humanize-engine`을 실행하면 원본 `epoko77-ai/im-not-ai`를 사용자 포크 `himangga01/im-not-ai_fork`에 먼저 동기화·push하고 서비스 및 배포물을 갱신합니다. 현재 고정 커밋은 `9747f036cdc28a1a8aea4dc71fef1f7846eb96f7`입니다. 직접 동기화 스크립트를 실행할 때는 깨끗한 포크 체크아웃을 `-Source`로 지정해야 합니다.
+`$update-humanize-engine`을 실행하면 원본 `epoko77-ai/im-not-ai`를 사용자 포크 `himangga01/im-not-ai_fork`에 먼저 동기화·push하고 서비스 및 배포물을 갱신합니다. 현재 고정 커밋은 `c07df14d9f68da482ff5183591808a7d132d4a71`(라벨 2.4.7)입니다. 직접 동기화 스크립트를 실행할 때는 깨끗한 포크 체크아웃을 `-Source`로 지정해야 합니다.
 
-Humanize 엔진은 `vendor/humanize-engine`에 고정되어 있어 형제 저장소를 런타임에 참조하지 않습니다. upstream `im-not-ai`는 규칙과 스크립트가 바뀌어도 SKILL.md의 version 문자열을 `2.3.2`로 유지하므로, 실제 고정 기준은 `ENGINE_VERSION`의 commit입니다. 승인된 upstream commit으로 갱신할 때:
+Humanize 엔진은 `vendor/humanize-engine`에 고정되어 있어 형제 저장소를 런타임에 참조하지 않습니다. upstream `im-not-ai`는 2.3.2에서 오래 version 문자열을 유지하다가 2.4.x부터 올렸습니다. 문자열만으로 선후를 판단하지 말고 `ENGINE_VERSION`의 commit을 기준으로 합니다. 서버 preflight는 라벨이 정확히 일치할 때만 ready이므로(`src/process/preflight.ts`) vendor 라벨이 바뀌면 같은 변경에서 preflight를 맞추고, 운영에는 vendor와 `npm run build` 결과를 함께 반영합니다. 승인된 upstream commit으로 갱신할 때:
 
 1. `scripts/sync-engine.ps1`의 기대 버전과 commit을 검토
 2. 동기화 실행
@@ -187,7 +188,9 @@ npm.cmd test
 npm.cmd run test:live
 ```
 
-portal patch가 재적용됐는지 확인합니다. 패치는 `prepare_monolith_input.py`·`reassemble_chunks.py`의 LF 쓰기, `--portal-auto-route` 경로, 청킹 모드 route_hint에 원문을 넘기는 v2.6 티 계수 연결, `restore_modality.py`·`strip_injected_commas.py`의 줄바꿈 보존을 담고 있습니다. upstream 파일이 바뀌어 패치가 맞지 않으면 pristine 사본을 스테이징한 뒤 패치를 재적용·수정하고 `git diff`로 `scripts/patches/humanize-engine-portal.patch`를 다시 생성합니다.
+portal patch가 재적용됐는지 확인합니다. 패치는 `prepare_monolith_input.py`·`reassemble_chunks.py`의 LF 쓰기, `--portal-auto-route` 경로, 청킹 모드 route_hint에 원문을 넘기는 v2.6 티 계수 연결, `restore_modality.py`·`strip_injected_commas.py`·`lexical_layer.py`의 줄바꿈 보존, 서법 복원과 어휘 복원의 순서 변경·중복 방지를 담고 있습니다. upstream 파일이 바뀌어 패치가 맞지 않으면 pristine 사본을 스테이징한 뒤 패치를 재적용·수정하고 `git diff`로 `scripts/patches/humanize-engine-portal.patch`를 다시 생성합니다.
+
+macOS에는 PowerShell이 없어 `sync-engine.ps1`을 실행할 수 없습니다. 이때는 스크립트의 파일 목록을 고정 commit에서 빈 스테이징 저장소로 복사하고, 패치를 `git apply --check`로 확인·재생성한 뒤, 깨끗한 pristine 사본에 새 패치를 적용한 결과가 vendor 트리와 같은지 `diff -r`로 비교합니다. `ENGINE_VERSION`·`UPSTREAM.md`는 스크립트의 생성문과 글자 단위로 같게 씁니다.
 
 ## 인수 테스트
 

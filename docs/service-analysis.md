@@ -54,7 +54,7 @@ Sources: [browser workflow](../public/app.js), [text loading](../public/text-fil
 
 ## 4. Quality Policy and Tradeoffs
 
-Both providers share text orchestration: prepare input, apply a structured response, restore lost identifiable modality, remove injected commas, check fidelity/preservation, retry at most once, then reassemble and verify the full document before delivery.
+Both providers share text orchestration: prepare input, apply a structured response, restore lost identifiable modality, remove injected commas, revert sentences with newly introduced lexicon headwords (engine 2.4.7), check fidelity/preservation, retry at most once, then reassemble and verify the full document before delivery.
 
 Direct text uses strict sentence/paragraph/heading/concept guards and literal preservation for recognized factual, quotation, modality and condition-bearing sentences. TXT/MD has a different policy: sentence splitting/merging may be allowed, with layout/Markdown/duplication checks and Python sentence-drop detection. The shared wrapper treats recognized factual failures such as changed quantities, missing numbers or altered quotations as hard failures. Character-change warning/abort thresholds remain 30%/50%.
 
