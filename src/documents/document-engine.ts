@@ -1,3 +1,4 @@
+import { childEnvironment } from '../process/child-env.js';
 import { mkdir, readFile, writeFile, rm, stat, access } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -13,6 +14,7 @@ import { buildSejongDocumentPrompt } from '../engine/sejong/document-prompt.js';
 import { resolveCli } from '../runtime/cli-path.js';
 import { EngineError } from '../engine/errors.js';
 import { parseModelSettings, type ModelSettings } from '../engine/model-policy.js';
+import { DocumentLimitError, OFFICE_LIMIT_CODE } from './limits.js';
 
 export interface DocumentState {
   job: string; kind: 'document'; format: 'docx'|'pptx'; name: string; sourceHash: string;
@@ -50,12 +52,14 @@ export class DocumentEngine {
   private async runPython(args: string[], signal?: AbortSignal): Promise<DocumentState> {
     const result=await this.runner.run({command:await this.python(), args:[path.join(this.config.projectRoot,'engine_runtime','skill_gateway.py'),
       '--workspace-root',this.root,'--vendor-root',this.config.vendorRoot,...args], cwd:this.config.projectRoot,
-      timeoutMs:120000,signal,env:{...process.env,PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath}});
+      timeoutMs:120000,signal,env:childEnvironment(process.env,{PYTHONUTF8:'1',PYTHONDONTWRITEBYTECODE:'1',NODE_COMMAND:process.execPath})});
     if (result.termination==='aborted') throw new EngineError('CLIENT_ABORTED',true,'Cancelled');
     if (result.termination==='timeout') throw new EngineError('ENGINE_TIMEOUT',true,'Document Python step timed out');
     if (result.exitCode!==0) {
-      let message='문서를 처리하지 못했습니다. 파일 형식과 보호 설정을 확인해 주세요.';
-      try { const error=JSON.parse(result.stdout); if(typeof error.message==='string') message=error.message; } catch {}
+      let message='문서를 처리하지 못했습니다. 파일 형식과 보호 설정을 확인해 주세요.';let code:unknown;
+      try { const error=JSON.parse(result.stdout); if(typeof error.message==='string') message=error.message; code=error.code; } catch {}
+      // An Office resource limit: Python's fixed Korean message, shown as it is under one code everywhere.
+      if(code===OFFICE_LIMIT_CODE) throw new DocumentLimitError(message);
       throw new Error(message);
     }
     return JSON.parse(result.stdout) as DocumentState;

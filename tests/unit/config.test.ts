@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { loadConfig } from "../../src/config.js";
 
 describe("loadConfig", () => {
-  it("uses the approved LAN, queue, timeout, and disk defaults", () => {
+  it("uses the approved loopback, queue, timeout, and disk defaults", () => {
     const root = path.resolve("C:/project/2026/ai-text-makes-likes-human");
     const config = loadConfig({}, root);
 
-    expect(config.host).toBe("0.0.0.0");
+    expect(config.host).toBe("127.0.0.1");
     expect(config.port).toBe(7882);
     expect(config.maxAcceptedJobs).toBe(3);
     expect(config.maxActiveJobs).toBe(1);

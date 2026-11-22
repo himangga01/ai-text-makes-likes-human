@@ -81,12 +81,13 @@ describe('ClaudeRunner.runPrompt', () => {
     expect(await readFile(out, 'utf8')).toBe(raw);
     const call = fake.calls[0]!;
     expect(call.stdin).toBe('프롬프트');
-    expect(call.cwd).toBe(dir);
+    expect(call.cwd).not.toBe(dir);
+    expect(path.basename(call.cwd)).toMatch(/^humanize-claude-/);
     const inline = JSON.parse(call.args[call.args.indexOf('--json-schema') + 1]!) as Record<string, unknown>;
     const { $schema, ...expected } = JSON.parse(await readFile(SCHEMA, 'utf8')) as Record<string, unknown>;
     expect($schema).toBeDefined();
     expect(inline).toEqual(expected);
-    expect(call.args).toEqual(expect.arrayContaining(['-p', '--restricted', '--tools', '', '--no-session-persistence']));
+    expect(call.args).toEqual(expect.arrayContaining(['-p', '--restricted', '--safe-mode', '--tools', '', '--no-session-persistence']));
   });
 
   it('returns a text result unparsed and maps a failed envelope to ENGINE_FAILED', async () => {

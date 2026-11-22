@@ -17,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -24,10 +25,10 @@ import types
 import uuid
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from workflow import DEFAULT_VENDOR, restore, verify, validate_response
+from workflow import DEFAULT_VENDOR, lexical_hints, lexical_nouns, restore, verify, validate_response
 from skill_bridge import available as bridge_available, invoke as bridge, options as rewrite_options
 
-DEFAULT_ROOT = Path(tempfile.gettempdir()) / "humanize-kr-skills"
+WORKSPACE_NAME = "humanize-kr-skills"
 EMPTY_REPLY = {"replacements": [], "rewrittenText": "", "warnings": []}   # what a chunk with nothing to ask is checked with
 SKILL_GENRE = "blog"          # DESIGN 9.2a item 4: the agent-skill route sends blog unless SUPER_SEJONG_GENRE_DEFAULT is set
 
@@ -73,13 +74,40 @@ def strength_route(options) -> bool:
         (options.get("inputKind") == "text-file" and options.get("strength", "normal") != "normal")
 
 
-def engine_changed(state: dict) -> bool:
-    """A job runs on the engine it was prepared with: the selected engine, and its version file, must be unchanged."""
+def private_root() -> Path:
+    """The default workspace, private to the user running the Gateway. A job holds the user's text and the
+    files the Gateway reads back, so a directory other local users can write to (the shared TEMP of a
+    multi-user host) is never used: on Windows it lives under %LOCALAPPDATA%; elsewhere it is
+    <TEMP>/humanize-kr-skills-<uid>, created 0700 and refused unless it is a directory (not a link) owned by
+    this user with no access for group or others."""
+    if os.name == "nt":
+        base = os.environ.get("LOCALAPPDATA")
+        if not base:
+            raise ValueError("LOCALAPPDATA is not set; pass --workspace-root with a private directory")
+        root = Path(base) / WORKSPACE_NAME
+        root.mkdir(parents=True, exist_ok=True)
+        return root.resolve()
+    root = Path(tempfile.gettempdir()) / f"{WORKSPACE_NAME}-{os.getuid()}"
+    try:
+        os.mkdir(root, 0o700)
+    except FileExistsError:
+        pass
+    info = os.lstat(root)
+    if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+        raise ValueError(f"Refusing the workspace {root}: it must be a directory owned by this user with mode 0700 "
+                         "(remove it, or pass --workspace-root with a private directory)")
+    return root.resolve()
+
+
+def engine_changed(state: dict, vendor: Path = DEFAULT_VENDOR) -> bool:
+    """A job runs on the engine it was prepared with: the selected engine, and its version file, must be unchanged.
+    The legacy engine is the Gateway's own (`vendor`, from its location or --vendor-root), never a path a job file
+    names: job.json is data, and the engine runs code."""
     recorded = state.get("engine", "legacy")
     if recorded != engine_switch():
         return True
     if recorded != "v2":
-        return (Path(state["vendor"]) / "ENGINE_VERSION").read_text(encoding="utf-8").strip() != state["engineVersion"]
+        return (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip() != state["engineVersion"]
     try:
         current = sejong().package.read_engine_version()
     except (OSError, ValueError):
@@ -163,14 +191,14 @@ def prepare(input_path: Path, root: Path, vendor: Path, input_kind=None, strengt
         manifest = json.loads((job / "chunk_manifest.json").read_text(encoding="utf-8"))
         source = stage_chunks(job, manifest)
         state = {"schemaVersion": 1, "job": job.name, "inputPath": str(input_path.resolve()),
-                 "vendor": str(vendor), "engineVersion": (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip(),
+                 "engineVersion": (vendor / "ENGINE_VERSION").read_text(encoding="utf-8").strip(),
                  "sourceHash": digest(source), "manifestHash": digest(job / "chunk_manifest.json"),
                  "current": 0, "attempt": 1, "warnings": [], "status": "active"}
         if options:
             state["rewriteOptions"] = options
         state["chunkHashes"] = {str(chunk["index"]): digest(job / f"source-{chunk['index']}.txt") for chunk in bodies(manifest)}
         write_json(job / "job.json", state)
-        return next_chunk(job, state, manifest)
+        return next_chunk(job, state, manifest, vendor)
     except Exception:
         if job.resolve().parent == root.resolve() and job.name.startswith("job-"):
             shutil.rmtree(job)
@@ -178,7 +206,7 @@ def prepare(input_path: Path, root: Path, vendor: Path, input_kind=None, strengt
 
 
 @contextmanager
-def transaction(root: Path, job_id: str, verify_content: bool = True):
+def transaction(root: Path, job_id: str, verify_content: bool = True, vendor: Path = DEFAULT_VENDOR):
     if len(job_id) != 36 or not job_id.startswith("job-") or any(c not in "0123456789abcdef" for c in job_id[4:]):
         raise ValueError("Invalid job ID")
     job = (root / job_id).resolve()
@@ -198,7 +226,7 @@ def transaction(root: Path, job_id: str, verify_content: bool = True):
             for chunk in bodies(manifest):
                 if digest(job / f"source-{chunk['index']}.txt") != state["chunkHashes"][str(chunk["index"])]:
                     raise ValueError("A source chunk was modified")
-            if engine_changed(state):
+            if engine_changed(state, vendor):
                 raise ValueError("The engine changed during this job (keep SUPER_SEJONG_ENGINE and the ENGINE_VERSION "
                                  "the same until the job ends, or start a new job)")
             if state.get("engine") == "v2":
@@ -214,7 +242,7 @@ def bodies(manifest: dict) -> list:
     return [chunk for chunk in manifest["chunks"] if not chunk["passthrough"]]
 
 
-def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
+def next_chunk(job: Path, state: dict, manifest: dict, vendor: Path = DEFAULT_VENDOR) -> dict:
     chunks = bodies(manifest)
     v2 = state.get("engine") == "v2"
     if v2:
@@ -239,23 +267,33 @@ def next_chunk(job: Path, state: dict, manifest: dict) -> dict:
         return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
                 "inputPath": str(job / f"source-{chunk['index']}.txt"), "instructionsPath": str(instructions),
                 "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json")}
+    source = (job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8")
+    # Vendor lexical layer: the chunk's [어휘 점검] block, on the first attempt only (as on the server, the conservative
+    # retry and the candidate review never get it). It is derived from the hashed chunk source and written again on every
+    # call, and the Gateway never reads it back, so it needs no hash of its own.
+    hints = lexical_hints(source, vendor) if state["attempt"] == 1 and not state.get("candidateReview") else ""
     if strength_route(state.get("rewriteOptions")):
-        context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"],
-                         source=(job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"),
-                         quickRules=(Path(state["vendor"]) / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
-                         candidateReview=state.get("candidateReview"))
+        context = bridge("context", **state["rewriteOptions"], attempt=state["attempt"], source=source,
+                         quickRules=(vendor / "skills/humanize-korean/references/quick-rules.md").read_text(encoding="utf-8"),
+                         candidateReview=state.get("candidateReview"), lexicalHints=hints)
         instructions = job / f"instructions-{chunk['index']}-{state['attempt']}.md"
         instructions.write_text(context["instructions"], encoding="utf-8")
         sentences = job / f"sentences-{chunk['index']}.json"
         write_json(sentences, context["sentences"])
         common.update(instructionsPath=str(instructions), sentencesPath=str(sentences))
+    elif hints:
+        # The file route has no prompt of its own: the host reads the block next to the rules.
+        lexical = job / f"lexical-{chunk['index']}.md"
+        lexical.write_text(hints + "\n", encoding="utf-8", newline="")
+        common["lexicalHintsPath"] = str(lexical)
     return {**common, "status": "rewrite", "chunk": chunk["index"], "attempt": state["attempt"],
             "inputPath": str(job / f"source-{chunk['index']}.txt"),
             "responsePath": str(job / f"response-{chunk['index']}-{state['attempt']}.json"),
-            "rulesPath": str(Path(state["vendor"]) / "skills/humanize-korean/references/quick-rules.md")}
+            "rulesPath": str(vendor / "skills/humanize-korean/references/quick-rules.md")}
 
 
-def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, source_hash: str, response_path: Path) -> dict:
+def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, source_hash: str, response_path: Path,
+           vendor: Path = DEFAULT_VENDOR) -> dict:
     if state.get("engine") == "v2":
         return accept_v2(job, state, manifest, chunk_id, attempt, source_hash, response_path)
     chunks = bodies(manifest)
@@ -271,8 +309,8 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     raw = json.loads(response_path.read_text(encoding="utf-8-sig"))
     response = bridge("parse", **options, source=source, response=raw) if direct else validate_response(raw)
     output = safe_leaf(job, chunk["rewritten_file"])
-    vendor = Path(state["vendor"])
-    report = {"restoredSentences": 0, "skippedSentences": 0, "removedCommas": 0}
+    report = {"restoredSentences": 0, "skippedSentences": 0, "removedCommas": 0, "restoredLexicalSentences": 0,
+              "skippedLexicalSentences": 0, "lexicalRestoreFailures": 0}
     failed = False
     gate = None
     if response.get("invalid"):
@@ -289,7 +327,9 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
         report = restore(before, output, vendor)
         if direct:
             report["restoredProtectedSentences"] = protected["restoredProtectedSentences"]
-            check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"))
+            # The lexicon nouns the source flagged may be replaced, the same exemption as the server (lexical_check.py).
+            check = bridge("check", **options, source=source, candidate=output.read_text(encoding="utf-8"),
+                           lexicalNouns=lexical_nouns(source, vendor))
             failed = response.get("fidelityIssues", 0) > 0 or report["skippedSentences"] > 0 or check["violations"] > 0
             if protected["restoredProtectedSentences"]:
                 state["warnings"].append(f"DIRECT_TEXT_PROTECTED_SENTENCES_RESTORED: {chunk_id}번 구간 보호 문장 {protected['restoredProtectedSentences']}개를 원문으로 복원했습니다.")
@@ -303,6 +343,9 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
                 state["warnings"].append(f"STRUCTURE_FIDELITY_RESTRICTED: {chunk_id}번 구간에서 문장·문단 구조 보존을 확인하지 못해 수정을 제한했습니다.")
         if report["restoredSentences"]:
             state["warnings"].append(f"{chunk_id}번 구간의 {report['restoredSentences']}개 문장을 원문으로 복원했습니다.")
+        if report["restoredLexicalSentences"]:
+            state["warnings"].append(f"LEXICAL_RESTORED: {chunk_id}번 구간에서 원문에 없던 어색한 어휘가 들어간 "
+                                     f"{report['restoredLexicalSentences']}개 문장을 원문으로 되돌렸습니다.")
         # Host warnings can contain raw source text. Direct jobs persist only a count.
         if direct and response["warnings"]:
             state["warnings"].append(f"HOST_REVIEW_WARNING: {len(response['warnings'])}개 보존 충돌 사유가 보고되었습니다.")
@@ -319,7 +362,8 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
     if action == "retry":
         if direct and not failed and attempt == 1:
             review = bridge("review", **options, source=source, candidate=output.read_text(encoding="utf-8"),
-                            gate=gate, parserIssues=response.get("fidelityIssues", 0), skippedSentences=report["skippedSentences"])
+                            gate=gate, parserIssues=response.get("fidelityIssues", 0), skippedSentences=report["skippedSentences"],
+                            lexicalNouns=lexical_nouns(source, vendor))
             if review.get("candidateReview"):
                 state["candidateReview"] = review["candidateReview"]
                 state["warnings"].append(f"DIRECT_TEXT_CANDIDATE_REVIEW_RETRY: {chunk_id}번 구간의 이전 후보를 원문과 보수적으로 대조합니다. 불확실한 수정은 되돌립니다.")
@@ -334,10 +378,11 @@ def accept(job: Path, state: dict, manifest: dict, chunk_id: int, attempt: int, 
         state["current"] += 1
         state["attempt"] = 1
     write_json(job / "job.json", state)
-    return {**next_chunk(job, state, manifest), "decision": action, "restoration": report}
+    return {**next_chunk(job, state, manifest, vendor), "decision": action, "restoration": report}
 
 
-def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparison: Path | None = None) -> dict:
+def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparison: Path | None = None,
+             vendor: Path = DEFAULT_VENDOR) -> dict:
     if state["status"] != "active" or state["current"] != len(bodies(manifest)):
         raise ValueError("All chunks must be accepted before finalizing")
     destination = destination.resolve()
@@ -354,12 +399,14 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparis
     if state.get("engine") == "v2":
         result = reassemble_v2(job, state, manifest)
     else:
-        vendor = Path(state["vendor"])
         script(vendor, "reassemble_chunks.py", "--run-dir", job, "--output", "final.md", "--report", "assembly.json", "--strict")
         result = job / "final.md"
+        # The union of the chunks' replaceable lexicon nouns, as the server's full-document check uses.
         if strength_route(state.get("rewriteOptions")) and bridge("check", **state["rewriteOptions"],
                              source=safe_leaf(job, manifest["source_file"]).read_text(encoding="utf-8"),
-                             candidate=result.read_text(encoding="utf-8"))["violations"]:
+                             candidate=result.read_text(encoding="utf-8"),
+                             lexicalNouns=sorted({noun for chunk in bodies(manifest) for noun in lexical_nouns(
+                                 (job / f"source-{chunk['index']}.txt").read_text(encoding="utf-8"), vendor)}))["violations"]:
             raise ValueError("Full source fidelity validation failed; no output was exported")
         gate = verify(safe_leaf(job, manifest["source_file"]), result, vendor, 2)
         if gate["gate"]["exit_code"] in (2, 3):
@@ -390,7 +437,7 @@ def finalize(job: Path, state: dict, manifest: dict, destination: Path, comparis
         state.clear()
         state.update(previous)
         raise
-    return next_chunk(job, state, manifest)
+    return next_chunk(job, state, manifest, vendor)
 
 
 # --------------------------------------------------------------------------
@@ -704,7 +751,7 @@ def reassemble_v2(job: Path, state: dict, manifest: dict) -> Path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--workspace-root", type=Path, default=DEFAULT_ROOT)
+    parser.add_argument("--workspace-root", type=Path, default=None)
     parser.add_argument("--vendor-root", type=Path, default=DEFAULT_VENDOR)
     sub = parser.add_subparsers(dest="command", required=True)
     preparation = sub.add_parser("prepare")
@@ -724,8 +771,9 @@ def main() -> int:
             command.add_argument("--output", type=Path, required=True)
             command.add_argument("--comparison-output", type=Path)
     args = parser.parse_args()
-    root, vendor = args.workspace_root.resolve(), args.vendor_root.resolve()
     try:
+        root = args.workspace_root.resolve() if args.workspace_root is not None else private_root()
+        vendor = args.vendor_root.resolve()
         document = args.command == "prepare" and Path(args.input).suffix.lower() in (".docx", ".pptx")
         if args.command != "prepare" and len(args.job) == 36 and args.job.startswith("job-") and all(c in "0123456789abcdef" for c in args.job[4:]):
             state_file = root / args.job / "job.json"
@@ -748,13 +796,13 @@ def main() -> int:
                 raise ValueError("Explicit job IDs are supported for Office service jobs only")
             result = prepare(args.input, root, vendor, args.input_kind, args.strength)
         else:
-            with transaction(root, args.job, verify_content=args.command != "cleanup") as (job, state, manifest):
+            with transaction(root, args.job, verify_content=args.command != "cleanup", vendor=vendor) as (job, state, manifest):
                 if args.command == "next":
-                    result = next_chunk(job, state, manifest)
+                    result = next_chunk(job, state, manifest, vendor)
                 elif args.command == "accept":
-                    result = accept(job, state, manifest, args.chunk, args.attempt, args.source_hash, args.response)
+                    result = accept(job, state, manifest, args.chunk, args.attempt, args.source_hash, args.response, vendor)
                 elif args.command == "finalize":
-                    result = finalize(job, state, manifest, args.output, args.comparison_output)
+                    result = finalize(job, state, manifest, args.output, args.comparison_output, vendor)
                 else:
                     result = {"status": "cleaned", "job": job.name}
             if args.command == "cleanup":
@@ -765,7 +813,12 @@ def main() -> int:
         print(json.dumps(result, ensure_ascii=False))
         return 0
     except Exception as error:
-        print(json.dumps({"status": "error", "message": str(error)}, ensure_ascii=False))
+        failure = {"status": "error", "message": str(error)}
+        # Office resource limits carry a code, so every surface (portal, app, MCP, skill) names them alike.
+        package = sys.modules.get("documents.package")
+        if package is not None and isinstance(error, package.DocumentLimitError):
+            failure["code"] = error.code
+        print(json.dumps(failure, ensure_ascii=False))
         return 1
 
 

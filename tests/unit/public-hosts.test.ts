@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config.js';
-import { isLoopbackAddress, publicHostOf, readPublicHosts } from '../../src/network/public-hosts.js';
+import { publicHostOf, readPublicHosts } from '../../src/network/public-hosts.js';
 
 const dirs: string[] = [];
 afterEach(async () => { await Promise.all(dirs.splice(0).map(dir => rm(dir, { recursive: true, force: true }))); });
@@ -24,8 +24,6 @@ it('loads the file beside the runtime jobs directory', async () => {
 });
 
 it('only a loopback connector can present a listed name', () => {
-  for (const address of ['127.0.0.1', '127.0.0.53', '::1', '::ffff:127.0.0.1']) expect(isLoopbackAddress(address)).toBe(true);
-  for (const address of ['192.168.0.22', '10.0.0.1', '::ffff:192.168.0.5', 'fe80::1', undefined]) expect(isLoopbackAddress(address)).toBe(false);
   const hosts = ['sejong.example.com'];
   expect(publicHostOf('Sejong.Example.com', '127.0.0.1', hosts)).toBe('sejong.example.com');
   expect(publicHostOf('sejong.example.com', '192.168.0.30', hosts)).toBeUndefined();

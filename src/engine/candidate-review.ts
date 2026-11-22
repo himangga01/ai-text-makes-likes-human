@@ -23,6 +23,8 @@ export function parseGateReasonMetadata(value: unknown): GateReasonMetadata | un
 export function candidateReviewForRetry(input: {
   source: string; candidate: string; options?: RewriteOptions; gate: GateResult;
   parserIssues: number; skippedSentences: number;
+  /** Lexicon nouns the source flagged as replaceable (direct-text-fidelity.ts replaceableConcept). */
+  lexicalNouns?: readonly string[];
 }): CandidateReview | undefined {
   const { source, candidate, gate } = input;
   const options = legacyRewriteOptions(input.options);   // `rewrite` reviews as very-strong (WP-19)
@@ -34,7 +36,7 @@ export function candidateReviewForRetry(input: {
       !Array.isArray(gate.hardFailures) || gate.hardFailures.length !== 0 ||
       reasons?.codes.length !== 1 || reasons.codes[0] !== 'P1_STYLE_TARGET' ||
       candidate === source || !candidate.trim() || candidate.length > MAX_REVIEW_CHARS ||
-      source.length > MAX_REVIEW_CHARS || checkDirectTextFidelity(source, candidate).violations !== 0) return undefined;
+      source.length > MAX_REVIEW_CHARS || checkDirectTextFidelity(source, candidate, input.lexicalNouns ?? []).violations !== 0) return undefined;
   return { candidate, reason: 'P1_STYLE_TARGET' };
 }
 

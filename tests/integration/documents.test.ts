@@ -1,6 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { readFile, writeFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { DocumentLimitError } from '../../src/documents/limits.js';
 import { DocumentEngine } from '../../src/documents/document-engine.js';
 import { SpawnCommandRunner, type CommandRequest } from '../../src/process/command-runner.js';
 import { loadConfig } from '../../src/config.js';
@@ -31,7 +33,7 @@ async function setup(){
  const doc=new DocumentEngine(config,runner);
  const app=createApp({config,documentEngine:doc,queue:new TransformQueue({maxActive:1,maxAccepted:3}),
    engine:{async transform(){throw new Error('Plain text engine must not process Office files');}},
-   preflight:{ready:true,nodeVersion:'24',pythonVersion:'3.14.7',codexVersion:'0.153.4',humanizeVersion:'2.3.2'}});
+   preflight:{ready:true,nodeVersion:'24',pythonVersion:'3.14.7',codexVersion:'0.153.4',humanizeVersion: '2.4.7'}});
  cleanup.push(()=>app.locals.documentStore.close());
  const server=await listen(app);cleanup.push(()=>close(server.server));
  return {...server,calls,store:app.locals.documentStore};
@@ -64,6 +66,26 @@ officeIt('rejects foreign origins, malformed packages and extension spoofing bef
  expect((await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.pptx'},body:await readFile('tests/fixtures/documents/mixed.docx')})).status).toBe(400);
  expect(t.calls).toEqual([]);expect(t.store.records.size).toBe(0);
 });
+// Many one-character paragraphs fit the character limit but not the other document limits.
+officeIt('refuses an over-limit Office file with DOCUMENT_TOO_LARGE before any model call',async()=>{
+ const t=await setup();const root=await makeTestRoot();cleanup.push(()=>removeTestRoot(root));
+ const file=path.join(root,'many-paragraphs.docx');
+ const made=spawnSync(documentPythonCommand!,['-c',`import sys,zipfile
+src=zipfile.ZipFile(sys.argv[1]);out=zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED)
+body='<w:p><w:r><w:t>가</w:t></w:r></w:p>'*99072
+for name in src.namelist():
+    data=src.read(name)
+    if name=='word/document.xml':data=('<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>'+body+'<w:sectPr/></w:body></w:document>').encode()
+    out.writestr(name,data)
+out.close()`,path.resolve('tests/fixtures/documents/mixed.docx'),file]);
+ expect(made.status).toBe(0);
+ const started=Date.now();
+ const response=await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'many-paragraphs.docx'},body:await readFile(file)});
+ expect(response.status).toBe(413);
+ expect(await response.json()).toEqual({code:'DOCUMENT_TOO_LARGE',message:'텍스트 조각이 너무 많은 문서입니다(50,000개 초과). 문서를 나눠서 다시 시도해 주세요.'});
+ expect(Date.now()-started).toBeLessThan(20000);
+ expect(t.calls).toEqual([]);expect(t.store.records.size).toBe(0);
+},30000);
 it('does not reveal internal paths from failed Office imports',async()=>{
  const t=await setup();
  vi.spyOn(t.store.engine,'prepare').mockRejectedValue(new Error('비밀 경로 /private/auth.json'));
@@ -87,4 +109,9 @@ it('keeps known Office import failures actionable without exposing Python text',
    expect(response.status).toBe(status);
    expect(await response.json()).toMatchObject({code});
  }
+ // An Office limit keeps its own fixed message, so the user learns which limit the file crossed.
+ const t=await setup();const message='문서 구조가 너무 복잡합니다(XML 노드 1,500,000개 초과). 문서를 나눠서 다시 시도해 주세요.';
+ vi.spyOn(t.store.engine,'prepare').mockRejectedValue(new DocumentLimitError(message));
+ const response=await fetch(t.baseUrl+'/api/documents',{method:'POST',headers:{'x-file-name':'a.docx'},body:'PK'});
+ expect(response.status).toBe(413);expect(await response.json()).toEqual({code:'DOCUMENT_TOO_LARGE',message});
 });

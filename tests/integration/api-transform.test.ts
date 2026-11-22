@@ -22,7 +22,7 @@ function ready() {
     nodeVersion: "24.19.0",
     pythonVersion: "3.14.7",
     codexVersion: "0.149.0",
-    humanizeVersion: "2.3.2"
+    humanizeVersion: "2.4.7"
   };
 }
 

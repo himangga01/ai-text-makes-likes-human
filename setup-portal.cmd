@@ -25,7 +25,8 @@ echo Building the portal...
 call npm.cmd run build || goto :failed
 echo.
 echo Setup complete. Double-click start-portal.cmd to run the portal.
-echo To allow other Wi-Fi PCs, run scripts\allow-lan-firewall.ps1 once as Administrator.
+echo The portal opens only on this PC at http://localhost:7882.
+echo If an older version opened the firewall for other PCs, run scripts\remove-lan-firewall.ps1 once as Administrator.
 pause
 exit /b 0
 

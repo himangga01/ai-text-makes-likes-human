@@ -423,4 +423,6 @@ export interface ChunkPromptContext {
   index: number;
   total: number;
   register?: SpeechLevel;
+  /** The chunk's `[어휘 점검]` block (vendor lexical layer); the runners hand it to the prompt builder. */
+  lexicalHints?: string;
 }

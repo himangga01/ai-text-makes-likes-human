@@ -40,7 +40,7 @@ async function transformDocument(id:string,input:any,signal:AbortSignal) {
     const result=await services.documentEngine.transform(record.state,choice,record.dir,AbortSignal.any([signal,record.controller.signal]),value=>event(id,value),settings);
     if(record.deleted||record.controller.signal.aborted)throw new EngineError('CLIENT_ABORTED',true,'Document was closed during the transform');
     record.output=result.output;record.state=result.state;
-    record.expires=Date.now()+30*60000;
+    store.resultReady(record);
     event(id,{type:'document-result',artifactId:record.id,name:record.name!,format:result.state.format,bytes:result.bytes,sha256:result.sha256,preview:result.state.preview});
     event(id,{type:'done',sourceChars:result.state.sourceChars,outputChars:result.state.outputChars,chunks:result.state.totalChunks,elapsedMs:result.elapsedMs});
     complete=true;

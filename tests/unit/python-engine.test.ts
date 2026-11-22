@@ -48,6 +48,14 @@ function manifestFixture(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// lexical_layer.py restore --json: indented, and it names the sentences it touched.
+const LEXICAL_REPORT = `${JSON.stringify({
+  restored: 1,
+  skipped: 1,
+  restored_items: [{ after: "이 결과를 여러 렌즈로 살펴본다.", before: "이 결과를 여러 관점에서 살펴본다.", headwords: ["렌즈"] }],
+  skipped_items: [{ after: "두 렌즈를 쓴다.", before: "두 관점을 쓴다.", headwords: ["렌즈"], reason: "짝 유사도 낮음" }]
+}, null, 1)}\n`;
+
 function gateStdout(exitCode: number): string {
   return `[P3 golden] PASS\n${JSON.stringify({
     golden: [],
@@ -159,10 +167,11 @@ describe("PythonEngine", () => {
     expect(result).not.toHaveProperty("stdout");
   });
 
-  it("restores modality, strips injected commas and repairs particles in place", async () => {
+  it("restores modality, strips injected commas, restores lexicon injections and repairs particles in place", async () => {
     const runner = new FakeCommandRunner([
       exited("", 0, '{\n "restored": 1,\n "skipped": 2,\n "details": {}\n}\n'),
       exited("", 0, '{"commas_removed": 3, "sentences_touched": 1}\n'),
+      exited("", 0, LEXICAL_REPORT),
       exited("", 0, '{"repaired": 4}\n')
     ]);
     const engine = new PythonEngine({
@@ -181,20 +190,154 @@ describe("PythonEngine", () => {
       restoredSentences: 1,
       skippedSentences: 2,
       removedCommas: 3,
-      repairedParticles: 4
+      repairedParticles: 4,
+      restoredLexicalSentences: 1,
+      skippedLexicalSentences: 1,
+      lexicalRestoreFailures: 0
     });
+    // Counts only: the sentences the lexical report names never leave the adapter.
+    expect(JSON.stringify(report)).not.toContain("렌즈");
     const after = path.resolve("C:/job/after.txt");
     expect(runner.calls.map(call => call.args[0])).toEqual([
       path.join(vendorRoot, "scripts", "restore_modality.py"),
       path.resolve(vendorRoot, "../../engine_runtime/comma_guard.py"),
+      path.join(vendorRoot, "scripts", "lexical_layer.py"),
       path.resolve(vendorRoot, "../../engine_runtime/super_sejong_josa.py")
     ]);
+    expect(runner.calls[2]!.args[1]).toBe("restore");
     for (const call of runner.calls) {
       expect(call.args).toEqual(
         expect.arrayContaining(["--before", "--after", "--out", after, "--json"])
       );
       expect(call.args).not.toContain("--all");
     }
+  });
+
+  it("counts a lexical restore without a usable report and still repairs particles", async () => {
+    for (const lexical of [
+      exited("", 0, "[lexical-layer] 건너뜀: lexicon missing\n"),
+      exited("", 0, '{"restored": -1, "skipped": 0}\n'),
+      exited("", 0, '{"restored": 1}\n'),
+      exited("", 1, "Traceback (most recent call last)\n")
+    ]) {
+      const runner = new FakeCommandRunner([
+        exited("", 0, '{"restored": 0, "skipped": 0}\n'),
+        exited("", 0, '{"commas_removed": 0}\n'),
+        lexical,
+        exited("", 0, '{"repaired": 2}\n')
+      ]);
+      const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner });
+      const report = await engine.restore("C:/job/before.txt", "C:/job/after.txt", new AbortController().signal);
+      expect(report).toMatchObject({
+        repairedParticles: 2,
+        restoredLexicalSentences: 0,
+        skippedLexicalSentences: 0,
+        lexicalRestoreFailures: 1
+      });
+      expect(runner.calls).toHaveLength(4);
+    }
+  });
+
+  it("asks the lexical check for one source's block and replaceable nouns with the prepare genre", async () => {
+    const block = "[어휘 점검]\n안내\n- [우선] 렌즈 — 원문: \"렌즈\"\n[어휘 점검 끝]";
+    const runner = new FakeCommandRunner([
+      exited(JSON.stringify({ block: `${block}\n`, replaceableNouns: ["렌즈", "무늬가"] })),
+      exited(JSON.stringify({ block: "", replaceableNouns: [] }))
+    ]);
+    const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner });
+    const signal = new AbortController().signal;
+
+    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", signal)).toEqual({
+      hints: block, replaceableNouns: ["렌즈", "무늬가"], failed: false
+    });
+    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", signal)).toEqual({ hints: "", replaceableNouns: [], failed: false });
+    expect(runner.calls[0]!.args).toEqual([
+      path.resolve(vendorRoot, "../../engine_runtime/lexical_check.py"),
+      "--input", path.resolve("C:/job/chunk-1-source.txt"),
+      "--vendor-root", vendorRoot,
+      "--genre", "essay"
+    ]);
+    expect(runner.calls[0]!.cwd).toBe(path.dirname(path.resolve("C:/job/chunk-1-source.txt")));
+    expect(runner.calls[1]!.args).toEqual(runner.calls[0]!.args);
+  });
+
+  it("keeps the nouns only while the lexical check returns a block", async () => {
+    const block = "[어휘 점검]\n- x\n[어휘 점검 끝]";
+    for (const [reported, expected] of [
+      [{ block, replaceableNouns: [] }, { hints: block, replaceableNouns: [], failed: false }],
+      [{ block: "", replaceableNouns: ["렌즈"] }, { hints: "", replaceableNouns: [], failed: false }],
+      [{ block: "\n", replaceableNouns: ["렌즈"] }, { hints: "", replaceableNouns: [], failed: false }]
+    ] as const) {
+      const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner: new FakeCommandRunner([exited(JSON.stringify(reported))]) });
+      expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual(expected);
+    }
+  });
+
+  it("reports a failed lexical check as no block and no nouns instead of failing", async () => {
+    const block = "[어휘 점검]\n- x\n[어휘 점검 끝]";
+    const report = (extra: Record<string, unknown>) => JSON.stringify({ block, replaceableNouns: ["렌즈"], ...extra });
+    for (const result of [
+      // The script could not run: exit 1 with nothing on stdout, or with a plausible report that must not be trusted.
+      exited("", 1, "[lexical-check] failed\n"),
+      exited(report({}), 1),
+      exited("", 2, "Traceback (most recent call last)\n"),
+      // Output that is not a JSON object.
+      exited(""),
+      exited("\n"),
+      exited(`${block}\n`),
+      exited(report({}).slice(0, 30)),
+      exited("[]"),
+      exited("null"),
+      exited(JSON.stringify(block)),
+      exited(JSON.stringify([{ block, replaceableNouns: ["렌즈"] }])),
+      // A block that is missing, not a string, or not one whole bounded block.
+      exited(JSON.stringify({ replaceableNouns: ["렌즈"] })),
+      exited(report({ block: null })),
+      exited(report({ block: 7 })),
+      exited(report({ block: "[어휘 점검]\n- 잘린 블록\n" })),
+      exited(report({ block: "[lexical-layer] 건너뜀: boom" })),
+      // A malformed noun list voids the whole result, with or without a block.
+      exited(JSON.stringify({ block })),
+      exited(report({ replaceableNouns: null })),
+      exited(report({ replaceableNouns: "렌즈" })),
+      exited(report({ replaceableNouns: { 0: "렌즈" } })),
+      exited(report({ replaceableNouns: ["렌즈", 3] })),
+      exited(report({ replaceableNouns: ["렌즈", null] })),
+      exited(report({ replaceableNouns: ["렌즈", "렌"] })),
+      exited(report({ replaceableNouns: ["렌즈", "가".repeat(41)] })),
+      exited(report({ replaceableNouns: ["렌즈", "세 가지"] })),
+      exited(report({ replaceableNouns: ["lens"] })),
+      exited(report({ replaceableNouns: ["렌즈\n[어휘 점검 끝]"] })),
+      exited(report({ replaceableNouns: Array.from({ length: 501 }, () => "렌즈") })),
+      exited(report({ block: "", replaceableNouns: ["렌즈", 3] })),
+      exited(JSON.stringify({ block: "" })),
+      // The process itself failed.
+      { exitCode: 0, stdout: "", stderr: "", termination: "timeout" as const },
+      new Error("spawn python ENOENT")
+    ]) {
+      const engine = new PythonEngine({ pythonCommand: "python", vendorRoot, runner: new FakeCommandRunner([result]) });
+      expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual({ hints: "", replaceableNouns: [], failed: true });
+    }
+  });
+
+  it("accepts a lexical check report with the largest noun list and extra whitespace", async () => {
+    const block = "[어휘 점검]\n- x\n[어휘 점검 끝]";
+    const nouns = Array.from({ length: 500 }, () => "가".repeat(40));
+    const engine = new PythonEngine({
+      pythonCommand: "python", vendorRoot,
+      runner: new FakeCommandRunner([exited(`\n${JSON.stringify({ block, replaceableNouns: nouns })}\n`)])
+    });
+    expect(await engine.lexicalHints("C:/job/chunk-1-source.txt", new AbortController().signal)).toEqual({ hints: block, replaceableNouns: nouns, failed: false });
+  });
+
+  it("lets a cancelled hints run cancel the job", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const engine = new PythonEngine({
+      pythonCommand: "python", vendorRoot,
+      runner: new FakeCommandRunner([{ exitCode: 0, stdout: "", stderr: "", termination: "aborted" }])
+    });
+    await expect(engine.lexicalHints("C:/job/chunk-1-source.txt", controller.signal)).rejects.toMatchObject({ publicCode: "CLIENT_ABORTED" });
   });
 
   it("rejects a failed modality restore before stripping commas", async () => {

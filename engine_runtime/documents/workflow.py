@@ -27,19 +27,20 @@ def prepare(input_path, root, vendor, job_id=None):
     if not manifest['batches']:
         raise DocumentError('윤문 가능한 텍스트가 없습니다. 보호 구조만 있는 문서는 원본을 유지해 주세요.')
     job=root/(job_id or 'job-'+uuid.uuid4().hex)
-    job.mkdir(parents=True)
+    root.mkdir(parents=True,exist_ok=True)
+    job.mkdir(mode=0o700)
     try:
         (job/('original.'+suffix)).write_bytes(pkg.raw)
         save(job/'document.json',manifest)
         state={'schemaVersion':2,'kind':'document','job':job.name,'format':suffix,'inputPath':str(input_path.resolve()),
-               'name':input_path.stem+'-humanized.'+suffix,'vendor':str(vendor.resolve()),'current':0,'attempt':1,
+               'name':input_path.stem+'-humanized.'+suffix,'current':0,'attempt':1,
                'sourceHash':pkg.hash,'manifestHash':digest((job/'document.json').read_bytes()),
                'status':'active','accepted':{},'warnings':manifest['warnings'],'restored':0}
         if sejong_v2():
             state['engine']=sejong_engine()  # id+version; a later change of engine or version fails the job
             state['sejongEnv']=sejong_env()  # SUPER_SEJONG_* flags; every later call of the job uses these
         save(job/'job.json',state)
-        return next_batch(job,state,manifest)
+        return next_batch(job,state,manifest,vendor)
     except Exception:
         if job.resolve().parent==root.resolve() and re.fullmatch(r'job-[a-f0-9]{32}',job.name):
             shutil.rmtree(job)
@@ -93,7 +94,8 @@ def v2_batch(job,state,manifest):
         save(job/'job.json',state)
     return result
 
-def next_batch(job,state,manifest):
+def next_batch(job,state,manifest,vendor):
+    """`vendor` is the Gateway's own engine directory (its location or --vendor-root), never a path from job.json."""
     output_chars = manifest['sourceChars'] + sum(
         len(edit['after']) - len(edit['before'])
         for edits in state['accepted'].values() for edit in edits
@@ -128,9 +130,9 @@ def next_batch(job,state,manifest):
     return {'status':'rewrite','chunk':state['current']+1,'attempt':state['attempt'],
             'inputPath':str(file),'responsePath':str(job/f"response-{state['current']+1}-{state['attempt']}.json"),
             'schemaPath':str(Path(__file__).parent/'response-schema.json'),
-            'rulesPath':str(Path(state['vendor'])/'skills/humanize-korean/references/quick-rules.md'),**base,**preview}
+            'rulesPath':str(Path(vendor)/'skills/humanize-korean/references/quick-rules.md'),**base,**preview}
 
-def accept(job,state,manifest,chunk,attempt,source_hash,response):
+def accept(job,state,manifest,chunk,attempt,source_hash,response,vendor):
     if state['status']!='active' or chunk!=state['current']+1 or attempt!=state['attempt'] or source_hash!=state['sourceHash']:
         raise DocumentError('다른 작업 또는 이전 시도의 응답입니다.')
     if response.stat().st_size>2*1024**2:
@@ -224,7 +226,7 @@ def accept(job,state,manifest,chunk,attempt,source_hash,response):
         decision='rollback' if failures else 'accept'
     state['warnings']=list(dict.fromkeys(state['warnings']+warnings))
     save(job/'job.json',state)
-    return {**next_batch(job,state,manifest),'decision':decision}
+    return {**next_batch(job,state,manifest,vendor),'decision':decision}
 
 def dispatch(args,root,vendor):
     if args.command=='prepare':
@@ -238,7 +240,7 @@ def dispatch(args,root,vendor):
     fd=os.open(lock,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600); os.close(fd)
     try:
         state=json.loads((job/'job.json').read_text(encoding='utf-8'))
-        if state['kind']!='document' or state['job']!=args.job:
+        if state['kind']!='document' or state['job']!=args.job or state.get('format') not in ('docx','pptx'):
             raise DocumentError('작업 상태가 잘못되었습니다.')
         if args.command=='cleanup':
             # Deletion performed after the lock is released.
@@ -251,9 +253,9 @@ def dispatch(args,root,vendor):
         pin_sejong_env(state.get('sejongEnv', {}) if state.get('engine') else None)
         manifest=json.loads((job/'document.json').read_text(encoding='utf-8'))
         if args.command=='next':
-            return next_batch(job,state,manifest)
+            return next_batch(job,state,manifest,vendor)
         if args.command=='accept':
-            return accept(job,state,manifest,args.chunk,args.attempt,args.source_hash,Path(args.response))
+            return accept(job,state,manifest,args.chunk,args.attempt,args.source_hash,Path(args.response),vendor)
         if args.command=='finalize':
             output=Path(args.output).resolve()
             if state['status']!='active' or state['current']!=len(manifest['batches']):
@@ -272,7 +274,7 @@ def dispatch(args,root,vendor):
                 temp.unlink(missing_ok=True)
             state.update(status='done',outputPath=str(output))
             save(job/'job.json',state)
-            return next_batch(job,state,manifest)
+            return next_batch(job,state,manifest,vendor)
         raise DocumentError('지원하지 않는 문서 명령입니다.')
     finally:
         pin_sejong_env(None)   # the pin belongs to this call's job only

@@ -1,12 +1,16 @@
+import { childEnvironment } from '../process/child-env.js';
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { CLAUDE_ISOLATION_ARGS, CLAUDE_ISOLATION_ENV, CODEX_APP_SERVER_ISOLATION_ARGS, inScratchDirectory } from '../engine/cli-isolation.js';
 import type { EngineChoice } from '../engine/model-policy.js';
 import { terminateProcessTree, trackLiveProcess } from '../process/command-runner.js';
 
 /** Asks a writer CLI for its live model list over the CLI's own stdio protocol (Codex app-server JSON-RPC, Claude Code
- * stream-json control request). No prompt is sent, so discovery consumes no usage. The child is always gone when the
- * promise settles: stdin is closed after the answer and the process tree is killed after a short grace, at once on error. */
+ * stream-json control request). No prompt is sent, so discovery consumes no usage. The CLI starts from a new empty
+ * private directory outside any project, with the same isolation flags as a job where the CLI accepts them. The child is
+ * always gone when the promise settles: stdin is closed after the answer and the process tree is killed after a short
+ * grace, at once on error. */
 export interface DiscoveredModel { id: string; label: string; efforts: string[] }
 export interface DiscoveredCatalog {
   engine: EngineChoice;
@@ -16,7 +20,12 @@ export interface DiscoveredCatalog {
   excluded: { id: string; reason: 'hidden' | 'no-effort' }[];
   cliVersion?: string;
 }
-export interface DiscoveryOptions { cwd: string; timeoutMs?: number; env?: NodeJS.ProcessEnv }
+export interface DiscoveryOptions {
+  /** Ignored: the CLI always starts in its own empty temporary directory (kept so existing callers still compile). */
+  cwd?: string;
+  timeoutMs?: number;
+  env?: NodeJS.ProcessEnv;
+}
 type Mapped = Pick<DiscoveredCatalog, 'models' | 'cliDefault' | 'excluded'>;
 
 /** spawn: the CLI could not be started. timeout: no answer in time. protocol: early exit, error reply or malformed
@@ -29,8 +38,8 @@ export class ModelDiscoveryError extends Error {
 }
 
 const TIMEOUT_MS = 20_000, GRACE_MS = 2_000, KILL_WAIT_MS = 2_000, MAX_LINE_CHARS = 4 * 1024 * 1024, MAX_PAGES = 50;
-export const CLAUDE_DISCOVERY_ARGS = ['-p', '--restricted', '--strict-mcp-config', '--tools', '', '--no-session-persistence',
-  '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose'];
+export const CLAUDE_DISCOVERY_ARGS = ['-p', ...CLAUDE_ISOLATION_ARGS, '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose'];
+export const CODEX_DISCOVERY_ARGS = ['app-server', ...CODEX_APP_SERVER_ISOLATION_ARGS];
 
 type Message = Record<string, unknown>;
 const isRecord = (value: unknown): value is Message => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -102,10 +111,24 @@ export function mapClaudeModels(models: unknown[]): Mapped {
 interface Channel { send(message: Message): void; read(): Promise<Message> }
 
 async function converse<T>(label: string, command: string, args: string[], options: DiscoveryOptions,
+  talk: (channel: Channel) => Promise<T>, isolationEnv: Readonly<Record<string, string>> = {}): Promise<T> {
+  let started = false;
+  try {
+    return await inScratchDirectory('humanize-models-', cwd => {
+      started = true;
+      return talkTo(label, command, args, { ...options, cwd, env: { ...options.env, ...isolationEnv } }, talk);
+    });
+  } catch (error) {
+    if (started) throw error;
+    throw new ModelDiscoveryError('spawn', `${label}: the model probe directory is unavailable`);
+  }
+}
+
+async function talkTo<T>(label: string, command: string, args: string[], options: DiscoveryOptions & { cwd: string },
   talk: (channel: Channel) => Promise<T>): Promise<T> {
   const child = spawn(command, args, {
     cwd: options.cwd, shell: false, windowsHide: true, detached: process.platform !== 'win32',
-    env: { ...process.env, ...options.env, NO_COLOR: '1' }, stdio: ['pipe', 'pipe', 'pipe']
+    env: childEnvironment(process.env, { ...options.env, NO_COLOR: '1' }), stdio: ['pipe', 'pipe', 'pipe']
   });
   const untrack = child.pid === undefined ? () => {} : trackLiveProcess(child.pid);
   const exited = new Promise<void>(resolve => child.once('exit', () => resolve()));
@@ -193,7 +216,7 @@ function catalog(engine: EngineChoice, mapped: Mapped, cliVersion: string | unde
 /** `leadingArgs` go before the CLI's own arguments (e.g. a script for an interpreter); production passes none. */
 export async function discoverCodexModels(command: string, options: DiscoveryOptions, leadingArgs: string[] = []): Promise<DiscoveredCatalog> {
   const label = 'Codex app-server';
-  const { userAgent, data } = await converse(label, command, [...leadingArgs, 'app-server'], options, async channel => {
+  const { userAgent, data } = await converse(label, command, [...leadingArgs, ...CODEX_DISCOVERY_ARGS], options, async channel => {
     let id = 0;
     const call = async (method: string, params: Message): Promise<Message> => {
       const request = ++id;
@@ -239,7 +262,7 @@ export async function discoverClaudeModels(command: string, options: DiscoveryOp
       if (!isRecord(payload) || !Array.isArray(payload.models)) throw new ModelDiscoveryError('protocol', `${label} initialize returned no models`);
       return { version: text(payload.claude_code_version) || undefined, models: payload.models as unknown[] };
     }
-  });
+  }, CLAUDE_ISOLATION_ENV);
   return catalog('claude', mapClaudeModels(models), version, label);
 }
 

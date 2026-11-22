@@ -1,3 +1,4 @@
+import { childEnvironment } from "./child-env.js";
 import { spawn, spawnSync } from "node:child_process";
 
 export type CommandTermination = "exit" | "timeout" | "aborted" | "output-limit";
@@ -89,7 +90,7 @@ export class SpawnCommandRunner implements CommandRunner {
         shell: false,
         windowsHide: true,
         detached: process.platform !== "win32",
-        env: request.env ?? process.env,
+        env: request.env ?? childEnvironment(),
         stdio: ["pipe", "pipe", "pipe"]
       });
 

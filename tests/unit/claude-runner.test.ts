@@ -1,4 +1,5 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -96,6 +97,8 @@ describe("ClaudeRunner", () => {
     expect(call.args).toEqual([
       "-p",
       "--restricted",
+      "--safe-mode",
+      "--disable-slash-commands",
       "--strict-mcp-config",
       "--tools",
       "",
@@ -116,8 +119,25 @@ describe("ClaudeRunner", () => {
     expect(call.args.at(-1)).not.toContain("$schema");
     expect(call.stdin).toContain("이 문장은 매우 자연스럽습니다.");
     expect(call.stdin).toContain("번역투를 피한다");
-    expect(call.cwd).toBe(root);
+    expect(call.env).toMatchObject({ CLAUDE_CODE_DISABLE_CLAUDE_MDS: "1", CLAUDE_CODE_DISABLE_AUTO_MEMORY: "1", NO_COLOR: "1" });
     expect(JSON.parse(await readFile(outputPath, "utf8"))).toEqual(result);
+  });
+
+  it("starts Claude from a new empty directory outside the job and the project, removed afterwards", async () => {
+    const seen: { cwd: string; entries: string[] }[] = [];
+    const fake = new FakeCommandRunner([exited(envelope({ rewrittenText: "결과", warnings: [] }))]);
+    const runner = new ClaudeRunner({
+      claudeCommand: "claude", schemaPath: SCHEMA_PATH, quickRulesPath, timeoutMs: 5000, permitPool: directPool,
+      runner: { run: async request => { seen.push({ cwd: request.cwd, entries: await readdir(request.cwd) }); return fake.run(request); } }
+    });
+    await runner.transform(inputPath, outputPath, 1, new AbortController().signal);
+    expect(seen).toHaveLength(1);
+    const { cwd, entries } = seen[0]!;
+    expect(cwd).not.toBe(root);
+    expect(path.dirname(cwd)).toBe(path.resolve(tmpdir()));
+    expect(path.basename(cwd)).toMatch(/^humanize-claude-/);
+    expect(entries).toEqual([]);
+    expect(existsSync(cwd)).toBe(false);
   });
 
   it("adds the conservative retry instruction on attempt 2", async () => {

@@ -1,6 +1,6 @@
 {
   "name": "ai-text-makes-likes-human",
-  "version": "0.5.1",
+  "version": "0.5.4",
   "description": "한국어 윤문 · Claude/Codex CLI 스킬과 portable Windows 앱",
   "main": "index.js",
   "scripts": {
@@ -45,13 +45,18 @@
     "@types/node": "^26.2.0",
     "@types/supertest": "^7.2.1",
     "cross-env": "^10.1.0",
-    "electron": "44.2.0",
+    "electron": "44.11.5",
     "electron-builder": "26.15.3",
     "esbuild": "0.28.2",
     "supertest": "^7.2.2",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "app-builder-lib": {
+      "minimatch@>=7.0.0 <11.0.1": "^11.0.1"
+    }
   },
   "private": true,
   "engines": {

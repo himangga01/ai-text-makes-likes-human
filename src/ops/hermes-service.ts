@@ -1,3 +1,4 @@
+import { childEnvironment } from "../process/child-env.js";
 import { execFile, spawn } from "node:child_process";
 import { closeSync, openSync, realpathSync } from "node:fs";
 import {
@@ -490,8 +491,10 @@ export interface NodeServicePlatformOptions {
 
 // HUMANIZE_RUNTIME_ROOT is for test instances; the managed server must use the
 // runtime directory (and server.lock) this supervisor inspects.
+/** The managed server's environment: the child allowlist (see process/child-env.ts) without the test runtime root.
+ * The operator's shell or agent session that runs `restart` must not leak its tokens into the long-lived server. */
 export function serviceEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const { HUMANIZE_RUNTIME_ROOT: testRuntimeRoot, ...inherited } = env;
+  const { HUMANIZE_RUNTIME_ROOT: testRuntimeRoot, ...inherited } = childEnvironment(env);
   void testRuntimeRoot;
   return inherited;
 }
@@ -540,7 +543,7 @@ export class NodeServicePlatform implements ServicePlatform {
         stdio: ["ignore", stdoutFd, stderrFd],
         env: {
           ...serviceEnvironment(process.env),
-          HOST: "0.0.0.0",
+          HOST: "127.0.0.1",
           PORT: String(this.options.port),
           PYTHON_COMMAND: this.options.pythonCommand,
           CODEX_COMMAND: this.options.codexCommand,

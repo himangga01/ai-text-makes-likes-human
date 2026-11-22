@@ -247,9 +247,10 @@ function sameVerbStem(term: string, token: string, original: string): boolean {
   return token.startsWith(term.slice(0, -1)) && syllable - last >= 0 && [4, 8].includes(syllable - last) &&
     verbalTails.has(token.slice(term.length));
 }
-function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, suffixes = conceptSuffixes): boolean {
+function preservesConcepts(original: SourceSentence, rewritten: SourceSentence, suffixes = conceptSuffixes,
+  replaceable: (term: string) => boolean = () => false): boolean {
   const tokens = rewritten.text.match(/[가-힣]+/gu) ?? [];
-  return original.concepts.every(term => (term === '과정' && permitsFunctionalProcessOmission(original.text, rewritten.text)) || tokens.some(token =>
+  return original.concepts.every(term => replaceable(term) || (term === '과정' && permitsFunctionalProcessOmission(original.text, rewritten.text)) || tokens.some(token =>
     (token.startsWith(term) && (suffixes.has(token.slice(term.length)) || isVerbalRealization(token.slice(term.length)))) ||
     sameVerbStem(term, token, original.text)
   ));
@@ -439,7 +440,24 @@ export function restoreProtectedSentences(source: string, candidate: string): Pr
   return { rewrittenText: repaired, restoredProtectedSentences: changedProtected.length };
 }
 
-export function checkDirectTextFidelity(source: string, candidate: string): FidelityReport {
+/** A source concept the rewrite may replace: a vendor lexicon noun the lexical check flagged in this source as one
+ * whole word (engine_runtime/lexical_check.py `replaceableNouns`, e.g. 렌즈 in "세 가지 렌즈로"). Only that exact
+ * noun, bare or with a particle the concept gate already accepts, is exempt; a longer word that merely contains
+ * it (콘택트렌즈) and every other concept of the sentence stay protected. Owner decision 2026-11-22. */
+export function replaceableConcept(replaceableNouns: readonly string[]): (term: string) => boolean {
+  if (replaceableNouns.length === 0) return () => false;
+  return term => replaceableNouns.some(noun => noun === term || (noun.startsWith(term) && conceptSuffixes.has(noun.slice(term.length))));
+}
+
+/** The lexical check's noun list as received from Python or a bridge request, or [] when it is anything else. */
+export function parseReplaceableNouns(value: unknown): string[] {
+  // Array.from turns holes into undefined, which then fails the check (every() alone skips holes).
+  const nouns = Array.isArray(value) && value.length <= 500 ? Array.from(value as unknown[]) : undefined;
+  return nouns?.every(noun => typeof noun === 'string' && /^[가-힣]{2,40}$/u.test(noun)) ? nouns as string[] : [];
+}
+
+export function checkDirectTextFidelity(source: string, candidate: string, replaceableNouns: readonly string[] = []): FidelityReport {
+  const replaceable = replaceableConcept(replaceableNouns);
   const before = comparableSentences(source), after = comparableSentences(candidate);
   let violations = checkStructuralFidelity(source, candidate);
   // Direct text forbids splitting and merging sentences, so counts must match.
@@ -460,7 +478,7 @@ export function checkDirectTextFidelity(source: string, candidate: string): Fide
     // Protection is bidirectional: a factual statement must not become a
     // negative, obligation, possibility or condition during an ordinary rewrite.
     if (!original.protected && hasProtectedMeaning(rewritten.text)) violations++;
-    if (!preservesConcepts(original, rewritten)) violations++;
+    if (!preservesConcepts(original, rewritten, conceptSuffixes, replaceable)) violations++;
     if (original.text !== rewritten.text && !preservesVoice(original.text, rewritten.text)) violations++;
   }
   return { violations, protectedSentences: before.filter(sentence => sentence.protected).length };

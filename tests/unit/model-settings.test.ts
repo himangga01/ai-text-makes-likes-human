@@ -9,7 +9,7 @@ import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
 import type { CommandRequest } from '../../src/process/command-runner.js';
 
 it('defaults remain unchanged and provider/model effort combinations are validated',()=>{
-  expect(parseModelSettings('codex')).toEqual({model:'gpt-6.1-sol',effort:'high'});
+  expect(parseModelSettings('codex')).toEqual({model:'gpt-6.2-sol',effort:'high'});
   expect(parseModelSettings('claude')).toEqual({model:'claude-opus-5-5',effort:'xhigh'});
   expect(()=>parseModelSettings('codex','claude-opus-5','high')).toThrow();
   expect(()=>parseModelSettings('codex','gpt-5.6-luna','ultra')).toThrow();
@@ -52,7 +52,7 @@ afterEach(()=>resetModelCatalog());
 
 it('retains distinct, correctly labelled fallback model choices in CLI order',()=>{
   expect(getModelOptions()).toEqual(FALLBACK_MODEL_OPTIONS);
-  expect(FALLBACK_MODEL_OPTIONS.codex.map(x=>x.id)).toEqual(['gpt-6.1-sol','gpt-6-astra','gpt-6.1-terra','gpt-6-sol','gpt-6-luna',
+  expect(FALLBACK_MODEL_OPTIONS.codex.map(x=>x.id)).toEqual(['gpt-6.2-sol','gpt-6.2-astra','gpt-6.1-terra','gpt-6.1-sol','gpt-6-astra','gpt-6-sol','gpt-6-luna',
     'gpt-5.6-sol','gpt-5.6-terra','gpt-5.6-luna']);
   expect(FALLBACK_MODEL_OPTIONS.claude.map(x=>[x.id,x.label])).toEqual([
     ['claude-opus-5-5','Claude Opus 5.5'],
@@ -81,7 +81,7 @@ it('retains distinct, correctly labelled fallback model choices in CLI order',()
 describe('live model list',()=>{
   const nova={id:'gpt-7-nova',label:'GPT-7 Nova',efforts:['low','medium','high','xhigh']};
   it('validates against the live list and falls back again on reset',()=>{
-    expect(setLiveModels('codex',[nova,{id:HUMANIZE,label:'GPT-6.1 Sol',efforts:['low','high']}])).toBe(true);
+    expect(setLiveModels('codex',[nova,{id:HUMANIZE,label:'GPT-6.2 Sol',efforts:['low','high']}])).toBe(true);
     expect(parseModelSettings('codex','gpt-7-nova','xhigh')).toEqual({model:'gpt-7-nova',effort:'xhigh'});
     expect(()=>parseModelSettings('codex','gpt-6-astra','low')).toThrow('선택한 CLI에서 지원하는 모델과 추론 레벨을 선택해 주세요.');
     expect(()=>parseModelSettings('codex',HUMANIZE,'ultra')).toThrow();
@@ -92,7 +92,7 @@ describe('live model list',()=>{
     expect(()=>parseModelSettings('codex','gpt-7-nova','low')).toThrow();
   });
   it('picks the configured default, then the CLI default, then the first model',()=>{
-    setLiveModels('codex',[nova,{id:HUMANIZE,label:'GPT-6.1 Sol',efforts:['low','medium','high']}],{model:'gpt-7-nova',effort:'xhigh'});
+    setLiveModels('codex',[nova,{id:HUMANIZE,label:'GPT-6.2 Sol',efforts:['low','medium','high']}],{model:'gpt-7-nova',effort:'xhigh'});
     expect(getModelDefaults().codex).toEqual({model:HUMANIZE,effort:'high'});
     // The configured default left the CLI: the CLI default takes over, at the configured level it supports.
     setLiveModels('codex',[{id:'gpt-6-luna',label:'GPT-6 Luna',efforts:['low']},nova],{model:'gpt-7-nova',effort:'xhigh'});

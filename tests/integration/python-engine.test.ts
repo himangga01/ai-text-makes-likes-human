@@ -1,6 +1,7 @@
 import { copyFile, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { checkDirectTextFidelity } from "../../src/engine/direct-text-fidelity.js";
 import { PythonEngine } from "../../src/engine/python-engine.js";
 import { SpawnCommandRunner } from "../../src/process/command-runner.js";
 import { makeTestRoot, removeTestRoot } from "../helpers/test-root.js";
@@ -90,9 +91,106 @@ describe("PythonEngine integration", () => {
         restoredSentences: 0,
         skippedSentences: 0,
         removedCommas: 0,
-        repairedParticles: 0
+        repairedParticles: 0,
+        restoredLexicalSentences: 0,
+        skippedLexicalSentences: 0,
+        lexicalRestoreFailures: 0
       });
       expect(await readFile(afterPath, "utf8")).toBe(text);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("puts a sentence with an injected lexicon headword back to the source, keeping CRLF", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const before = "올해 매출은 크게 늘었다.\r\n이 결과를 여러 관점에서 살펴본다.\r\n";
+      const beforePath = path.join(runDir, "before.txt");
+      const afterPath = path.join(runDir, "after.txt");
+      await writeFile(beforePath, before, "utf8");
+      await writeFile(afterPath, before.replace("관점에서", "렌즈로"), "utf8");
+
+      const report = await engine.restore(beforePath, afterPath, new AbortController().signal);
+
+      expect(report).toMatchObject({ restoredSentences: 0, restoredLexicalSentences: 1, skippedLexicalSentences: 0, lexicalRestoreFailures: 0 });
+      expect(await readFile(afterPath, "utf8")).toBe(before);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("returns the lexical check block and replaceable nouns only for a source that uses a lexicon headword", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const sourcePath = path.join(runDir, "chunk-1-source.txt");
+      await writeFile(sourcePath, "이 문제를 세 가지 렌즈로 본다.\r\n", "utf8");
+      const found = await engine.lexicalHints(sourcePath, new AbortController().signal);
+      expect(found.failed).toBe(false);
+      expect(found.hints.startsWith("[어휘 점검]\n")).toBe(true);
+      expect(found.hints.endsWith("\n[어휘 점검 끝]")).toBe(true);
+      expect(found.hints).toContain("[우선] 렌즈");
+      expect(found.replaceableNouns).toContain("렌즈");
+
+      await writeFile(sourcePath, "오늘은 비가 왔다.\n", "utf8");
+      expect(await engine.lexicalHints(sourcePath, new AbortController().signal)).toEqual({ hints: "", replaceableNouns: [], failed: false });
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("names 렌즈 as replaceable so the direct-text concept guard accepts 관점 in its place", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const sourcePath = path.join(runDir, "chunk-1-source.txt");
+      const source = "이번 분기 실적을 세 가지 렌즈로 살펴보면 흐름이 달라 보인다.\n";
+      const rewrite = "이번 분기 실적을 세 가지 관점에서 살펴보면 흐름이 달라 보인다.\n";
+      await writeFile(sourcePath, source, "utf8");
+      const found = await engine.lexicalHints(sourcePath, new AbortController().signal);
+
+      expect(found.failed).toBe(false);
+      expect(found.hints).toContain("[우선] 렌즈");
+      expect(found.replaceableNouns).toContain("렌즈");
+      // The real Python result feeds the real guard: it rejects the swap without the noun and accepts it with.
+      expect(checkDirectTextFidelity(source, rewrite).violations).toBeGreaterThan(0);
+      expect(checkDirectTextFidelity(source, rewrite, found.replaceableNouns).violations).toBe(0);
+      // Only that noun: dropping 실적 stays a violation.
+      expect(checkDirectTextFidelity(source, rewrite.replace("실적을 ", ""), found.replaceableNouns).violations).toBeGreaterThan(0);
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("flags neither a longer word containing 렌즈 nor a quoted mention", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const sourcePath = path.join(runDir, "chunk-1-source.txt");
+      for (const text of ["콘택트렌즈를 끼고 안경을 벗었다.\n", "그는 \"세 가지 렌즈\"라고 말했다.\n"]) {
+        await writeFile(sourcePath, text, "utf8");
+        expect(await engine.lexicalHints(sourcePath, new AbortController().signal)).toEqual({ hints: "", replaceableNouns: [], failed: false });
+      }
+    } finally {
+      await removeTestRoot(runDir);
+    }
+  });
+
+  it("reports a lexical check that cannot run as failed, with no block and no nouns", async () => {
+    const runDir = await makeTestRoot();
+    try {
+      const failed = { hints: "", replaceableNouns: [], failed: true };
+      const signal = new AbortController().signal;
+      // The source file is missing: the script exits 1.
+      expect(await engine.lexicalHints(path.join(runDir, "missing-source.txt"), signal)).toEqual(failed);
+
+      // The vendor tree has no lexical layer: still exit 1, while the script itself (engine_runtime/) is found.
+      const sourcePath = path.join(runDir, "chunk-1-source.txt");
+      await writeFile(sourcePath, "이 문제를 세 가지 렌즈로 본다.\n", "utf8");
+      const withoutLayer = new PythonEngine({
+        pythonCommand,
+        vendorRoot: path.resolve("vendor/no-such-engine"),
+        runner: new SpawnCommandRunner()
+      });
+      expect(await withoutLayer.lexicalHints(sourcePath, signal)).toEqual(failed);
     } finally {
       await removeTestRoot(runDir);
     }

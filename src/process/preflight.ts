@@ -92,8 +92,8 @@ export async function runPreflight(
       engineVersion = sejongVersion;
     } else {
       engineVersion = parseVersion(engineVersionText, "humanize engine");
-      if (engineVersion !== "2.3.2") {
-        return unavailable("Humanize 엔진 2.3.2가 필요합니다.");
+      if (engineVersion !== "2.4.7") {
+        return unavailable("Humanize 엔진 2.4.7이 필요합니다.");
       }
     }
 

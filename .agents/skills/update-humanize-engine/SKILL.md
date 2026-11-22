@@ -64,7 +64,7 @@ python "<skill-dir>/scripts/check_upstream.py" --project-root "C:/project/2026/a
 
 `sync-engine.ps1`의 소스 위치·기대 커밋·버전 검증·출처 생성문, `ENGINE_VERSION`, `UPSTREAM.md`, 핀 테스트를 일치시킨다. 현재 앱의 모델 선택, effort, 큐 동시성, 포트는 관련 변경이 필요한 경우에만 수정한다.
 
-동기화는 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/sync-engine.ps1 -Source <고정한 깨끗한 포크 체크아웃 경로>`로 호출한다. `-Source`는 필수이며, 커밋되지 않은 수정이나 필수 런타임 파일 누락을 먼저 해결한다.
+동기화는 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/sync-engine.ps1 -Source <고정한 깨끗한 포크 체크아웃 경로>`로 호출한다. `-Source`는 필수이며, 커밋되지 않은 수정이나 필수 런타임 파일 누락을 먼저 해결한다. PowerShell이 없는 macOS에서는 `docs/operations.md`의 엔진 업데이트 절에 적힌 수동 스테이징 절차로 같은 결과를 만들고, 생성 결과가 스크립트 출력과 같은지 비교한다.
 
 ## 5. 검증과 마무리
 

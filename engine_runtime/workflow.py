@@ -19,6 +19,7 @@ try:
     from .super_sejong import mode as super_sejong_mode
     from . import super_sejong_josa as josa
     from .comma_guard import strip_injected as strip_commas
+    from .lexical_check import lexical_check
 except ImportError:  # Executed as a standalone gateway script.
     # Windows embedded Python's ._pth isolation omits the script directory.
     sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -27,6 +28,7 @@ except ImportError:  # Executed as a standalone gateway script.
     from super_sejong import mode as super_sejong_mode
     import super_sejong_josa as josa
     from comma_guard import strip_injected as strip_commas
+    from lexical_check import lexical_check
 
 # 라틴 문자 단어(Apple, AI)와 한자열(李文學)은 고유명사·용어로 보고 개수까지 보존한다.
 _NAME_TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:[.'’\-][A-Za-z0-9]+)*"
@@ -46,6 +48,38 @@ def modules(vendor: Path):
     import restore_modality
     import strip_injected_commas
     return verify_gates, checks, restore_modality, strip_injected_commas
+
+
+def lexical(vendor: Path):
+    """The vendor lexical layer (im-not-ai 2.4+, scripts/lexical_layer.py), loaded like the other vendor modules."""
+    scripts = vendor.resolve() / "scripts"
+    if not (scripts / "lexical_layer.py").is_file():
+        raise ValueError("Humanize lexical layer is missing")
+    sys.path.insert(0, str(scripts))
+    import lexical_layer
+    return lexical_layer
+
+
+def lexical_report(source: str, vendor: Path = DEFAULT_VENDOR) -> dict:
+    """The lexical check of one source chunk, as the server reads it from engine_runtime/lexical_check.py: the
+    [어휘 점검] block and the nouns the direct-text concept guard may let the rewrite replace. The layer never blocks
+    a rewrite, so a failure is no block and no exemption."""
+    try:
+        report = lexical_check(source, vendor, "essay")
+    except Exception:
+        return {"block": "", "replaceableNouns": []}
+    # As on the server, the exemption exists only alongside a block the rewrite was given.
+    return report if report["block"] else {"block": "", "replaceableNouns": []}
+
+
+def lexical_hints(source: str, vendor: Path = DEFAULT_VENDOR) -> str:
+    """The [어휘 점검] block for one source chunk, or '' when nothing matched or the layer failed."""
+    return lexical_report(source, vendor)["block"]
+
+
+def lexical_nouns(source: str, vendor: Path = DEFAULT_VENDOR) -> list:
+    """The lexicon nouns of one source chunk the direct-text concept guard lets the rewrite replace."""
+    return lexical_report(source, vendor)["replaceableNouns"]
 
 
 def decision(exit_code: int, attempt: int) -> str:
@@ -320,6 +354,16 @@ def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
     output, restored, skipped = modality.restore(source, output)
     # Only commas the rewrite added are removed; the writer's own commas survive edits to their sentence.
     output, report = strip_commas(source, output, commas)
+    # Vendor lexical layer: a sentence where the rewrite introduced a 'change first' headword the source never used goes
+    # back to its source sentence (same safety rules as the modality restore). It never blocks the rewrite: a failure
+    # leaves the text as it was and is only counted. Only counts leave this function, never sentence text.
+    lexical_restored = lexical_skipped = lexical_failures = 0
+    try:
+        candidate, restored_lexical, skipped_lexical = lexical(vendor).restore(source, output)
+    except Exception:
+        lexical_failures = 1
+    else:
+        output, lexical_restored, lexical_skipped = candidate, len(restored_lexical), len(skipped_lexical)
     # Super Sejong: an edit that changes a noun can leave the wrong particle allomorph behind
     # (회의을, URL를, 10%으로). Repair only mismatches the rewrite introduced.
     repaired = josa.gate(source, output, None, "likely") if super_sejong_mode() != "off" else []
@@ -328,7 +372,8 @@ def restore(before: Path, after: Path, vendor: Path = DEFAULT_VENDOR) -> dict:
     with after.open("w", encoding="utf-8", newline="") as file:
         file.write(output)
     return {"restoredSentences": len(restored), "skippedSentences": len(skipped), "removedCommas": report["commas_removed"],
-            "repairedParticles": len(repaired)}
+            "restoredLexicalSentences": lexical_restored, "skippedLexicalSentences": lexical_skipped,
+            "lexicalRestoreFailures": lexical_failures, "repairedParticles": len(repaired)}
 
 
 def validate_response(value: object) -> dict:

@@ -58,7 +58,7 @@ async function engineRun(source: string, codex: CodexAdapter, options: RewriteOp
   }
 }
 
-const TIMINGS = ['prepareMs', 'codexMs', 'restoreMs', 'gateMs', 'assembleMs', 'totalMs'];
+const TIMINGS = ['prepareMs', 'codexMs', 'restoreMs', 'gateMs', 'assembleMs', 'totalMs', 'lexicalHintMs'];
 function stable(result: HumanizeResult): unknown {
   const diagnostics: Record<string, unknown> = { ...result.diagnostics };
   for (const key of [...TIMINGS, 'v2ShadowCounts']) delete diagnostics[key];

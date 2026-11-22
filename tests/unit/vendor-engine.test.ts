@@ -13,6 +13,7 @@ const required = [
   "scripts/restore_modality.py",
   "scripts/strip_injected_commas.py",
   "scripts/console.py",
+  "scripts/lexical_layer.py",
   "scripts/build_quick_rules.py",
   "scripts/build_diagnosis_rules.py",
   "skills/humanize-korean/references/quick-rules.md",
@@ -25,16 +26,17 @@ const required = [
   "skills/humanize-korean/references/metrics_v2.py",
   "skills/humanize-korean/references/baseline.json",
   "skills/humanize-korean/references/baseline_v2.json",
+  "skills/humanize-korean/references/lexicon.json",
   "LICENSE"
 ];
 
 describe("vendored humanize engine", () => {
-  it("contains the pinned v2.3.2 runtime", async () => {
+  it("contains the pinned v2.4.7 runtime", async () => {
     await Promise.all(required.map(file => stat(path.join(root, file))));
     const version = await readFile(path.join(root, "ENGINE_VERSION"), "utf8");
 
     expect(version).toBe(
-      "version=2.3.2\ncommit=9747f036cdc28a1a8aea4dc71fef1f7846eb96f7\n"
+      "version=2.4.7\ncommit=c07df14d9f68da482ff5183591808a7d132d4a71\n"
     );
   });
 });

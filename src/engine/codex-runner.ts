@@ -1,10 +1,11 @@
+import { childEnvironment } from "../process/child-env.js";
 import type { CandidateReview } from './candidate-review.js';
 import { parseRewriteOptions, type RewriteOptions } from './rewrite-policy.js';
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
+import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { CommandRunner } from "../process/command-runner.js";
+import { CODEX_EXEC_ISOLATION_ARGS, inScratchDirectory } from "./cli-isolation.js";
 import { EngineError, engineFailed, modelUnavailable } from "./errors.js";
 import {
   HUMANIZE_MODEL,
@@ -13,6 +14,7 @@ import {
 import { buildHumanizePrompt } from "./prompt-builder.js";
 import type { ChunkPromptContext } from "./super-sejong.js";
 import { parseTextResult } from './text-edits.js';
+import { assertNoForeignEmail } from './output-guard.js';
 import { parseModelSettings, type ModelSettings } from './model-policy.js';
 
 export interface CodexResult {
@@ -151,12 +153,13 @@ export class CodexRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext, lexicalHints: chunkContext?.lexicalHints });
 
     await this.exec(prompt, this.options.schemaPath, resultPath, signal, selection);
 
     try {
       const raw = await readFile(resultPath, "utf8");
+      assertNoForeignEmail(prompt, raw, "Codex");
       return this.options.resultParser ? this.options.resultParser(raw) : parseTextResult(raw, source, 'Codex', options);
     } catch (error) {
       if (error instanceof EngineError) throw error;
@@ -176,11 +179,14 @@ export class CodexRunner {
     const selection = parseModelSettings('codex', settings?.model, settings?.effort);
     const resultPath = path.resolve(outputPath);
     await this.exec(prompt, path.resolve(schemaPath), resultPath, signal, selection);
+    let raw: string;
     try {
-      return await readFile(resultPath, "utf8");
+      raw = await readFile(resultPath, "utf8");
     } catch (error) {
       throw invalid("Codex result file is missing", error);
     }
+    assertNoForeignEmail(prompt, raw, "Codex");
+    return raw;
   }
 
   private async exec(
@@ -191,50 +197,31 @@ export class CodexRunner {
     selection: ModelSettings
   ): Promise<void> {
     await rm(resultPath, { force: true });
-    const isolatedCwd = await mkdtemp(path.join(os.tmpdir(), "humanize-codex-"));
-    let command;
-    try {
-      command = await this.options.permitPool.run(signal, () =>
-        this.options.runner.run({
+    // The model reads untrusted document text, so it gets no tools and none of the operator's Codex setup
+    // (cli-isolation.ts), and it runs from an empty private directory outside the project.
+    const command = await this.options.permitPool.run(signal, () =>
+      inScratchDirectory("humanize-codex-", cwd => this.options.runner.run({
         command: this.options.codexCommand,
         args: [
           "exec",
-          "--ephemeral",
-          "--skip-git-repo-check",
-          "--ignore-user-config",
-          "--ignore-rules",
-          // The model receives untrusted document text and needs no host tools. Codex 0.160
-          // accepts but ignores --disable unified_exec, so the read-only sandbox and the empty
-          // working directory remain the actual containment.
-          "--disable", "shell_tool",
-          "--disable", "unified_exec",
-          "--disable", "code_mode_host",
-          "--disable", "view_image",
-          "--disable", "browser_use",
-          "--disable", "apps",
-          "--disable", "computer_use",
+          ...CODEX_EXEC_ISOLATION_ARGS,
           "--model",
           selection.model,
           "--config",
           `model_reasoning_effort="${selection.effort}"`,
-          "--sandbox",
-          "read-only",
           "--output-schema",
           schemaPath,
           "--output-last-message",
           resultPath,
           "-"
         ],
-        cwd: isolatedCwd,
+        cwd,
         stdin: prompt,
         timeoutMs: this.options.timeoutMs,
         signal,
-        env: { ...process.env, NO_COLOR: "1" }
-        })
-      );
-    } finally {
-      await rm(isolatedCwd, { recursive: true, force: true });
-    }
+        env: childEnvironment(process.env, { NO_COLOR: "1" })
+      }))
+    );
 
     if (command.termination === "timeout") {
       throw new EngineError("ENGINE_TIMEOUT", true, "Codex timed out");

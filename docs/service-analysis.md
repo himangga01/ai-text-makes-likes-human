@@ -26,13 +26,13 @@ Sources: [README](../README.md), [Code Analysis](code-analysis.md), [Office supp
 
 | Surface | Execution/prerequisites | User experience |
 | --- | --- | --- |
-| LAN portal | Node/Python server and an installed/authenticated supported CLI; visitors share the server owner's selected provider account. | Browser input, shared queue/progress, cancellation, text copy/Markdown download and Office download. |
-| Windows app | Electron/Python bundled; native Claude or Codex CLI already installed/authenticated. | Local IPC worker, native dialogs/settings, TXT/MD/Office saves; no LAN server required. |
+| Web portal | Node/Python server and an installed/authenticated supported CLI; served on the server PC, and to other devices only through the password-protected public address; visitors share the server owner's selected provider account. | Browser input, shared queue/progress, cancellation, text copy/Markdown download and Office download. |
+| Windows app | Electron/Python bundled; native Claude or Codex CLI already installed/authenticated. | Local IPC worker, native dialogs/settings, TXT/MD/Office saves; no portal server required. |
 | Claude/Codex skill | Current host session supplies edits; Windows packaged Python/Node or suitable source runtime. | Gateway-driven workflow, new verified output file and optional direct-text comparison HTML; no nested model CLI. |
 
 Runtime preflight permits either provider independently. The Windows `setup-portal.cmd` helper still requires Codex installation/login, so its normal setup path is stricter than the Claude-only runtime.
 
-The source allowlist contains seven Codex and six Claude model IDs. Defaults are `gpt-6.1-sol`/`high` and `claude-opus-5-5`/`xhigh`. These are selectable source settings, not account-access guarantees. Skills use the host's model instead of the application menu.
+Since 0.5.1 the model lists come live from each CLI; the built-in fallback lists hold ten Codex and twelve Claude model IDs (2026-11-19). Defaults are `gpt-6.2-sol`/`high` and `claude-opus-5-5`/`xhigh`. These are selectable settings, not account-access guarantees. Skills use the host's model instead of the application menu.
 
 Sources: [preflight](../src/process/preflight.ts), [setup helper](../setup-portal.cmd), [model policy](../src/engine/model-policy.ts), [desktop guide](desktop.md), [skill guide](skills-guide.md).
 
@@ -54,7 +54,7 @@ Sources: [browser workflow](../public/app.js), [text loading](../public/text-fil
 
 ## 4. Quality Policy and Tradeoffs
 
-Both providers share text orchestration: prepare input, apply a structured response, restore lost identifiable modality, remove injected commas, check fidelity/preservation, retry at most once, then reassemble and verify the full document before delivery.
+Both providers share text orchestration: prepare input, apply a structured response, restore lost identifiable modality, remove injected commas, revert sentences with newly introduced lexicon headwords (engine 2.4.7), check fidelity/preservation, retry at most once, then reassemble and verify the full document before delivery.
 
 Direct text uses strict sentence/paragraph/heading/concept guards and literal preservation for recognized factual, quotation, modality and condition-bearing sentences. TXT/MD has a different policy: sentence splitting/merging may be allowed, with layout/Markdown/duplication checks and Python sentence-drop detection. The shared wrapper treats recognized factual failures such as changed quantities, missing numbers or altered quotations as hard failures. Character-change warning/abort thresholds remain 30%/50%.
 
@@ -97,12 +97,12 @@ Sources: [config](../src/config.ts), [queue](../src/queue/transform-queue.ts), [
 
 ## 6. Access, Data Flow and Retention
 
-The portal permits loopback/private socket addresses, restricts Host to localhost or allowed local/private IP literals, and compares supplied browser Origin with protocol/Host. This is address-based scope, not user authentication or proof of same-Wi-Fi membership. There is no application TLS, per-user quota or account separation. A proxy changes the visible socket address and needs a deliberate trust policy.
+The portal accepts loopback sockets only (whatever `HOST` says), restricts Host to `localhost`, `127.0.0.1`, `[::1]` or a listed public name arriving from the local tunnel connector, and compares supplied browser Origin with protocol/Host. Same-network devices can no longer connect directly. Localhost needs no password, so anything running on the server PC can use the portal. Other devices use the public address: requests forwarded by the Cloudflare edge always count as public, need the password, and get a 30-day session that is also listed on the server, so logout revokes it. There is no TLS on the listener itself (the tunnel provides HTTPS), no per-user quota and no account separation. A proxy other than the tunnel would look local and needs a deliberate trust policy.
 
 | Data | Lifetime/scope |
 | --- | --- |
 | Portal/desktop text jobs | Local source/intermediate/final files until normal completion/failure/cancellation cleanup. |
-| Office input/result | Package copies and Python jobs retained for an idle 30-minute lifetime; active work/read leases protect ongoing processing/saving. Repeated downloads are possible before expiry. |
+| Office input/result | Package copies and Python jobs retained for 30 minutes after upload, then 30 minutes after the result is ready; reading does not extend it. Active work and the desktop save lease defer removal; expiry or removal aborts HTTP downloads in progress. Repeated downloads are possible before expiry. |
 | Portal logs | Transform metadata, counts/timings/codes and fixed CLI failure reasons; no intentional source/result-body logging. |
 | Desktop settings | Persistent CLI paths and engine/model/effort/strength, without document history. |
 | Skill jobs/results | Gateway jobs until cleanup; exported results preserved; host conversation retention follows host settings. |

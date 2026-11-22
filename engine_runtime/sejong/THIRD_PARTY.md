@@ -7,6 +7,12 @@ https://github.com/himangga01/im-not-ai_fork, with the portal's local patch
 reproduced below and must stay with these files after `vendor/` is removed (DESIGN.md 4.1, WP-18).
 No vendor module is imported at run time.
 
+The vendor moved to label 2.4.7 (commit c07df14d9f68da482ff5183591808a7d132d4a71) on 2026-11-22. The ported pieces were
+checked against it and not re-synced: upstream left `sanitize_text.py`, `strip_injected_commas.py` and
+`reassemble_chunks.py` unchanged, changed only the register checks of `checks.py` (not ported) and refactored
+`strip_summary_block` without changing its result, and changed `prepare_monolith_input.py` outside the ported
+footnote and manifest code.
+
 ## Ported pieces
 
 | v2 file | What was ported | Vendor source |

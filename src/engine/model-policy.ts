@@ -1,4 +1,4 @@
-export const HUMANIZE_MODEL = "gpt-6.1-sol" as const;
+export const HUMANIZE_MODEL = "gpt-6.2-sol" as const;
 export const HUMANIZE_REASONING_EFFORT = "high" as const;
 
 export const CLAUDE_MODEL = "claude-opus-5-5" as const;
@@ -20,14 +20,16 @@ export const INVALID_MODEL_SETTINGS_MESSAGE = '선택한 CLI에서 지원하는 
 
 const codexEfforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
 const claudeEfforts = ['low', 'medium', 'high', 'xhigh', 'max'];
-// Codex 0.167.0 model/list and Claude Code 2.1.323 initialize (2026-11-13). Served until a live list arrives
+// Codex 0.170.0 model/list and Claude Code 2.1.328 initialize (2026-11-19). Served until a live list arrives
 // (runtime/model-catalog.ts). Claude Haiku 4.5 is left out: it has no effort levels and the portal always sends one.
 // These are selectable configurations, not a promise of account model access.
 export const FALLBACK_MODEL_OPTIONS: ModelOptions = {
   codex: [
-    { id: HUMANIZE_MODEL, label: 'GPT-6.1 Sol', efforts: codexEfforts },
-    { id: 'gpt-6-astra', label: 'GPT-6 Astra', efforts: codexEfforts },
+    { id: HUMANIZE_MODEL, label: 'GPT-6.2 Sol', efforts: codexEfforts },
+    { id: 'gpt-6.2-astra', label: 'GPT-6.2 Astra', efforts: codexEfforts },
     { id: 'gpt-6.1-terra', label: 'GPT-6.1 Terra', efforts: codexEfforts },
+    { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol', efforts: codexEfforts },
+    { id: 'gpt-6-astra', label: 'GPT-6 Astra', efforts: codexEfforts },
     { id: 'gpt-6-sol', label: 'GPT-6 Sol', efforts: codexEfforts },
     { id: 'gpt-6-luna', label: 'GPT-6 Luna', efforts: codexEfforts.slice(0, 5) },
     { id: 'gpt-5.6-sol', label: 'GPT-5.6 Sol', efforts: codexEfforts },

@@ -3,7 +3,7 @@ import https from 'node:https';
 import { Readable } from 'node:stream';
 import type { TransformEvent } from '../contracts.js';
 
-/** HTTP client of the LAN portal for the MCP server: the portal's queue, engines and checks do the work, so an MCP
+/** HTTP client of the portal on this computer for the MCP server: the portal's queue, engines and checks do the work, so an MCP
  * job is exactly a web job (same NDJSON events, same Office upload → transform → result → delete lifecycle). */
 export type Engine = 'codex' | 'claude';
 export interface JobOptions { engine: Engine; model?: string; effort?: string }

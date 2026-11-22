@@ -1,4 +1,6 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readdir, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type {
@@ -97,7 +99,7 @@ async function fixture(
 
 describe("CodexRunner", () => {
   it("uses the approved fixed model policy", () => {
-    expect(HUMANIZE_MODEL).toBe("gpt-6.1-sol");
+    expect(HUMANIZE_MODEL).toBe("gpt-6.2-sol");
     expect(HUMANIZE_REASONING_EFFORT).toBe("high");
   });
 
@@ -124,19 +126,39 @@ describe("CodexRunner", () => {
         "--skip-git-repo-check",
         "--ignore-user-config",
         "--ignore-rules",
+        "--disable", "code_mode_host",
         "--disable", "shell_tool",
         "--disable", "unified_exec",
-        "--disable", "code_mode_host",
         "--disable", "view_image",
+        "--disable", "image_generation",
         "--disable", "browser_use",
-        "--disable", "apps",
         "--disable", "computer_use",
+        "--disable", "apps",
+        "--disable", "multi_agent",
+        "--config", "agents.enabled=false",
+        "--disable", "sleep_tool",
+        "--disable", "goals",
+        "--disable", "tool_suggest",
+        "--config", 'web_search="disabled"',
+        "--config", "tools.experimental_request_user_input.enabled=false",
+        "--disable", "hooks",
+        "--disable", "plugins",
+        "--disable", "remote_plugin",
+        "--disable", "memories",
+        "--disable", "skill_search",
+        "--disable", "skill_mcp_dependency_install",
+        "--disable", "workspace_dependencies",
+        "--config", "skills.bundled.enabled=false",
+        "--config", "skills.include_instructions=false",
+        "--config", "project_doc_max_bytes=0",
+        "--config", "include_permissions_instructions=false",
+        "--config", "include_apps_instructions=false",
+        "--config", "include_environment_context=false",
+        "--sandbox", "read-only",
         "--model",
-        "gpt-6.1-sol",
+        "gpt-6.2-sol",
         "--config",
         'model_reasoning_effort="high"',
-        "--sandbox",
-        "read-only",
         "--output-schema",
         test.schemaPath,
         "--output-last-message",
@@ -144,8 +166,32 @@ describe("CodexRunner", () => {
         "-"
       ]);
       expect(runner.request?.stdin).toContain("BEGIN_SOURCE_");
-      expect(runner.request?.cwd).toContain('humanize-codex-');
       expect(await readFile(test.outputPath, "utf8")).toContain("rewrittenText");
+    } finally {
+      await removeTestRoot(test.root);
+    }
+  });
+
+  it("starts Codex from a new empty directory outside the project and removes it afterwards", async () => {
+    const seen: { cwd: string; entries: string[] }[] = [];
+    const runner = new OutputRunner(JSON.stringify({ rewrittenText: "rewritten", warnings: [] }));
+    const test = await fixture({
+      run: async request => {
+        seen.push({ cwd: request.cwd, entries: await readdir(request.cwd) });
+        return runner.run(request);
+      }
+    });
+    try {
+      await test.codex.transform(test.inputPath, test.outputPath, 1, new AbortController().signal);
+      await test.codex.transform(test.inputPath, test.outputPath, 2, new AbortController().signal);
+      expect(seen).toHaveLength(2);
+      expect(seen[0]!.cwd).not.toBe(seen[1]!.cwd);
+      for (const { cwd, entries } of seen) {
+        expect(path.dirname(cwd)).toBe(path.resolve(tmpdir()));
+        expect(path.basename(cwd)).toMatch(/^humanize-codex-/);
+        expect(entries).toEqual([]);
+        expect(existsSync(cwd)).toBe(false);
+      }
     } finally {
       await removeTestRoot(test.root);
     }
