@@ -162,7 +162,7 @@ export class ClaudeRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext, lexicalHints: chunkContext?.lexicalHints });
 
     await rm(resultPath, { force: true });
     const raw = await this.exec(prompt, schema, signal, selection);

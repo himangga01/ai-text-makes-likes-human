@@ -153,7 +153,7 @@ export class CodexRunner {
     ) {
       nonce = randomUUID().replaceAll("-", "");
     }
-    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext });
+    const prompt = (this.options.promptBuilder ?? buildHumanizePrompt)({ source, quickRules, attempt, nonce, rewriteOptions: options, candidateReview, chunkContext, lexicalHints: chunkContext?.lexicalHints });
 
     await this.exec(prompt, this.options.schemaPath, resultPath, signal, selection);
 
