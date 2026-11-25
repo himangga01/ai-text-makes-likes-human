@@ -198,7 +198,7 @@
             <div class="mcp-code-head"><span>Windows (PowerShell)</span><button type="button" class="button button-ghost mcp-copy" data-copy-target="mcp-build-win" aria-label="Windows 빌드 명령 복사">복사</button></div>
             <pre id="mcp-build-win"><code>npm.cmd run build</code></pre>
           </div>
-          <p>아래 명령의 <code><span class="mcp-ph">&lt;저장소 경로&gt;</span></code>는 저장소를 받은 위치로 바꿉니다. <code>node</code>가 Node 24 이상을 가리키지 않으면 <code>node</code> 자리에 Node 24 이상 실행 파일의 전체 경로를 적습니다. Mac에서는 포털 서비스가 쓰는 <code>~/.hermes/node/bin/node</code>도 됩니다. Windows는 <code>where.exe node</code>로 위치를 확인합니다.</p>
+          <p>아래 명령의 <code><span class="mcp-ph">&lt;저장소 경로&gt;</span></code>는 저장소를 받은 위치로 바꿉니다. <code>node</code>가 Node 24 이상을 가리키지 않으면 <code>node</code> 자리에 Node 24 이상 실행 파일의 전체 경로를 적습니다. Windows는 <code>where.exe node</code>로 위치를 확인합니다.</p>
 
           <h3>Claude Code에 등록</h3>
           <p><code>-s user</code>를 붙이면 모든 프로젝트에서, 빼면 현재 프로젝트에서만 씁니다. 등록한 뒤 <code>claude mcp list</code>를 실행하거나 세션 안에서 <code>/mcp</code>를 입력해 확인합니다.</p>
@@ -257,7 +257,7 @@ tool_timeout_sec = 3600</code></pre>
 
           <h3>문제가 생겼을 때</h3>
           <ul>
-            <li><code>PORTAL_UNREACHABLE</code> — 포털이 꺼져 있거나 <code>HUMANIZE_PORTAL_URL</code>이 틀렸습니다. 포털을 실행하는 PC에서 확인합니다. Mac은 <code>node dist/ops/hermes-service.js status</code>, Windows는 <code>start-portal.cmd</code> 창이 열려 있고 <code>http://localhost:7882</code>가 열리는지 봅니다.</li>
+            <li><code>PORTAL_UNREACHABLE</code> — 포털이 꺼져 있거나 <code>HUMANIZE_PORTAL_URL</code>이 틀렸습니다. 포털을 실행하는 PC에서 <code>http://localhost:7882</code>가 열리는지 확인합니다. Windows는 <code>start-portal.cmd</code> 창도 열려 있어야 합니다.</li>
             <li>1분쯤 뒤 AI 도구가 호출을 포기합니다 — 도구의 제한 시간이 변환보다 짧습니다. Codex는 <code>tool_timeout_sec</code>, Claude Code는 <code>MCP_TOOL_TIMEOUT</code>(밀리초)을 늘립니다.</li>
             <li><code>QUEUE_FULL</code> — 이미 3건이 접수되어 있습니다. 대기열이 비면 다시 시도합니다.</li>
             <li>DOCX·PPTX에서 강도를 거절합니다 — <code>strength</code>를 빼고 다시 호출합니다.</li>
