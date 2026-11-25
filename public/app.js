@@ -618,10 +618,10 @@ elements.reset.addEventListener("click", () => {
   elements.source.focus();
 });
 
-async function copyResultText() {
-  if (desktop) { await window.humanizeDesktop.copyText(finalText); return; }
+async function copyToClipboard(text) {
+  if (desktop) { await window.humanizeDesktop.copyText(text); return; }
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(finalText);
+    await navigator.clipboard.writeText(text);
     return;
   }
 
@@ -635,7 +635,7 @@ async function copyResultText() {
   const temporary = document.createElement("textarea");
   temporary.className = "clipboard-fallback";
   temporary.setAttribute("aria-hidden", "true");
-  temporary.value = finalText;
+  temporary.value = text;
   document.body.append(temporary);
   temporary.focus();
   temporary.select();
@@ -652,6 +652,8 @@ async function copyResultText() {
   if (!copied) throw new Error("copy command failed");
 }
 
+const copyResultText = () => copyToClipboard(finalText);
+
 elements.copy.addEventListener("click", async () => {
   try {
     await copyResultText();
@@ -664,6 +666,20 @@ elements.copy.addEventListener("click", async () => {
     setStatus("error", "복사 오류", "결과를 선택해 직접 복사해 주세요.");
   }
 });
+
+// The "MCP 연결 방법" guide at the bottom of the page: each command block has its own copy button.
+for (const button of document.querySelectorAll("[data-copy-target]")) {
+  const label = button.textContent;
+  let reset;
+  button.addEventListener("click", async () => {
+    const source = document.getElementById(button.dataset.copyTarget);
+    let outcome = "복사됨";
+    try { await copyToClipboard(source.textContent); } catch { outcome = "복사 실패"; }
+    clearTimeout(reset);
+    button.textContent = outcome;
+    reset = setTimeout(() => { button.textContent = label; }, 1200);
+  });
+}
 
 elements.download.addEventListener("click", async () => {
   if(officeDocument&&documentResult){try{await saveDocument(officeDocument,documentResult.name);}catch(e){setStatus('error','저장 오류',e.message);}return;}
@@ -783,6 +799,8 @@ async function initialize() {
     document.querySelector("#hero-title").textContent = "한국어 문장을 자연스럽게 다듬으세요";
     document.querySelector("#network-scope").textContent = "내 PC에서 실행";
     document.querySelector("#desktop-settings").hidden = false;
+    // MCP connects to a portal server on this computer; the desktop app has none.
+    document.querySelector("#mcp-help").hidden = true;
     document.querySelector('#connection-scope').textContent='이 PC에 설치·로그인된 CLI를 사용합니다.';
     document.querySelectorAll('.cli-path-controls').forEach(x=>{x.hidden=false;});
     document.querySelector(".privacy-note").textContent = "원문은 선택한 CLI로 처리하며 변환 이력은 앱에 저장하지 않습니다.";
