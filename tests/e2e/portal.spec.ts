@@ -6,7 +6,7 @@ const readyHealth = {
   status: "ready",
   engine: "codex-cli",
   engineVersion: "0.149.0",
-  humanizeVersion: "2.4.7",
+  humanizeVersion: "2.4.8",
   activeJobs: 0,
   queuedJobs: 0,
   rewriteOptions: [

@@ -1,8 +1,8 @@
 # Vendored Humanize Engine
 
 Source: https://github.com/himangga01/im-not-ai_fork
-Version: 2.4.7
-Commit: c07df14d9f68da482ff5183591808a7d132d4a71
+Version: 2.4.8
+Commit: e9793d75a584169108906ee5f7332b27898efef4
 
 The runtime is copied so the portal has no sibling-repository dependency.
 

@@ -7,7 +7,7 @@ import { exited, FakeCommandRunner } from "../helpers/fake-command-runner.js";
 describe("independent CLI health", () => {
   it("keeps Claude ready when Codex is missing", async () => {
     const runner = new FakeCommandRunner([exited("Python 3.14.7"), new Error("missing Codex"), exited("2.1.261 (Claude Code)"), exited('{"loggedIn":true,"email":"private@example.invalid"}')]);
-    const result = await runPreflight(loadConfig({}, process.cwd()), runner, "version=2.4.7");
+    const result = await runPreflight(loadConfig({}, process.cwd()), runner, "version=2.4.8");
     expect(result.ready).toBe(true);
     expect(result.providers?.codex.ready).toBe(false);
     expect(result.providers?.claude.ready).toBe(true);

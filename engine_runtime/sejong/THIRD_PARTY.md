@@ -13,6 +13,9 @@ checked against it and not re-synced: upstream left `sanitize_text.py`, `strip_i
 `strip_summary_block` without changing its result, and changed `prepare_monolith_input.py` outside the ported
 footnote and manifest code.
 
+Label 2.4.8 (commit e9793d75a584169108906ee5f7332b27898efef4, vendored 2026-11-25) changed only rule documents
+(`ai-tell-taxonomy.md`, `quick-rules.md`, `rewriting-playbook.md`); the ported pieces are unaffected.
+
 ## Ported pieces
 
 | v2 file | What was ported | Vendor source |

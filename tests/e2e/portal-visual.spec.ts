@@ -11,7 +11,7 @@ test.beforeEach(async ({ page }) => {
         checkedAt: '2026-09-09T07:00:00.000Z',
         engine: "codex-cli",
         engineVersion: "0.149.0",
-        humanizeVersion: "2.4.7",
+        humanizeVersion: "2.4.8",
         activeJobs: 0,
         queuedJobs: 0
       }
