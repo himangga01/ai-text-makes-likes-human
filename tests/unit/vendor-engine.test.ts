@@ -31,12 +31,12 @@ const required = [
 ];
 
 describe("vendored humanize engine", () => {
-  it("contains the pinned v2.4.7 runtime", async () => {
+  it("contains the pinned v2.4.8 runtime", async () => {
     await Promise.all(required.map(file => stat(path.join(root, file))));
     const version = await readFile(path.join(root, "ENGINE_VERSION"), "utf8");
 
     expect(version).toBe(
-      "version=2.4.7\ncommit=c07df14d9f68da482ff5183591808a7d132d4a71\n"
+      "version=2.4.8\ncommit=e9793d75a584169108906ee5f7332b27898efef4\n"
     );
   });
 });

@@ -26,7 +26,7 @@
 - 어휘 점검(기존 엔진, 엔진 2.4.7부터): 청크마다 `lexical_layer.py hints`로 원문에 있는 어색한 표현(사전 115개)을 찾아 `[어휘 점검]` 블록으로 첫 윤문 요청에만 넣음. 보수적 재시도와 후보 재검토에는 넣지 않음. 어휘 복원은 윤문이 원문 문서에 없던 '바꿈 우선' 표현을 새로 만든 문장만 원문 문장으로 되돌리고, 순서가 바뀌었거나 되돌리면 같은 문장이 두 번 나오는 경우는 보류함. 두 단계 모두 실패해도 윤문을 막지 않고 건수만 남김. 직접 입력의 개념 보존 검사는 어휘 점검이 원문에서 한 단어로 찾은 명사만 예외로 둠(`engine_runtime/lexical_check.py`의 `replaceableNouns`: [우선] 항목 전부, [조건부] 항목은 원문에서 두 번 이상 쓰였을 때). 구 단위 항목의 명사, 더 긴 단어 안의 일치(콘택트렌즈), 따옴표 안의 표현은 예외가 아님. Office 문서와 슈퍼세종엔진 v2 경로에는 적용하지 않음
 - 슈퍼세종엔진: `SUPER_SEJONG_MODE`가 `enforce`(기본)면 의미 보존 검사(부정·서법·어휘 극성·참여자 역할·조사 형태)가 실패 시 보수적 재시도·되돌림을 일으킴. `shadow`는 같은 검사를 실행해 `shadowFailureCounts`로만 기록하고 막지 않음. `off`는 검사·조사 교정·문체 힌트를 모두 끄고 기존 게이트만 사용함. 아래 [슈퍼세종엔진 모드](#슈퍼세종엔진-모드) 참고
 - 줄바꿈: 수신 단계에서 CR·CRLF를 LF로 통일
-- 준비 상태: Python 3.11+와 엔진 라벨 2.4.7이 준비되고 Codex 또는 Claude 중 하나가 설치·로그인돼 있으면 ready. Office 지원은 별도로 `lxml` import를 확인하며 `documentsAvailable`로 표시함
+- 준비 상태: Python 3.11+와 엔진 라벨 2.4.8이 준비되고 Codex 또는 Claude 중 하나가 설치·로그인돼 있으면 ready. Office 지원은 별도로 `lxml` import를 확인하며 `documentsAvailable`로 표시함
 - 프로세스 상태: `/api/status`는 외부 CLI를 점검하지 않고 `status`·`pid`·`activeJobs`·`queuedJobs`만 즉시 반환함. supervisor가 사용하며, 이 경로가 없는 이전 빌드에는 `/api/health`로 대신 확인함
 - 상태 갱신: `/api/health`는 3초 캐시·진행 중 조회 공유를 사용해 재점검함. 보이는 유휴 화면은 60초마다 조회하고 수동 점검·화면 복귀·관련 오류 때도 다시 조회함. 모델별 계정 권한은 실제 실행으로만 확인됨
 - 상태 수치의 범위: `activeJobs`·`queuedJobs`에는 일반 텍스트 업로드 예약과 Office 보관·파싱·다운로드가 표시되지 않음. 두 값이 0이어도 모든 작업이 끝났다는 뜻은 아님
@@ -170,7 +170,7 @@ Get-ChildItem .\runtime\jobs -Force
 
 ## 엔진 업데이트
 
-`$update-humanize-engine`을 실행하면 원본 `epoko77-ai/im-not-ai`를 사용자 포크 `himangga01/im-not-ai_fork`에 먼저 동기화·push하고 서비스 및 배포물을 갱신합니다. 현재 고정 커밋은 `c07df14d9f68da482ff5183591808a7d132d4a71`(라벨 2.4.7)입니다. 직접 동기화 스크립트를 실행할 때는 깨끗한 포크 체크아웃을 `-Source`로 지정해야 합니다.
+`$update-humanize-engine`을 실행하면 원본 `epoko77-ai/im-not-ai`를 사용자 포크 `himangga01/im-not-ai_fork`에 먼저 동기화·push하고 서비스 및 배포물을 갱신합니다. 현재 고정 커밋은 `e9793d75a584169108906ee5f7332b27898efef4`(라벨 2.4.8)입니다. 직접 동기화 스크립트를 실행할 때는 깨끗한 포크 체크아웃을 `-Source`로 지정해야 합니다.
 
 Humanize 엔진은 `vendor/humanize-engine`에 고정되어 있어 형제 저장소를 런타임에 참조하지 않습니다. upstream `im-not-ai`는 2.3.2에서 오래 version 문자열을 유지하다가 2.4.x부터 올렸습니다. 문자열만으로 선후를 판단하지 말고 `ENGINE_VERSION`의 commit을 기준으로 합니다. 서버 preflight는 라벨이 정확히 일치할 때만 ready이므로(`src/process/preflight.ts`) vendor 라벨이 바뀌면 같은 변경에서 preflight를 맞추고, 운영에는 vendor와 `npm run build` 결과를 함께 반영합니다. 승인된 upstream commit으로 갱신할 때:
 

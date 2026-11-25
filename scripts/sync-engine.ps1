@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$expectedCommit = 'c07df14d9f68da482ff5183591808a7d132d4a71'
+$expectedCommit = 'e9793d75a584169108906ee5f7332b27898efef4'
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $patchPath = Join-Path $PSScriptRoot 'patches\humanize-engine-portal.patch'
 $destination = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\vendor\humanize-engine'))
@@ -14,8 +14,8 @@ if (-not (Test-Path -LiteralPath $skillPath)) {
 }
 
 $skill = Get-Content -Raw -Encoding UTF8 -LiteralPath $skillPath
-if ($skill -notmatch 'version:\s*"2\.4\.7"') {
-  throw 'Expected im-not-ai version 2.4.7'
+if ($skill -notmatch 'version:\s*"2\.4\.8"') {
+  throw 'Expected im-not-ai version 2.4.8'
 }
 
 $commitOutput = & git -C $Source rev-parse HEAD
@@ -93,13 +93,13 @@ if ($LASTEXITCODE -ne 0) {
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 [IO.File]::WriteAllText(
   (Join-Path $destination 'ENGINE_VERSION'),
-  "version=2.4.7`ncommit=$commit`n",
+  "version=2.4.8`ncommit=$commit`n",
   $utf8NoBom
 )
 [IO.File]::WriteAllText(
   (Join-Path $destination 'UPSTREAM.md'),
-  "# Vendored Humanize Engine`n`nSource: https://github.com/himangga01/im-not-ai_fork`nVersion: 2.4.7`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n- Feeds the source text to the v2.6 route tell counter in --chunk mode so short documents are not misrouted to light.`n- Keeps LF/CRLF intact in restore_modality.py and strip_injected_commas.py file I/O.`n- Pairs quotes per paragraph with matching marks, treats only marker-backed N) blocks at the end or before a heading as footnote definitions (with document-wide markers for chunks), ignores version-like markers such as GPT-4), and treats consecutively numbered list items, but not table-of-contents entries, as non-headings (checks.py).`n- Never lets modality restoration duplicate a sentence or restore a reordered pair, while still restoring parallel sentences, and bands sentence alignment for long documents (restore_modality.py).`n- Keeps noun-list commas, including lists of nouns ending in -go, and commas inside multi-sentence quotes (strip_injected_commas.py).`n- Recomposes only decomposed Hangul instead of NFC-normalizing the whole text (sanitize_text.py).`n- Compares long texts line by line, and long lines sentence by sentence, in change_rate so the full-document gate stays linear even for paragraphs without line breaks (metrics_v2.py).`n- Keeps LF/CRLF intact in lexical_layer.py file I/O, and never lets the lexical restore duplicate a sentence or restore a reordered pair, the same rule as restore_modality.py (lexical_layer.py).`n",
+  "# Vendored Humanize Engine`n`nSource: https://github.com/himangga01/im-not-ai_fork`nVersion: 2.4.8`nCommit: $commit`n`nThe runtime is copied so the portal has no sibling-repository dependency.`n`nPortal patch: scripts/patches/humanize-engine-portal.patch`n`n- Preserves user-content LF/CRLF exactly with newline=`"`".`n- Adds the opt-in --portal-auto-route manifest path for short light/standard documents.`n- Feeds the source text to the v2.6 route tell counter in --chunk mode so short documents are not misrouted to light.`n- Keeps LF/CRLF intact in restore_modality.py and strip_injected_commas.py file I/O.`n- Pairs quotes per paragraph with matching marks, treats only marker-backed N) blocks at the end or before a heading as footnote definitions (with document-wide markers for chunks), ignores version-like markers such as GPT-4), and treats consecutively numbered list items, but not table-of-contents entries, as non-headings (checks.py).`n- Never lets modality restoration duplicate a sentence or restore a reordered pair, while still restoring parallel sentences, and bands sentence alignment for long documents (restore_modality.py).`n- Keeps noun-list commas, including lists of nouns ending in -go, and commas inside multi-sentence quotes (strip_injected_commas.py).`n- Recomposes only decomposed Hangul instead of NFC-normalizing the whole text (sanitize_text.py).`n- Compares long texts line by line, and long lines sentence by sentence, in change_rate so the full-document gate stays linear even for paragraphs without line breaks (metrics_v2.py).`n- Keeps LF/CRLF intact in lexical_layer.py file I/O, and never lets the lexical restore duplicate a sentence or restore a reordered pair, the same rule as restore_modality.py (lexical_layer.py).`n",
   $utf8NoBom
 )
 
-Write-Host "Vendored humanize engine 2.4.7 ($commit) to $destination"
+Write-Host "Vendored humanize engine 2.4.8 ($commit) to $destination"

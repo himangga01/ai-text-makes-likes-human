@@ -17,7 +17,7 @@ import { makeTestRoot, removeTestRoot } from '../helpers/test-root.js';
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => { while (cleanups.length) await cleanups.pop()!(); });
 
-const preflight = { ready: true as const, nodeVersion: '24.19.0', pythonVersion: '3.14.7', codexVersion: '0.161.0', humanizeVersion: '2.4.7' };
+const preflight = { ready: true as const, nodeVersion: '24.19.0', pythonVersion: '3.14.7', codexVersion: '0.161.0', humanizeVersion: '2.4.8' };
 
 /** A real portal app with a fake text engine (records each request, answers `rewrite(source)`) and a fake Office
  * engine (answers the bytes `PK-result`). */
