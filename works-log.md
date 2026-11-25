@@ -1,5 +1,66 @@
 # Works Log
 
+## 2026-11-25 — Engine im-not-ai 2.4.8, MCP guide on the web page (0.5.5), deployed
+
+**Requests:**
+- "https://github.com/epoko77-ai/im-not-ai.git 최신내용 페치해서 우리 엔진에 적용".
+- Mid-task: "그리고 우리 사이트에 엠시피 연결하는 방법 페이지 맨아래에 숨김버튼으로 기록해놔, 엠시피 연결도움 받을수있도록".
+- Then: "엔진 업데이트하고 우리서비스 스킬이랑 엠시피도 다 업데이트하고 서버 재시작해".
+
+**Engine 2.4.8** (`b9b58ee`, branch `feat/engine-2.4.8`).
+- Upstream moved from `c07df14` (2.4.7) to `e9793d7` (2.4.8): 6 commits, the pin is an ancestor, the fork has 0 commits of its own.
+- Only three rule documents changed; scripts are untouched:
+  - F-5: drop '-적' only for a set two-word compound, and never leave three bare nouns in a row.
+  - E-5: split long clauses with a period, without compressing them into an adnominal clause.
+  - C-8: keep one contrast/cause marker when splitting a parallel.
+- `quick-rules.md` goes into every legacy prompt.
+- The portal patch applies unchanged. Pristine 2.4.8 plus the patch equals the vendor tree (`diff -r`; only ENGINE_VERSION/UPSTREAM.md, which are generated, differ).
+- Preflight and the test fixtures now use 2.4.8, and both rule indexes pass `--check`.
+- The v2 THIRD_PARTY note records that the ported pieces are unaffected.
+- **Fork push blocked again.** The fork fast-forward push to `e9793d7` was blocked by the auto-mode classifier ("Unsanctioned Communication"). It is not done: the fork is still at `c07df14`, while the service pins `e9793d7`.
+
+**MCP guide** (`3aeb145`, `5092edf`; written by a Sonnet 5.5 xhigh agent on `feat/mcp-help`, reviewed here).
+- A collapsed `<details>` "MCP 연결 방법" is the last element of `public/index.html`.
+- It opens with "이 포털을 실행하는 PC에서 연결합니다". MCP reaches only `127.0.0.1:7882`, because the public address needs a browser login.
+- Then: build, Claude Code/Codex registration for Mac and Windows, Codex `tool_timeout_sec = 3600`, `MCP_TOOL_TIMEOUT`, the check command, the three tools and four troubleshooting items.
+- Copy buttons reuse the page's copy helper, now `copyToClipboard`.
+- The guide is hidden in the desktop app, which has no portal server.
+- It uses placeholders only. I removed two operator-only Mac details the agent had kept from docs/mcp.md: the Hermes Node path and the `hermes-service.js status` hint.
+- 11 new e2e tests cover: collapsed by default, click and keyboard, the local-only note, no `/Users/` or foreign address, no CSP violation or external request, no overflow at 390/1440 px, copy, and desktop hiding.
+- **Not verified:** the Windows-only visual baselines (`portal-visual.spec.ts`, 9 full-page shots) are now stale and must be regenerated on the Windows PC. The Electron app itself was not launched.
+
+**Verification** (`92c732c`, 0.5.5; production interpreter):
+- typecheck clean;
+- vitest 939 passed, 10 skipped;
+- test:skills 768 OK, 5 skipped;
+- test:documents 106 OK;
+- e2e 65 passed, 9 skipped (54 + 11 new);
+- `git diff --check` clean.
+
+No live model call was made for 2.4.8; it is a rule-text change.
+
+**Deployment.**
+- **Merge.** `/api/status` was idle. `feat/engine-2.4.8` (which includes `feat/mcp-help`) was merged into main as `06121f0`. The personal-line files and works-log.md are not touched by the merge, so nothing was stashed.
+- **Build.** `npm ci` was not needed: the lockfile changed only its version field. `npm run build`, then `node scripts/build-skill-bridge.mjs`, then the restart with `SUPER_SEJONG_V2_SHADOW=1`, which gave PID 92503.
+- **Checks after the restart:**
+  - listener `127.0.0.1:7882` only;
+  - health reports 2.4.8, Codex and Claude ready, documents available;
+  - `SUPER_SEJONG_V2_SHADOW=1` and `HOST=127.0.0.1` set;
+  - `GET /` contains `id="mcp-help"`;
+  - the tunnel gives 303 on `/` and 401 `LOGIN_REQUIRED` on `/api/status`.
+- **MCP.** Claude Code (`claude mcp list`: Connected) and `~/.codex/config.toml` both point to `dist/mcp/server.js`, so the build updated them. `humanize_status` through MCP returned ready, PID 92503 and 2.4.8.
+- **Skill.** On this Mac the skill is the source checkout used by the Hermes blog pipeline (Gateway, bridge and the three instruction files). A Gateway `prepare` of a direct-text job, with no model call, wrote instructions containing `<lexical_check>` and the 렌즈 item. The test job was then cleaned.
+
+**My mistake.**
+- At the 0.5.4 deploy I ran only `npm run build`, which does not rebuild the untracked `build-resources/skill-bridge/skill-bridge.cjs`.
+- From 2026-11-22 to 2026-11-25 the skill strength route on this Mac therefore ran the 2026-11-13 bridge, without the lexical block in its instructions and without the noun exemption. It did not fail; the old bridge ignored the new fields.
+- Rebuilt now; a memory (`deploy-rebuilds-skill-bridge`) now records the step.
+
+**Open:**
+- The fork push (needs approval).
+- Pushing main.
+- On the Windows PC: skill ZIPs, the EXE, and the visual baselines.
+
 ## 2026-11-22 — Engine im-not-ai 2.4.7 with the lexical check (0.5.4); 0.5.2–0.5.4 merged and deployed
 
 **Request:** "https://github.com/epoko77-ai/im-not-ai.git 최신내용 페치해서 우리 엔진에 적용". Mid-task: "간단한 작업은 sonnet 5.5 + Xhigh 모델로 사용해서 진행해 / 그리고 작업은 병렬로 작업해" (saved to memory `parallel-subagents`).
@@ -74,7 +135,7 @@
 - **Not covered:** Office documents (own prompt and Python flow, never ran the modality restore) and Super Sejong v2.
 - **Windows only, not run:** `skills:build`, `verify-skill-packages.mjs` (its new lexical block was only syntax-checked) and `desktop:portable`.
 - **Kill switch:** `HUMANIZE_LEXICAL=0` (the upstream switch) does not apply on the server or Gateway paths.
-- **Hermes skill:** `~/.hermes/skills/portal-service/SKILL.md:60` still says "Same Wi-Fi: use the LAN URL printed in the service log", which is now wrong. It was not edited (no request to write under `~/.hermes`).
+- **Hermes skill:** `~/.hermes/skills/portal-service/SKILL.md:60` said "Same Wi-Fi: use the LAN URL printed in the service log". Replaced on the owner's request ("수정해") with the public address from the log's `외부 주소:` line plus a note that 0.5.3 refuses LAN connections. No other LAN mention is in that skill folder. Its restart instructions still do not pass `SUPER_SEJONG_V2_SHADOW=1` (pre-existing; not changed).
 - **npm install scripts:** `npm ci` on npm 11 left `fsevents` install scripts unapproved (`npm install-scripts ls`). That does not matter to the server; desktop builds in the main tree were not tried.
 
 ### Deployment (owner: "진행하자")
